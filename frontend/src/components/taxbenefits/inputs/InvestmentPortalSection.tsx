@@ -5,9 +5,8 @@
  * Controls whether this deal appears in the Investment Portal
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React from 'react';
 import '../../../styles/taxbenefits/hdcCalculator.css';
-import SearchCard from '../../map/search/SearchCard';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { HDCCheckbox } from './shared/HDCCheckbox';
 
@@ -42,10 +41,6 @@ const InvestmentPortalSection: React.FC<InvestmentPortalSectionProps> = ({
   setDealDescription,
   dealLocation,
   setDealLocation,
-  dealLatitude,
-  setDealLatitude,
-  dealLongitude,
-  setDealLongitude,
   units,
   setUnits,
   affordabilityMix,
@@ -58,158 +53,6 @@ const InvestmentPortalSection: React.FC<InvestmentPortalSectionProps> = ({
   setDealImageUrl,
   isReadOnly = false,
 }) => {
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const mapRef = useRef<HTMLDivElement | null>(null);
-  const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
-
-  // Callback ref to initialize map when div is mounted
-  const setMapRef = useCallback((node: HTMLDivElement | null) => {
-    if (!node || isReadOnly) return;
-
-    // Don't reinitialize if map already exists
-    if (map) {
-      console.log('Map already exists, skipping re-initialization');
-      return;
-    }
-
-    mapRef.current = node;
-
-    const initMap = async () => {
-      try {
-        if (!(window as any).google || !(window as any).google.maps) {
-          console.error('Google Maps API not available');
-          return;
-        }
-
-        // Create map
-        const newMap = new google.maps.Map(node, {
-          center: dealLatitude && dealLongitude
-            ? { lat: dealLatitude, lng: dealLongitude }
-            : { lat: 47.606370, lng: -122.320401 },
-          zoom: dealLatitude && dealLongitude ? 15 : 12,
-          mapId: "4504f8b37365c3d0",
-          disableDefaultUI: true,
-          zoomControl: true,
-        });
-
-        setMap(newMap);
-
-        // Trigger resize to ensure tiles load properly
-        setTimeout(() => {
-          google.maps.event.trigger(newMap, 'resize');
-          // Re-center after resize
-          if (dealLatitude && dealLongitude) {
-            newMap.setCenter({ lat: dealLatitude, lng: dealLongitude });
-          }
-        }, 200);
-
-        // Add marker if coordinates exist
-        if (dealLatitude && dealLongitude) {
-          const { AdvancedMarkerElement } = await google.maps.importLibrary("marker") as google.maps.MarkerLibrary;
-          const marker = new AdvancedMarkerElement({
-            map: newMap,
-            position: { lat: dealLatitude, lng: dealLongitude },
-          });
-          markerRef.current = marker;
-        }
-      } catch (error) {
-        console.error('Map initialization error:', error);
-      }
-    };
-
-    setTimeout(initMap, 150);
-  }, [isReadOnly, map, dealLatitude, dealLongitude]);
-
-  // Update map center and marker when coordinates change
-  useEffect(() => {
-    if (!map || !dealLatitude || !dealLongitude) return;
-
-    // Update map center and zoom
-    const newCenter = { lat: dealLatitude, lng: dealLongitude };
-    map.setCenter(newCenter);
-    map.setZoom(15);
-
-    // Force map to refresh/redraw
-    setTimeout(() => {
-      google.maps.event.trigger(map, 'resize');
-      map.setCenter(newCenter);
-    }, 100);
-
-    // Update or create marker
-    const updateMarker = async () => {
-      try {
-        if (markerRef.current) {
-          markerRef.current.map = null;
-        }
-
-        const { AdvancedMarkerElement } = await google.maps.importLibrary("marker") as google.maps.MarkerLibrary;
-        const marker = new AdvancedMarkerElement({
-          map,
-          position: newCenter,
-        });
-        markerRef.current = marker;
-      } catch (error) {
-        console.error('Error updating marker:', error);
-      }
-    };
-
-    updateMarker();
-  }, [map, dealLatitude, dealLongitude]);
-
-  const handlePlaceSelected = async (place: google.maps.places.Place) => {
-    console.log('=== handlePlaceSelected called ===');
-    console.log('place:', place);
-    console.log('place.location:', place.location);
-
-    if (!place.location) {
-      console.log('No location in place object!');
-      return;
-    }
-
-    // Extract lat/lng values - handle both function and property access
-    const latValue = place.location.lat;
-    const lngValue = place.location.lng;
-
-    const lat: number = typeof latValue === 'function' ? latValue() : latValue;
-    const lng: number = typeof lngValue === 'function' ? lngValue() : lngValue;
-
-    console.log('Extracted coordinates:', { lat, lng });
-
-    // Update location text and coordinates
-    const locationText = place.formattedAddress || place.displayName || '';
-    console.log('Setting location text:', locationText);
-    console.log('setDealLatitude exists?', !!setDealLatitude);
-    console.log('setDealLongitude exists?', !!setDealLongitude);
-
-    setDealLocation(locationText);
-    if (setDealLatitude) {
-      console.log('Calling setDealLatitude with:', lat);
-      setDealLatitude(lat);
-    }
-    if (setDealLongitude) {
-      console.log('Calling setDealLongitude with:', lng);
-      setDealLongitude(lng);
-    }
-
-    // Update map view and marker
-    if (map) {
-      map.panTo({ lat, lng });
-      map.setZoom(15);
-
-      // Remove old marker
-      if (markerRef.current) {
-        markerRef.current.map = null;
-      }
-
-      // Add new marker
-      const { AdvancedMarkerElement } = await google.maps.importLibrary("marker") as google.maps.MarkerLibrary;
-      const marker = new AdvancedMarkerElement({
-        map,
-        position: { lat, lng },
-      });
-      markerRef.current = marker;
-    }
-  };
   return (
     <div className="hdc-section">
       <h2 className="hdc-section-header">Investment Portal Settings</h2>
@@ -292,28 +135,12 @@ const InvestmentPortalSection: React.FC<InvestmentPortalSectionProps> = ({
             </div>
           </div>
 
-          {/* Location with Google Places Search */}
+          {/* Location */}
           <div className="hdc-input-group">
             <label className="hdc-input-label">
               Location
               <span className="hdc-required">*</span>
             </label>
-            {!isReadOnly && (
-              <>
-                <div style={{ marginBottom: '0.5rem' }}>
-                  <div ref={setMapRef} style={{ height: '200px', width: '100%', borderRadius: '8px', marginBottom: '0.5rem', border: '1px solid var(--hdc-mercury)' }} />
-                </div>
-                {map ? (
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <SearchCard map={map} onPlaceSelected={handlePlaceSelected} />
-                  </div>
-                ) : (
-                  <div style={{ marginBottom: '0.5rem', padding: '0.5rem', color: '#666', fontSize: '0.9rem' }}>
-                    Loading map...
-                  </div>
-                )}
-              </>
-            )}
             <input
               disabled={isReadOnly}
               type="text"
@@ -321,13 +148,7 @@ const InvestmentPortalSection: React.FC<InvestmentPortalSectionProps> = ({
               onChange={(e) => setDealLocation(e.target.value)}
               placeholder="e.g., Brooklyn, NY"
               className="hdc-input"
-              readOnly={!isReadOnly} // Make read-only when using Places API
             />
-            {dealLatitude && dealLongitude && (
-              <div className="hdc-input-hint">
-                Coordinates: {dealLatitude.toFixed(6)}, {dealLongitude.toFixed(6)}
-              </div>
-            )}
           </div>
 
           {/* Number of Units */}

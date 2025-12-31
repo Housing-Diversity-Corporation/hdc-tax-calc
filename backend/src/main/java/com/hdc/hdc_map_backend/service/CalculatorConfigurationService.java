@@ -1,7 +1,6 @@
 package com.hdc.hdc_map_backend.service;
 
 import com.hdc.hdc_map_backend.entity.CalculatorConfiguration;
-import com.hdc.hdc_map_backend.entity.Marker;
 import com.hdc.hdc_map_backend.entity.User;
 import com.hdc.hdc_map_backend.repository.user.CalculatorConfigurationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,9 +18,6 @@ public class CalculatorConfigurationService {
 
     @Autowired
     private UserService userService;
-
-    @Autowired
-    private MarkerService markerService;
 
     public List<CalculatorConfiguration> getUserConfigurations(String username) {
         User user = userService.findByUsername(username);
@@ -43,12 +39,7 @@ public class CalculatorConfigurationService {
             clearUserDefaults(user);
         }
 
-        CalculatorConfiguration savedConfig = calculatorConfigurationRepository.save(configuration);
-
-        // Handle template marker creation/deletion
-        handleInvestmentMarker(savedConfig);
-
-        return savedConfig;
+        return calculatorConfigurationRepository.save(configuration);
     }
 
     @Transactional
@@ -124,12 +115,7 @@ public class CalculatorConfigurationService {
             config.setMinimumInvestment(updatedConfiguration.getMinimumInvestment());
             config.setDealImageUrl(updatedConfiguration.getDealImageUrl());
 
-            CalculatorConfiguration savedConfig = calculatorConfigurationRepository.save(config);
-
-            // Handle template marker creation/deletion
-            handleInvestmentMarker(savedConfig);
-
-            return savedConfig;
+            return calculatorConfigurationRepository.save(config);
         }
         
         throw new RuntimeException("Configuration not found or unauthorized");
@@ -187,64 +173,6 @@ public class CalculatorConfigurationService {
             if (config.getIsDefault() != null && config.getIsDefault()) {
                 config.setIsDefault(false);
                 calculatorConfigurationRepository.save(config);
-            }
-        }
-    }
-
-    /**
-     * Handle template marker creation/deletion for investor-facing deals
-     */
-    private void handleInvestmentMarker(CalculatorConfiguration config) {
-        System.out.println("=== handleInvestmentMarker ===");
-        System.out.println("Config ID: " + config.getId());
-        System.out.println("isInvestorFacing: " + config.getIsInvestorFacing());
-        System.out.println("dealLatitude: " + config.getDealLatitude());
-        System.out.println("dealLongitude: " + config.getDealLongitude());
-        System.out.println("dealLocation: " + config.getDealLocation());
-
-        // Only create markers if deal is investor-facing and has location coordinates
-        if (config.getIsInvestorFacing() != null && config.getIsInvestorFacing() &&
-            config.getDealLatitude() != null && config.getDealLongitude() != null &&
-            config.getDealLocation() != null && !config.getDealLocation().isEmpty()) {
-
-            try {
-                String markerName = config.getConfigurationName() != null && !config.getConfigurationName().isEmpty()
-                    ? config.getConfigurationName()
-                    : "Investment Opportunity";
-
-                String projectStatus = config.getProjectStatus() != null
-                    ? config.getProjectStatus()
-                    : "available";
-
-                System.out.println("Creating marker: " + markerName + " at " + config.getDealLatitude() + ", " + config.getDealLongitude());
-
-                Marker marker = markerService.createOrUpdateInvestmentMarker(
-                    config.getId(),
-                    markerName,
-                    config.getDealLocation(),
-                    config.getDealLatitude(),
-                    config.getDealLongitude(),
-                    projectStatus
-                );
-
-                // Store the marker ID in the configuration
-                config.setMarkerId(marker.getId());
-
-                System.out.println("Marker created/updated successfully. Marker ID: " + marker.getId());
-            } catch (Exception e) {
-                // Log error but don't fail the configuration save
-                System.err.println("Failed to create investment marker: " + e.getMessage());
-                e.printStackTrace();
-            }
-        } else if (config.getIsInvestorFacing() != null && !config.getIsInvestorFacing()) {
-            // If deal is no longer investor-facing, remove the marker
-            try {
-                String markerName = config.getConfigurationName() != null && !config.getConfigurationName().isEmpty()
-                    ? config.getConfigurationName()
-                    : "Investment Opportunity";
-                markerService.deleteInvestmentMarkerByName(markerName);
-            } catch (Exception e) {
-                System.err.println("Failed to delete investment marker: " + e.getMessage());
             }
         }
     }

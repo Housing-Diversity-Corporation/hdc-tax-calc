@@ -8,7 +8,6 @@ import { Separator } from '@/components/ui/separator';
 import api, { investorTaxInfoService } from '../../services/api';
 import { User } from '../../services/api';
 import { InvestorTaxInfo } from '../../types/investorTaxInfo';
-import LoadingSpinner from '../map/LoadingSpinner';
 import axios from 'axios';
 import { useContainerWidth, useResponsiveText } from '../../hooks/useResponsiveText';
 
@@ -521,7 +520,7 @@ const AccountPage: React.FC<AccountPageProps> = ({ onNavigateToSettings, onNavig
             </CardHeader>
             <CardContent>
               {favoritesLoading ? (
-                <LoadingSpinner />
+                <div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin" /></div>
               ) : favoritesError ? (
                 <Alert variant="destructive">
                   <AlertDescription>{favoritesError}</AlertDescription>
@@ -561,7 +560,7 @@ const AccountPage: React.FC<AccountPageProps> = ({ onNavigateToSettings, onNavig
             </CardHeader>
             <CardContent>
               {placesLoading ? (
-                <LoadingSpinner />
+                <div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin" /></div>
               ) : placesError ? (
                 <Alert variant="destructive">
                   <AlertDescription>{placesError}</AlertDescription>

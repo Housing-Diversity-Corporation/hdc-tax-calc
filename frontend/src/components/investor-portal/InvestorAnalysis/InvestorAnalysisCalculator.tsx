@@ -25,7 +25,6 @@ interface InvestorAnalysisCalculatorProps {
 const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({ taxProfile, dealId, isReadOnly = false, onCalculationComplete }) => {
   // Track loaded configuration name
   const [loadedConfigName, setLoadedConfigName] = useState<string>('');
-  const [markerId, setMarkerId] = useState<number | undefined>(undefined);
 
   // State for collapsible sections
   const [configDetailsExpanded, setConfigDetailsExpanded] = useState<boolean>(false);
@@ -336,7 +335,6 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
             setDealLocation(config.dealLocation || '');
             setDealLatitude(config.dealLatitude);
             setDealLongitude(config.dealLongitude);
-            setMarkerId(config.markerId);
             setUnits(config.units || 0);
             setAffordabilityMix(config.affordabilityMix || '');
             setProjectStatus(config.projectStatus || 'available');
@@ -576,7 +574,6 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
         dealLocation={dealLocation}
         dealLatitude={dealLatitude}
         dealLongitude={dealLongitude}
-        markerId={markerId}
         dealDescription={dealDescription}
         dealImageUrl={dealImageUrl}
         units={units}
@@ -677,7 +674,6 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
           dealLocation={dealLocation}
           dealLatitude={dealLatitude}
           dealLongitude={dealLongitude}
-          markerId={markerId}
         />
       )}
 

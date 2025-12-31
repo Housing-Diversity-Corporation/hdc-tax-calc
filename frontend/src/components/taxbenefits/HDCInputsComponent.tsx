@@ -13,7 +13,6 @@ import { PROPERTY_PRESETS } from '../../utils/taxbenefits/propertyPresets';
 import { calculatorService, CalculatorConfiguration } from '../../services/taxbenefits/calculatorService';
 import { tokenService } from '../../services/api';
 import '../../styles/taxbenefits/hdcCalculator.css';
-import { useHDCCalcStore } from '../../store/useHDCCalcStore';
 import { InvestorAnalysisResults, CashFlowItem } from '../../types/taxbenefits';
 
 interface HDCInputsComponentProps {
@@ -415,8 +414,6 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
 
     // IMPL-036: Suppress auto-balance during preset loading to preserve loaded values
     props.startConfigLoading?.();
-
-    useHDCCalcStore.getState().setSelectedPreset(preset);
 
     const values = preset.values;
 

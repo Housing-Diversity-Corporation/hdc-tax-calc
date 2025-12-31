@@ -16,7 +16,6 @@ interface InvestorAnalysisHighlevelMetricsProps {
   dealLocation?: string;
   dealLatitude?: number;
   dealLongitude?: number;
-  markerId?: number;
   dealDescription?: string;
   dealImageUrl?: string;
   units?: number;
@@ -101,7 +100,6 @@ const InvestorAnalysisHighlevelMetrics: React.FC<InvestorAnalysisHighlevelMetric
   dealLocation,
   dealLatitude,
   dealLongitude,
-  markerId,
   dealDescription,
   dealImageUrl,
   units,
@@ -243,29 +241,6 @@ const InvestorAnalysisHighlevelMetrics: React.FC<InvestorAnalysisHighlevelMetric
                         <p className="text-sm text-gray-600 flex-1">
                           {dealLocation}
                         </p>
-                        {dealLatitude && dealLongitude && (
-                          <a
-                            href={markerId
-                              ? `/?markerId=${markerId}`
-                              : `/?lat=${dealLatitude}&lng=${dealLongitude}&zoom=17`
-                            }
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.25rem',
-                              padding: '0.4rem 0.8rem',
-                              backgroundColor: '#407f7f',
-                              color: 'white',
-                              textDecoration: 'none',
-                              borderRadius: '4px',
-                              fontWeight: 500,
-                              fontSize: '0.85rem',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            View on Map
-                          </a>
-                        )}
                       </div>
                     )}
                     {minInvestmentAmount && (
