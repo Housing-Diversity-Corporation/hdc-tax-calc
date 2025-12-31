@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, Loader2, AlertCircle, Briefcase, Building, MapPin, Mail, Phone, Layers, Eye, Search } from 'lucide-react';
+import { Edit, Loader2, AlertCircle, Briefcase, Building, MapPin, Mail, Phone } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -8,66 +8,16 @@ import { Separator } from '@/components/ui/separator';
 import api, { investorTaxInfoService } from '../../services/api';
 import { User } from '../../services/api';
 import { InvestorTaxInfo } from '../../types/investorTaxInfo';
-import axios from 'axios';
-import { useContainerWidth, useResponsiveText } from '../../hooks/useResponsiveText';
-
-interface FavoriteLayer {
-  id: string;
-}
-
-interface SavedIntersection {
-  id: number;
-  name: string;
-  created_at: string;
-}
-
-interface FavoriteLocation {
-  id: number;
-  name: string;
-  address: string;
-  lat: number;
-  lng: number;
-  placeId: string;
-  placeTypes: string;
-  createdAt: string;
-}
-
-interface SavedNeighborhoodExplorer {
-  id: number;
-  searchName: string;
-  textQuery?: string;
-  selectedCategories?: string;
-  searchRadius: number;
-  centerLat: number;
-  centerLng: number;
-  centerAddress?: string;
-  resultCount: number;
-  createdAt: string;
-}
 
 interface AccountPageProps {
   onNavigateToSettings?: () => void;
-  onNavigateToFavorites?: () => void;
-  onNavigateToPlaces?: () => void;
 }
 
-const AccountPage: React.FC<AccountPageProps> = ({ onNavigateToSettings, onNavigateToFavorites, onNavigateToPlaces }) => {
+const AccountPage: React.FC<AccountPageProps> = ({ onNavigateToSettings }) => {
   const [user, setUser] = useState<User | null>(null);
   const [defaultTaxProfile, setDefaultTaxProfile] = useState<InvestorTaxInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Favorites state
-  const [favoriteLayers, setFavoriteLayers] = useState<FavoriteLayer[]>([]);
-  const [savedIntersections, setSavedIntersections] = useState<SavedIntersection[]>([]);
-  const [favoritesLoading, setFavoritesLoading] = useState(true);
-  const [favoritesError, setFavoritesError] = useState<string | null>(null);
-
-  // Places state
-  const [favoriteLocations, setFavoriteLocations] = useState<FavoriteLocation[]>([]);
-  const [savedNeighborhoodExplorers, setSavedNeighborhoodExplorers] = useState<SavedNeighborhoodExplorer[]>([]);
-  const [placesLoading, setPlacesLoading] = useState(true);
-  const [placesError, setPlacesError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -100,168 +50,6 @@ const AccountPage: React.FC<AccountPageProps> = ({ onNavigateToSettings, onNavig
 
     fetchUser();
   }, []);
-
-  // Fetch favorites data
-  useEffect(() => {
-    const fetchFavorites = async () => {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        setFavoritesLoading(false);
-        return;
-      }
-
-      setFavoritesLoading(true);
-      setFavoritesError(null);
-      try {
-        const [layersResponse, intersectionsResponse] = await Promise.all([
-          api.get<string[]>('/favorites/layers'),
-          api.get<SavedIntersection[]>('/intersections'),
-        ]);
-
-        const layers = layersResponse.data.map(id => ({ id }));
-        setFavoriteLayers(layers);
-        setSavedIntersections(intersectionsResponse.data);
-      } catch (err) {
-        console.error('Error fetching favorites data:', err);
-        if (axios.isAxiosError(err) && err.response?.status === 403) {
-          setFavoritesError('Authentication failed. Please sign in again.');
-        } else {
-          setFavoritesError('Failed to fetch favorites.');
-        }
-      } finally {
-        setFavoritesLoading(false);
-      }
-    };
-
-    fetchFavorites();
-  }, []);
-
-  // Fetch places data
-  useEffect(() => {
-    const fetchPlaces = async () => {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        setPlacesLoading(false);
-        return;
-      }
-
-      try {
-        const [locationsResponse, searchesResponse] = await Promise.all([
-          api.get<FavoriteLocation[]>('/favorite-locations'),
-          api.get<SavedNeighborhoodExplorer[]>('/neighborhood-searches'),
-        ]);
-
-        setFavoriteLocations(locationsResponse.data);
-        setSavedNeighborhoodExplorers(searchesResponse.data);
-        setPlacesError(null);
-      } catch (err) {
-        console.error('Error fetching saved places:', err);
-        setPlacesError('Failed to load saved places');
-      } finally {
-        setPlacesLoading(false);
-      }
-    };
-
-    fetchPlaces();
-  }, []);
-
-
-  // Responsive components for favorites
-  const ResponsiveLayerItem: React.FC<{ layer: FavoriteLayer }> = ({ layer }) => {
-    const { ref, width } = useContainerWidth<HTMLDivElement>();
-    const { displayText, fontSize } = useResponsiveText(layer.id, width, {
-      minFontSize: 10,
-      maxFontSize: 14,
-    });
-
-    return (
-      <Button
-        variant="outline"
-        className="w-full justify-start overflow-hidden min-w-0 px-3 mb-2"
-        onClick={onNavigateToFavorites}
-      >
-        <Layers className="mr-2 h-4 w-4 flex-shrink-0" />
-        <div ref={ref} className="flex-1 overflow-hidden min-w-0">
-          <span className="block overflow-hidden" style={{ fontSize: `${fontSize}px`, transition: 'font-size 0.2s ease' }}>
-            {displayText}
-          </span>
-        </div>
-      </Button>
-    );
-  };
-
-  const ResponsiveIntersectionItem: React.FC<{ intersection: SavedIntersection }> = ({ intersection }) => {
-    const { ref, width } = useContainerWidth<HTMLDivElement>();
-    const fullText = `${intersection.name} (${new Date(intersection.created_at).toLocaleDateString()})`;
-    const { displayText, fontSize } = useResponsiveText(fullText, width, {
-      minFontSize: 10,
-      maxFontSize: 14,
-    });
-
-    return (
-      <Button
-        variant="outline"
-        className="w-full justify-start text-left overflow-hidden min-w-0 px-3 mb-2"
-        onClick={onNavigateToFavorites}
-      >
-        <Eye className="mr-2 h-4 w-4 flex-shrink-0" />
-        <div ref={ref} className="flex-1 overflow-hidden min-w-0">
-          <span className="block overflow-hidden" style={{ fontSize: `${fontSize}px`, transition: 'font-size 0.2s ease' }}>
-            {displayText}
-          </span>
-        </div>
-      </Button>
-    );
-  };
-
-  // Responsive components for places
-  const ResponsiveFavoriteLocationItem: React.FC<{ location: FavoriteLocation }> = ({ location }) => {
-    const { ref, width } = useContainerWidth<HTMLDivElement>();
-    const fullText = `${location.name} ${location.address}`;
-    const { displayText, fontSize } = useResponsiveText(fullText, width, {
-      minFontSize: 10,
-      maxFontSize: 14,
-    });
-
-    return (
-      <Button
-        variant="outline"
-        className="w-full justify-start overflow-hidden min-w-0 px-3 mb-2"
-        onClick={onNavigateToPlaces}
-      >
-        <MapPin className="mr-2 h-4 w-4 flex-shrink-0" />
-        <div ref={ref} className="flex-1 overflow-hidden min-w-0">
-          <span className="block overflow-hidden" style={{ fontSize: `${fontSize}px`, transition: 'font-size 0.2s ease' }}>
-            {displayText}
-          </span>
-        </div>
-      </Button>
-    );
-  };
-
-  const ResponsiveNeighborhoodExplorerItem: React.FC<{ search: SavedNeighborhoodExplorer }> = ({ search }) => {
-    const { ref, width } = useContainerWidth<HTMLDivElement>();
-    const fullText = `${search.searchName} (${search.resultCount} results)`;
-    const { displayText, fontSize } = useResponsiveText(fullText, width, {
-      minFontSize: 10,
-      maxFontSize: 14,
-    });
-
-    return (
-      <Button
-        variant="outline"
-        className="w-full justify-start overflow-hidden min-w-0 px-3 mb-2"
-        onClick={onNavigateToPlaces}
-      >
-        <Search className="mr-2 h-4 w-4 flex-shrink-0" />
-        <div ref={ref} className="flex-1 overflow-hidden min-w-0">
-          <span className="block overflow-hidden" style={{ fontSize: `${fontSize}px`, transition: 'font-size 0.2s ease' }}>
-            {displayText}
-          </span>
-        </div>
-      </Button>
-    );
-  };
 
   if (loading) {
     return (
@@ -510,86 +298,6 @@ const AccountPage: React.FC<AccountPageProps> = ({ onNavigateToSettings, onNavig
               <p className="text-sm text-muted-foreground">
                 Your investment portfolio will appear here.
               </p>
-            </CardContent>
-          </Card>
-
-          {/* Favorite Layers Card */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Favorite Layers</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {favoritesLoading ? (
-                <div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin" /></div>
-              ) : favoritesError ? (
-                <Alert variant="destructive">
-                  <AlertDescription>{favoritesError}</AlertDescription>
-                </Alert>
-              ) : (
-                <>
-                  <h4 className="text-sm font-semibold mb-3">Layers</h4>
-                  {favoriteLayers.length > 0 ? (
-                    <div className="flex flex-col">
-                      {favoriteLayers.map(layer => (
-                        <ResponsiveLayerItem key={layer.id} layer={layer} />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground mb-4">No favorite layers yet.</p>
-                  )}
-
-                  <h4 className="text-sm font-semibold mb-3 mt-6">Saved Intersections</h4>
-                  {savedIntersections.length > 0 ? (
-                    <div className="flex flex-col">
-                      {savedIntersections.map(intersection => (
-                        <ResponsiveIntersectionItem key={intersection.id} intersection={intersection} />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No saved intersections yet.</p>
-                  )}
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Favorite Places Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Favorite Places</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {placesLoading ? (
-                <div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin" /></div>
-              ) : placesError ? (
-                <Alert variant="destructive">
-                  <AlertDescription>{placesError}</AlertDescription>
-                </Alert>
-              ) : (
-                <>
-                  <h4 className="text-sm font-semibold mb-3">Locations</h4>
-                  {favoriteLocations.length > 0 ? (
-                    <div className="flex flex-col">
-                      {favoriteLocations.map(location => (
-                        <ResponsiveFavoriteLocationItem key={location.id} location={location} />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground mb-4">No favorite locations yet.</p>
-                  )}
-
-                  <h4 className="text-sm font-semibold mb-3 mt-6">Neighborhood Searches</h4>
-                  {savedNeighborhoodExplorers.length > 0 ? (
-                    <div className="flex flex-col">
-                      {savedNeighborhoodExplorers.map(search => (
-                        <ResponsiveNeighborhoodExplorerItem key={search.id} search={search} />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No neighborhood searches yet.</p>
-                  )}
-                </>
-              )}
             </CardContent>
           </Card>
         </div>
