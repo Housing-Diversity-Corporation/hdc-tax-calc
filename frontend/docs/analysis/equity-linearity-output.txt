@@ -1,0 +1,230 @@
+=== Equity % to Year 1 Tax Benefit Linearity Analysis ===
+
+Running calculations for equity percentages 1% through 15%...
+
+Year 2 Tax Benefit Fee Interest: {
+  balance: 794532.7374073872,
+  rate: 8,
+  interest: 63562.61899259098,
+  newBalance: 858095.3563999782
+}
+Error calculating equity 1%: TypeError: Cannot read properties of undefined (reading 'yearlyReturns')
+    at runEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:88:50)
+    at executeEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:291:16)
+    at <anonymous> (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:316:1)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:683:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Year 2 Tax Benefit Fee Interest: {
+  balance: 781972.1124073872,
+  rate: 8,
+  interest: 62557.76899259098,
+  newBalance: 844529.8813999782
+}
+Error calculating equity 2%: TypeError: Cannot read properties of undefined (reading 'yearlyReturns')
+    at runEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:88:50)
+    at executeEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:291:16)
+    at <anonymous> (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:316:1)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:683:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Year 2 Tax Benefit Fee Interest: {
+  balance: 769411.4874073872,
+  rate: 8,
+  interest: 61552.91899259098,
+  newBalance: 830964.4063999782
+}
+Error calculating equity 3%: TypeError: Cannot read properties of undefined (reading 'yearlyReturns')
+    at runEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:88:50)
+    at executeEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:291:16)
+    at <anonymous> (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:316:1)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:683:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Year 2 Tax Benefit Fee Interest: {
+  balance: 756850.8624073872,
+  rate: 8,
+  interest: 60548.06899259098,
+  newBalance: 817398.9313999782
+}
+Error calculating equity 4%: TypeError: Cannot read properties of undefined (reading 'yearlyReturns')
+    at runEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:88:50)
+    at executeEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:291:16)
+    at <anonymous> (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:316:1)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:683:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Year 2 Tax Benefit Fee Interest: {
+  balance: 744290.2374073872,
+  rate: 8,
+  interest: 59543.21899259098,
+  newBalance: 803833.4563999783
+}
+Error calculating equity 5%: TypeError: Cannot read properties of undefined (reading 'yearlyReturns')
+    at runEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:88:50)
+    at executeEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:291:16)
+    at <anonymous> (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:316:1)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:683:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Year 2 Tax Benefit Fee Interest: {
+  balance: 731729.6124073872,
+  rate: 8,
+  interest: 58538.36899259098,
+  newBalance: 790267.9813999782
+}
+Error calculating equity 6%: TypeError: Cannot read properties of undefined (reading 'yearlyReturns')
+    at runEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:88:50)
+    at executeEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:291:16)
+    at <anonymous> (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:316:1)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:683:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Year 2 Tax Benefit Fee Interest: {
+  balance: 719168.9874073872,
+  rate: 8,
+  interest: 57533.51899259098,
+  newBalance: 776702.5063999782
+}
+Error calculating equity 7%: TypeError: Cannot read properties of undefined (reading 'yearlyReturns')
+    at runEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:88:50)
+    at executeEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:291:16)
+    at <anonymous> (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:316:1)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:683:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Year 2 Tax Benefit Fee Interest: {
+  balance: 706608.3624073872,
+  rate: 8,
+  interest: 56528.66899259098,
+  newBalance: 763137.0313999782
+}
+Error calculating equity 8%: TypeError: Cannot read properties of undefined (reading 'yearlyReturns')
+    at runEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:88:50)
+    at executeEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:291:16)
+    at <anonymous> (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:316:1)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:683:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Year 2 Tax Benefit Fee Interest: {
+  balance: 694047.7374073872,
+  rate: 8,
+  interest: 55523.81899259098,
+  newBalance: 749571.5563999782
+}
+Error calculating equity 9%: TypeError: Cannot read properties of undefined (reading 'yearlyReturns')
+    at runEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:88:50)
+    at executeEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:291:16)
+    at <anonymous> (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:316:1)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:683:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Year 2 Tax Benefit Fee Interest: {
+  balance: 681487.1124073872,
+  rate: 8,
+  interest: 54518.96899259098,
+  newBalance: 736006.0813999783
+}
+Error calculating equity 10%: TypeError: Cannot read properties of undefined (reading 'yearlyReturns')
+    at runEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:88:50)
+    at executeEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:291:16)
+    at <anonymous> (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:316:1)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:683:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Year 2 Tax Benefit Fee Interest: {
+  balance: 668926.4874073872,
+  rate: 8,
+  interest: 53514.11899259098,
+  newBalance: 722440.6063999782
+}
+Error calculating equity 11%: TypeError: Cannot read properties of undefined (reading 'yearlyReturns')
+    at runEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:88:50)
+    at executeEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:291:16)
+    at <anonymous> (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:316:1)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:683:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Year 2 Tax Benefit Fee Interest: {
+  balance: 656365.8624073872,
+  rate: 8,
+  interest: 52509.26899259098,
+  newBalance: 708875.1313999782
+}
+Error calculating equity 12%: TypeError: Cannot read properties of undefined (reading 'yearlyReturns')
+    at runEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:88:50)
+    at executeEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:291:16)
+    at <anonymous> (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:316:1)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:683:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Year 2 Tax Benefit Fee Interest: {
+  balance: 643805.2374073872,
+  rate: 8,
+  interest: 51504.41899259098,
+  newBalance: 695309.6563999782
+}
+Error calculating equity 13%: TypeError: Cannot read properties of undefined (reading 'yearlyReturns')
+    at runEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:88:50)
+    at executeEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:291:16)
+    at <anonymous> (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:316:1)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:683:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Year 2 Tax Benefit Fee Interest: {
+  balance: 631244.6124073872,
+  rate: 8,
+  interest: 50499.56899259098,
+  newBalance: 681744.1813999782
+}
+Error calculating equity 14%: TypeError: Cannot read properties of undefined (reading 'yearlyReturns')
+    at runEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:88:50)
+    at executeEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:291:16)
+    at <anonymous> (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:316:1)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:683:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Year 2 Tax Benefit Fee Interest: {
+  balance: 618683.9874073872,
+  rate: 8,
+  interest: 49494.71899259098,
+  newBalance: 668178.7063999783
+}
+Error calculating equity 15%: TypeError: Cannot read properties of undefined (reading 'yearlyReturns')
+    at runEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:88:50)
+    at executeEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:291:16)
+    at <anonymous> (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:316:1)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:683:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Completed 0 data points.
+
+Performing linearity analysis...
+
+=== RESULTS ===
+
+Linear Relationship: NO
+R² = NaN
+Formula: Net Benefit = NaN + (NaN × Equity %)
+
+=== CSV DATA ===
+
+Equity %,Equity Amount,Effective Cost,Depreciable Basis,Year 1 Depreciation,Year 1 Gross Tax Benefit,Year 1 Net Benefit,Coverage Ratio,Phil Debt %,Phil Debt Amount
+
+
+=== MARKDOWN REPORT ===
+
+/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:251
+   - At 1% equity: Depreciable basis ≈ $${(data[0].depreciableBasis / 1_000_000).toFixed(2)}M
+                                                   ^
+
+
+TypeError: Cannot read properties of undefined (reading 'depreciableBasis')
+    at generateMarkdownReport (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:251:52)
+    at executeEquityLinearityAnalysis (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:308:20)
+    at <anonymous> (/Users/bradleypadden/Desktop/HDC/map/hdc-map-frontend/src/utils/HDCCalculator/__tests__/analysis/equity-linearity-analysis.ts:316:1)
+    at ModuleJob.run (node:internal/modules/esm/module_job:371:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:683:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.7.0

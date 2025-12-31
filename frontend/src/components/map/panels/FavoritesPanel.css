@@ -1,0 +1,71 @@
+.p-sidebar-right {
+    transition: transform 0.3s ease;
+}
+
+/* Text wrapping to prevent overflow */
+.favorites-panel {
+  position: relative;
+  z-index: 10;
+}
+
+/* Ensure buttons don't overflow */
+.favorites-panel button {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.favorites-panel button span {
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+}
+
+/* Responsive styles for Favorites Panel */
+@media (max-width: 768px) {
+  .p-sidebar-right {
+    width: 90vw !important;
+    max-width: 90vw !important;
+  }
+
+  .p-sidebar-header {
+    padding: 1rem;
+  }
+
+  .p-sidebar-content {
+    padding: 1rem;
+  }
+
+  /* Make buttons stack vertically on mobile */
+  .p-sidebar-content .p-button {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Adjust font sizes for mobile */
+  .p-sidebar-header h3,
+  .p-sidebar-header h4 {
+    font-size: 1.125rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .p-sidebar-right {
+    width: 95vw !important;
+    max-width: 95vw !important;
+  }
+
+  .p-sidebar-header {
+    padding: 0.75rem;
+  }
+
+  .p-sidebar-content {
+    padding: 0.75rem;
+  }
+
+  .p-sidebar-header h3,
+  .p-sidebar-header h4 {
+    font-size: 1rem;
+  }
+}

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HDC 1% Test</title>
+</head>
+<body>
+    <h1>Testing HDC Sub-debt 1% Issue</h1>
+    <script>
+        // Simulate the auto-balance calculation
+        function autoBalance(hdcSubDebtPct) {
+            const seniorDebtPct = 66;
+            const philDebtPct = 20;
+            const investorSubDebtPct = 0;
+            const investorEquityRatio = 100;
+
+            const totalDebt = seniorDebtPct + philDebtPct + hdcSubDebtPct + investorSubDebtPct;
+            const remainingForEquity = Math.max(0, 100 - totalDebt);
+
+            console.log('HDC Sub-debt:', hdcSubDebtPct + '%');
+            console.log('Total Debt:', totalDebt + '%');
+            console.log('Remaining for Equity:', remainingForEquity + '%');
+
+            if (remainingForEquity <= 0) {
+                console.log('No room for equity - setting both to 0');
+                return { investor: 0, philanthropic: 0 };
+            }
+
+            const newInvestorEquity = remainingForEquity * (investorEquityRatio / 100);
+            const newPhilanthropicEquity = remainingForEquity - newInvestorEquity;
+
+            console.log('New Investor Equity:', newInvestorEquity.toFixed(2) + '%');
+            console.log('New Philanthropic Equity:', newPhilanthropicEquity.toFixed(2) + '%');
+
+            return {
+                investor: Number(newInvestorEquity.toFixed(2)),
+                philanthropic: Number(newPhilanthropicEquity.toFixed(2))
+            };
+        }
+
+        // Test with different values
+        console.log('--- Testing with 2% (default) ---');
+        autoBalance(2);
+
+        console.log('\n--- Testing with 1% (crashes) ---');
+        autoBalance(1);
+
+        console.log('\n--- Testing with 0% ---');
+        autoBalance(0);
+
+        console.log('\n--- Testing with 3% ---');
+        autoBalance(3);
+    </script>
+</body>
+</html>

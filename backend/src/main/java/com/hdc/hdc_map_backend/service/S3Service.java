@@ -1,0 +1,193 @@
+package com.hdc.hdc_map_backend.service;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+
+import jakarta.annotation.PostConstruct;
+import java.io.IOException;
+import java.util.UUID;
+
+@Service
+public class S3Service {
+
+    @Value("${aws.s3.bucket-name}")
+    private String bucketName;
+
+    @Value("${aws.region}")
+    private String region;
+
+    @Value("${aws.access.key.id:}")
+    private String accessKeyId;
+
+    @Value("${aws.secret.access.key:}")
+    private String secretAccessKey;
+
+    private S3Client s3Client;
+
+    @PostConstruct
+    public void init() {
+        // Use explicit credentials if provided, otherwise use default chain
+        // This supports both local dev (with keys) and EC2 (with IAM role)
+        if (accessKeyId != null && !accessKeyId.isEmpty()
+                && secretAccessKey != null && !secretAccessKey.isEmpty()) {
+            AwsBasicCredentials credentials = AwsBasicCredentials.create(accessKeyId, secretAccessKey);
+            this.s3Client = S3Client.builder()
+                    .region(Region.of(region))
+                    .credentialsProvider(StaticCredentialsProvider.create(credentials))
+                    .build();
+        } else {
+            // Use default credentials chain (EC2 instance metadata, environment vars, etc.)
+            this.s3Client = S3Client.builder()
+                    .region(Region.of(region))
+                    .build();
+        }
+    }
+
+    /**
+     * Upload profile image to S3
+     * 
+     * @param file   The image file to upload
+     * @param userId The user ID for organizing files
+     * @return The public URL of the uploaded image
+     */
+    public String uploadProfileImage(MultipartFile file, Long userId) throws IOException {
+        // Validate file
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("File is empty");
+        }
+
+        // Validate file type
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new IllegalArgumentException("File must be an image");
+        }
+
+        // Validate file size (max 20MB for high quality photos)
+        if (file.getSize() > 20 * 1024 * 1024) {
+            throw new IllegalArgumentException("File size must not exceed 20MB");
+        }
+
+        // Generate unique filename
+        String originalFilename = file.getOriginalFilename();
+        String extension = originalFilename != null && originalFilename.contains(".")
+                ? originalFilename.substring(originalFilename.lastIndexOf("."))
+                : ".jpg";
+        String fileName = "profile-images/" + userId + "/" + UUID.randomUUID() + extension;
+
+        // Upload to S3
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key(fileName)
+                .contentType(contentType)
+                .build();
+
+        s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+
+        // Return public URL
+        return String.format("https://%s.s3.%s.amazonaws.com/%s", bucketName, region, fileName);
+    }
+
+    /**
+     * Delete profile image from S3
+     *
+     * @param imageUrl The full URL of the image to delete
+     */
+    public void deleteProfileImage(String imageUrl) {
+        if (imageUrl == null || imageUrl.isEmpty()) {
+            return;
+        }
+
+        try {
+            // Extract key from URL
+            String key = imageUrl.substring(imageUrl.indexOf("profile-images/"));
+
+            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(key)
+                    .build();
+
+            s3Client.deleteObject(deleteObjectRequest);
+        } catch (Exception e) {
+            // Log error but don't throw - old URL might be invalid
+            System.err.println("Failed to delete profile image: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Upload banner image to S3
+     *
+     * @param file   The image file to upload
+     * @param userId The user ID for organizing files
+     * @return The public URL of the uploaded image
+     */
+    public String uploadBannerImage(MultipartFile file, Long userId) throws IOException {
+        // Validate file
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("File is empty");
+        }
+
+        // Validate file type
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new IllegalArgumentException("File must be an image");
+        }
+
+        // Validate file size (max 20MB for high quality photos)
+        if (file.getSize() > 20 * 1024 * 1024) {
+            throw new IllegalArgumentException("File size must not exceed 20MB");
+        }
+
+        // Generate unique filename
+        String originalFilename = file.getOriginalFilename();
+        String extension = originalFilename != null && originalFilename.contains(".")
+                ? originalFilename.substring(originalFilename.lastIndexOf("."))
+                : ".jpg";
+        String fileName = "banner-images/" + userId + "/" + UUID.randomUUID() + extension;
+
+        // Upload to S3
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key(fileName)
+                .contentType(contentType)
+                .build();
+
+        s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+
+        // Return public URL
+        return String.format("https://%s.s3.%s.amazonaws.com/%s", bucketName, region, fileName);
+    }
+
+    /**
+     * Delete banner image from S3
+     *
+     * @param imageUrl The full URL of the image to delete
+     */
+    public void deleteBannerImage(String imageUrl) {
+        if (imageUrl == null || imageUrl.isEmpty()) {
+            return;
+        }
+
+        try {
+            // Extract key from URL
+            String key = imageUrl.substring(imageUrl.indexOf("banner-images/"));
+
+            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(key)
+                    .build();
+
+            s3Client.deleteObject(deleteObjectRequest);
+        } catch (Exception e) {
+            // Log error but don't throw - old URL might be invalid
+            System.err.println("Failed to delete banner image: " + e.getMessage());
+        }
+    }
+}

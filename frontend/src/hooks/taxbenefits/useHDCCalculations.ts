@@ -1,0 +1,823 @@
+import { useMemo } from 'react';
+import {
+  calculateFullInvestorAnalysis,
+  calculateHDCAnalysis,
+  CONFORMING_STATES
+} from '../../utils/taxbenefits';
+import { calculateInterestReserve } from '../../utils/taxbenefits/interestReserveCalculation';
+import { calculateDepreciableBasis, calculateLIHTCEligibleBasis } from '../../utils/taxbenefits/depreciableBasisUtility';
+import { getOzBenefits, HDC_OZ_STRATEGY } from '../../utils/taxbenefits/hdcOzStrategy';
+import { ALL_JURISDICTIONS, getEffectiveTaxRate, doesNIITApply } from '../../utils/taxbenefits/stateData';
+import { getStateBonusConformityRate } from '../../utils/taxbenefits/stateProfiles';
+import { getOzStepUpPercent } from '../../utils/taxbenefits/constants';
+import { calculateLIHTCSchedule, LIHTCCreditSchedule } from '../../utils/taxbenefits/lihtcCreditCalculations';
+import { calculateStateLIHTC, StateLIHTCCalculationResult } from '../../utils/taxbenefits/stateLIHTCCalculations';
+import { InvestorAnalysisResults, HDCAnalysisResults, StateLIHTCIntegrationResult } from '../../types/taxbenefits';
+
+interface UseHDCCalculationsProps {
+  // Core project parameters
+  projectCost: number;
+  predevelopmentCosts?: number;
+  landValue: number;
+  yearOneNOI: number;
+  yearOneDepreciationPct: number;
+  holdPeriod: number;
+  revenueGrowth: number;
+  expenseGrowth: number;
+  exitCapRate: number;
+  opexRatio: number;
+
+  // Tax parameters
+  federalTaxRate: number;
+  selectedState: string;
+  projectLocation?: string;
+  stateCapitalGainsRate: number;
+  ltCapitalGainsRate: number;
+  niitRate: number;
+  deferredGains: number;
+
+  // Fee parameters
+  hdcFeeRate: number;
+  hdcDeferredInterestRate?: number;
+  hdcAdvanceFinancing: boolean;
+  taxAdvanceDiscountRate: number;
+  advanceFinancingRate: number;
+  taxDeliveryMonths: number;
+  aumFeeEnabled: boolean;
+  aumFeeRate: number;
+  aumCurrentPayEnabled: boolean;
+  aumCurrentPayPct: number;
+
+  // Capital structure
+  investorEquityPct: number;
+  philanthropicEquityPct: number;
+  seniorDebtPct: number;
+  philDebtPct: number;
+  hdcSubDebtPct: number;
+  hdcSubDebtPikRate: number;
+  investorSubDebtPct: number;
+  investorSubDebtPikRate: number;
+  outsideInvestorSubDebtPct: number;
+  outsideInvestorSubDebtPikRate: number;
+  investorPromoteShare: number;
+
+  // Debt settings
+  seniorDebtRate: number;
+  seniorDebtAmortization: number;
+  seniorDebtIOYears: number;
+  philDebtRate: number;
+  philDebtAmortization: number;
+
+  // PIK settings
+  pikCurrentPayEnabled: boolean;
+  pikCurrentPayPct: number;
+  investorPikCurrentPayEnabled: boolean;
+  investorPikCurrentPayPct: number;
+  outsideInvestorPikCurrentPayEnabled: boolean;
+  outsideInvestorPikCurrentPayPct: number;
+  philCurrentPayEnabled: boolean;
+  philCurrentPayPct: number;
+  interestReserveEnabled: boolean;
+  interestReserveMonths: number;
+
+  // Tax timing
+  constructionDelayMonths: number;
+  taxBenefitDelayMonths: number;
+
+  // Opportunity Zone
+  ozEnabled?: boolean;
+  ozType?: 'standard' | 'rural';
+  ozVersion?: '1.0' | '2.0';  // IMPL-017: OZ legislation version
+  deferredCapitalGains?: number;
+  capitalGainsTaxRate?: number;
+
+  // Investor Track and Passive Gains
+  investorTrack?: 'rep' | 'non-rep';
+  passiveGainType?: 'short-term' | 'long-term';
+
+  // Tax Planning Analysis
+  includeDepreciationSchedule?: boolean;
+  w2Income?: number;
+  businessIncome?: number;
+  iraBalance?: number;
+  passiveIncome?: number;
+  assetSaleGain?: number;
+
+  // Federal LIHTC (v7.0.11)
+  lihtcEnabled?: boolean;
+  applicableFraction?: number;
+  creditRate?: number;
+  placedInServiceMonth?: number;
+  ddaQctBoost?: boolean;
+
+  // State LIHTC (v7.0.14)
+  stateLIHTCEnabled?: boolean;
+  investorState?: string;
+  syndicationRate?: number;
+  investorHasStateLiability?: boolean;
+  stateLIHTCUserPercentage?: number;
+  stateLIHTCUserAmount?: number;
+}
+
+export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
+  // Calculate interest reserve amount using shared function (single source of truth)
+  const interestReserveAmount = useMemo(() => {
+    return calculateInterestReserve({
+      enabled: props.interestReserveEnabled,
+      months: props.interestReserveMonths,
+      projectCost: props.projectCost,
+      predevelopmentCosts: props.predevelopmentCosts,
+      yearOneNOI: props.yearOneNOI,
+      seniorDebtPct: props.seniorDebtPct,
+      seniorDebtRate: props.seniorDebtRate,
+      seniorDebtAmortization: props.seniorDebtAmortization,
+      seniorDebtIOYears: props.seniorDebtIOYears,
+      outsideInvestorSubDebtPct: props.outsideInvestorSubDebtPct,
+      outsideInvestorSubDebtPikRate: props.outsideInvestorSubDebtPikRate,
+      outsideInvestorPikCurrentPayEnabled: props.outsideInvestorPikCurrentPayEnabled,
+      outsideInvestorPikCurrentPayPct: props.outsideInvestorPikCurrentPayPct,
+      hdcSubDebtPct: props.hdcSubDebtPct,
+      hdcSubDebtPikRate: props.hdcSubDebtPikRate,
+      hdcPikCurrentPayEnabled: props.pikCurrentPayEnabled,
+      hdcPikCurrentPayPct: props.pikCurrentPayPct,
+      investorSubDebtPct: props.investorSubDebtPct,
+      investorSubDebtPikRate: props.investorSubDebtPikRate,
+      investorPikCurrentPayEnabled: props.investorPikCurrentPayEnabled,
+      investorPikCurrentPayPct: props.investorPikCurrentPayPct,
+    });
+  }, [
+    props.interestReserveEnabled,
+    props.interestReserveMonths,
+    props.projectCost,
+    props.predevelopmentCosts,
+    props.yearOneNOI,
+    props.seniorDebtPct,
+    props.seniorDebtRate,
+    props.seniorDebtAmortization,
+    props.seniorDebtIOYears,
+    props.outsideInvestorSubDebtPct,
+    props.outsideInvestorSubDebtPikRate,
+    props.outsideInvestorPikCurrentPayEnabled,
+    props.outsideInvestorPikCurrentPayPct,
+    props.hdcSubDebtPct,
+    props.hdcSubDebtPikRate,
+    props.pikCurrentPayEnabled,
+    props.pikCurrentPayPct,
+    props.investorSubDebtPct,
+    props.investorSubDebtPikRate,
+    props.investorPikCurrentPayEnabled,
+    props.investorPikCurrentPayPct
+  ]);
+
+  // Calculate effective project cost including interest reserve
+  const effectiveProjectCost = props.projectCost + (props.predevelopmentCosts || 0) + interestReserveAmount;
+
+  // Multi-year depreciation calculations
+  const depreciationCalculations = useMemo(() => {
+    // Include predevelopment costs in total project cost for depreciable basis
+    const totalProjectCost = props.projectCost + (props.predevelopmentCosts || 0);
+
+    // CRITICAL OZ RULE: Exclude investor equity (QCGs) from depreciable basis
+    // In OZ investments, investor equity is 100% from Qualified Capital Gains
+    // which cannot be included in depreciable basis per IRS rules
+    // Use effective project cost (including interest reserve) for investor equity calculation
+    const investorEquity = effectiveProjectCost * (props.investorEquityPct / 100);
+
+    // Calculate depreciable basis using shared utility
+    // CRITICAL OZ RULE: Excludes land AND investor equity (from Qualified Capital Gains)
+    // Note: Interest reserve is NOT included in depreciable basis as it's a financing cost,
+    // but IS included in the base for calculating investor equity amount (per Step 1 docs)
+    const depreciableBasis = calculateDepreciableBasis({
+      projectCost: props.projectCost,
+      predevelopmentCosts: props.predevelopmentCosts,
+      landValue: props.landValue,
+      investorEquityPct: props.investorEquityPct,
+      interestReserve: interestReserveAmount
+    });
+
+    // Year 1: MACRS with mid-month convention (IRS Pub 946, Table A-6)
+    // Year 1 includes BOTH bonus depreciation AND partial straight-line
+    const bonusDepreciation = depreciableBasis * (props.yearOneDepreciationPct / 100);
+    const remainingBasis = depreciableBasis - bonusDepreciation;
+    const annualMACRS = remainingBasis / 27.5; // IRS MACRS: 27.5 years for residential rental
+
+    // Mid-month convention: property treated as placed in service at midpoint of month
+    const placedInServiceMonth = props.placedInServiceMonth || 7; // Default July (mid-year)
+    const monthsInYear1 = 12.5 - placedInServiceMonth;
+    const year1MACRS = (monthsInYear1 / 12) * annualMACRS;
+    const yearOneDepreciation = bonusDepreciation + year1MACRS;
+
+    const remainingDepreciableBasis = depreciableBasis - yearOneDepreciation;
+    const annualStraightLineDepreciation = annualMACRS; // Same as calculated above
+
+    // Calculate depreciation for years 2 through N (holdPeriod)
+    // Maximum 27.5 years of depreciation for residential rental (IRS Pub 946, Table A-6)
+    const remainingYears = props.holdPeriod - 1; // Years 2 through N
+    const depreciationYearsRemaining = Math.min(remainingYears, 27.5);
+    const years2toNDepreciation = annualStraightLineDepreciation * depreciationYearsRemaining;
+    const totalDepreciation = yearOneDepreciation + years2toNDepreciation;
+
+    return {
+      depreciableBasis,
+      yearOneDepreciation,
+      remainingDepreciableBasis,
+      annualStraightLineDepreciation,
+      years2to10Depreciation: years2toNDepreciation, // Keep name for compatibility but it's really 2 to N
+      total10YearDepreciation: totalDepreciation, // Keep name for compatibility but it's really total for hold period
+      years2toNDepreciation,
+      totalDepreciation
+    };
+  }, [props.projectCost, props.predevelopmentCosts, props.landValue, props.yearOneDepreciationPct, props.holdPeriod, props.investorEquityPct, effectiveProjectCost]);
+
+  // Tax rate calculations
+  // IMPL-035: Use investorState for tax calculations (where investor files taxes)
+  // selectedState remains the property state (where project is located)
+  // States are now independent - no fallback coupling
+  // IMPL-041: Split rates for bonus vs straight-line depreciation based on state conformity
+  const taxCalculations = useMemo(() => {
+    const investorStateForTax = props.investorState || '';
+    const isConformingState = investorStateForTax !== '' && investorStateForTax !== 'NONE' && investorStateForTax !== 'CUSTOM' && !!CONFORMING_STATES[investorStateForTax];
+
+    // IMPL-041: Get state bonus depreciation conformity rate (0.0 to 1.0)
+    // NJ = 0.3 (30%), CA = 0.0 (0%), NY = 0.5 (50%), most states = 1.0 (100%)
+    const bonusConformityRate = getStateBonusConformityRate(investorStateForTax);
+
+    const NIIT_RATE = 3.8; // Net Investment Income Tax
+
+    // Check if investor's state is non-conforming (NO_GO) - investor doesn't get state OZ benefits
+    const isNonConforming = investorStateForTax && HDC_OZ_STRATEGY[investorStateForTax]?.status === 'NO_GO';
+
+    // Check if NIIT applies (false for territories)
+    const niitApplies = doesNIITApply(investorStateForTax || '');
+
+    // IMPL-041: Calculate TWO effective rates:
+    // 1. effectiveTaxRateForBonus - Federal + (State × Conformity Rate) for bonus depreciation
+    // 2. effectiveTaxRateForStraightLine - Federal + State (full rate) for straight-line depreciation
+    let effectiveTaxRateForBonus: number;
+    let effectiveTaxRateForStraightLine: number;
+    let effectiveTaxRateForDepreciation: number; // Keep for backward compatibility (weighted average)
+
+    if (props.investorTrack === 'rep' || props.investorTrack === undefined) {
+      // Track 1: REPs - Active losses offset ordinary income (W-2)
+      const stateRate = isNonConforming ? 0 : (isConformingState ? CONFORMING_STATES[investorStateForTax].rate : 0);
+
+      // Straight-line: Full state rate (all states accept straight-line depreciation)
+      effectiveTaxRateForStraightLine = props.federalTaxRate + stateRate;
+
+      // Bonus: State rate × conformity rate (NJ = 30% of state rate, CA = 0%, etc.)
+      effectiveTaxRateForBonus = props.federalTaxRate + (stateRate * bonusConformityRate);
+
+      // For backward compatibility: use weighted average based on depreciation split
+      // Year 1 is mostly bonus, Years 2+ are all straight-line
+      effectiveTaxRateForDepreciation = effectiveTaxRateForStraightLine; // Default to straight-line for legacy calcs
+    } else {
+      // Track 2: Non-REPs - Passive losses offset passive gains
+      const niitRate = niitApplies ? NIIT_RATE : 0;
+      const stateRate = isNonConforming ? 0 :
+        (isConformingState ?
+          (props.passiveGainType === 'long-term' ? props.stateCapitalGainsRate : CONFORMING_STATES[investorStateForTax].rate)
+          : 0);
+
+      // Straight-line: Full state rate
+      effectiveTaxRateForStraightLine = props.federalTaxRate + niitRate + stateRate;
+
+      // Bonus: State rate × conformity rate
+      effectiveTaxRateForBonus = props.federalTaxRate + niitRate + (stateRate * bonusConformityRate);
+
+      // For backward compatibility
+      effectiveTaxRateForDepreciation = effectiveTaxRateForStraightLine;
+    }
+
+    // Calculate total tax benefit using split rates for accuracy
+    // Year 1 benefit: bonus portion uses bonus rate, MACRS portion uses straight-line rate
+    // Years 2-N benefit: all straight-line rate
+    const bonusDepreciation = depreciationCalculations.yearOneDepreciation - depreciationCalculations.years2toNDepreciation;
+    const year1MACRS = depreciationCalculations.years2toNDepreciation; // First year MACRS is similar to annual
+    const years2toNTotal = depreciationCalculations.years2toNDepreciation * (props.holdPeriod - 1);
+
+    const bonusTaxBenefit = bonusDepreciation * (effectiveTaxRateForBonus / 100);
+    const year1MACRSTaxBenefit = year1MACRS * (effectiveTaxRateForStraightLine / 100);
+    const years2toNTaxBenefit = years2toNTotal * (effectiveTaxRateForStraightLine / 100);
+
+    const totalTaxBenefit = bonusTaxBenefit + year1MACRSTaxBenefit + years2toNTaxBenefit;
+    const hdcFee = totalTaxBenefit * (props.hdcFeeRate / 100);
+    const netTaxBenefit = totalTaxBenefit - hdcFee;
+
+    const totalCapitalGainsRate = props.ltCapitalGainsRate + props.niitRate + props.stateCapitalGainsRate;
+
+    // Apply OZ step-up for Year 5 tax calculation
+    // IMPL-017: Use centralized helper for OZ version support
+    const ozStepUpPercent = getOzStepUpPercent(props.ozVersion || '2.0', props.ozType || 'standard');
+    const taxableGainsAfterStepUp = props.deferredGains * (1 - ozStepUpPercent);
+    const deferredGainsTaxDue = taxableGainsAfterStepUp * (totalCapitalGainsRate / 100);
+
+    // Calculate the tax savings from step-up
+    const stepUpTaxSavings = props.deferredGains * ozStepUpPercent * (totalCapitalGainsRate / 100);
+
+    return {
+      isConformingState,
+      effectiveTaxRateForDepreciation,
+      // IMPL-041: Split rates for bonus vs straight-line depreciation
+      effectiveTaxRateForBonus,
+      effectiveTaxRateForStraightLine,
+      bonusConformityRate,
+      totalTaxBenefit,
+      hdcFee,
+      netTaxBenefit,
+      totalCapitalGainsRate,
+      deferredGainsTaxDue,
+      ozStepUpPercent,
+      taxableGainsAfterStepUp,
+      stepUpTaxSavings
+    };
+  }, [
+    depreciationCalculations.total10YearDepreciation,
+    depreciationCalculations.yearOneDepreciation,
+    depreciationCalculations.years2toNDepreciation,
+    props.federalTaxRate,
+    props.investorState,
+    props.selectedState,
+    props.stateCapitalGainsRate,
+    props.hdcFeeRate,
+    props.ltCapitalGainsRate,
+    props.niitRate,
+    props.deferredGains,
+    props.investorTrack,
+    props.passiveGainType,
+    props.ozType,
+    props.holdPeriod
+  ]);
+
+  // Advance financing calculations
+  const advanceFinancingCalculations = useMemo(() => {
+    let investorUpfrontCash = 0;
+    let hdcAdvanceOutlay = 0;
+
+    if (props.hdcAdvanceFinancing) {
+      const advancePayment = taxCalculations.netTaxBenefit * (1 - props.taxAdvanceDiscountRate / 100);
+      investorUpfrontCash = advancePayment;
+      hdcAdvanceOutlay = advancePayment;
+      const hdcFinancingCost = hdcAdvanceOutlay * (props.advanceFinancingRate / 100) * (props.taxDeliveryMonths / 12);
+      hdcAdvanceOutlay += hdcFinancingCost;
+    }
+
+    return {
+      investorUpfrontCash,
+      hdcAdvanceOutlay
+    };
+  }, [
+    props.hdcAdvanceFinancing,
+    taxCalculations.netTaxBenefit,
+    props.taxAdvanceDiscountRate,
+    props.advanceFinancingRate,
+    props.taxDeliveryMonths
+  ]);
+
+  // Preliminary year 1 calculations needed for mainAnalysisResults
+  const year1TaxBenefit = depreciationCalculations.yearOneDepreciation * (taxCalculations.effectiveTaxRateForDepreciation / 100);
+  const year1HdcFee = year1TaxBenefit * (props.hdcFeeRate / 100);
+  const year1NetBenefit = year1TaxBenefit - year1HdcFee;
+
+  // Calculate LIHTC Eligible Basis (separate from OZ depreciable basis per IRC §42)
+  // MOVED: Before mainAnalysisResults to enable State LIHTC integration (IMPL-018)
+  const lihtcEligibleBasis = useMemo(() => {
+    return calculateLIHTCEligibleBasis({
+      projectCost: props.projectCost,
+      predevelopmentCosts: props.predevelopmentCosts,
+      landValue: props.landValue,
+      interestReserve: interestReserveAmount,
+      leaseUpReserve: 0, // TODO: Add lease-up reserve when available
+      syndicationCosts: 0, // TODO: Add syndication costs when available
+      marketingCosts: 0, // TODO: Add marketing costs when available
+      commercialSpaceCosts: 0 // TODO: Add commercial space costs when available
+    });
+  }, [
+    props.projectCost,
+    props.predevelopmentCosts,
+    props.landValue,
+    interestReserveAmount
+  ]);
+
+  // Calculate Federal LIHTC schedule (v7.0.11)
+  // MOVED: Before mainAnalysisResults to enable State LIHTC integration (IMPL-018)
+  const lihtcResult: LIHTCCreditSchedule | null = useMemo(() => {
+    if (!props.lihtcEnabled) return null;
+
+    try {
+      return calculateLIHTCSchedule({
+        eligibleBasis: lihtcEligibleBasis,
+        applicableFraction: (props.applicableFraction || 100) / 100,
+        ddaQctBoost: props.ddaQctBoost || false,
+        pisMonth: props.placedInServiceMonth || 7,
+        creditRate: props.creditRate || 0.04
+      });
+    } catch (error) {
+      console.error('LIHTC calculation error:', error);
+      return null;
+    }
+  }, [
+    props.lihtcEnabled,
+    lihtcEligibleBasis,
+    props.applicableFraction,
+    props.ddaQctBoost,
+    props.placedInServiceMonth,
+    props.creditRate
+  ]);
+
+  // Calculate State LIHTC (v7.0.14)
+  // MOVED: Before mainAnalysisResults to enable State LIHTC integration (IMPL-018)
+  const stateLIHTCResult: StateLIHTCCalculationResult | null = useMemo(() => {
+    if (!props.stateLIHTCEnabled || !lihtcResult) return null;
+
+    try {
+      // IMPL-035: investorState is independent - no fallback to selectedState
+      return calculateStateLIHTC({
+        federalAnnualCredit: lihtcResult.annualCredit,
+        propertyState: props.selectedState,
+        investorState: props.investorState || '',
+        pisMonth: props.placedInServiceMonth || 7,
+        syndicationRateOverride: props.syndicationRate || 75, // Default 75%
+        investorHasStateLiability: props.investorHasStateLiability,
+        userPercentage: props.stateLIHTCUserPercentage,
+        userAmount: props.stateLIHTCUserAmount,
+      });
+    } catch (error) {
+      console.error('State LIHTC calculation error:', error);
+      return null;
+    }
+  }, [
+    props.stateLIHTCEnabled,
+    lihtcResult,
+    props.selectedState,
+    props.investorState,
+    props.placedInServiceMonth,
+    props.syndicationRate,
+    props.investorHasStateLiability,
+    props.stateLIHTCUserPercentage,
+    props.stateLIHTCUserAmount
+  ]);
+
+  // Calculate State LIHTC Integration (IMPL-018)
+  // Determines credit path (syndicated vs direct use) and prepares data for calculation
+  const stateLIHTCIntegration: StateLIHTCIntegrationResult | null = useMemo(() => {
+    if (!stateLIHTCResult || !props.stateLIHTCEnabled) return null;
+
+    const { syndicationRate, grossCredit, netBenefit, schedule, warnings } = stateLIHTCResult;
+
+    // Determine credit path based on syndication rate
+    // syndicationRate is 0.0-1.0 (e.g., 0.75 = 75%)
+    let creditPath: 'syndicated' | 'direct_use' | 'none';
+    if (syndicationRate === 0) {
+      creditPath = 'none';
+    } else if (syndicationRate === 1.0) {
+      creditPath = 'direct_use';
+    } else {
+      creditPath = 'syndicated';
+    }
+
+    // Build yearly credits from schedule for direct use path
+    const yearlyCredits = schedule.yearlyBreakdown.map(y => y.creditAmount);
+
+    return {
+      creditPath,
+      syndicationRate,
+      grossCredit,
+      netProceeds: netBenefit,
+      yearlyCredits,
+      totalCreditBenefit: creditPath === 'direct_use' ? grossCredit : 0,
+      treatment: creditPath === 'syndicated' ? 'capital_stack' :
+                 creditPath === 'direct_use' ? 'tax_benefit' : 'none',
+      warnings
+    };
+  }, [stateLIHTCResult, props.stateLIHTCEnabled]);
+
+  // Main investor analysis
+  const mainAnalysisResults: InvestorAnalysisResults = useMemo(() => {
+    console.log('🔄 RECALCULATING mainAnalysisResults:', {
+      aumFeeRate: props.aumFeeRate,
+      aumFeeEnabled: props.aumFeeEnabled,
+      hdcDeferredInterestRate: props.hdcDeferredInterestRate
+    });
+    return calculateFullInvestorAnalysis({
+      projectCost: props.projectCost,
+      predevelopmentCosts: props.predevelopmentCosts,
+      landValue: props.landValue,
+      yearOneNOI: props.yearOneNOI,
+      revenueGrowth: props.revenueGrowth,
+      expenseGrowth: props.expenseGrowth,
+      exitCapRate: props.exitCapRate,
+      investorEquityPct: props.investorEquityPct,
+      hdcFeeRate: props.hdcFeeRate,
+      hdcDeferredInterestRate: props.hdcDeferredInterestRate || 0,
+      hdcAdvanceFinancing: props.hdcAdvanceFinancing,
+      investorUpfrontCash: advanceFinancingCalculations.investorUpfrontCash,
+      totalTaxBenefit: taxCalculations.totalTaxBenefit,
+      netTaxBenefit: taxCalculations.netTaxBenefit,
+      hdcFee: taxCalculations.hdcFee,
+      year1NetBenefit: year1NetBenefit,
+      investorPromoteShare: props.investorPromoteShare,
+      opexRatio: props.opexRatio,
+      aumFeeEnabled: props.aumFeeEnabled,
+      aumFeeRate: props.aumFeeRate,
+      aumCurrentPayEnabled: props.aumCurrentPayEnabled,
+      aumCurrentPayPct: props.aumCurrentPayPct,
+      seniorDebtPct: props.seniorDebtPct,
+      philanthropicDebtPct: props.philDebtPct,
+      seniorDebtRate: props.seniorDebtRate,
+      philanthropicDebtRate: props.philDebtRate,
+      seniorDebtAmortization: props.seniorDebtAmortization,
+      philDebtAmortization: props.philDebtAmortization,
+      hdcSubDebtPct: props.hdcSubDebtPct,
+      hdcSubDebtPikRate: props.hdcSubDebtPikRate,
+      pikCurrentPayEnabled: props.pikCurrentPayEnabled,
+      pikCurrentPayPct: props.pikCurrentPayPct,
+      investorSubDebtPct: props.investorSubDebtPct,
+      investorSubDebtPikRate: props.investorSubDebtPikRate,
+      investorPikCurrentPayEnabled: props.investorPikCurrentPayEnabled,
+      investorPikCurrentPayPct: props.investorPikCurrentPayPct,
+      outsideInvestorSubDebtPct: props.outsideInvestorSubDebtPct,
+      outsideInvestorSubDebtPikRate: props.outsideInvestorSubDebtPikRate,
+      outsideInvestorPikCurrentPayEnabled: props.outsideInvestorPikCurrentPayEnabled,
+      outsideInvestorPikCurrentPayPct: props.outsideInvestorPikCurrentPayPct,
+      philCurrentPayEnabled: props.philCurrentPayEnabled,
+      philCurrentPayPct: props.philCurrentPayPct,
+      interestReserveEnabled: props.interestReserveEnabled,
+      interestReserveMonths: props.interestReserveMonths,
+      holdPeriod: props.holdPeriod,
+      // DON'T pass yearOneDepreciation/annualStraightLineDepreciation - let engine auto-calculate
+      // to avoid circular dependency (depreciation depends on interest reserve)
+      yearOneDepreciationPct: props.yearOneDepreciationPct,
+      effectiveTaxRate: taxCalculations.effectiveTaxRateForDepreciation,
+      // IMPL-041: Split rates for bonus vs straight-line depreciation
+      effectiveTaxRateForBonus: taxCalculations.effectiveTaxRateForBonus,
+      effectiveTaxRateForStraightLine: taxCalculations.effectiveTaxRateForStraightLine,
+      bonusConformityRate: taxCalculations.bonusConformityRate,
+      constructionDelayMonths: props.constructionDelayMonths,
+      taxBenefitDelayMonths: props.taxBenefitDelayMonths,
+      ozEnabled: props.ozEnabled,
+      ozType: props.ozType,
+      deferredCapitalGains: props.deferredCapitalGains,
+      capitalGainsTaxRate: props.capitalGainsTaxRate,
+      // Tax Planning Analysis
+      includeDepreciationSchedule: props.includeDepreciationSchedule,
+      investorTrack: props.investorTrack,
+      w2Income: props.w2Income,
+      businessIncome: props.businessIncome,
+      iraBalance: props.iraBalance,
+      passiveIncome: props.passiveIncome,
+      federalTaxRate: props.federalTaxRate,
+      stateTaxRate: getEffectiveTaxRate(props.selectedState, false),
+      ltCapitalGainsRate: props.ltCapitalGainsRate,
+      niitRate: props.niitRate,
+      stateCapitalGainsRate: props.stateCapitalGainsRate,
+      selectedState: props.selectedState,
+      // State LIHTC Integration (IMPL-018)
+      stateLIHTCIntegration: stateLIHTCIntegration,
+      // Federal LIHTC Credits (IMPL-021b) - 100% to investor, no promote split
+      federalLIHTCCredits: lihtcResult?.yearlyBreakdown?.map(y => y.creditAmount) || []
+    });
+  }, [
+    props,
+    props.hdcDeferredInterestRate,
+    props.aumFeeEnabled,
+    props.aumFeeRate,
+    props.aumCurrentPayEnabled,
+    props.aumCurrentPayPct,
+    taxCalculations.totalTaxBenefit,
+    taxCalculations.netTaxBenefit,
+    taxCalculations.hdcFee,
+    taxCalculations.effectiveTaxRateForDepreciation,
+    advanceFinancingCalculations.investorUpfrontCash,
+    depreciationCalculations.yearOneDepreciation,
+    year1NetBenefit,
+    stateLIHTCIntegration,
+    lihtcResult
+  ]);
+
+  // Investment calculations using investor equity from main analysis (single source of truth)
+  const investmentCalculations = useMemo(() => {
+    const investorEquity = mainAnalysisResults.investorEquity;
+    const freeInvestmentHurdle = investorEquity;
+
+    const totalNetTaxBenefits = taxCalculations.totalTaxBenefit; // Fee removed per IMPL-7.0-014
+    const investmentRecovered = Math.min(freeInvestmentHurdle, year1NetBenefit);
+    const totalNetTaxBenefitsAfterCG = totalNetTaxBenefits - taxCalculations.deferredGainsTaxDue - investmentRecovered;
+
+    return {
+      investorEquity,
+      year1TaxBenefit,
+      year1HdcFee,
+      year1NetBenefit,
+      freeInvestmentHurdle,
+      totalNetTaxBenefits,
+      investmentRecovered,
+      totalNetTaxBenefitsAfterCG,
+      // Get these from main engine (single source of truth), not from hook's local calculation
+      interestReserveAmount: mainAnalysisResults.interestReserveAmount || interestReserveAmount,
+      effectiveProjectCost: (props.projectCost + (props.predevelopmentCosts || 0) + (mainAnalysisResults.interestReserveAmount || interestReserveAmount))
+    };
+  }, [
+    mainAnalysisResults.investorEquity,
+    mainAnalysisResults.interestReserveAmount,
+    year1TaxBenefit,
+    year1HdcFee,
+    year1NetBenefit,
+    taxCalculations.totalTaxBenefit,
+    taxCalculations.hdcFee,
+    taxCalculations.deferredGainsTaxDue,
+    interestReserveAmount,
+    effectiveProjectCost,
+    props.projectCost,
+    props.predevelopmentCosts
+  ]);
+
+  // HDC analysis
+  const hdcAnalysisResults: HDCAnalysisResults = useMemo(() => {
+    return calculateHDCAnalysis({
+      projectCost: props.projectCost,
+      predevelopmentCosts: props.predevelopmentCosts,
+      yearOneNOI: props.yearOneNOI,
+      revenueGrowth: props.revenueGrowth,
+      expenseGrowth: props.expenseGrowth,
+      exitCapRate: props.exitCapRate,
+      philanthropicEquityPct: props.philanthropicEquityPct,
+      hdcFeeRate: props.hdcFeeRate,
+      hdcFee: taxCalculations.hdcFee,
+      investorPromoteShare: props.investorPromoteShare,
+      opexRatio: props.opexRatio,
+      aumFeeEnabled: props.aumFeeEnabled,
+      aumFeeRate: props.aumFeeRate,
+      aumCurrentPayEnabled: props.aumCurrentPayEnabled,
+      aumCurrentPayPct: props.aumCurrentPayPct,
+      seniorDebtPct: props.seniorDebtPct,
+      philanthropicDebtPct: props.philDebtPct,
+      seniorDebtRate: props.seniorDebtRate,
+      philanthropicDebtRate: props.philDebtRate,
+      seniorDebtAmortization: props.seniorDebtAmortization,
+      philDebtAmortization: props.philDebtAmortization,
+      hdcSubDebtPct: props.hdcSubDebtPct,
+      hdcSubDebtPikRate: props.hdcSubDebtPikRate,
+      pikCurrentPayEnabled: props.pikCurrentPayEnabled,
+      pikCurrentPayPct: props.pikCurrentPayPct,
+      outsideInvestorSubDebtPct: props.outsideInvestorSubDebtPct,
+      outsideInvestorSubDebtPikRate: props.outsideInvestorSubDebtPikRate,
+      outsideInvestorPikCurrentPayEnabled: props.outsideInvestorPikCurrentPayEnabled,
+      outsideInvestorPikCurrentPayPct: props.outsideInvestorPikCurrentPayPct,
+      investorSubDebtPct: props.investorSubDebtPct,
+      investorSubDebtPikRate: props.investorSubDebtPikRate,
+      investorPikCurrentPayEnabled: props.investorPikCurrentPayEnabled,
+      investorPikCurrentPayPct: props.investorPikCurrentPayPct,
+      investorSubDebtAtExit: mainAnalysisResults.investorSubDebtAtExit, // Pass from investor calc for single source of truth
+      investorEquity: mainAnalysisResults.investorEquity, // Pass from investor calc for equity recovery hurdle
+      yearOneDepreciation: depreciationCalculations.yearOneDepreciation,
+      annualStraightLineDepreciation: depreciationCalculations.annualStraightLineDepreciation,
+      effectiveTaxRate: taxCalculations.effectiveTaxRateForDepreciation,
+      philCurrentPayEnabled: props.philCurrentPayEnabled,
+      philCurrentPayPct: props.philCurrentPayPct,
+      holdPeriod: props.holdPeriod,
+      interestReserveEnabled: props.interestReserveEnabled,
+      interestReserveMonths: props.interestReserveMonths,
+      investorCashFlows: mainAnalysisResults.investorCashFlows
+    });
+  }, [
+    props,
+    taxCalculations.hdcFee,
+    taxCalculations.effectiveTaxRateForDepreciation,
+    depreciationCalculations.yearOneDepreciation,
+    depreciationCalculations.annualStraightLineDepreciation,
+    mainAnalysisResults.investorCashFlows
+  ]);
+
+  // Calculate OZ benefits based on GO/NO_GO system
+  const ozBenefitStatus = useMemo(() => {
+    const benefits = getOzBenefits(props.selectedState, props.projectLocation);
+    const jurisdiction = ALL_JURISDICTIONS[props.selectedState];
+
+    return {
+      status: benefits.status,
+      message: benefits.message,
+      effectiveSavings: benefits.effectiveSavings,
+      showProjectSelector: benefits.showProjectSelector,
+      jurisdictionName: jurisdiction?.name || props.selectedState,
+      jurisdictionRate: jurisdiction?.rate || 0,
+      ozConformity: jurisdiction?.ozConformity || 'none'
+    };
+  }, [props.selectedState, props.projectLocation]);
+
+  // Calculate OZ Deferral NPV (v7.0.14)
+  const ozDeferralNPV = useMemo(() => {
+    if (!props.ozEnabled || !props.deferredCapitalGains) return 0;
+
+    // TODO: Make discountRate a user-configurable parameter in future
+    const discountRate = 0.10; // 10% discount rate
+    // IMPL-017: Use centralized helper for OZ version support
+    const stepUpPercent = getOzStepUpPercent(props.ozVersion || '2.0', props.ozType || 'standard');
+    const ltCGRate = props.ltCapitalGainsRate || 20;
+    const niit = props.niitRate || 3.8;
+    const stateCG = props.stateCapitalGainsRate || 0;
+    const taxRate = (ltCGRate + niit + stateCG) / 100;
+
+    // NPV = deferredGains × (1 - stepUp) × taxRate × (1 - 1/(1+r)^5)
+    const taxableGains = props.deferredCapitalGains * (1 - stepUpPercent);
+    const taxDeferred = taxableGains * taxRate;
+    const npvFactor = 1 - 1 / Math.pow(1 + discountRate, 5);
+
+    return taxDeferred * npvFactor;
+  }, [
+    props.ozEnabled,
+    props.deferredCapitalGains,
+    props.ozType,
+    props.ltCapitalGainsRate,
+    props.niitRate,
+    props.stateCapitalGainsRate
+  ]);
+
+  // IMPL-020a: Unified benefits summary (fixes TaxPlanningCapacitySection violations)
+  // Single source of truth for all investor benefit calculations
+  const unifiedBenefitsSummary = useMemo(() => {
+    const total10YearBenefits =
+      (taxCalculations.netTaxBenefit || 0) +
+      (lihtcResult?.totalCredits || 0) +
+      (props.stateLIHTCEnabled ? (stateLIHTCResult?.netBenefit || 0) : 0) +
+      (props.ozEnabled ? (ozDeferralNPV || 0) : 0);
+
+    const investorEquity = mainAnalysisResults?.investorEquity || 0;
+    const benefitMultiple = investorEquity > 0 ? total10YearBenefits / investorEquity : 0;
+
+    const year5TaxPayment = mainAnalysisResults?.investorCashFlows?.find(cf => cf.year === 5)?.ozYear5TaxPayment || 0;
+    const investmentRecovered = investmentCalculations?.investmentRecovered || 0;
+    const excessBenefits = Math.max(0,
+      (taxCalculations.netTaxBenefit || 0) - investmentRecovered - year5TaxPayment
+    );
+
+    return { total10YearBenefits, benefitMultiple, excessBenefits };
+  }, [
+    taxCalculations.netTaxBenefit,
+    lihtcResult,
+    stateLIHTCResult,
+    props.stateLIHTCEnabled,
+    props.ozEnabled,
+    ozDeferralNPV,
+    mainAnalysisResults,
+    investmentCalculations
+  ]);
+
+  console.log('📊 Returning Investor Metrics:', {
+    irr: mainAnalysisResults.irr,
+    multiple: mainAnalysisResults.multiple,
+    exitProceeds: mainAnalysisResults.exitProceeds,
+    totalReturns: mainAnalysisResults.totalReturns
+  });
+
+  return {
+    // Depreciation
+    ...depreciationCalculations,
+
+    // Tax calculations
+    ...taxCalculations,
+
+    // Advance financing
+    ...advanceFinancingCalculations,
+
+    // Investment calculations
+    ...investmentCalculations,
+
+    // Analysis results
+    mainAnalysisResults,
+    hdcAnalysisResults,
+
+    // Convenience properties
+    investorCashFlows: mainAnalysisResults.investorCashFlows,
+    exitProceeds: mainAnalysisResults.exitProceeds,
+    totalInvestment: mainAnalysisResults.totalInvestment,
+    totalReturns: mainAnalysisResults.totalReturns,
+    multipleOnInvested: mainAnalysisResults.multiple,
+    investorIRR: mainAnalysisResults.irr,
+    
+    hdcCashFlows: hdcAnalysisResults.hdcCashFlows,
+    hdcExitProceeds: hdcAnalysisResults.hdcExitProceeds,
+    hdcTotalReturns: hdcAnalysisResults.totalHDCReturns,
+    hdcMultiple: hdcAnalysisResults.hdcMultiple,
+    hdcIRR: hdcAnalysisResults.hdcIRR,
+
+    // OZ Benefits Status
+    ozBenefitStatus,
+
+    // Federal LIHTC (v7.0.11)
+    lihtcEligibleBasis,
+    lihtcResult,
+
+    // State LIHTC (v7.0.14)
+    stateLIHTCResult,
+
+    // State LIHTC Integration (IMPL-018)
+    stateLIHTCIntegration,
+
+    // OZ Deferral NPV (v7.0.14)
+    ozDeferralNPV,
+
+    // IMPL-020a: Unified benefits summary for UI components
+    unifiedBenefitsSummary,
+    effectiveProjectCost
+  };
+};

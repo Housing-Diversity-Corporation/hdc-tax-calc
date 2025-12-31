@@ -1,0 +1,232 @@
+/* FontAwesome icons */
+.fa, .fas, .far, .fab, .fa-solid {
+  font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands";
+}
+
+/* Property marker styles */
+.property {
+  align-items: center;
+  background-color: #FFFFFF;
+  border-radius: 50%;
+  color: #263238;
+  display: flex;
+  font-size: 14px;
+  gap: 15px;
+  height: 30px;
+  justify-content: center;
+  padding: 4px;
+  position: relative;
+  transition: all 0.3s ease-out;
+  width: 30px;
+}
+
+.property::after {
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-top: 9px solid #FFFFFF;
+  content: "";
+  height: 0;
+  left: 50%;
+  position: absolute;
+  top: 95%;
+  transform: translate(-50%, 0);
+  transition: all 0.3s ease-out;
+  width: 0;
+  z-index: 1;
+}
+
+.property.highlight {
+  background-color: #EFE9E1;
+  border-radius: 8px;
+  box-shadow: 10px 10px 5px rgba(0, 0, 0, 0.2);
+  height: 80px;
+  padding: 8px 15px;
+  width: auto;
+}
+
+.property .icon {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  color: white;
+}
+
+.property .details {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+}
+
+.property.highlight .details {
+  display: flex;
+}
+
+.property .address {
+  color: #9E9E9E;
+  font-size: 10px;
+  margin-bottom: 10px;
+  margin-top: 5px;
+}
+
+.property .features {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+
+.property .features > div {
+  align-items: center;
+  background: #D0D5CE;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  display: flex;
+  font-size: 10px;
+  gap: 5px;
+}
+
+/* School marker styles */
+.school {
+  align-items: center;
+  background-color: #FFFFFF;
+  border-radius: 50%;
+  color: #263238;
+  display: flex;
+  font-size: 14px;
+  gap: 15px;
+  height: 30px;
+  justify-content: center;
+  padding: 4px;
+  position: relative;
+  transition: all 0.3s ease-out;
+  width: 30px;
+}
+
+.school::after {
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-top: 9px solid #FFFFFF;
+  content: "";
+  height: 0;
+  left: 50%;
+  position: absolute;
+  top: 95%;
+  transform: translate(-50%, 0);
+  transition: all 0.3s ease-out;
+  width: 0;
+  z-index: 1;
+}
+
+.school.highlight {
+  background-color: #FFFFFF;
+  border-radius: 8px;
+  box-shadow: 10px 10px 5px rgba(0, 0, 0, 0.2);
+  height: 80px;
+  padding: 8px 15px;
+  width: auto;
+}
+
+.school .icon {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+.school .details {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+}
+
+.school.highlight .details {
+  display: flex;
+}
+
+/* Transit station styles */
+.transit-station {
+  align-items: center;
+  background-color: #FFFFFF;
+  border-radius: 50%;
+  color: #263238;
+  display: flex;
+  font-size: 14px;
+  gap: 15px;
+  height: 30px;
+  justify-content: center;
+  padding: 4px;
+  position: relative;
+  transition: all 0.3s ease-out;
+  width: 30px;
+}
+
+.transit-station::after {
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-top: 9px solid #FFFFFF;
+  content: "";
+  height: 0;
+  left: 50%;
+  position: absolute;
+  top: 95%;
+  transform: translate(-50%, 0);
+  transition: all 0.3s ease-out;
+  width: 0;
+  z-index: 1;
+}
+
+.transit-station.highlight {
+  background-color: #FFFFFF;
+  border-radius: 8px;
+  box-shadow: 10px 10px 5px rgba(0, 0, 0, 0.2);
+  height: 100px;
+  padding: 8px 15px;
+  width: auto;
+}
+
+.transit-station .icon {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+.transit-station .details {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+}
+
+.transit-station.highlight .details {
+  display: flex;
+}
+
+.transit-station .name {
+  font-weight: bold;
+}
+
+.transit-station .type {
+  color: #666;
+  font-size: 12px;
+}
+
+.transit-station .address {
+  color: #9E9E9E;
+  font-size: 10px;
+  margin-top: 5px;
+}
+
+.transit-station .rating {
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+/* Info window styles */
+.info-window {
+  color: black;
+}
+
+.info-window h3,
+.info-window h4,
+.info-window h5,
+.info-window p {
+  color: black;
+}

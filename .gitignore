@@ -1,0 +1,89 @@
+node_modules/
+.temp-disabled/
+
+# Build output
+dist
+target/
+*.class
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Auto-generated declaration files (but keep vite-env.d.ts)
+# *.d.ts
+!vite-env.d.ts
+
+# Compiled JS from TS config files
+vite.config.js
+
+# Dependencies
+node_modules
+
+# Environment variables
+.env*
+.env.local
+.env.*.local
+
+# Security - Credentials & Keys
+*.pem
+*.key
+*.p12
+*.jks
+*client_secret*.json
+*service-account*.json
+*googleusercontent*.json
+*credentials*.json
+*firebase-adminsdk*.json
+*gcp-*.json
+
+# Database passwords & config
+application-local.properties
+application-production.properties
+application-*.properties
+application.properties
+
+# IDE & OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Database backups
+*.sql
+backup_*.sql
+*backup*.sql
+
+# Random md files
+FEEDBACK_SYSTEM_FIX.md
+PHASE1_IMPLEMENTATION_SUMMARY.md
+PHASE2_FRONTEND_INTEGRATION_SUMMARY.md
+SOLAR_API_GUIDE.md
+SOLAR_PHASE2_SUMMARY.md
+SOLAR_RGB_FIX.md
+
+# macOS system files
+.DS_Store
+**/.DS_Store
+
+# Duplicate/backup files
+*" 2.tsx"
+*" 2.ts"
+*" 2.js"
+
+# OpenJDK test files
+**/openJdk*.jdk/
+*.jdk/
+
+# Test coverage
+coverage/

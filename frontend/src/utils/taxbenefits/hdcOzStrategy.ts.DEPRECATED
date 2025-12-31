@@ -1,0 +1,359 @@
+/**
+ * HDC OZ Strategy Data Structure
+ *
+ * Simplified GO/GO_IN_STATE/NO_GO classification for clear investment decisions
+ * Integrates with existing calculator while adding strategic clarity
+ */
+
+export type OZStatus = 'GO' | 'GO_IN_STATE' | 'NO_GO';
+export type OZTier = 'Exceptional' | 'Prime' | 'Secondary' | 'Conforming' | 'Future Opportunity' | 'Federal Only';
+
+export interface HDCOzJurisdiction {
+  name: string;
+  rate: number;
+  status: OZStatus;
+  tier: OZTier;
+  savings: string;  // Display string for UI
+  savingsRate?: number;  // Actual percentage for calculations
+  notes: string;
+  special?: 'exceptional' | 'corporate-only' | 'individual-only';
+  projectLocationRequired?: boolean;  // True for GO_IN_STATE
+}
+
+/**
+ * HDC OZ Strategy Data - GO/NO_GO System
+ * Merges with existing stateData.ts but adds strategic classification
+ */
+export const HDC_OZ_STRATEGY: Record<string, HDCOzJurisdiction> = {
+  // === PRIME TARGETS (High-value GO states) ===
+  'NJ': { name: 'New Jersey', rate: 10.75, status: 'GO', tier: 'Prime', savings: '34%+', savingsRate: 34.55, notes: 'Highest conforming state rate' },
+  'DC': { name: 'District of Columbia', rate: 10.75, status: 'GO', tier: 'Prime', savings: '34%+', savingsRate: 34.55, notes: 'Rolling conformity' },
+  'OR': { name: 'Oregon', rate: 9.9, status: 'GO', tier: 'Prime', savings: '33.7%', savingsRate: 33.7, notes: 'Rolling conformity' },
+  'MN': { name: 'Minnesota', rate: 9.85, status: 'GO', tier: 'Prime', savings: '33.6%', savingsRate: 33.65, notes: 'Static conformity through May 2023' },
+
+  // === SECONDARY TARGETS (Good value GO states) ===
+  'VT': { name: 'Vermont', rate: 8.75, status: 'GO', tier: 'Secondary', savings: '32.6%', savingsRate: 32.55, notes: 'Static conformity' },
+  'WI': { name: 'Wisconsin', rate: 7.65, status: 'GO', tier: 'Secondary', savings: '31.5%', savingsRate: 31.45, notes: 'Rolling conformity' },
+  'ME': { name: 'Maine', rate: 7.15, status: 'GO', tier: 'Secondary', savings: '31%', savingsRate: 30.95, notes: 'Static conformity' },
+  'CT': { name: 'Connecticut', rate: 6.99, status: 'GO', tier: 'Secondary', savings: '30.8%', savingsRate: 30.79, notes: 'Rolling conformity + workforce credits' },
+  'SC': { name: 'South Carolina', rate: 6.4, status: 'GO', tier: 'Secondary', savings: '30.2%', savingsRate: 30.2, notes: 'Rolling conformity' },
+  'WV': { name: 'West Virginia', rate: 6.5, status: 'GO', tier: 'Secondary', savings: '30.3%', savingsRate: 30.3, notes: 'Rolling conformity + additional OZ deductions' },
+  'NE': { name: 'Nebraska', rate: 5.84, status: 'GO', tier: 'Secondary', savings: '29.8%', savingsRate: 29.84, notes: 'Rolling conformity' },
+
+  // === US TERRITORIES - All provide federal OZ benefits for mainland investments ===
+  'PR': { name: 'Puerto Rico', rate: 0, status: 'GO', tier: 'Secondary', savings: 'Federal OZ benefits', savingsRate: 23.8, notes: 'Access via US tax return filing' },
+  'VI': { name: 'U.S. Virgin Islands', rate: 0, status: 'GO', tier: 'Secondary', savings: 'Federal OZ benefits', savingsRate: 23.8, notes: 'Access via territorial mirror code system' },
+  'GU': { name: 'Guam', rate: 0, status: 'GO', tier: 'Secondary', savings: 'Federal OZ benefits', savingsRate: 23.8, notes: 'Access via territorial mirror code system' },
+  'MP': { name: 'Northern Mariana Islands', rate: 0, status: 'GO', tier: 'Secondary', savings: 'Federal OZ benefits', savingsRate: 23.8, notes: 'Access via territorial mirror code system' },
+  'AS': { name: 'American Samoa', rate: 0, status: 'GO', tier: 'Secondary', savings: 'Federal OZ benefits', savingsRate: 23.8, notes: 'Access via US tax return filing' },
+
+  // === CONFORMING STATES (GO - Standard benefits) ===
+  'AL': { name: 'Alabama', rate: 5.0, status: 'GO', tier: 'Conforming', savings: '29%', savingsRate: 28.8, notes: 'Rolling conformity' },
+  'CO': { name: 'Colorado', rate: 4.4, status: 'GO', tier: 'Conforming', savings: '28%', savingsRate: 28.2, notes: 'Rolling conformity' },
+  'DE': { name: 'Delaware', rate: 6.6, status: 'GO', tier: 'Conforming', savings: '30.4%', savingsRate: 30.4, notes: 'Rolling conformity' },
+  'GA': { name: 'Georgia', rate: 5.75, status: 'GO', tier: 'Conforming', savings: '29.8%', savingsRate: 29.55, notes: 'Rolling conformity' },
+  'ID': { name: 'Idaho', rate: 5.8, status: 'GO', tier: 'Conforming', savings: '29.8%', savingsRate: 29.6, notes: 'Rolling conformity' },
+  'IL': { name: 'Illinois', rate: 4.95, status: 'GO', tier: 'Conforming', savings: '28.7%', savingsRate: 28.75, notes: 'Flat rate, rolling conformity' },
+  'IN': { name: 'Indiana', rate: 3.23, status: 'GO', tier: 'Conforming', savings: '27.1%', savingsRate: 27.03, notes: 'Flat rate, rolling conformity' },
+  'IA': { name: 'Iowa', rate: 6.0, status: 'GO', tier: 'Conforming', savings: '30%', savingsRate: 29.8, notes: 'Rolling conformity' },
+  'KS': { name: 'Kansas', rate: 5.7, status: 'GO', tier: 'Conforming', savings: '29.7%', savingsRate: 29.5, notes: 'Rolling conformity' },
+  'KY': { name: 'Kentucky', rate: 4.5, status: 'GO', tier: 'Conforming', savings: '28.3%', savingsRate: 28.3, notes: 'Flat rate, rolling conformity' },
+  'LA': { name: 'Louisiana', rate: 4.25, status: 'GO', tier: 'Conforming', savings: '28.0%', savingsRate: 28.05, notes: 'Rolling conformity' },
+  'MD': { name: 'Maryland', rate: 5.75, status: 'GO', tier: 'Conforming', savings: '29.8%', savingsRate: 29.55, notes: 'Rolling conformity with $5M trigger' },
+  'MI': { name: 'Michigan', rate: 4.25, status: 'GO', tier: 'Conforming', savings: '28.0%', savingsRate: 28.05, notes: 'Flat rate, rolling conformity' },
+  'MO': { name: 'Missouri', rate: 4.8, status: 'GO', tier: 'Conforming', savings: '28.6%', savingsRate: 28.6, notes: 'Rolling conformity' },
+  'MT': { name: 'Montana', rate: 6.75, status: 'GO', tier: 'Conforming', savings: '30.5%', savingsRate: 30.55, notes: 'Rolling conformity' },
+  'NM': { name: 'New Mexico', rate: 5.9, status: 'GO', tier: 'Conforming', savings: '29.9%', savingsRate: 29.7, notes: 'Rolling conformity' },
+  'ND': { name: 'North Dakota', rate: 2.5, status: 'GO', tier: 'Conforming', savings: '26.3%', savingsRate: 26.3, notes: 'Rolling conformity' },
+  'OH': { name: 'Ohio', rate: 3.99, status: 'GO', tier: 'Conforming', savings: '27.8%', savingsRate: 27.79, notes: 'Rolling conformity' },
+  'OK': { name: 'Oklahoma', rate: 5.0, status: 'GO', tier: 'Conforming', savings: '29%', savingsRate: 28.8, notes: 'Rolling conformity' },
+  'RI': { name: 'Rhode Island', rate: 5.99, status: 'GO', tier: 'Conforming', savings: '29.9%', savingsRate: 29.79, notes: 'Rolling conformity' },
+  'UT': { name: 'Utah', rate: 4.85, status: 'GO', tier: 'Conforming', savings: '28.7%', savingsRate: 28.65, notes: 'Flat rate, rolling conformity' },
+  'VA': { name: 'Virginia', rate: 5.75, status: 'GO', tier: 'Conforming', savings: '29.8%', savingsRate: 29.55, notes: 'Rolling conformity' },
+
+  // === PARTIAL CONFORMING (GO with limitations) ===
+  'MA': { name: 'Massachusetts', rate: 5.0, status: 'GO', tier: 'Conforming', savings: 'Corporate only', savingsRate: 28.8, notes: 'Corporate conformity, individual decoupled', special: 'corporate-only' },
+  'PA': { name: 'Pennsylvania', rate: 3.07, status: 'GO', tier: 'Conforming', savings: 'Individual only', savingsRate: 26.87, notes: 'Individual conformity, corporate decoupled', special: 'individual-only' },
+
+  // === FUTURE OPPORTUNITIES (GO_IN_STATE) ===
+  'AR': {
+    name: 'Arkansas',
+    rate: 4.4,
+    status: 'GO_IN_STATE',
+    tier: 'Future Opportunity',
+    savings: '28% (in-state projects only)',
+    savingsRate: 28.2,
+    notes: 'Benefits only for projects located in Arkansas',
+    projectLocationRequired: true
+  },
+  'HI': {
+    name: 'Hawaii',
+    rate: 11.0,
+    status: 'GO_IN_STATE',
+    tier: 'Future Opportunity',
+    savings: '34.8% (in-state projects only)',
+    savingsRate: 34.8,
+    notes: 'Benefits only for projects located in Hawaii',
+    projectLocationRequired: true
+  },
+
+  // === NO STATE BENEFITS (NO_GO - Federal only) ===
+  'CA': { name: 'California', rate: 13.3, status: 'NO_GO', tier: 'Federal Only', savings: '23.8%', savingsRate: 23.8, notes: 'No state OZ benefits despite highest rates' },
+  'NY': { name: 'New York', rate: 8.8, status: 'NO_GO', tier: 'Federal Only', savings: '23.8%', savingsRate: 23.8, notes: 'Decoupled 2021 - lost OZ benefits' },
+  'AZ': { name: 'Arizona', rate: 2.5, status: 'NO_GO', tier: 'Federal Only', savings: '23.8%', savingsRate: 23.8, notes: 'Full decoupling' },
+  'MS': { name: 'Mississippi', rate: 4.4, status: 'NO_GO', tier: 'Federal Only', savings: '23.8%', savingsRate: 23.8, notes: 'Full decoupling' },
+  'NC': { name: 'North Carolina', rate: 4.25, status: 'NO_GO', tier: 'Federal Only', savings: '23.8%', savingsRate: 23.8, notes: 'Statutory addback - active decoupling' },
+
+  // === NO STATE TAX (NO_GO - Federal only) ===
+  'AK': { name: 'Alaska', rate: 0, status: 'NO_GO', tier: 'Federal Only', savings: '23.8%', savingsRate: 23.8, notes: 'No state income tax' },
+  'FL': { name: 'Florida', rate: 0, status: 'NO_GO', tier: 'Federal Only', savings: '23.8%', savingsRate: 23.8, notes: 'No state income tax' },
+  'NV': { name: 'Nevada', rate: 0, status: 'NO_GO', tier: 'Federal Only', savings: '23.8%', savingsRate: 23.8, notes: 'No state income tax' },
+  'NH': { name: 'New Hampshire', rate: 0, status: 'NO_GO', tier: 'Federal Only', savings: '23.8%', savingsRate: 23.8, notes: 'No tax on wages/capital gains' },
+  'SD': { name: 'South Dakota', rate: 0, status: 'NO_GO', tier: 'Federal Only', savings: '23.8%', savingsRate: 23.8, notes: 'No state income tax' },
+  'TN': { name: 'Tennessee', rate: 0, status: 'NO_GO', tier: 'Federal Only', savings: '23.8%', savingsRate: 23.8, notes: 'No state income tax' },
+  'TX': { name: 'Texas', rate: 0, status: 'NO_GO', tier: 'Federal Only', savings: '23.8%', savingsRate: 23.8, notes: 'No state income tax' },
+  'WA': { name: 'Washington', rate: 0, status: 'NO_GO', tier: 'Federal Only', savings: '23.8%', savingsRate: 23.8, notes: 'No state income tax' },
+  'WY': { name: 'Wyoming', rate: 0, status: 'NO_GO', tier: 'Federal Only', savings: '23.8%', savingsRate: 23.8, notes: 'No state income tax' }
+};
+
+/**
+ * Get OZ benefits based on investor state and project location
+ */
+export function getOzBenefits(
+  investorState: string,
+  projectLocation?: string
+): {
+  status: OZStatus;
+  effectiveSavings: number;
+  message: string;
+  showProjectSelector?: boolean;
+} {
+  const jurisdiction = HDC_OZ_STRATEGY[investorState];
+
+  if (!jurisdiction) {
+    return {
+      status: 'NO_GO',
+      effectiveSavings: 23.8,  // Federal only
+      message: 'Unknown state - federal benefits only'
+    };
+  }
+
+  // Handle GO_IN_STATE scenarios
+  if (jurisdiction.status === 'GO_IN_STATE') {
+    if (!projectLocation) {
+      return {
+        status: 'GO_IN_STATE',
+        effectiveSavings: 23.8,  // Federal only until project location selected
+        message: `Select project location to see if ${jurisdiction.name} benefits apply`,
+        showProjectSelector: true
+      };
+    }
+
+    if (projectLocation === investorState) {
+      return {
+        status: 'GO',  // Becomes GO if project in same state
+        effectiveSavings: jurisdiction.savingsRate || 23.8,
+        message: `Full benefits: Project and investor both in ${jurisdiction.name}`
+      };
+    } else {
+      return {
+        status: 'NO_GO',
+        effectiveSavings: 23.8,
+        message: `Federal benefits only: ${jurisdiction.name} requires in-state projects`
+      };
+    }
+  }
+
+  // Handle special cases
+  if (jurisdiction.special === 'exceptional') {
+    return {
+      status: jurisdiction.status,
+      effectiveSavings: jurisdiction.savingsRate || 98,
+      message: '⭐ Exceptional opportunity with Act 60 and enhanced OZ benefits'
+    };
+  }
+
+  if (jurisdiction.special === 'corporate-only') {
+    return {
+      status: jurisdiction.status,
+      effectiveSavings: jurisdiction.savingsRate || 23.8,
+      message: 'Note: State benefits for corporate investors only'
+    };
+  }
+
+  if (jurisdiction.special === 'individual-only') {
+    return {
+      status: jurisdiction.status,
+      effectiveSavings: jurisdiction.savingsRate || 23.8,
+      message: 'Note: State benefits for individual investors only'
+    };
+  }
+
+  // Standard GO or NO_GO
+  return {
+    status: jurisdiction.status,
+    effectiveSavings: jurisdiction.savingsRate || 23.8,
+    message: jurisdiction.notes
+  };
+}
+
+/**
+ * Validate GO_IN_STATE project location requirements
+ */
+export function validateProjectLocation(
+  investorState: string,
+  projectLocation?: string
+): { isValid: boolean; message: string; requiresLocation: boolean } {
+  const strategy = HDC_OZ_STRATEGY[investorState];
+
+  if (!strategy) {
+    return {
+      isValid: false,
+      message: 'Invalid investor state',
+      requiresLocation: false
+    };
+  }
+
+  // GO states don't need project location
+  if (strategy.status === 'GO') {
+    return {
+      isValid: true,
+      message: 'Full OZ benefits available for projects in any state',
+      requiresLocation: false
+    };
+  }
+
+  // NO_GO states get federal benefits only regardless
+  if (strategy.status === 'NO_GO') {
+    return {
+      isValid: true,
+      message: 'Only federal OZ benefits apply (state does not conform)',
+      requiresLocation: false
+    };
+  }
+
+  // GO_IN_STATE requires project location
+  if (strategy.status === 'GO_IN_STATE') {
+    if (!projectLocation) {
+      return {
+        isValid: false,
+        message: `${strategy.name} requires project location to be specified`,
+        requiresLocation: true
+      };
+    }
+
+    if (projectLocation === investorState) {
+      return {
+        isValid: true,
+        message: `Full state OZ benefits apply - project and investor in ${strategy.name}`,
+        requiresLocation: true
+      };
+    } else {
+      return {
+        isValid: true,
+        message: `Federal benefits only - project not in ${strategy.name}`,
+        requiresLocation: true
+      };
+    }
+  }
+
+  return {
+    isValid: true,
+    message: '',
+    requiresLocation: false
+  };
+}
+
+/**
+ * Group jurisdictions by strategic tier for UI display
+ */
+export function getStrategicGroups() {
+  const groups: Record<string, Array<{ code: string; data: HDCOzJurisdiction }>> = {
+    'Exceptional': [],
+    'Prime': [],
+    'Secondary': [],
+    'Conforming': [],
+    'Future Opportunity': [],
+    'Federal Only': []
+  };
+
+  Object.entries(HDC_OZ_STRATEGY).forEach(([code, data]) => {
+    groups[data.tier].push({ code, data });
+  });
+
+  // Sort within each group
+  Object.keys(groups).forEach(tier => {
+    groups[tier].sort((a, b) => {
+      // Sort by savings rate (descending), then by name
+      const rateA = a.data.savingsRate || 0;
+      const rateB = b.data.savingsRate || 0;
+      if (rateA !== rateB) return rateB - rateA;
+      return a.data.name.localeCompare(b.data.name);
+    });
+  });
+
+  return groups;
+}
+
+/**
+ * Calculate actual tax benefits incorporating OZ strategy
+ */
+export function calculateOzTaxBenefit(
+  investorState: string,
+  projectLocation: string | undefined,
+  depreciationAmount: number,
+  federalRate: number = 37
+): {
+  federalBenefit: number;
+  stateBenefit: number;
+  totalBenefit: number;
+  effectiveRate: number;
+} {
+  const ozStatus = getOzBenefits(investorState, projectLocation);
+  const stateData = HDC_OZ_STRATEGY[investorState];
+
+  const federalBenefit = depreciationAmount * (federalRate / 100);
+  let stateBenefit = 0;
+
+  if (ozStatus.status === 'GO') {
+    stateBenefit = depreciationAmount * ((stateData?.rate || 0) / 100);
+  }
+
+  const totalBenefit = federalBenefit + stateBenefit;
+  const effectiveRate = ozStatus.effectiveSavings;
+
+  return {
+    federalBenefit,
+    stateBenefit,
+    totalBenefit,
+    effectiveRate
+  };
+}
+
+/**
+ * Get display badge for OZ status
+ */
+export function getOzStatusBadge(status: OZStatus): {
+  icon: string;
+  color: string;
+  label: string;
+} {
+  switch (status) {
+    case 'GO':
+      return { icon: '✅', color: '#4CAF50', label: 'Full Benefits' };
+    case 'GO_IN_STATE':
+      return { icon: '📍', color: '#FF9800', label: 'Location Dependent' };
+    case 'NO_GO':
+      return { icon: '🚫', color: '#F44336', label: 'Federal Only' };
+    default:
+      return { icon: '❓', color: '#9E9E9E', label: 'Unknown' };
+  }
+}
+
+/**
+ * Export for backward compatibility
+ */
+export function isConformingState(state: string): boolean {
+  const jurisdiction = HDC_OZ_STRATEGY[state];
+  return jurisdiction?.status === 'GO';
+}

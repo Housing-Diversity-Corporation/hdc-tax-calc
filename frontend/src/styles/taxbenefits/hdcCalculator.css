@@ -1,0 +1,774 @@
+/**
+ * HDC Calculator Global Styles
+ * Clean, modern styling with proper spacing
+ */
+
+/* Root Variables from Theme */
+:root {
+  /* Main Colors */
+  --hdc-faded-jade: #407F7F;
+  --hdc-sushi: #7FBD45;
+  --hdc-gulf-stream: #92C3C2;
+  --hdc-mercury: #E5E5E5;
+  --hdc-cabbage-pont: #474A44;
+  --hdc-aqua-haze: #EDF5F5;  /* IMPL-036b: Light background for sticky strips */
+  
+  /* Secondary Colors */
+  --hdc-fountain-blue: #54BFBF;
+  --hdc-san-juan: #3E5D80;
+  --hdc-bismark: #43778A;
+  --hdc-spectra: #1C3333;
+  --hdc-roman-coffee: #73513E;
+  --hdc-husk: #BFB05E;
+  --hdc-strikemaster: #734968;
+  --hdc-brown-rust: #BF7041;
+  
+  /* Spacing */
+  --hdc-spacing-xs: 0.25rem;
+  --hdc-spacing-sm: 0.5rem;
+  --hdc-spacing-md: 1rem;
+  --hdc-spacing-lg: 1.5rem;
+  --hdc-spacing-xl: 2rem;
+}
+
+/* HDC Calculator Container */
+.hdc-calculator {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+  color: var(--hdc-spectra);
+  line-height: 1.5;
+}
+
+/* Section Containers */
+.hdc-section {
+  background: hsl(var(--card));
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px 0 rgba(71, 74, 68, 0.1), 0 1px 2px 0 rgba(71, 74, 68, 0.06);
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(146, 195, 194, 0.3);
+}
+
+/* Force specific nested elements to have transparent background */
+.hdc-section div:not([role]):not([class*="radix"]):not([class*="dropdown"]):not([class*="select"]):not([class*="popover"]) {
+  background-color: transparent !important;
+}
+
+/* Buttons should use theme primary color */
+button[class*="bg-"] {
+  /* Let Tailwind handle it */
+}
+
+/* Override any remaining white backgrounds from inline styles */
+[style*="background: white"],
+[style*="background:white"],
+[style*="backgroundColor: white"],
+[style*="backgroundColor:white"],
+[style*="background: 'white'"],
+[style*='background: "white"'] {
+  background: transparent !important;
+}
+
+.hdc-section-header {
+  font-size: 0.975rem;
+  font-weight: 600;
+  color: var(--hdc-faded-jade);
+  margin-bottom: 0.625rem;
+  padding-bottom: 0.375rem;
+  border-bottom: 2px solid var(--hdc-gulf-stream);
+}
+
+/* Results Display - Fixed Padding Issues */
+.hdc-result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(146, 195, 194, 0.15);
+}
+
+.hdc-result-row:last-child {
+  border-bottom: none;
+}
+
+.hdc-result-label {
+  flex: 1 1 auto;
+  font-size: 0.75rem;
+  color: var(--hdc-cabbage-pont);
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 0.5rem;
+}
+
+.hdc-result-value {
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+  color: var(--hdc-spectra);
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+  margin-left: 0.5rem;
+}
+
+/* Highlighted Results - Removed colored background for professional look */
+.hdc-result-row.highlight {
+  margin: 0 -0.5rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  border-radius: 0.25rem;
+}
+
+/* Summary Rows */
+.hdc-result-row.summary {
+  border-top: 2px solid var(--hdc-gulf-stream);
+  padding-top: 0.5rem;
+  margin-top: 0.375rem;
+  font-weight: 600;
+}
+
+.hdc-result-row.summary .hdc-result-label {
+  color: var(--hdc-faded-jade);
+  font-weight: 600;
+  font-size: 0.8125rem;
+}
+
+.hdc-result-row.summary .hdc-result-value {
+  color: var(--hdc-faded-jade);
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+/* Color coding for financial values - Professional minimal scheme */
+.hdc-value-positive {
+  color: var(--hdc-cabbage-pont);
+}
+
+.hdc-value-negative {
+  color: var(--hdc-strikemaster);
+}
+
+.hdc-value-neutral {
+  color: var(--hdc-cabbage-pont);
+}
+
+/* Input Fields */
+.hdc-input-group {
+  margin-bottom: 1rem;
+}
+
+.hdc-input-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--hdc-cabbage-pont);
+  margin-bottom: 0.25rem;
+}
+
+.hdc-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1.5px solid var(--hdc-mercury);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--hdc-spectra);
+  transition: all 0.2s ease;
+}
+
+.hdc-input:hover {
+  border-color: var(--hdc-gulf-stream);
+}
+
+.hdc-input:focus {
+  outline: none;
+  border-color: var(--hdc-faded-jade);
+  box-shadow: 0 0 0 3px rgba(64, 127, 127, 0.1);
+}
+
+/* Buttons */
+.hdc-button {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hdc-button-primary {
+  background: var(--hdc-faded-jade);
+  color: white;
+  box-shadow: 0 2px 4px rgba(64, 127, 127, 0.2);
+}
+
+.hdc-button-primary:hover {
+  background: #366b6b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(64, 127, 127, 0.3);
+}
+
+.hdc-button-secondary {
+  background: var(--hdc-gulf-stream);
+  color: var(--hdc-spectra);
+}
+
+.hdc-button-secondary:hover {
+  background: #82b3b2;
+  transform: translateY(-1px);
+}
+
+.hdc-button-outline {
+  background: transparent;
+  color: var(--hdc-faded-jade);
+  border: 1.5px solid var(--hdc-faded-jade);
+}
+
+.hdc-button-outline:hover {
+  background: rgba(64, 127, 127, 0.08);
+}
+
+/* Tabs */
+.hdc-tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 2px solid var(--hdc-mercury);
+  margin-bottom: 1.5rem;
+}
+
+.hdc-tab {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--hdc-cabbage-pont);
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: -2px;
+}
+
+.hdc-tab:hover {
+  color: var(--hdc-faded-jade);
+  background: rgba(146, 195, 194, 0.08);
+}
+
+.hdc-tab.active {
+  color: var(--hdc-faded-jade);
+  border-bottom-color: var(--hdc-faded-jade);
+  font-weight: 600;
+  background: rgba(64, 127, 127, 0.05);
+}
+
+/* Cards */
+.hdc-card {
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px 0 rgba(71, 74, 68, 0.1);
+  transition: all 0.2s ease;
+}
+
+.hdc-card:hover {
+  box-shadow: 0 10px 15px -3px rgba(71, 74, 68, 0.1);
+  transform: translateY(-2px);
+}
+
+.hdc-card-highlight {
+  border: 1px solid var(--hdc-mercury);
+}
+
+/* Metric Display */
+.hdc-metric {
+  text-align: center;
+  padding: 1rem;
+}
+
+.hdc-metric-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--hdc-roman-coffee);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.hdc-metric-value {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--hdc-faded-jade);
+  line-height: 1.2;
+}
+
+.hdc-metric-suffix {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--hdc-cabbage-pont);
+  margin-left: 0.25rem;
+}
+
+/* Tables */
+.hdc-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.hdc-table th {
+  text-align: left;
+  padding: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--hdc-cabbage-pont);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--hdc-gulf-stream);
+}
+
+.hdc-table td {
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  color: var(--hdc-spectra);
+  border-bottom: 1px solid rgba(146, 195, 194, 0.2);
+}
+
+.hdc-table tbody tr:hover {
+  background: rgba(146, 195, 194, 0.05);
+}
+
+/* Dark Mode Styles */
+body.dark-mode .hdc-section {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Inputs/Results Container Header Styling - Dark Mode */
+body.dark-mode .hdc-inputs-container,
+body.dark-mode .hdc-results-container {
+  background: rgba(127, 189, 69, 0.12) !important;
+}
+
+body.dark-mode .hdc-inputs-container h2 {
+  color: #5ba3a3 !important;
+}
+
+body.dark-mode .hdc-results-container h2 {
+  color: #5ba3a3 !important;
+}
+
+body.dark-mode .hdc-input {
+  background: transparent;
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border)) !important;
+}
+
+body.dark-mode .hdc-input:focus {
+  border-color: hsl(var(--ring)) !important;
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.2) !important;
+}
+
+body.dark-mode .hdc-input:disabled {
+  background: transparent !important;
+  color: hsl(var(--muted-foreground));
+  border-color: hsl(var(--border)) !important;
+  opacity: 0.7;
+}
+
+/* Add teal borders to all form controls */
+body.dark-mode input[type="text"],
+body.dark-mode input[type="number"],
+body.dark-mode input[type="email"],
+body.dark-mode input[type="password"],
+body.dark-mode textarea {
+  border-color: #5ba3a3 !important;
+}
+
+body.dark-mode input[type="text"]:focus,
+body.dark-mode input[type="number"]:focus,
+body.dark-mode input[type="email"]:focus,
+body.dark-mode input[type="password"]:focus,
+body.dark-mode textarea:focus {
+  border-color: #7ac7c7 !important;
+  box-shadow: 0 0 0 3px rgba(91, 163, 163, 0.2) !important;
+}
+
+/* Override inline styles for disabled inputs */
+body.dark-mode input[style*="backgroundColor: '#f5f5f5'"] {
+  background-color: transparent !important;
+}
+
+body.dark-mode .hdc-result-row {
+  border-bottom-color: hsl(var(--border));
+}
+
+body.dark-mode .hdc-result-row.highlight {
+  background: transparent;
+}
+
+body.dark-mode .hdc-result-row.summary {
+  background: transparent;
+  border-color: hsl(var(--border));
+}
+
+body.dark-mode .hdc-tab-button {
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  border-color: hsl(var(--border));
+}
+
+body.dark-mode .hdc-tab-button.active {
+  background: var(--hdc-faded-jade);
+  color: white;
+}
+
+body.dark-mode .hdc-table {
+  background: transparent;
+}
+
+body.dark-mode .hdc-table th {
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  border-bottom-color: hsl(var(--border));
+}
+
+body.dark-mode .hdc-table td {
+  color: hsl(var(--foreground));
+  border-bottom-color: hsl(var(--border));
+}
+
+body.dark-mode .hdc-table tbody tr:hover {
+  background: rgba(91, 163, 163, 0.1);
+}
+
+/* Dark mode for specific backgrounds and nested elements - exclude tooltips */
+body.dark-mode div[style*="backgroundColor: 'white'"]:not(.recharts-tooltip-wrapper):not([class*="tooltip"]),
+body.dark-mode div[style*="background: 'white'"]:not(.recharts-tooltip-wrapper):not([class*="tooltip"]),
+body.dark-mode div[style*="background: white"]:not(.recharts-tooltip-wrapper):not([class*="tooltip"]),
+body.dark-mode div[style*="backgroundColor: white"]:not(.recharts-tooltip-wrapper):not([class*="tooltip"]) {
+  background-color: transparent !important;
+}
+
+body.dark-mode div[style*="borderTop: '1px solid var(--hdc-mercury)'"] {
+  border-top-color: hsl(var(--border)) !important;
+}
+
+body.dark-mode div[style*="border: '1px solid var(--hdc-mercury)'"] {
+  border-color: hsl(var(--border)) !important;
+}
+
+/* Fix for nested white boxes in Capital Structure - be more specific */
+body.dark-mode .mt-2.p-2.rounded {
+  background-color: transparent !important;
+  border: 1px solid hsl(var(--border)) !important;
+}
+
+body.dark-mode .grid.grid-cols-2.gap-2 {
+  background-color: transparent !important;
+}
+
+/* Fix for select dropdowns */
+body.dark-mode select {
+  background-color: transparent !important;
+  color: hsl(var(--foreground)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+body.dark-mode select:focus {
+  border-color: hsl(var(--ring)) !important;
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.2) !important;
+}
+
+body.dark-mode select option {
+  background-color: hsl(var(--popover)) !important;
+  color: hsl(var(--popover-foreground)) !important;
+}
+
+/* Fix for Current Pay buttons - only in dark mode contexts */
+body.dark-mode .border.border-gray-300.rounded-lg {
+  background-color: transparent !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+body.dark-mode .border.border-gray-300.rounded-lg button {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Fix for text labels - more specific */
+body.dark-mode .hdc-input-label {
+  color: hsl(var(--foreground)) !important;
+}
+
+body.dark-mode .hdc-result-label {
+  color: hsl(var(--foreground)) !important;
+}
+
+body.dark-mode .hdc-section-header {
+  color: #5ba3a3 !important;
+}
+
+/* Fix gray text in tables and footers */
+body.dark-mode .text-gray-600,
+body.dark-mode .text-gray-500,
+body.dark-mode .text-xs.text-gray-600 {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Fix table headers specifically */
+body.dark-mode th {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Fix table cells with inline styles */
+body.dark-mode td[style*="color: 'var(--hdc-cabbage-pont)'"],
+body.dark-mode td[style*="color: var(--hdc-cabbage-pont)"] {
+  color: #5ba3a3 !important;
+}
+
+body.dark-mode [style*="color: 'var(--hdc-brown-rust)'"],
+body.dark-mode [style*="color: var(--hdc-brown-rust)"] {
+  color: #ff9966 !important; /* Light orange for important values */
+}
+
+body.dark-mode [style*="color: 'var(--hdc-strikemaster)'"],
+body.dark-mode [style*="color: var(--hdc-strikemaster)"] {
+  color: #d8b3ff !important; /* Light purple */
+}
+
+/* Update result values for better visibility in dark mode */
+body.dark-mode .hdc-result-value {
+  color: #a3d5d5 !important; /* Light teal for general values */
+  font-weight: 500;
+}
+
+body.dark-mode .hdc-value-positive {
+  color: #7fd17f !important; /* Light green for positive values */
+}
+
+body.dark-mode .hdc-value-negative {
+  color: #ff9999 !important; /* Light red/pink for negative values */
+}
+
+/* Summary values should be brighter */
+body.dark-mode .hdc-result-row.summary .hdc-result-value {
+  color: #5ba3a3 !important; /* Bright teal for summary values */
+  font-weight: 600;
+}
+
+/* Preserve colored text for important indicators */
+body.dark-mode .text-purple-600 {
+  color: #b794f6 !important; /* Light purple */
+}
+
+body.dark-mode .text-green-600 {
+  color: #7fd17f !important; /* Light green */
+}
+
+body.dark-mode .text-red-600 {
+  color: #ff9999 !important; /* Light red */
+}
+
+/* Fix subdued text */
+body.dark-mode .hdc-result-label[style*="color: '#666'"],
+body.dark-mode div[style*="color: '#666'"],
+body.dark-mode [style*="color: 'var(--hdc-cabbage-pont)'"],
+body.dark-mode [style*="color: var(--hdc-cabbage-pont)"],
+body.dark-mode strong[style*="color: 'var(--hdc-cabbage-pont)'"] {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Style range sliders in dark mode - simplified approach */
+body.dark-mode input[type="range"] {
+  accent-color: #5ba3a3 !important; /* Use native browser styling with teal accent */
+  width: 100%;
+  height: 8px;
+  background: transparent;
+  outline: none;
+}
+
+/* For browsers that don't support accent-color, provide fallback */
+@supports not (accent-color: #5ba3a3) {
+  body.dark-mode input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: #404040 !important;
+    outline: none;
+  }
+
+  body.dark-mode input[type="range"]::-webkit-slider-track {
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: #404040 !important;
+  }
+
+  body.dark-mode input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #5ba3a3 !important;
+    cursor: pointer;
+    border: 2px solid #7ac7c7;
+  }
+
+  body.dark-mode input[type="range"]::-moz-range-track {
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: #404040 !important;
+  }
+
+  body.dark-mode input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #5ba3a3 !important;
+    cursor: pointer;
+    border: 2px solid #7ac7c7;
+    border: none;
+  }
+
+  /* Firefox supports progress natively */
+  body.dark-mode input[type="range"]::-moz-range-progress {
+    height: 8px;
+    border-radius: 4px;
+    background: #5ba3a3 !important;
+  }
+}
+
+/* Fix Interest Reserve box */
+body.dark-mode .mt-3.p-3.rounded {
+  background-color: transparent !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+/* CascadeSelect inside wrapper - lighter background for better visibility */
+body.dark-mode .preset-selection-wrapper .p-cascadeselect {
+  background-color: transparent !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+body.dark-mode .p-cascadeselect-label {
+  background-color: transparent !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+body.dark-mode .p-cascadeselect:not(.p-disabled):hover {
+  border-color: #5ba3a3 !important;
+}
+
+body.dark-mode .p-cascadeselect:not(.p-disabled).p-focus {
+  border-color: #5ba3a3 !important;
+  box-shadow: 0 0 0 3px rgba(91, 163, 163, 0.2) !important;
+}
+
+/* Dropdown panel styling */
+body.dark-mode .p-cascadeselect-panel {
+  background: hsl(var(--popover)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  color: hsl(var(--popover-foreground)) !important;
+}
+
+body.dark-mode .p-cascadeselect-items {
+  background: transparent !important;
+}
+
+body.dark-mode .p-cascadeselect-item {
+  background: transparent !important;
+  color: hsl(var(--popover-foreground)) !important;
+}
+
+body.dark-mode .p-cascadeselect-item:not(.p-highlight):not(.p-disabled):hover {
+  background: hsl(var(--accent)) !important;
+  color: hsl(var(--accent-foreground)) !important;
+}
+
+body.dark-mode .p-cascadeselect-item.p-highlight {
+  background: #5ba3a3 !important;
+  color: white !important;
+}
+
+/* Property Presets wrapper section - removed hardcoded background */
+
+body.dark-mode .preset-selection-wrapper {
+  background-color: transparent !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+/* Property Presets label */
+body.dark-mode .text-gray-700,
+body.dark-mode h3.text-gray-700,
+body.dark-mode label[style*="color: '#e5e5e5'"] {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Removed PrimeReact button styles - migrated to shadcn */
+
+/* Fix preset-selection-wrapper background in dark mode */
+body.dark-mode .preset-selection-wrapper {
+  background: transparent !important;
+}
+
+/* Override any inline styles with higher specificity */
+body.dark-mode [style*="backgroundColor: 'var(--hdc-sushi)'"],
+body.dark-mode [style*="background-color: var(--hdc-sushi)"],
+body.dark-mode [style*="background: var(--hdc-sushi)"],
+body.dark-mode [style*="backgroundColor: \"var(--hdc-sushi)\""],
+body.dark-mode [style*="borderColor: 'var(--hdc-sushi)'"],
+body.dark-mode [style*="borderColor: \"var(--hdc-sushi)\""] {
+  background-color: hsl(var(--primary)) !important;
+  background: hsl(var(--primary)) !important;
+  border-color: hsl(var(--primary)) !important;
+}
+
+/* Target Save button specifically by its icon */
+body.dark-mode button:has(.pi-save) {
+  background: hsl(var(--primary)) !important;
+  border: 1px solid hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+body.dark-mode button:has(.pi-save):hover {
+  background: hsl(var(--primary) / 0.9) !important;
+  border-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+/* Override inline style on CascadeSelect */
+body.dark-mode div[style*="color: 'black'"] {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .hdc-section {
+    padding: 0.75rem;
+  }
+  
+  .hdc-result-row {
+    padding: 0.1875rem 0;
+  }
+  
+  .hdc-result-label {
+    font-size: 0.7rem;
+  }
+  
+  .hdc-result-value {
+    font-size: 0.7rem;
+  }
+  
+  .hdc-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .hdc-metric-value {
+    font-size: 1.5rem;
+  }
+}

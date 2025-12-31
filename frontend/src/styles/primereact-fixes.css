@@ -1,0 +1,136 @@
+/* ============================================
+   PRIMEREACT FIXES FOR TAILWIND CONFLICTS
+   This file must be imported AFTER global.css
+   ============================================ */
+
+/* All PrimeReact components need explicit backgrounds */
+.p-component {
+  background: inherit;
+  color: inherit;
+}
+
+/* Buttons */
+.p-button {
+  background: #2196F3 !important;
+  color: #ffffff !important;
+  border: 1px solid #2196F3 !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 3px !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.p-button:enabled:hover {
+  background: #0b7ad1 !important;
+  border-color: #0b7ad1 !important;
+}
+
+.p-button-danger {
+  background: #f44336 !important;
+  border-color: #f44336 !important;
+}
+
+.p-button-danger:enabled:hover {
+  background: #d32f2f !important;
+  border-color: #d32f2f !important;
+}
+
+/* TreeSelect */
+.p-treeselect {
+  background: white !important;
+  border: 1px solid #ced4da !important;
+}
+
+.p-treeselect-panel {
+  background: white !important;
+  border: 1px solid #ced4da !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.2) !important;
+  z-index: 10100 !important;
+}
+
+.p-treeselect-panel .p-tree {
+  background: white !important;
+  color: black !important;
+}
+
+.p-treeselect-panel .p-treenode-content {
+  color: black !important;
+  background: transparent !important;
+}
+
+.p-treeselect-panel .p-treenode-content:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+.p-treeselect-panel .p-checkbox-box {
+  background: white !important;
+  border: 2px solid #ced4da !important;
+}
+
+.p-treeselect-panel .p-checkbox-box.p-highlight {
+  background: #2196F3 !important;
+  border-color: #2196F3 !important;
+}
+
+/* Dialog */
+.p-dialog {
+  background: white !important;
+  box-shadow: 0 11px 15px -7px rgba(0,0,0,.2) !important;
+}
+
+.p-dialog .p-dialog-header {
+  background: white !important;
+  color: black !important;
+  border-bottom: 1px solid #dee2e6 !important;
+  padding: 1.5rem !important;
+}
+
+.p-dialog .p-dialog-content {
+  background: white !important;
+  color: black !important;
+  padding: 1.5rem !important;
+}
+
+/* Input */
+.p-inputtext {
+  background: white !important;
+  border: 1px solid #ced4da !important;
+  color: black !important;
+  padding: 0.5rem !important;
+  border-radius: 3px !important;
+}
+
+.p-inputtext:enabled:focus {
+  border-color: #2196F3 !important;
+  box-shadow: 0 0 0 0.2rem rgba(33, 150, 243, 0.25) !important;
+}
+
+/* InputNumber */
+.p-inputnumber-input {
+  background: white !important;
+  border: 1px solid #ced4da !important;
+  color: black !important;
+  padding: 0.5rem !important;
+  border-radius: 3px !important;
+}
+
+/* Toast */
+.p-toast-message {
+  background: white !important;
+  border: solid #dee2e6 !important;
+  border-width: 0 0 0 6px !important;
+  box-shadow: 0 2px 4px -1px rgba(0,0,0,.2) !important;
+}
+
+.p-toast-message-content {
+  color: black !important;
+}
+
+/* Sidebar */
+.p-sidebar {
+  background: white !important;
+  color: black !important;
+  box-shadow: 0 11px 15px -7px rgba(0,0,0,.2) !important;
+}

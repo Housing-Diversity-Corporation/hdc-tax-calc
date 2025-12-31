@@ -1,0 +1,473 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light mode - Teal/Blue-green inspired palette */
+    --background: 180 50% 98%;
+    --foreground: 180 20% 10%;
+    --card: 180 30% 95% / 0.85;
+    --card-foreground: 180 20% 10%;
+    --popover: 180 30% 98% / 0.95;
+    --popover-foreground: 180 20% 10%;
+    --primary: 180 40% 30%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 180 30% 85%;
+    --secondary-foreground: 180 40% 20%;
+    --muted: 180 20% 90%;
+    --muted-foreground: 180 20% 40%;
+    --accent: 180 35% 75%;
+    --accent-foreground: 180 40% 20%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 0% / 0.3;
+    --input: 0 0% 0% / 0.3;
+    --ring: 180 40% 30%;
+    --radius: 0.5rem;
+    --chart-1: 180 50% 50%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+
+    /* Entropic gradient colors - Light (Subtle, brand-focused) */
+    --gradient-1: #92c3c2;     /* Primary teal - concentrated */
+    --gradient-2: #a8cfce;     /* Lighter teal - mid tone */
+    --gradient-3: #e8f4f3;     /* Very light teal - subtle */
+    --gradient-4: #f8fafa;     /* Near white with teal hint */
+
+    /* Belgian Shepherd Coat Colors - for Churro chatbot */
+    --gradient-shepherd-1: #3D2817;  /* Deep dark brown - main coat base */
+    --gradient-shepherd-2: #5C4A3A;  /* Rich brown - mid tone */
+    --gradient-shepherd-3: #6B5644;  /* Medium brown - natural variation */
+    --gradient-shepherd-4: #8B7355;  /* Lighter brown - coat highlights */
+  }
+
+  body[data-theme="dark"] {
+    /* Dark mode - Deep teal/black inspired palette */
+    --background: 180 30% 8%;
+    --foreground: 0 0% 98%;
+    --card: 180 25% 12% / 0.85;
+    --card-foreground: 0 0% 98%;
+    --popover: 180 25% 12% / 0.95;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 180 40% 20%;
+    --secondary: 180 20% 15%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 180 15% 20%;
+    --muted-foreground: 180 10% 60%;
+    --accent: 180 30% 25%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 98% / 0.3;
+    --input: 0 0% 98% / 0.3;
+    --ring: 0 0% 83.1%;
+
+    /* Entropic gradient colors - Dark (Subtle, brand-focused) */
+    --gradient-1: #1c3333;     /* Primary dark teal - concentrated */
+    --gradient-2: #142626;     /* Darker teal - mid tone */
+    --gradient-3: #0d1616;     /* Very dark teal - subtle */
+    --gradient-4: #080e0e;     /* Near black with teal hint */
+  }
+
+  .dark {
+    /* Dark mode - Deep teal/black inspired palette */
+    --background: 180 30% 8%;
+    --foreground: 0 0% 98%;
+    --card: 180 25% 12% / 0.85;
+    --card-foreground: 0 0% 98%;
+    --popover: 180 25% 12% / 0.95;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 180 40% 20%;
+    --secondary: 180 20% 15%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 180 15% 20%;
+    --muted-foreground: 180 10% 60%;
+    --accent: 180 30% 25%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 98% / 0.3;
+    --input: 0 0% 98% / 0.3;
+    --ring: 0 0% 83.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+
+    /* Entropic gradient colors - Dark (Subtle, brand-focused) */
+    --gradient-1: #1c3333;     /* Primary dark teal - concentrated */
+    --gradient-2: #142626;     /* Darker teal - mid tone */
+    --gradient-3: #0d1616;     /* Very dark teal - subtle */
+    --gradient-4: #080e0e;     /* Near black with teal hint */
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Add backdrop filter support for glassmorphism */
+  .bg-card {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  /* Balanced glassmorphism for popovers (select menus, dropdowns) */
+  .bg-popover,
+  [class*="bg-popover"] {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  /* Override for radix select and combobox content */
+  [data-radix-select-content],
+  [data-radix-combobox-content],
+  [role="listbox"] {
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    background: hsl(var(--popover)) !important;
+  }
+
+  /* Command component (used in phone input country selector) */
+  [cmdk-root] {
+    background: transparent !important;
+  }
+
+  /* Command items - enhanced glassmorphism for country list items */
+  [cmdk-item] {
+    transition: all 0.2s ease;
+    border-radius: 0.375rem;
+    margin: 0.125rem;
+  }
+
+  [cmdk-item]:hover {
+    background-color: hsl(var(--accent)) !important;
+  }
+
+  [cmdk-item][data-selected="true"] {
+    background-color: hsl(var(--accent)) !important;
+  }
+
+  /* Command input - ensure it matches theme */
+  [cmdk-input] {
+    background: transparent !important;
+    border-color: hsl(var(--input)) !important;
+    color: hsl(var(--foreground)) !important;
+  }
+
+  /* Command input wrapper border */
+  [cmdk-input-wrapper] {
+    border-color: hsl(var(--border)) !important;
+  }
+
+  /* Hide scrollbars for webkit browsers (Chrome, Safari, Edge) */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbars for Firefox */
+  * {
+    scrollbar-width: none;
+  }
+
+  /* Hide scrollbars for IE and Edge legacy */
+  * {
+    -ms-overflow-style: none;
+  }
+
+  /* Glassmorphic utility classes for Churro chatbot */
+  .backdrop-blur-xl {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .backdrop-saturate-180 {
+    backdrop-filter: saturate(180%);
+    -webkit-backdrop-filter: saturate(180%);
+  }
+
+  .backdrop-blur-xl.backdrop-saturate-180 {
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+  }
+}
+
+html, body {
+  padding: 0;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Prevent horizontal scroll globally */
+html {
+  overflow-x: hidden !important;
+}
+
+body {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+
+/* Ensure the React root and App div take full height */
+#root {
+  min-height: 100vh;
+  width: 100%;
+}
+
+.App {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Aspect ratio utility for circular/square elements */
+.aspect-square {
+  aspect-ratio: 1 / 1;
+}
+
+.aspect-circle {
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+}
+
+/* Responsive base styles */
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Ensure all main containers respect viewport width */
+  #root,
+  .App,
+  .App > div:not(.content-85vw) {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  /* Exception for content that should be 85vw on mobile */
+  .content-85vw {
+    width: 85vw !important;
+    max-width: 85vw !important;
+  }
+
+  /* Fix any mx-auto classes to prevent overflow */
+  .mx-auto {
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  /* Enforce aspect ratio for icon-only buttons on mobile - EXCLUDE shadcn/radix avatar and switch components */
+  button.rounded-full:not([data-radix-avatar-fallback]):not([data-radix-dropdown-trigger]) {
+    aspect-ratio: 1 / 1 !important;
+  }
+
+  /* Fix toggle group items on mobile - preserve their intended shape */
+  [data-radix-toggle-group-item] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  /* Preserve Switch component elliptical shape on mobile */
+  [data-radix-switch-root] {
+    aspect-ratio: auto !important;
+    width: 2.75rem !important; /* w-11 */
+    height: 1.5rem !important; /* h-6 */
+  }
+
+  /* Ensure Switch thumb remains circular */
+  [data-radix-switch-thumb] {
+    aspect-ratio: 1 / 1 !important;
+    width: 1.25rem !important; /* w-5 */
+    height: 1.25rem !important; /* h-5 */
+    border-radius: 50% !important;
+  }
+
+  /* Protect Avatar circular shape on mobile */
+  [data-radix-avatar-root],
+  [data-radix-avatar-image],
+  [data-radix-avatar-fallback] {
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 50% !important;
+  }
+
+  /* MOBILE ONLY: Protect ScrollArea scrollbar from expansion */
+  [data-radix-scroll-area-scrollbar] {
+    flex-shrink: 0 !important;
+  }
+
+  /* MOBILE ONLY: Force vertical scrollbar to stay narrow */
+  [data-radix-scroll-area-scrollbar][data-orientation="vertical"] {
+    width: 10px !important; /* w-2.5 */
+    min-width: 10px !important;
+    max-width: 10px !important;
+  }
+
+  /* MOBILE ONLY: Force horizontal scrollbar to stay short */
+  [data-radix-scroll-area-scrollbar][data-orientation="horizontal"] {
+    height: 10px !important; /* h-2.5 */
+    min-height: 10px !important;
+    max-height: 10px !important;
+  }
+
+  /* MOBILE ONLY: Change scroll thumb to rounded square instead of pill */
+  [data-radix-scroll-area-thumb] {
+    border-radius: 0.125rem !important; /* rounded-sm instead of rounded-full */
+    flex-shrink: 0 !important;
+  }
+
+  /* MOBILE ONLY: Ensure vertical scrollbar thumb stays narrow */
+  [data-radix-scroll-area-scrollbar][data-orientation="vertical"] [data-radix-scroll-area-thumb] {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* MOBILE ONLY: Ensure horizontal scrollbar thumb stays short */
+  [data-radix-scroll-area-scrollbar][data-orientation="horizontal"] [data-radix-scroll-area-thumb] {
+    height: 100% !important;
+    max-height: 100% !important;
+  }
+}
+
+/* Map container styles */
+.map-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  flex: 1;
+}
+
+.map {
+  width: 100%;
+  height: 100%;
+}
+
+/* Map container shift styles */
+.map-container-shifted-left {
+  margin-left: 25rem; /* Should match the width of the right sidebar */
+  transition: margin-left 0.3s ease;
+}
+
+.map-container-shifted-right {
+  margin-right: 25rem; /* Should match the width of the right sidebar */
+  transition: margin-right 0.3s ease;
+}
+
+/* Mobile: no shift, panels overlay */
+@media (max-width: 768px) {
+  .map-container-shifted-left,
+  .map-container-shifted-right {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+/* Map controls styles */
+.map-controls {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1000;
+  background: white;
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Mobile: adjust map controls position and size */
+@media (max-width: 768px) {
+  .map-controls {
+    top: 5px;
+    left: 5px;
+    right: 5px;
+    padding: 8px;
+    max-width: calc(100vw - 10px);
+  }
+}
+
+.info-window p strong {
+  color: black;
+}
+
+/* Place Autocomplete Card styles */
+.place-autocomplete-card {
+  padding: 10px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  font-family: Roboto, "Helvetica Neue", Arial, sans-serif;
+  z-index: 10; /* Ensure it's on top of map tiles */
+  width: 250px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+}
+
+/* Let Google Places Autocomplete inherit from parent card */
+#place-autocomplete-input,
+gmp-place-autocomplete {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+}
+
+/* Force proper color scheme based on theme */
+body[data-theme="dark"] gmp-place-autocomplete,
+.dark gmp-place-autocomplete {
+  color-scheme: dark;
+}
+
+body:not([data-theme="dark"]) gmp-place-autocomplete,
+:not(.dark) gmp-place-autocomplete {
+  color-scheme: light;
+}
+
+/* Style placeholder text */
+gmp-place-autocomplete input::placeholder {
+  color: hsl(var(--muted-foreground));
+  opacity: 0.7;
+}
+
+/* Settings page location autocomplete - add subtle border */
+#location-autocomplete-input {
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.375rem; /* rounded-md */
+  padding: 0.5rem 0.75rem;
+  height: 2.5rem; /* h-10 - match other inputs */
+  transition: border-color 0.2s;
+}
+
+#location-autocomplete-input:hover {
+  border-color: hsl(var(--input));
+}
+
+#location-autocomplete-input:focus-within {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Keyword Search Card - Using Tailwind classes now */

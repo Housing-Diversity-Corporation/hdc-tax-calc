@@ -1,0 +1,99 @@
+/* InvestorAnalysis (Detailed Calculator) Responsive Styles */
+
+.investor-analysis-container {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* More specific selectors - don't break charts */
+.investor-analysis-container > div,
+.investor-analysis-container .hdc-section {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* IMPORTANT: Allow charts to render properly */
+.investor-analysis-container canvas,
+.investor-analysis-container svg,
+.investor-analysis-container .recharts-wrapper,
+.investor-analysis-container .recharts-surface {
+  max-width: none !important;
+}
+
+/* Ensure all sections respect viewport width */
+.investor-analysis-container section,
+.investor-analysis-container .hdc-section {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* Tables scroll within their containers */
+.investor-analysis-container table {
+  max-width: 100%;
+}
+
+.investor-analysis-container .overflow-x-auto,
+.investor-analysis-container div:has(> table) {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+/* Button fixes */
+.investor-analysis-container .p-button,
+.investor-analysis-container button {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Mobile specific */
+@media (max-width: 768px) {
+  .investor-analysis-container {
+    padding: 0.5rem;
+    width: 100vw;
+    max-width: 100vw;
+  }
+
+  .investor-analysis-container .container {
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+    margin: 0 !important;
+  }
+
+  .investor-analysis-container .p-button,
+  .investor-analysis-container button {
+    white-space: normal;
+    word-wrap: break-word;
+  }
+
+  .investor-analysis-container table {
+    min-width: 600px;
+  }
+}
+
+/* Tablet */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .investor-analysis-container {
+    padding: 1rem;
+    overflow-x: hidden;
+  }
+
+  .investor-analysis-container .container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+}
+
+/* Large desktop */
+@media (min-width: 1400px) {
+  .investor-analysis-container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+}

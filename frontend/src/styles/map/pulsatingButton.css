@@ -1,0 +1,111 @@
+/* Pulsating animation for keyword search button */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(67, 127, 127, 0.7);
+  }
+
+  50% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(67, 127, 127, 0);
+  }
+
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(67, 127, 127, 0);
+  }
+}
+
+@keyframes pulse-icon {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.pulsating-button {
+  animation: pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) 10;
+}
+
+.pulsating-button .icon {
+  animation: pulse-icon 1.5s cubic-bezier(0.4, 0, 0.6, 1) 10;
+}
+
+/* Pulsating tooltip - pulses for 15 seconds then hides */
+@keyframes tooltip-pulse-and-hide {
+  0% {
+    opacity: 0.7;
+  }
+  5% {
+    opacity: 1;
+  }
+  10% {
+    opacity: 0.7;
+  }
+  15% {
+    opacity: 1;
+  }
+  20% {
+    opacity: 0.7;
+  }
+  25% {
+    opacity: 1;
+  }
+  30% {
+    opacity: 0.7;
+  }
+  35% {
+    opacity: 1;
+  }
+  40% {
+    opacity: 0.7;
+  }
+  45% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  55% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.7;
+  }
+  65% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.7;
+  }
+  75% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 0.7;
+  }
+  85% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 0.7;
+  }
+  95% {
+    opacity: 1;
+  }
+  98% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+.pulsating-tooltip {
+  animation: tooltip-pulse-and-hide 15s cubic-bezier(0.4, 0, 0.6, 1) 1;
+  animation-fill-mode: forwards;
+  opacity: 0.7;
+}
