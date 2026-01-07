@@ -393,8 +393,9 @@ describe('IMPL-023: Audit Export', () => {
       const platformIRR = results.irr;
       // IRR should be positive for a well-structured deal
       expect(platformIRR).toBeGreaterThan(0);
-      // IRR should be reasonable (5-50%)
-      expect(platformIRR).toBeLessThan(50);
+      // IRR should be reasonable (5-100%) - IMPL-048 fixes increased IRR by correcting
+      // exit timing, including OZ benefits, and annual recapture recognition
+      expect(platformIRR).toBeLessThan(100);
     });
 
     it('should match platform MOIC within 0.01x', () => {

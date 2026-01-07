@@ -7,17 +7,14 @@ import TaxPlanningCapacitySection from './results/TaxPlanningCapacitySection';
 import InvestorCashFlowSection from './results/InvestorCashFlowSection';
 import HDCCashFlowSection from './results/HDCCashFlowSection';
 import DistributableCashFlowTable from './results/DistributableCashFlowTable';
-import WaterfallExplanationSection from './results/WaterfallExplanationSection';
 import OutsideInvestorSection from './results/OutsideInvestorSection';
 import HDCPlatformSection from './results/HDCPlatformSection';
-import InvestorSegmentAnalysisSection from './results/InvestorSegmentAnalysisSection';
-import TaxStrategyMain from './TaxStrategy/TaxStrategyMain';
 import { HDCComprehensiveReportButton } from './reports/HDCComprehensiveReport';
 import { HDCTaxReportJsPDFButton } from './reports/HDCTaxReportJsPDF';
 import { ExportAuditButton } from './results/ExportAuditButton';
 import { LIHTCCreditSchedule } from '../taxbenefits/results/LIHTCCreditSchedule';
 import StateLIHTCIntegrationSection from './results/StateLIHTCIntegrationSection';
-import DealValidationStrip from './results/DealValidationStrip';
+import KPIStrip from './results/KPIStrip';
 import ReturnsBuiltupStrip from './results/ReturnsBuiltupStrip';
 import type { InvestorAnalysisResults, CashFlowItem, HDCAnalysisResults, HDCCashFlowItem, StateLIHTCIntegrationResult } from '../../types/taxbenefits';
 import type { LIHTCCreditSchedule as LIHTCCreditScheduleType } from '../../utils/taxbenefits/lihtcCreditCalculations';
@@ -125,11 +122,9 @@ interface HDCResultsComponentProps {
 
   // Additional props for segment analysis
   investorTrack?: 'rep' | 'non-rep';
-  passiveGainType?: 'short-term' | 'long-term';
   stateTaxRate: number;
   deferredCapitalGains: number;
   hdcFeeRate: number;
-  totalHdcFees: number;
 
   // Expandable sections state
   taxCalculationExpanded: boolean;
@@ -140,7 +135,6 @@ interface HDCResultsComponentProps {
   setDepreciationScheduleExpanded: (value: boolean) => void;
 
   // Tax Planning
-  includeDepreciationSchedule?: boolean;
   w2Income?: number;
   businessIncome?: number;
   iraBalance?: number;
@@ -434,19 +428,17 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
         )}
       </div>
 
-        {/* IMPL-036b: Sticky container for both validation strips */}
+        {/* IMPL-036b: Sticky container for KPI and Returns strips */}
         {/* Wrapping both in a single sticky container ensures they stay together */}
         <div className="sticky top-0 z-40" style={{ backgroundColor: 'var(--hdc-aqua-haze)' }}>
-          {/* Deal Validation Strip - Conductor's Dashboard (IMPL-025) */}
-          {props.mainAnalysisResults && props.hdcAnalysisResults && (
-            <DealValidationStrip
+          {/* IMPL-026: KPI Strip - Investor-focused metrics */}
+          {props.mainAnalysisResults && props.investorCashFlows && (
+            <KPIStrip
               mainAnalysisResults={props.mainAnalysisResults}
-              hdcAnalysisResults={props.hdcAnalysisResults}
               cashFlows={props.investorCashFlows}
-              subDebtPct={props.hdcSubDebtPct}
-              investorSubDebtPct={props.investorSubDebtPct}
-              outsideInvestorSubDebtPct={props.outsideInvestorSubDebtPct}
-              philDebtPct={props.philDebtPct}
+              investorEquity={props.investorEquity}
+              totalProjectCost={props.projectCost + (props.predevelopmentCosts || 0)}
+              stateLIHTCIntegration={props.stateLIHTCIntegration}
             />
           )}
 
@@ -459,8 +451,9 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
           )}
         </div>
 
-        <InvestmentSummarySection 
+        <InvestmentSummarySection
           investorEquity={props.investorEquity}
+          syndicatedEquityOffset={props.mainAnalysisResults?.syndicatedEquityOffset}
           hdcFee={props.hdcFee}
           formatCurrency={props.formatCurrency}
         />
@@ -624,44 +617,6 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
             projectCost={props.projectCost}
             holdPeriod={props.holdPeriod}
             mainAnalysisResults={props.mainAnalysisResults}
-            formatCurrency={props.formatCurrency}
-          />
-        )}
-
-        <InvestorSegmentAnalysisSection
-          investorTrack={props.investorTrack}
-          passiveGainType={props.passiveGainType}
-          projectCost={props.projectCost}
-          investorEquityAmount={props.investorEquity / 1000000}
-          holdPeriod={props.holdPeriod}
-          yearOneDepreciationPct={props.yearOneDepreciationPct}
-          federalOrdinaryRate={props.federalTaxRate}
-          stateOrdinaryRate={props.stateTaxRate}
-          federalCapitalGainsRate={props.ltCapitalGainsRate}
-          stateCapitalGainsRate={props.stateCapitalGainsRate}
-          selectedState={props.selectedState}
-          ozType={props.ozType}
-          deferredCapitalGains={props.deferredCapitalGains}
-          hdcFeeRate={props.hdcFeeRate}
-          aumFeeEnabled={props.aumFeeEnabled}
-          aumFeeRate={props.aumFeeRate}
-          totalTaxBenefits={props.totalTaxBenefit}
-          investorIRR={props.investorIRR}
-          hdcTotalFees={props.totalHdcFees}
-        />
-
-        <WaterfallExplanationSection
-          investorPromoteShare={props.investorPromoteShare}
-          yearOneDepreciationPct={props.yearOneDepreciationPct}
-        />
-
-        {/* Tax Strategy Analysis - Only show when enabled */}
-        {props.includeDepreciationSchedule && props.mainAnalysisResults && (
-          <TaxStrategyMain
-            hdcResults={props.mainAnalysisResults}
-            investorTrack={props.investorTrack || 'rep'}
-            year1NetBenefit={props.year1NetBenefit}
-            freeInvestmentHurdle={props.freeInvestmentHurdle}
             formatCurrency={props.formatCurrency}
           />
         )}

@@ -286,7 +286,7 @@ const HDCCalculatorMain = () => {
             color: darkMode ? '#5ba3a3' : 'white',
             letterSpacing: '0.5px',
             marginTop: '0.125rem'
-          }}>OZ Benefits Calculator</h1>
+          }}>Tax Benefits Calculator</h1>
         </div>
       </div>    
 
@@ -298,7 +298,7 @@ const HDCCalculatorMain = () => {
         borderRadius: '8px',
         boxShadow: darkMode ? '0 2px 4px rgba(0,0,0,0.3)' : '0 2px 4px rgba(0,0,0,0.1)'
       }}>    
-        Multi-year OZ investment model with tax benefits and comprehensive cash flow analysis    
+        Multi-year tax benefit model and comprehensive cash flow analysis    
       </div>
 
       {/* Sub-debt current pay status indicators */}
@@ -618,18 +618,15 @@ const HDCCalculatorMain = () => {
           constructionDelayMonths={constructionDelayMonths}
           taxBenefitDelayMonths={taxBenefitDelayMonths}
           investorTrack={investorTrack}
-          passiveGainType={passiveGainType}
           stateTaxRate={stateTaxRate}
           deferredCapitalGains={ozDeferredCapitalGains}
           hdcFeeRate={hdcFeeRate}
-          totalHdcFees={calculations.hdcFee}
           taxCalculationExpanded={taxCalculationExpanded}
           setTaxCalculationExpanded={setTaxCalculationExpanded}
           taxOffsetExpanded={taxOffsetExpanded}
           setTaxOffsetExpanded={setTaxOffsetExpanded}
           depreciationScheduleExpanded={depreciationScheduleExpanded}
           setDepreciationScheduleExpanded={setDepreciationScheduleExpanded}
-          includeDepreciationSchedule={includeDepreciationSchedule}
           w2Income={w2Income}
           businessIncome={businessIncome}
           iraBalance={iraBalance}
