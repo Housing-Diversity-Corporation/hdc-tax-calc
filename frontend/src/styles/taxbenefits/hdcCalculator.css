@@ -745,6 +745,72 @@ body.dark-mode div[style*="color: 'black'"] {
   color: hsl(var(--foreground)) !important;
 }
 
+/* ============================================================================
+ * KPI Strip and Returns Buildup Strip - Theme-aware styling
+ * IMPL-026a: Dark mode compatibility
+ * ============================================================================ */
+
+/* Container backgrounds */
+.kpi-strip-container,
+.returns-buildup-container {
+  background-color: var(--hdc-aqua-haze);
+}
+
+body.dark-mode .kpi-strip-container,
+body.dark-mode .returns-buildup-container {
+  background-color: hsl(var(--card));
+  border-color: hsl(var(--border)) !important;
+}
+
+/* Labels - muted text */
+.kpi-label,
+.returns-label {
+  color: var(--hdc-cabbage-pont);
+}
+
+body.dark-mode .kpi-label,
+body.dark-mode .returns-label {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+/* Values - main text */
+.kpi-value,
+.returns-value {
+  color: var(--hdc-spectra);
+}
+
+body.dark-mode .kpi-value,
+body.dark-mode .returns-value {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Component row colors in Returns Buildup */
+.returns-component-row {
+  border-bottom: 1px solid rgba(136, 145, 151, 0.2);
+}
+
+body.dark-mode .returns-component-row {
+  border-bottom-color: hsl(var(--border)) !important;
+}
+
+/* Column headers */
+.returns-column-header {
+  border-bottom: 1px solid var(--hdc-gulf-stream);
+}
+
+body.dark-mode .returns-column-header {
+  border-bottom-color: hsl(var(--border)) !important;
+}
+
+/* Total row styling */
+.returns-total-row {
+  border-top: 2px solid var(--hdc-faded-jade);
+}
+
+body.dark-mode .returns-total-row {
+  border-top-color: var(--hdc-faded-jade) !important;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .hdc-section {

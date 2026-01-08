@@ -44,6 +44,7 @@ export interface CashFlowItem {
   targetDscr?: number; // Target DSCR maintained through cash management (1.05x)
   dscrWithCurrentPay?: number; // DSCR including all sub-debt current pay portions
   ozYear5TaxPayment?: number; // Year 5 OZ tax payment (after step-up)
+  ozRecaptureAvoided?: number; // IMPL-048: This year's recapture avoided (OZ 10+ year holds only)
   stateLIHTCCredit?: number; // State LIHTC credit for direct use path (IMPL-018)
   federalLIHTCCredit?: number; // Federal LIHTC credit for this year (IMPL-021b)
   // TIER 2: Phil Debt Conversion fields
@@ -133,6 +134,7 @@ export interface InvestorAnalysisResults {
   holdPeriod: number;
   interestReserveAmount: number;
   investorEquity: number;
+  syndicatedEquityOffset?: number; // IMPL-046: State LIHTC syndication offset (for UI display)
 
   // Preferred equity results (IMPL-7.0-009)
   preferredEquityResult?: PreferredEquityResult;
@@ -163,6 +165,8 @@ export interface InvestorAnalysisResults {
   ozRecaptureAvoided?: number;  // Avoided 25% federal recapture tax on depreciation
   ozDeferralNPV?: number;       // NPV of 5-year capital gains tax deferral (8% discount rate)
   ozExitAppreciation?: number;  // Tax savings from tax-free exit appreciation
+  // IMPL-048b: Remaining LIHTC credits (Year 11+ catch-up for shorter hold periods)
+  remainingLIHTCCredits?: number;
 }
 
 export interface HDCAnalysisResults {

@@ -8,6 +8,7 @@ import InvestorProfileSection from './inputs/InvestorProfileSection';
 import ProjectionsSection from './inputs/ProjectionsSection';
 import HDCFeesSection from './inputs/HDCFeesSection';
 import InvestmentPortalSection from './inputs/InvestmentPortalSection';
+import SaveConfiguration from './inputs/SaveConfiguration';
 // Legacy imports (kept for preset/save functionality)
 import { PROPERTY_PRESETS } from '../../utils/taxbenefits/propertyPresets';
 import { calculatorService, CalculatorConfiguration } from '../../services/taxbenefits/calculatorService';
@@ -627,7 +628,15 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           borderRadius:'5px',
           background: 'rgba(127, 189, 69, 0.1)'}}
     >
-      <h2 className="text-xl font-semibold" style={{marginBottom: '2rem', color: '#407F7F'}}>Inputs</h2>
+      <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
+        <h2 className="text-lg sm:text-xl font-semibold" style={{margin: 0, color: '#407F7F'}}>Inputs</h2>
+        {!props.hideSaveConfiguration && !props.isReadOnly && (
+          <SaveConfiguration
+            onSaveConfiguration={handleSaveConfiguration}
+            buttonStyle="compact"
+          />
+        )}
+      </div>
 
       <div className="space-y-4">
         {/* Panel 1: Project Definition - IMPL-035: Simple property state dropdown */}
@@ -646,7 +655,6 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           setSelectedState={props.handleStateChange}
           formatCurrency={props.formatCurrency}
           onPresetSelect={props.isReadOnly ? undefined : handlePresetSelect}
-          onSaveConfiguration={props.hideSaveConfiguration || props.isReadOnly ? undefined : handleSaveConfiguration}
           isReadOnly={props.isReadOnly}
         />
 

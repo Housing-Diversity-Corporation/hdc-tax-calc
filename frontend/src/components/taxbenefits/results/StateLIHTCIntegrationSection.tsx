@@ -45,11 +45,11 @@ const StateLIHTCIntegrationSection: React.FC<StateLIHTCIntegrationSectionProps> 
     }
   };
 
-  // Format treatment display
+  // IMPL-045: Format treatment display with accurate labels
   const getTreatmentDisplay = (): string => {
     switch (treatment) {
       case 'capital_stack':
-        return 'Added to Capital Stack';
+        return 'Reduces Equity Requirement';  // Syndicated proceeds offset investor equity
       case 'tax_benefit':
         return 'Added to Tax Benefits';
       case 'none':

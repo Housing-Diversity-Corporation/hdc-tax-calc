@@ -3,6 +3,7 @@ import '../../../styles/taxbenefits/hdcCalculator.css';
 
 interface InvestmentSummarySectionProps {
   investorEquity: number;
+  syndicatedEquityOffset?: number; // IMPL-046: State LIHTC syndication offset
   hdcFee: number;
   formatCurrency: (value: number) => string;
   compact?: boolean; // Optional prop to use compact layout
@@ -10,10 +11,16 @@ interface InvestmentSummarySectionProps {
 
 const InvestmentSummarySection: React.FC<InvestmentSummarySectionProps> = ({
   investorEquity,
+  syndicatedEquityOffset = 0,
   hdcFee,
   formatCurrency,
   compact = false
 }) => {
+  // IMPL-046: Calculate net equity after syndication offset
+  const hasOffset = syndicatedEquityOffset > 0;
+  const netEquity = investorEquity - syndicatedEquityOffset;
+  // Total investment uses net equity (matches MOIC denominator)
+  const totalInvestment = netEquity + hdcFee;
 
   // Use compact layout only when explicitly requested
   if (compact) {
@@ -37,7 +44,7 @@ const InvestmentSummarySection: React.FC<InvestmentSummarySectionProps> = ({
             fontSize: '1rem',
             color: 'var(--hdc-brown-rust)',
             fontWeight: 700
-          }}>{formatCurrency(investorEquity + hdcFee)}</span>
+          }}>{formatCurrency(totalInvestment)}</span>
         </div>
         <div style={{
           flex: 1,
@@ -48,15 +55,53 @@ const InvestmentSummarySection: React.FC<InvestmentSummarySectionProps> = ({
           paddingBottom: '0.5rem',
           gap: '0.5rem'
         }}>
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '0.25rem 0',
-          }}>
-            <span style={{ fontSize: '0.85rem' }}>Investor Equity:</span>
-            <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{formatCurrency(investorEquity)}</span>
-          </div>
+          {/* IMPL-046: Show offset breakdown when active */}
+          {hasOffset ? (
+            <>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '0.25rem 0',
+              }}>
+                <span style={{ fontSize: '0.85rem' }}>OZ Equity Required:</span>
+                <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{formatCurrency(investorEquity)}</span>
+              </div>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '0.25rem 0',
+              }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--hdc-faded-jade)' }}>State LIHTC Offset:</span>
+                <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--hdc-faded-jade)' }}>
+                  ({formatCurrency(syndicatedEquityOffset)})
+                </span>
+              </div>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '0.25rem 0',
+                borderTop: '1px dashed var(--hdc-oslo-gray)',
+                marginTop: '0.25rem',
+                paddingTop: '0.5rem',
+              }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Net Investor Equity:</span>
+                <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{formatCurrency(netEquity)}</span>
+              </div>
+            </>
+          ) : (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '0.25rem 0',
+            }}>
+              <span style={{ fontSize: '0.85rem' }}>Investor Equity:</span>
+              <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{formatCurrency(investorEquity)}</span>
+            </div>
+          )}
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -86,13 +131,41 @@ const InvestmentSummarySection: React.FC<InvestmentSummarySectionProps> = ({
           fontSize: '1.125rem',
           color: 'var(--hdc-brown-rust)',
           fontWeight: 700
-        }}>{formatCurrency(investorEquity + hdcFee)}</span>
+        }}>{formatCurrency(totalInvestment)}</span>
       </div>
       <div style={{ paddingTop: '0.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-          <span style={{ fontSize: '0.95rem' }}>Investor Equity:</span>
-          <span style={{ fontWeight: 600, fontSize: '1rem' }}>{formatCurrency(investorEquity)}</span>
-        </div>
+        {/* IMPL-046: Show offset breakdown when active */}
+        {hasOffset ? (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '0.95rem' }}>OZ Equity Required:</span>
+              <span style={{ fontWeight: 600, fontSize: '1rem' }}>{formatCurrency(investorEquity)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '0.95rem', color: 'var(--hdc-faded-jade)' }}>State LIHTC Offset:</span>
+              <span style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--hdc-faded-jade)' }}>
+                ({formatCurrency(syndicatedEquityOffset)})
+              </span>
+            </div>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '0.5rem',
+              borderTop: '1px dashed var(--hdc-oslo-gray)',
+              paddingTop: '0.5rem',
+              marginTop: '0.25rem'
+            }}>
+              <span style={{ fontSize: '0.95rem', fontWeight: 600 }}>Net Investor Equity:</span>
+              <span style={{ fontWeight: 700, fontSize: '1rem' }}>{formatCurrency(netEquity)}</span>
+            </div>
+          </>
+        ) : (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+            <span style={{ fontSize: '0.95rem' }}>Investor Equity:</span>
+            <span style={{ fontWeight: 600, fontSize: '1rem' }}>{formatCurrency(investorEquity)}</span>
+          </div>
+        )}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: '0.95rem' }}>HDC Fee:</span>
           <span style={{

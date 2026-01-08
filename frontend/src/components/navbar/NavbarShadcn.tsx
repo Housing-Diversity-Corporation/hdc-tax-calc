@@ -156,7 +156,7 @@ const Navbar: React.FC<NavbarProps> = ({
                           className="flex items-center w-full select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground justify-start h-auto font-medium"
                         >
                           <Calculator className="mr-2 h-4 w-4" />
-                          <span className="text-sm font-medium">OZ Benefits Calculator</span>
+                          <span className="text-sm font-medium">Tax Benefits Calculator</span>
                         </Button>
                       </NavigationMenuLink>
                     </li>
@@ -200,19 +200,19 @@ const Navbar: React.FC<NavbarProps> = ({
             <PopoverTrigger asChild>
               <Button
                 variant="ghost"
-                className="relative h-8 w-8 min-h-8 min-w-8 max-h-8 max-w-8 rounded-full p-0 shrink-0"
-                style={{ height: '32px', width: '32px', minHeight: '32px', minWidth: '32px', maxHeight: '32px', maxWidth: '32px' }}
+                className="relative rounded-full p-0 shrink-0"
+                style={{ height: '53px', width: '53px', minHeight: '53px', minWidth: '53px', maxHeight: '53px', maxWidth: '53px' }}
                 onMouseEnter={() => setIsProfileMenuOpen(true)}
                 onMouseLeave={() => setIsProfileMenuOpen(false)}
               >
-                <Avatar className="h-8 w-8" style={{ height: '32px', width: '32px' }}>
+                <Avatar style={{ height: '53px', width: '53px' }}>
                   <AvatarImage
                     src={profileImageUrl ? `${profileImageUrl}?t=${cacheBuster}` : undefined}
                     alt="Profile"
                     className="object-cover h-full w-full"
-                    style={{ height: '32px', width: '32px', objectFit: 'cover' }}
+                    style={{ height: '53px', width: '53px', objectFit: 'cover' }}
                   />
-                  <AvatarFallback className="bg-[#7fbd45] text-white text-sm">{userInitial}</AvatarFallback>
+                  <AvatarFallback className="bg-[#7fbd45] text-white text-lg">{userInitial}</AvatarFallback>
                 </Avatar>
               </Button>
             </PopoverTrigger>
@@ -314,7 +314,7 @@ const Navbar: React.FC<NavbarProps> = ({
                           className="flex w-full items-center rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-gray-200 hover:text-gray-900 focus:bg-gray-200 focus:text-gray-900 focus:outline-none disabled:pointer-events-none disabled:opacity-50 dark:hover:bg-gray-700 dark:hover:text-gray-50 dark:focus:bg-gray-700 dark:focus:text-gray-50 justify-start h-auto"
                         >
                           <Calculator className="mr-2 h-4 w-4" />
-                          OZ Benefits Calculator
+                          Tax Benefits Calculator
                         </Button>
                       </SheetClose>
                       <SheetClose asChild>

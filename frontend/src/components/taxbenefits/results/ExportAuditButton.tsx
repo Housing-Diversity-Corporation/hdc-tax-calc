@@ -66,8 +66,6 @@ export const ExportAuditButton: React.FC<ExportAuditButtonProps> = ({
 
   return (
     <Button
-      variant="outline"
-      size="sm"
       disabled={disabled || !investorResults}
       onClick={handleExport}
       className="!bg-[var(--hdc-sushi)] !px-1.5 !py-1 sm:!px-3 md:!px-4 md:!py-2 text-[10px] sm:text-xs md:text-sm hover:opacity-90"

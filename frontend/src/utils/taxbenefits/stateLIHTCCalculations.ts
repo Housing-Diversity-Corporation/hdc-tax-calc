@@ -200,17 +200,16 @@ function validateStateLIHTCParams(params: StateLIHTCCalculationParams): void {
 }
 
 /**
- * Determines the syndication rate based on program transferability and investor state
+ * Determines the syndication rate based on program transferability and investor state liability
  *
- * Logic:
- * - Certificated/Transferable: 90% (can sell to any state taxpayer)
- * - Bifurcated: 85% (separate from federal, syndicate to state investors)
- * - Allocated: 100% for in-state, program rate (80%) for out-of-state with liability, 0% without liability
- * - Grant: 100% (direct to project)
+ * IMPL-047: Toggle controls credit path for ALL program types
+ * - If investorHasStateLiability is TRUE → 100% direct use (investor uses credits directly)
+ * - If investorHasStateLiability is FALSE → syndicate at program rate (85-90%)
+ * - Grant programs: always 100% (direct to project, regardless of toggle)
  *
  * @param program - State LIHTC program
- * @param investorState - Investor state code
- * @param propertyState - Property state code
+ * @param investorState - Investor state code (unused after IMPL-047, kept for API compatibility)
+ * @param propertyState - Property state code (unused after IMPL-047, kept for API compatibility)
  * @param investorHasStateLiability - Whether investor has tax liability in property state
  * @param syndicationRateOverride - Optional override rate (0-100)
  * @returns Syndication rate (0.0-1.0)
@@ -227,23 +226,19 @@ export function determineSyndicationRate(
     return syndicationRateOverride / 100;
   }
 
-  // Grant programs: always 100%
+  // Grant programs: always 100% (direct to project)
   if (program.transferability === 'grant') {
     return 1.0;
   }
 
-  // Allocated programs: special handling
-  if (program.transferability === 'allocated') {
-    // In-state investors: 100% (no syndication discount)
-    if (investorState === propertyState) {
-      return 1.0;
-    }
-    // Out-of-state: program rate if has liability, 0% if not
-    return investorHasStateLiability ? (program.syndicationRate / 100) : 0.0;
+  // IMPL-047: Toggle overrides in-state/out-of-state logic for ALL program types
+  // If investor has state tax liability → 100% direct use
+  // If investor does NOT have liability → syndicate at program rate
+  if (investorHasStateLiability) {
+    return 1.0;  // Direct use - investor can use credits directly
+  } else {
+    return program.syndicationRate / 100;  // Syndicated path
   }
-
-  // All other transferability types: use program's syndication rate
-  return program.syndicationRate / 100;
 }
 
 /**
@@ -425,12 +420,8 @@ export function generateWarnings(
     );
   }
 
-  // No state liability with allocated credits
-  if (program.transferability === 'allocated' && syndicationRate === 0) {
-    warnings.push(
-      `Investor has no ${params.propertyState} tax liability - allocated credits cannot be used`
-    );
-  }
+  // IMPL-047: Removed warning about allocated credits without liability
+  // Toggle OFF now syndicates at program rate instead of 0%, so credits are always usable
 
   return warnings;
 }

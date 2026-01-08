@@ -394,6 +394,7 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
     // Depreciation can only be claimed after building is placed in service
     let grossDepreciationTaxBenefit = 0; // Benefit before any adjustments
     let depreciationTaxBenefit = 0; // Net benefit to investor
+    let yearlyDepreciationAmount = 0; // IMPL-048: Track raw depreciation for OZ recapture avoided
 
     if (year >= placedInServiceYear) {
       const depreciationYear = year - placedInServiceYear + 1; // Which year of depreciation this is
@@ -433,6 +434,9 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
         grossDepreciationTaxBenefit = bonusTaxBenefit + macrsTaxBenefit;
         depreciationTaxBenefit = grossDepreciationTaxBenefit; // Full benefit to investor
 
+        // IMPL-048: Track raw depreciation amount for OZ recapture avoided calculation
+        yearlyDepreciationAmount = bonusDepreciation + year1MACRS;
+
       } else if (depreciationYear <= 27.5) {
         // Subsequent years: Annual straight-line depreciation tax benefit
         // IMPL-041: Use straight-line rate (all states accept MACRS straight-line)
@@ -442,6 +446,9 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
         if (annualDepreciation > 0 && effectiveTaxRate > 0) {
           grossDepreciationTaxBenefit = annualDepreciation * (effectiveTaxRate / 100);
           depreciationTaxBenefit = grossDepreciationTaxBenefit; // Full benefit to investor
+
+          // IMPL-048: Track raw depreciation amount for OZ recapture avoided calculation
+          yearlyDepreciationAmount = annualDepreciation;
 
           // Validate tax benefits go 100% to investor, never split by promote
           validateTaxBenefitDistribution(
@@ -1230,6 +1237,15 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
       federalLIHTCCredit = paramFederalLIHTCCredits[year - 1] || 0;
     }
 
+    // IMPL-048: Calculate OZ recapture avoided for this year
+    // For OZ investors with 10+ year holds, they avoid 25% federal recapture tax on depreciation
+    // This benefit accrues each year as depreciation is taken (not as a lump sum at exit)
+    let ozRecaptureAvoided = 0;
+    if (params.ozEnabled && paramHoldPeriod >= 10 && yearlyDepreciationAmount > 0) {
+      // 25% federal recapture rate applies to the depreciation amount
+      ozRecaptureAvoided = yearlyDepreciationAmount * 0.25;
+    }
+
     // CRITICAL FIX (Jan 2025): HDC tax benefit fee deducted from annual cash flows
     // This ensures fees are treated as operating expenses, NOT upfront capital costs
     // Subtract outside investor current pay, AUM fee paid, and HDC tax benefit fee from cash flow
@@ -1239,8 +1255,9 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
     // Note: federalLIHTCCredit added for all LIHTC deals (IMPL-021b) - 100% to investor, no promote split
     // IMPL-029: Removed duplicate deductions (hdcSubDebtCurrentPay, outsideInvestorCurrentPay, aumFeePaid)
     // These are already reflected in reduced operatingCashFlow via cashAfterDebtAndFees
+    // IMPL-048: Added ozRecaptureAvoided - recognized annually as depreciation is taken
     const totalCashFlow = yearlyTaxBenefit + operatingCashFlow + federalLIHTCCredit + stateLIHTCCredit +
-                         investorSubDebtInterestReceived + excessReserveDistribution;
+                         investorSubDebtInterestReceived + excessReserveDistribution + ozRecaptureAvoided;
     cumulativeReturns += totalCashFlow;
 
     // DSCR already calculated above before HDC fee determination
@@ -1287,6 +1304,7 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
       outsideInvestorPIKAccrued: outsideInvestorSubDebtPIKAccrued,
       hdcSubDebtPIKAccrued,
       ozYear5TaxPayment, // Track for display but excluded from totalCashFlow
+      ozRecaptureAvoided, // IMPL-048: This year's recapture avoided (OZ 10+ year holds only)
       stateLIHTCCredit, // State LIHTC credit for direct use path (IMPL-018)
       federalLIHTCCredit, // Federal LIHTC credit (IMPL-021b) - 100% to investor
       totalCashFlow,
@@ -1479,32 +1497,13 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
     });
   }
 
-  const cashFlowArray = investorCashFlows.map(cf => cf.totalCashFlow);
-  // Include remaining LIHTC credits in exit year cash flow
-  cashFlowArray.push(exitProceeds + investorSubDebtAtExit + remainingLIHTCCredits);
-
-  // IMPL-029: Calculate OZ benefits for 10+ year holds
-  let ozRecaptureAvoided = 0;
+  // IMPL-048: Calculate OZ benefits for 10+ year holds
+  // Recapture avoided is now calculated annually in the main loop (lines 1240-1247)
+  // Only deferral NPV and exit appreciation are calculated here as exit-time benefits
   let ozDeferralNPV = 0;
   let ozExitAppreciation = 0;
 
   if (params.ozEnabled && paramHoldPeriod >= 10) {
-    // A) Recapture Avoidance: Avoided 25% federal recapture tax on depreciation
-    // Use depreciable basis (project cost - land value) and bonus depreciation settings
-    const depreciableBasis = Math.max(0, paramProjectCost - paramLandValue);
-    const bonusDepreciationPct = params.yearOneDepreciationPct || 60;
-    const bonusDepreciation = depreciableBasis * (bonusDepreciationPct / 100);
-    const remainingBasis = depreciableBasis - bonusDepreciation;
-    const depreciableLife = 27.5; // Standard residential MACRS
-    const annualDepreciation = remainingBasis / depreciableLife;
-    // Year 1: bonus + prorated MACRS, Years 2+: full annual
-    const year1Depreciation = bonusDepreciation + (annualDepreciation * 0.5); // Mid-month convention
-    const years2PlusDepreciation = annualDepreciation * (paramHoldPeriod - 1);
-    const cumulativeDepreciation = year1Depreciation + years2PlusDepreciation;
-    // IMPL-029B: Depreciation is 100% allocated to investor - don't multiply by equity %
-    // Atrium formula: $38M cumulative depreciation × 25% recapture rate = $9.5M
-    ozRecaptureAvoided = cumulativeDepreciation * 0.25; // Federal recapture rate
-
     // B) Deferral NPV: Time value of deferring capital gains tax for 5 years (8% discount rate)
     const ozDeferredGains = params.deferredCapitalGains || 0;
     const ltCapitalGainsRate = params.ltCapitalGainsRate || 20;
@@ -1523,8 +1522,19 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
     ozExitAppreciation = investorAppreciation * capitalGainsTaxRateDecimal;
   }
 
-  // Total OZ benefits
+  // IMPL-048: Sum up annual recapture avoided from cash flows
+  // This replaces the lump-sum calculation to properly time the benefit recognition
+  const ozRecaptureAvoided = investorCashFlows.reduce((sum, cf) => sum + (cf.ozRecaptureAvoided || 0), 0);
+
+  // Total OZ benefits (recapture is now summed from annual cash flows)
   const totalOzBenefits = ozRecaptureAvoided + ozDeferralNPV + ozExitAppreciation;
+
+  // IMPL-048: Build IRR cash flow array with correct timing
+  // Exit proceeds go in final year (not as separate element) to avoid off-by-one error
+  const cashFlowArray = investorCashFlows.map(cf => cf.totalCashFlow);
+  // Add exit proceeds + remaining benefits to final year's cash flow
+  // Note: ozRecaptureAvoided is already included in annual totalCashFlow
+  cashFlowArray[cashFlowArray.length - 1] += exitProceeds + investorSubDebtAtExit + remainingLIHTCCredits + ozDeferralNPV + ozExitAppreciation;
 
   // CRITICAL FIX (Jan 2025): Initial investment is ONLY investor equity
   // Previous error: Was adding HDC fees to initial investment, causing double-counting
@@ -1535,7 +1545,10 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
   const totalInvestment = investorEquityAfterOffset;
   // IMPL-029: Include OZ benefits in totalReturns
   // IMPL-030C: Include remaining LIHTC credits (Year 11 catch-up) in totalReturns
-  const totalReturns = cumulativeReturns + exitProceeds + investorSubDebtAtExit + totalOzBenefits + remainingLIHTCCredits;
+  // IMPL-048b: Don't double-count ozRecaptureAvoided - it's already in cumulativeReturns (via annual totalCashFlow)
+  // Only add exit-time OZ benefits (deferral NPV and exit appreciation) to avoid double-counting
+  const exitOnlyOzBenefits = ozDeferralNPV + ozExitAppreciation;
+  const totalReturns = cumulativeReturns + exitProceeds + investorSubDebtAtExit + exitOnlyOzBenefits + remainingLIHTCCredits;
   const multiple = totalInvestment > 0 ? totalReturns / totalInvestment : 0;
   const irr = calculateIRR(cashFlowArray, totalInvestment, paramHoldPeriod);
 
@@ -1575,12 +1588,15 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
     holdPeriod: paramHoldPeriod,
     interestReserveAmount: interestReserveAmount,
     investorEquity: investorEquity, // CRITICAL: Single source of truth for investor equity (used by UI)
+    syndicatedEquityOffset: syndicatedEquityOffset, // IMPL-046: State LIHTC syndication offset for UI display
     preferredEquityResult, // IMPL-7.0-009: Preferred equity waterfall integration
     preferredEquityAtExit, // IMPL-7.0-009: Amount paid to preferred equity at exit
     // IMPL-029: OZ benefits for 10+ year holds
     ozRecaptureAvoided,
     ozDeferralNPV,
-    ozExitAppreciation
+    ozExitAppreciation,
+    // IMPL-048b: Expose remaining LIHTC credits for UI display
+    remainingLIHTCCredits
   };
 
   // NEW: Add tax planning calculations if requested

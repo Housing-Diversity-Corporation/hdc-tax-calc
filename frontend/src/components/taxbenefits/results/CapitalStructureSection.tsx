@@ -125,6 +125,15 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
                    <span className="hdc-result-label">Excess (Reduced Capital Need):</span>
                    <span className="hdc-result-value hdc-value-positive">{formatCurrency(excessCapital)}</span>
                  </div>
+                 {/* IMPL-046: Note explaining equity offset */}
+                 <div style={{
+                   marginTop: '0.5rem',
+                   fontSize: '0.75rem',
+                   color: '#666',
+                   fontStyle: 'italic'
+                 }}>
+                   * Syndicated proceeds reduce investor equity requirement
+                 </div>
                </div>
              </>
            )}

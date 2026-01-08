@@ -98,22 +98,23 @@ describe('State LIHTC Calculations', () => {
         expect(rate).toBe(0.85);
       });
 
-      it('should return 100% for allocated in-state investor', () => {
+      // IMPL-047: Toggle controls credit path for ALL program types
+      it('should return 100% when investorHasStateLiability is true (any program)', () => {
         const program = getStateLIHTCProgram('SC')!;
         const rate = determineSyndicationRate(program, 'SC', 'SC', true);
         expect(rate).toBe(1.0);
       });
 
-      it('should return 80% for allocated out-of-state with liability', () => {
+      it('should return 100% for out-of-state with liability (IMPL-047)', () => {
         const program = getStateLIHTCProgram('SC')!;
         const rate = determineSyndicationRate(program, 'NY', 'SC', true);
-        expect(rate).toBe(0.8);
+        expect(rate).toBe(1.0);  // IMPL-047: Toggle ON = 100% regardless of state
       });
 
-      it('should return 0% for allocated without liability', () => {
+      it('should return program rate for allocated without liability (IMPL-047)', () => {
         const program = getStateLIHTCProgram('SC')!;
         const rate = determineSyndicationRate(program, 'NY', 'SC', false);
-        expect(rate).toBe(0.0);
+        expect(rate).toBe(0.8);  // IMPL-047: Toggle OFF = program syndication rate
       });
 
       it('should return 100% for grant', () => {
@@ -194,7 +195,7 @@ describe('State LIHTC Calculations', () => {
         expect(result.schedule.annualCredit).toBe(1950000);
       });
 
-      it('should calculate GA piggyback for in-state investor', () => {
+      it('should calculate GA piggyback for in-state investor (IMPL-047: 100%)', () => {
         const result = calculateStateLIHTC({
           federalAnnualCredit: federalCredit,
           propertyState: 'GA',
@@ -202,8 +203,9 @@ describe('State LIHTC Calculations', () => {
           pisMonth: 7,
         });
 
-        expect(result.syndicationRate).toBe(0.85);
-        expect(result.netBenefit).toBe(16575000);
+        // IMPL-047: In-state investors have state liability by default → 100% direct use
+        expect(result.syndicationRate).toBe(1.0);
+        expect(result.netBenefit).toBe(19500000);
       });
     });
 
@@ -236,7 +238,7 @@ describe('State LIHTC Calculations', () => {
         expect(result.netBenefit).toBe(19500000); // Full credit
       });
 
-      it('should give 0% to out-of-state investor without liability', () => {
+      it('should give program rate to out-of-state without liability (IMPL-047)', () => {
         const result = calculateStateLIHTC({
           federalAnnualCredit: federalCredit,
           propertyState: 'SC',
@@ -245,11 +247,9 @@ describe('State LIHTC Calculations', () => {
           investorHasStateLiability: false,
         });
 
-        expect(result.syndicationRate).toBe(0);
-        expect(result.netBenefit).toBe(0);
-        expect(result.warnings).toContain(
-          'Investor has no SC tax liability - allocated credits cannot be used'
-        );
+        // IMPL-047: Toggle OFF = syndicate at program rate (80% for SC allocated)
+        expect(result.syndicationRate).toBe(0.8);
+        expect(result.netBenefit).toBe(15600000); // 80% of 19.5M
       });
     });
 
@@ -435,7 +435,7 @@ describe('State LIHTC Calculations', () => {
       });
     });
 
-    describe('NY - In-State vs Out-of-State', () => {
+    describe('NY - In-State vs Out-of-State (IMPL-047)', () => {
       it('should give 100% to in-state investor', () => {
         const result = calculateStateLIHTC({
           federalAnnualCredit: 1950000,
@@ -445,11 +445,11 @@ describe('State LIHTC Calculations', () => {
           userAmount: 10000000,
         });
 
-        expect(result.syndicationRate).toBe(1.0); // In-state
+        expect(result.syndicationRate).toBe(1.0); // In-state has liability by default
         expect(result.netBenefit).toBe(10000000);
       });
 
-      it('should give 80% to out-of-state investor with liability', () => {
+      it('should give 100% to out-of-state investor with liability (IMPL-047)', () => {
         const result = calculateStateLIHTC({
           federalAnnualCredit: 1950000,
           propertyState: 'NY',
@@ -459,8 +459,9 @@ describe('State LIHTC Calculations', () => {
           investorHasStateLiability: true, // Has NY tax liability
         });
 
-        expect(result.syndicationRate).toBe(0.8);
-        expect(result.netBenefit).toBe(8000000);
+        // IMPL-047: Toggle ON = 100% direct use
+        expect(result.syndicationRate).toBe(1.0);
+        expect(result.netBenefit).toBe(10000000);
       });
     });
 
@@ -777,7 +778,9 @@ describe('State LIHTC Calculations', () => {
       expect(hasSunsetWarning).toBe(true);
     });
 
-    it('should warn about no liability with allocated credits', () => {
+    // IMPL-047: Removed "no liability" warning for allocated credits since
+    // toggle OFF now results in syndication at program rate, not 0%
+    it('should NOT warn about no liability with allocated credits (IMPL-047)', () => {
       const result = calculateStateLIHTC({
         federalAnnualCredit: 1950000,
         propertyState: 'SC',
@@ -786,10 +789,11 @@ describe('State LIHTC Calculations', () => {
         investorHasStateLiability: false,
       });
 
+      // IMPL-047: No longer warns since credits are syndicated at program rate
       const hasLiabilityWarning = result.warnings.some((w) =>
         w.includes('tax liability')
       );
-      expect(hasLiabilityWarning).toBe(true);
+      expect(hasLiabilityWarning).toBe(false);
     });
   });
 
@@ -817,7 +821,7 @@ describe('State LIHTC Calculations', () => {
       expect(combinedTotal).toBe(36075000);
     });
 
-    it('should handle multiple investors with different liabilities', () => {
+    it('should handle multiple investors with different liabilities (IMPL-047)', () => {
       const federalCredit = 1950000;
 
       // In-state investor
@@ -849,9 +853,10 @@ describe('State LIHTC Calculations', () => {
         investorHasStateLiability: false,
       });
 
-      expect(inState.syndicationRate).toBe(1.0); // In-state gets 100%
-      expect(outStateWithLiability.syndicationRate).toBe(0.8); // Out-of-state with liability gets 80%
-      expect(outStateNoLiability.syndicationRate).toBe(0.0); // Out-of-state without liability gets 0%
+      // IMPL-047: Toggle controls credit path
+      expect(inState.syndicationRate).toBe(1.0); // In-state has liability by default → 100%
+      expect(outStateWithLiability.syndicationRate).toBe(1.0); // Toggle ON → 100% direct use
+      expect(outStateNoLiability.syndicationRate).toBe(0.8); // Toggle OFF → program rate (80% for NY allocated)
     });
   });
 
@@ -876,6 +881,97 @@ describe('State LIHTC Calculations', () => {
       expect(formatted).toContain('Gross State Credit');
       expect(formatted).toContain('Syndication Rate');
       expect(formatted).toContain('Net Benefit');
+    });
+  });
+
+  // ============================================================================
+  // IMPL-047: Toggle Controls Credit Path
+  // ============================================================================
+
+  describe('IMPL-047: Toggle Controls Credit Path', () => {
+    describe('GA (bifurcated program)', () => {
+      it('toggle ON → syndicationRate = 1.0 (direct_use)', () => {
+        const result = calculateStateLIHTC({
+          federalAnnualCredit: 1000000,
+          propertyState: 'GA',
+          investorState: 'NY', // Out-of-state
+          pisMonth: 7,
+          investorHasStateLiability: true, // Toggle ON
+        });
+        expect(result.syndicationRate).toBe(1.0);
+      });
+
+      it('toggle OFF → syndicationRate = 0.85 (syndicated)', () => {
+        const result = calculateStateLIHTC({
+          federalAnnualCredit: 1000000,
+          propertyState: 'GA',
+          investorState: 'NY',
+          pisMonth: 7,
+          investorHasStateLiability: false, // Toggle OFF
+        });
+        expect(result.syndicationRate).toBe(0.85); // GA bifurcated rate
+      });
+    });
+
+    describe('SC (allocated program)', () => {
+      it('toggle ON → syndicationRate = 1.0 (direct_use)', () => {
+        const result = calculateStateLIHTC({
+          federalAnnualCredit: 1000000,
+          propertyState: 'SC',
+          investorState: 'NY', // Out-of-state
+          pisMonth: 7,
+          investorHasStateLiability: true, // Toggle ON
+        });
+        expect(result.syndicationRate).toBe(1.0);
+      });
+
+      it('toggle OFF → syndicationRate = 0.80 (syndicated)', () => {
+        const result = calculateStateLIHTC({
+          federalAnnualCredit: 1000000,
+          propertyState: 'SC',
+          investorState: 'NY',
+          pisMonth: 7,
+          investorHasStateLiability: false, // Toggle OFF
+        });
+        expect(result.syndicationRate).toBe(0.8); // SC allocated rate
+      });
+    });
+
+    describe('NJ (grant program)', () => {
+      it('grant always returns 1.0 regardless of toggle', () => {
+        const resultOn = calculateStateLIHTC({
+          federalAnnualCredit: 1000000,
+          propertyState: 'NJ',
+          investorState: 'NY',
+          pisMonth: 7,
+          userAmount: 5000000,
+          investorHasStateLiability: true,
+        });
+        const resultOff = calculateStateLIHTC({
+          federalAnnualCredit: 1000000,
+          propertyState: 'NJ',
+          investorState: 'NY',
+          pisMonth: 7,
+          userAmount: 5000000,
+          investorHasStateLiability: false,
+        });
+        expect(resultOn.syndicationRate).toBe(1.0);
+        expect(resultOff.syndicationRate).toBe(1.0); // Grants always 100%
+      });
+    });
+
+    describe('Override takes precedence', () => {
+      it('syndicationRateOverride should override toggle', () => {
+        const result = calculateStateLIHTC({
+          federalAnnualCredit: 1000000,
+          propertyState: 'GA',
+          investorState: 'NY',
+          pisMonth: 7,
+          investorHasStateLiability: true, // Would give 1.0
+          syndicationRateOverride: 75, // Override to 75%
+        });
+        expect(result.syndicationRate).toBe(0.75);
+      });
     });
   });
 });

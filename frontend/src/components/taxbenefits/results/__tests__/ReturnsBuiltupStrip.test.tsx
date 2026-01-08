@@ -1,11 +1,12 @@
 /**
  * IMPL-028: Returns Buildup Strip Tests
+ * IMPL-026a: Updated for proper millions formatting (2 decimal places)
  *
  * Tests component derivation logic and conditional rendering.
  *
- * @version 1.0.0
- * @date 2025-12-27
- * @task IMPL-028
+ * @version 1.1.0
+ * @date 2026-01-06
+ * @task IMPL-028, IMPL-026a
  */
 
 import React from 'react';
@@ -13,31 +14,31 @@ import { render, screen } from '@testing-library/react';
 import ReturnsBuiltupStrip from '../ReturnsBuiltupStrip';
 import type { InvestorAnalysisResults, CashFlowItem } from '../../../../types/taxbenefits';
 
-// Mock formatters
+// Mock formatters - IMPL-026a: Use 2 decimal places for currency
 jest.mock('../../../../utils/taxbenefits/formatters', () => ({
-  formatAbbreviatedCurrency: (value: number) => `$${(value / 1e6).toFixed(1)}M`,
+  formatAbbreviatedCurrency: (value: number) => `$${(value / 1e6).toFixed(2)}M`,
   formatMultiple: (value: number) => `${value.toFixed(2)}x`,
 }));
 
 describe('IMPL-028: ReturnsBuiltupStrip', () => {
-  // Base mock results
+  // Base mock results - IMPL-026a: All values in MILLIONS per codebase convention
   const mockResults: InvestorAnalysisResults = {
     investorCashFlows: [],
-    exitProceeds: 5000000,
-    totalInvestment: 2000000,
-    totalReturns: 10000000,
+    exitProceeds: 5, // $5M
+    totalInvestment: 2, // $2M
+    totalReturns: 10, // $10M
     multiple: 5.0,
     irr: 25,
-    investorTaxBenefits: 3000000, // Depreciation
-    investorOperatingCashFlows: 1000000,
+    investorTaxBenefits: 3, // $3M Depreciation
+    investorOperatingCashFlows: 1, // $1M
     investorSubDebtInterest: 0,
     investorSubDebtInterestReceived: 0,
     remainingDebtAtExit: 0,
     subDebtAtExit: 0,
     investorSubDebtAtExit: 0,
     outsideInvestorSubDebtAtExit: 0,
-    exitValue: 10000000,
-    totalExitProceeds: 10000000,
+    exitValue: 10, // $10M
+    totalExitProceeds: 10, // $10M
     pikAccumulatedInterest: 0,
     investorIRR: 25,
     cashFlows: [],
@@ -47,40 +48,40 @@ describe('IMPL-028: ReturnsBuiltupStrip', () => {
     equityMultiple: 5.0,
     holdPeriod: 10,
     interestReserveAmount: 0,
-    investorEquity: 2000000,
+    investorEquity: 2, // $2M
   };
 
-  // Mock cash flows with LIHTC credits
+  // Mock cash flows with LIHTC credits - IMPL-026a: All values in MILLIONS
   const mockCashFlows: CashFlowItem[] = [
     {
       year: 1,
-      noi: 500000,
-      debtServicePayments: 100000,
-      cashAfterDebtService: 400000,
+      noi: 0.5, // $500K
+      debtServicePayments: 0.1,
+      cashAfterDebtService: 0.4,
       aumFeeAmount: 0,
-      cashAfterDebtAndFees: 400000,
-      taxBenefit: 300000,
-      operatingCashFlow: 100000,
+      cashAfterDebtAndFees: 0.4,
+      taxBenefit: 0.3,
+      operatingCashFlow: 0.1,
       subDebtInterest: 0,
-      totalCashFlow: 500000,
-      cumulativeReturns: 500000,
-      federalLIHTCCredit: 200000,
-      stateLIHTCCredit: 150000,
+      totalCashFlow: 0.5,
+      cumulativeReturns: 0.5,
+      federalLIHTCCredit: 0.2, // $200K
+      stateLIHTCCredit: 0.15, // $150K
     },
     {
       year: 2,
-      noi: 520000,
-      debtServicePayments: 100000,
-      cashAfterDebtService: 420000,
+      noi: 0.52,
+      debtServicePayments: 0.1,
+      cashAfterDebtService: 0.42,
       aumFeeAmount: 0,
-      cashAfterDebtAndFees: 420000,
-      taxBenefit: 300000,
-      operatingCashFlow: 120000,
+      cashAfterDebtAndFees: 0.42,
+      taxBenefit: 0.3,
+      operatingCashFlow: 0.12,
       subDebtInterest: 0,
-      totalCashFlow: 520000,
-      cumulativeReturns: 1020000,
-      federalLIHTCCredit: 200000,
-      stateLIHTCCredit: 150000,
+      totalCashFlow: 0.52,
+      cumulativeReturns: 1.02,
+      federalLIHTCCredit: 0.2, // $200K
+      stateLIHTCCredit: 0.15, // $150K
     },
   ];
 
@@ -107,7 +108,8 @@ describe('IMPL-028: ReturnsBuiltupStrip', () => {
       expect(screen.getByText('Federal LIHTC')).toBeInTheDocument();
     });
 
-    it('should render State LIHTC row when credits exist', () => {
+    // IMPL-045: Updated label from 'State LIHTC' to 'State LIHTC Credits'
+    it('should render State LIHTC Credits row when credits exist', () => {
       render(
         <ReturnsBuiltupStrip
           mainAnalysisResults={mockResults}
@@ -115,7 +117,7 @@ describe('IMPL-028: ReturnsBuiltupStrip', () => {
         />
       );
 
-      expect(screen.getByText('State LIHTC')).toBeInTheDocument();
+      expect(screen.getByText('State LIHTC Credits')).toBeInTheDocument();
     });
 
     it('should render Depreciation Benefits row', () => {
@@ -219,8 +221,8 @@ describe('IMPL-028: ReturnsBuiltupStrip', () => {
         />
       );
 
-      // 200000 * 2 years = 400000 = $0.4M
-      expect(screen.getByText('$0.4M')).toBeInTheDocument();
+      // IMPL-026a: 0.2M * 2 years = 0.4M → "$0.40M" with 2 decimals
+      expect(screen.getByText('$0.40M')).toBeInTheDocument();
     });
 
     it('should correctly sum State LIHTC from cash flows', () => {
@@ -231,8 +233,8 @@ describe('IMPL-028: ReturnsBuiltupStrip', () => {
         />
       );
 
-      // 150000 * 2 years = 300000 = $0.3M
-      expect(screen.getByText('$0.3M')).toBeInTheDocument();
+      // IMPL-026a: 0.15M * 2 years = 0.3M → "$0.30M" with 2 decimals
+      expect(screen.getByText('$0.30M')).toBeInTheDocument();
     });
   });
 });

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import PresetSelector from './PresetSelector';
-import SaveConfiguration from './SaveConfiguration';
 import PropertyStateDropdown from './PropertyStateDropdown';
 import { Input } from '../../ui/input';
 import { Slider } from '../../ui/slider';
@@ -28,7 +27,6 @@ interface ProjectDefinitionSectionProps {
   // Helper functions
   formatCurrency: (value: number) => string;
   onPresetSelect?: (presetId: string) => void;
-  onSaveConfiguration?: (configName: string) => Promise<void>;
 
   // Read-only mode
   isReadOnly?: boolean;
@@ -49,7 +47,6 @@ const ProjectDefinitionSection: React.FC<ProjectDefinitionSectionProps> = ({
   setSelectedState,
   formatCurrency,
   onPresetSelect,
-  onSaveConfiguration,
   isReadOnly = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -66,12 +63,6 @@ const ProjectDefinitionSection: React.FC<ProjectDefinitionSectionProps> = ({
             <span style={{ marginRight: '0.5rem' }}>{isExpanded ? '▼' : '▶'}</span>
             1. Project Definition
           </h3>
-          {onSaveConfiguration && !isReadOnly && (
-            <SaveConfiguration
-              onSaveConfiguration={onSaveConfiguration}
-              buttonStyle="compact"
-            />
-          )}
         </div>
 
         {isExpanded && (
