@@ -345,6 +345,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     props.investorTrack,
     props.passiveGainType,
     props.ozType,
+    props.ozVersion,
     props.holdPeriod
   ]);
 
