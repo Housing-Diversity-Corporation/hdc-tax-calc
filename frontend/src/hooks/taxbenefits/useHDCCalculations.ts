@@ -557,6 +557,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       taxBenefitDelayMonths: props.taxBenefitDelayMonths,
       ozEnabled: props.ozEnabled,
       ozType: props.ozType,
+      ozVersion: props.ozVersion,
       deferredCapitalGains: props.deferredCapitalGains,
       capitalGainsTaxRate: props.capitalGainsTaxRate,
       // Tax Planning Analysis
