@@ -247,8 +247,10 @@ describe('State Tax Profiles - Individual State Tests', () => {
   describe('Washington (special CG tax)', () => {
     it('should have special capital gains tax note', () => {
       const wa = getStateTaxProfile('WA');
-      expect(wa?.specialRules).toContain('7% CG tax');
+      expect(wa?.specialRules).toContain('7% capital gains tax');
       expect(wa?.specialRules).toContain('$270K');
+      expect(wa?.topRate).toBe(7); // IMPL-053: Updated to reflect 7% CG tax
+      expect(wa?.ozConformity).toBe('none'); // IMPL-053: WA does not conform to OZ
     });
   });
 

@@ -139,13 +139,20 @@ const InvestorTaxProfilePage: React.FC = () => {
   };
 
   // Auto-update rates when state changes
+  // IMPL-053: Use HDC_OZ_STRATEGY (derived from STATE_TAX_PROFILES) as single source of truth
   useEffect(() => {
-    if (currentProfile.selectedState && CONFORMING_STATES[currentProfile.selectedState]) {
-      const stateInfo = CONFORMING_STATES[currentProfile.selectedState];
+    if (currentProfile.selectedState && HDC_OZ_STRATEGY[currentProfile.selectedState]) {
+      const stateInfo = HDC_OZ_STRATEGY[currentProfile.selectedState];
       setCurrentProfile(prev => ({
         ...prev,
         stateOrdinaryRate: stateInfo.rate,
         stateCapitalGainsRate: stateInfo.rate,
+      }));
+    } else if (currentProfile.selectedState === 'NONE' || currentProfile.selectedState === '') {
+      setCurrentProfile(prev => ({
+        ...prev,
+        stateOrdinaryRate: 0,
+        stateCapitalGainsRate: 0,
       }));
     }
   }, [currentProfile.selectedState]);

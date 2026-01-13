@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { CONFORMING_STATES, DEFAULT_VALUES } from '../../utils/taxbenefits';
+import { DEFAULT_VALUES } from '../../utils/taxbenefits';
+import { HDC_OZ_STRATEGY } from '../../utils/taxbenefits/hdcOzStrategy';
 import { ValidationResult } from '../../utils/taxbenefits/validation';
 
 export const useHDCState = () => {
@@ -163,16 +164,17 @@ export const useHDCState = () => {
   const [ddaQctBoost, setDdaQctBoost] = useState(false);
 
   // Handle state selection change
+  // IMPL-053: Use HDC_OZ_STRATEGY (derived from STATE_TAX_PROFILES) as single source of truth
   const handleStateChange = (stateCode: string) => {
     setSelectedState(stateCode);
-    if (stateCode === 'NONE') {
+    if (stateCode === 'NONE' || stateCode === '') {
       setStateCapitalGainsRate(0);
       setStateTaxRate(0);
     } else if (stateCode === 'CUSTOM') {
       // Keep current rate for custom
-    } else if (CONFORMING_STATES[stateCode]) {
-      setStateCapitalGainsRate(CONFORMING_STATES[stateCode].rate);
-      setStateTaxRate(CONFORMING_STATES[stateCode].rate);
+    } else if (HDC_OZ_STRATEGY[stateCode]) {
+      setStateCapitalGainsRate(HDC_OZ_STRATEGY[stateCode].rate);
+      setStateTaxRate(HDC_OZ_STRATEGY[stateCode].rate);
     }
   };
 

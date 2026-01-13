@@ -129,11 +129,15 @@ const InvestorProfileSection: React.FC<InvestorProfileSectionProps> = ({
   };
 
   // Auto-update state rates when investor state changes
+  // IMPL-053: Use HDC_OZ_STRATEGY (derived from STATE_TAX_PROFILES) as single source of truth
   useEffect(() => {
-    if (investorState && CONFORMING_STATES[investorState]) {
-      const stateInfo = CONFORMING_STATES[investorState];
+    if (investorState && HDC_OZ_STRATEGY[investorState]) {
+      const stateInfo = HDC_OZ_STRATEGY[investorState];
       setStateOrdinaryRate(stateInfo.rate);
       setStateCapitalGainsRate(stateInfo.rate); // Most states tax cap gains as ordinary income
+    } else if (investorState === 'NONE' || investorState === '') {
+      setStateOrdinaryRate(0);
+      setStateCapitalGainsRate(0);
     }
   }, [investorState, setStateOrdinaryRate, setStateCapitalGainsRate]);
 

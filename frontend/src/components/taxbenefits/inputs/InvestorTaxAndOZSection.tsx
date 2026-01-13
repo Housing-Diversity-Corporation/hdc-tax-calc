@@ -188,11 +188,14 @@ const InvestorTaxAndOZSection: React.FC<InvestorTaxAndOZSectionProps> = ({
   }, [investorEquityAmount, setDeferredCapitalGains]);
 
   // Auto-update state ordinary rate when state selection changes
+  // IMPL-053: Use HDC_OZ_STRATEGY (derived from STATE_TAX_PROFILES) as single source of truth
   React.useEffect(() => {
-    if (selectedState && CONFORMING_STATES[selectedState]) {
-      const stateInfo = CONFORMING_STATES[selectedState];
+    if (selectedState && HDC_OZ_STRATEGY[selectedState]) {
+      const stateInfo = HDC_OZ_STRATEGY[selectedState];
       setStateOrdinaryRate(stateInfo.rate);
       // State capital gains rate is handled by handleStateChange in parent
+    } else if (selectedState === 'NONE' || selectedState === '') {
+      setStateOrdinaryRate(0);
     }
   }, [selectedState, setStateOrdinaryRate]);
 
