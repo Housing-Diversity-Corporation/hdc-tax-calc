@@ -378,7 +378,7 @@ const ComponentRow: React.FC<ComponentRowProps> = ({
         textAlign: 'right',
         minWidth: '50px',
       }}>
-        {component.multiple.toFixed(1)}x
+        {component.multiple.toFixed(2)}x
       </div>
 
       {/* Percentage of total */}
@@ -389,7 +389,7 @@ const ComponentRow: React.FC<ComponentRowProps> = ({
         textAlign: 'right',
         minWidth: '50px',
       }}>
-        {percentOfTotal.toFixed(0)}%
+        {percentOfTotal.toFixed(1)}%
       </div>
     </div>
   );
