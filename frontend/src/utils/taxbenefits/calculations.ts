@@ -1181,6 +1181,7 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
     // Opportunity Zone Year 5 Tax Payment
     // Per OBBBA 2025: 5 years after investment, pay tax on deferred gains with step-up
     let ozYear5TaxPayment = 0;
+    let stepUpTaxSavings = 0; // IMPL-054: Tax savings from OZ step-up basis
     if (params.ozEnabled && year === 5) {
       const ozDeferredGains = params.deferredCapitalGains || 0;
 
@@ -1199,6 +1200,10 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
       // Calculate tax due on adjusted gains (after step-up)
       const taxableGains = ozDeferredGains * (1 - stepUpPercent);
       ozYear5TaxPayment = taxableGains * ozCapitalGainsTaxRate;
+
+      // IMPL-054: Calculate step-up tax savings (benefit of this OZ deal)
+      // This is the tax avoided due to the basis step-up, included in IRR
+      stepUpTaxSavings = ozDeferredGains * stepUpPercent * ozCapitalGainsTaxRate;
 
       // Note: This will be offset by Year 5 depreciation benefits
       // The net impact may be positive if depreciation > OZ tax payment
@@ -1251,13 +1256,15 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
     // Subtract outside investor current pay, AUM fee paid, and HDC tax benefit fee from cash flow
     // Add excess reserve distribution if any
     // Note: ozYear5TaxPayment is excluded from IRR calculation as it's a pre-investment obligation
+    // Note: stepUpTaxSavings IS included - it's a benefit created by this OZ deal (IMPL-054)
     // Note: stateLIHTCCredit added for direct use path (IMPL-018)
     // Note: federalLIHTCCredit added for all LIHTC deals (IMPL-021b) - 100% to investor, no promote split
     // IMPL-029: Removed duplicate deductions (hdcSubDebtCurrentPay, outsideInvestorCurrentPay, aumFeePaid)
     // These are already reflected in reduced operatingCashFlow via cashAfterDebtAndFees
     // IMPL-048: Added ozRecaptureAvoided - recognized annually as depreciation is taken
+    // IMPL-054: Added stepUpTaxSavings - OZ step-up benefit in Year 5
     const totalCashFlow = yearlyTaxBenefit + operatingCashFlow + federalLIHTCCredit + stateLIHTCCredit +
-                         investorSubDebtInterestReceived + excessReserveDistribution + ozRecaptureAvoided;
+                         investorSubDebtInterestReceived + excessReserveDistribution + ozRecaptureAvoided + stepUpTaxSavings;
     cumulativeReturns += totalCashFlow;
 
     // DSCR already calculated above before HDC fee determination
@@ -1304,6 +1311,7 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
       outsideInvestorPIKAccrued: outsideInvestorSubDebtPIKAccrued,
       hdcSubDebtPIKAccrued,
       ozYear5TaxPayment, // Track for display but excluded from totalCashFlow
+      stepUpTaxSavings, // IMPL-054: Tax savings from step-up, included in totalCashFlow
       ozRecaptureAvoided, // IMPL-048: This year's recapture avoided (OZ 10+ year holds only)
       stateLIHTCCredit, // State LIHTC credit for direct use path (IMPL-018)
       federalLIHTCCredit, // Federal LIHTC credit (IMPL-021b) - 100% to investor

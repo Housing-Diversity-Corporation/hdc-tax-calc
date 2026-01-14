@@ -44,6 +44,7 @@ export interface CashFlowItem {
   targetDscr?: number; // Target DSCR maintained through cash management (1.05x)
   dscrWithCurrentPay?: number; // DSCR including all sub-debt current pay portions
   ozYear5TaxPayment?: number; // Year 5 OZ tax payment (after step-up)
+  stepUpTaxSavings?: number; // IMPL-054: Tax savings from OZ step-up basis (Year 5 only)
   ozRecaptureAvoided?: number; // IMPL-048: This year's recapture avoided (OZ 10+ year holds only)
   stateLIHTCCredit?: number; // State LIHTC credit for direct use path (IMPL-018)
   federalLIHTCCredit?: number; // Federal LIHTC credit for this year (IMPL-021b)
