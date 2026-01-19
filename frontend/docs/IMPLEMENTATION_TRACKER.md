@@ -1,9 +1,9 @@
-# OZBenefits Calculator — Implementation Tracker
+# TaxBenefits Calculator — Implementation Tracker
 
-**Document Version:** 7.0
-**Last Updated:** 2026-01-14
+**Document Version:** 7.7
+**Last Updated:** 2026-01-18
 **Branch:** main
-**Current Test Count:** 1,167 passing
+**Current Test Count:** 1,176 passing
 
 ---
 
@@ -11,6 +11,13 @@
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v7.7 | 2026-01-18 | Added Phase 12: IMPL-056 (Live Excel Model), IMPL-061 (Tax Benefit Calculation Fix + Constitution) |
+| v7.6 | 2026-01-15 | Added IMPL-060: OZ Benefits Dropdown Breakdown in Returns Buildup Strip |
+| v7.5 | 2026-01-15 | Renamed documentation from "OZBenefits" to "TaxBenefits" |
+| v7.4 | 2026-01-15 | Added IMPL-059: Conditional Capital Structure Display (hide 0% layers) |
+| v7.3 | 2026-01-15 | Added IMPL-058: Capital Structure UI Consolidation (removed duplicate InvestmentSummarySection) |
+| v7.2 | 2026-01-14 | Closed all pending IMPLs: IMPL-048/042 complete (2026-01-06), IMPL-034 obsolete |
+| v7.1 | 2026-01-14 | Added IMPL-057: Expose OZ Step-Up Savings in Returns Buildup Strip |
 | v7.0 | 2026-01-14 | Added Phase 11 (Jan 14): IMPL-050 through IMPL-055 (UI cleanup, OZ fixes, state data) |
 | v6.0 | 2026-01-07 | Added Phase 10 (Jan 7): IMPL-026B, IMPL-049A/B/C (Pre-Debug Cleanup). Branch merged to main. |
 | v5.0 | 2026-01-06 | Added Phase 9 (Jan 5-6): IMPL-045, IMPL-046 (State LIHTC UI Clarity) |
@@ -109,6 +116,8 @@
 | IMPL-045 | State LIHTC Returns Strip Visibility & Label Accuracy | ✅ Complete | 2026-01-05 |
 | IMPL-046 | Equity Display Consistency | ✅ Complete | 2026-01-05 |
 | IMPL-047 | State LIHTC Toggle Fix | ✅ Complete | 2026-01-06 |
+| IMPL-042 | Year 11 LIHTC Handling (via IMPL-048b) | ✅ Complete | 2026-01-06 |
+| IMPL-048 | IRR Calculation Fix (exit timing, OZ benefits, recapture) | ✅ Complete | 2026-01-06 |
 
 ### Phase 10: Pre-Debug Codebase Cleanup (Jan 7, 2026)
 
@@ -130,14 +139,21 @@
 | IMPL-053 | State Data Single Source of Truth (WA 7% fix) | ✅ Complete | 2026-01-14 |
 | IMPL-054 | Include OZ Step-Up Savings in IRR | ✅ Complete | 2026-01-14 |
 | IMPL-055 | Returns Buildup Strip Decimal Precision | ✅ Complete | 2026-01-14 |
+| IMPL-057 | Expose OZ Step-Up Savings in Returns Buildup Strip | ✅ Complete | 2026-01-14 |
+| IMPL-058 | Capital Structure UI Consolidation (removed InvestmentSummarySection, shows both $ and %) | ✅ Complete | 2026-01-15 |
+| IMPL-059 | Conditional Capital Structure Display (hide 0% layers) | ✅ Complete | 2026-01-15 |
+| IMPL-060 | OZ Benefits Dropdown Breakdown in Returns Buildup Strip | ✅ Complete | 2026-01-15 |
 
-### Pending
+### Phase 12: Live Excel Model & Calculation Architecture (Jan 18, 2026)
 
 | IMPL | Description | Status | Date |
 |------|-------------|--------|------|
-| IMPL-034 | Test Quarantine Resolution | 🔲 Pending | — |
-| IMPL-042 | Year 11 LIHTC Handling | 🔲 Pending | — |
-| IMPL-048 | IRR Calculation Fix | 🔲 Pending | — |
+| IMPL-056 | Live Calculation Excel Model (14 sheets, ~100 named ranges, live formulas) | ✅ Complete | 2026-01-18 |
+| IMPL-061 | Tax Benefit Calculation Fix + CALCULATION_ARCHITECTURE.md Constitution | ✅ Complete | 2026-01-18 |
+
+**IMPL-056 Details:** Replaced documentation-style Audit Export with live calculation Excel model. All formulas actually compute — auditor can change any input and watch outputs recalculate. 16/16 validation checks passing.
+
+**IMPL-061 Details:** Fixed bug where Tax Planning Capacity displayed $72M instead of ~$15M. Root cause: redundant calculation in `useHDCCalculations.ts`. Fix: Wire display to use engine values (single source of truth). Added `CALCULATION_ARCHITECTURE.md` to constitution.
 
 ---
 
@@ -147,6 +163,7 @@
 |------|-------|
 | IMPL-014 / 014a | Only 014b implemented |
 | IMPL-022 | Skipped |
+| IMPL-034 | Obsolete — no quarantined tests remain |
 | IMPL-026A/C/E | 026B used for output cleanup; 026C/D/E renumbered to 049A/B/C |
 | IMPL-027 | Skipped |
 | IMPL-032 | Superseded by IMPL-041 |
@@ -167,11 +184,11 @@
 | Phase 6: Returns Debugging | 028 to 031 | 4/4 | ✅ 100% |
 | Phase 7: State Conformity & PDF | 033, 040, 040b, 041 | 4/4 | ✅ 100% |
 | Phase 8: Investment Portal | 044, 044b | 2/2 | ✅ 100% |
-| Phase 9: State LIHTC UI Clarity | 045, 046, 047 | 3/3 | ✅ 100% |
+| Phase 9: State LIHTC UI Clarity | 045-048 | 5/5 | ✅ 100% |
 | Phase 10: Pre-Debug Cleanup | 026B, 049A-C | 4/4 | ✅ 100% |
-| Phase 11: UI Cleanup & OZ Fixes | 050-055 | 7/7 | ✅ 100% |
-| Pending | 034, 042, 048 | 0/3 | 🔲 0% |
-| **Total** | **56 IMPLs** | **53/56** | **95%** |
+| Phase 11: UI Cleanup & OZ Fixes | 050-055, 057-060 | 11/11 | ✅ 100% |
+| Phase 12: Live Excel & Architecture | 056, 061 | 2/2 | ✅ 100% |
+| **Total** | **61 IMPLs** | **61/61** | **✅ 100%** |
 
 ---
 
@@ -179,6 +196,7 @@
 
 | Date | Test Count | Notes |
 |------|------------|-------|
+| 2026-01-18 | 1,176 | Post IMPL-056/061 (Live Excel Model, Tax Benefit Fix) |
 | 2026-01-14 | 1,167 | Post IMPL-055 (OZ step-up, state data fixes) |
 | 2026-01-07 | 1,167 | Post IMPL-049C (codebase cleanup, 8,700 lines removed) |
 | 2026-01-06 | 1,140+ | Post IMPL-047 (toggle fix) |
@@ -209,6 +227,18 @@ All Claude Code prompts must reference `VALIDATION_PROTOCOL.md` and require:
 3. Grep audit for consistency
 4. Independent mathematical verification
 5. Complete file inventory
+
+**Before debugging calculation issues:** Check [debugging-patterns.md](./debugging-patterns.md) for known patterns (e.g., Hidden Value Bug).
+
+---
+
+## Related Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [VALIDATION_PROTOCOL.md](./VALIDATION_PROTOCOL.md) | Pre/post implementation validation checklist |
+| [debugging-patterns.md](./debugging-patterns.md) | Known debugging patterns and solutions |
+| [constitution/CALCULATION_ARCHITECTURE.md](./constitution/CALCULATION_ARCHITECTURE.md) | Single source of truth principle for calculations |
 
 ---
 

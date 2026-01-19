@@ -120,6 +120,7 @@ interface UseHDCCalculationsProps {
 }
 
 export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
+  debugger; // BREAKPOINT 5: Hook entry - inspect incoming props
   // Calculate interest reserve amount using shared function (single source of truth)
   const interestReserveAmount = useMemo(() => {
     return calculateInterestReserve({
@@ -494,6 +495,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
 
   // Main investor analysis
   const mainAnalysisResults: InvestorAnalysisResults = useMemo(() => {
+    debugger; // BREAKPOINT 4: Main calculation - inspect all props
     console.log('🔄 RECALCULATING mainAnalysisResults:', {
       aumFeeRate: props.aumFeeRate,
       aumFeeEnabled: props.aumFeeEnabled,
@@ -601,15 +603,24 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     const investorEquity = mainAnalysisResults.investorEquity;
     const freeInvestmentHurdle = investorEquity;
 
-    const totalNetTaxBenefits = taxCalculations.totalTaxBenefit; // Fee removed per IMPL-7.0-014
-    const investmentRecovered = Math.min(freeInvestmentHurdle, year1NetBenefit);
+    // IMPL-057: Use engine value (single source of truth) instead of hook calculation
+    const totalNetTaxBenefits = mainAnalysisResults.investorTaxBenefits;
+    // IMPL-057: Use year 1 tax benefit from engine cash flows
+    const year1TaxBenefitFromEngine = mainAnalysisResults.investorCashFlows[0]?.taxBenefit || 0;
+    const investmentRecovered = Math.min(freeInvestmentHurdle, year1TaxBenefitFromEngine);
     const totalNetTaxBenefitsAfterCG = totalNetTaxBenefits - taxCalculations.deferredGainsTaxDue - investmentRecovered;
+
+    // IMPL-057: Use engine values for year 1 tax benefit (single source of truth)
+    // Note: year1TaxBenefit and year1NetBenefit now come from engine for consistency
+    // hdcFee is 0 per IMPL-7.0-014, so year1NetBenefit = year1TaxBenefit
+    const year1TaxBenefitForReturn = year1TaxBenefitFromEngine;
+    const year1NetBenefitForReturn = year1TaxBenefitFromEngine; // hdcFee = 0
 
     return {
       investorEquity,
-      year1TaxBenefit,
-      year1HdcFee,
-      year1NetBenefit,
+      year1TaxBenefit: year1TaxBenefitForReturn,
+      year1HdcFee: 0, // Fee removed per IMPL-7.0-014
+      year1NetBenefit: year1NetBenefitForReturn,
       freeInvestmentHurdle,
       totalNetTaxBenefits,
       investmentRecovered,
@@ -621,11 +632,11 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
   }, [
     mainAnalysisResults.investorEquity,
     mainAnalysisResults.interestReserveAmount,
+    mainAnalysisResults.investorTaxBenefits, // IMPL-057: Use engine value
+    mainAnalysisResults.investorCashFlows, // IMPL-057: For year 1 tax benefit
     year1TaxBenefit,
     year1HdcFee,
     year1NetBenefit,
-    taxCalculations.totalTaxBenefit,
-    taxCalculations.hdcFee,
     taxCalculations.deferredGainsTaxDue,
     interestReserveAmount,
     effectiveProjectCost,
@@ -777,6 +788,11 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
 
     // Tax calculations
     ...taxCalculations,
+    // IMPL-057: Override with engine value (single source of truth)
+    // Note: netTaxBenefit is NOT overridden here because advanceFinancingCalculations
+    // depends on the pre-engine value for internal consistency. The advance financing
+    // feature may need its own fix in a future IMPL.
+    totalTaxBenefit: mainAnalysisResults.investorTaxBenefits,
 
     // Advance financing
     ...advanceFinancingCalculations,

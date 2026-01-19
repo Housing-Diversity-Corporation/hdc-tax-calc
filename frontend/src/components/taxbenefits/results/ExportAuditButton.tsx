@@ -1,18 +1,18 @@
 /**
- * IMPL-023: Audit Export Button Component
+ * IMPL-056: Live Calculation Excel Model Export Button
  *
- * Exports an Excel workbook with live formulas for auditor verification.
- * Generates a comprehensive audit trail of all HDC calculations.
+ * Exports a 14-sheet Excel workbook with live formulas for auditor verification.
+ * All formulas actually compute - changing any input recalculates all outputs.
  *
- * @version 1.0.0
- * @date 2025-12-26
- * @task IMPL-023 Step 2
+ * @version 3.0.0
+ * @date 2025-01-18
+ * @task IMPL-056 (supersedes IMPL-023, IMPL-038)
  */
 
 import React from 'react';
 import { Download } from 'lucide-react';
 import { Button } from '../../ui/button';
-import { exportAuditWorkbook, AuditExportParams } from '../../../utils/taxbenefits/auditExport/auditExport';
+import { exportAuditWorkbook, AuditExportParams } from '../../../utils/taxbenefits/auditExport';
 import type { CalculationParams, InvestorAnalysisResults, HDCAnalysisResults } from '../../../types/taxbenefits';
 
 export interface ExportAuditButtonProps {
@@ -69,11 +69,11 @@ export const ExportAuditButton: React.FC<ExportAuditButtonProps> = ({
       disabled={disabled || !investorResults}
       onClick={handleExport}
       className="!bg-[var(--hdc-sushi)] !px-1.5 !py-1 sm:!px-3 md:!px-4 md:!py-2 text-[10px] sm:text-xs md:text-sm hover:opacity-90"
-      title="Export audit workbook with live Excel formulas"
+      title="Export live Excel model with formulas - all calculations update automatically"
     >
       <Download className="h-3 w-3 md:h-4 md:w-4" />
-      <span className="hidden md:inline md:ml-2">Audit Export</span>
-      <span className="hidden sm:inline md:hidden sm:ml-1">Audit</span>
+      <span className="hidden md:inline md:ml-2">Live Excel</span>
+      <span className="hidden sm:inline md:hidden sm:ml-1">Excel</span>
     </Button>
   );
 };
