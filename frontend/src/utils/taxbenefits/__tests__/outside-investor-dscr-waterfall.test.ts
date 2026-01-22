@@ -40,7 +40,7 @@ describe('Outside Investor Sub-Debt Current Pay & DSCR Management', () => {
     philDebtAmortization: 40,
     exitCapRate: 6,
     opexRatio: 30,
-    revengeGrowth: 3,
+    revenueGrowth: 3,
     expenseGrowth: 3,
     hdcFeeRate: 0, // HDC tax benefit fee enabled
     hdcPromotePct: 35,
@@ -68,8 +68,8 @@ describe('Outside Investor Sub-Debt Current Pay & DSCR Management', () => {
 
   describe('Baseline - No Current Pay', () => {
     it('should calculate baseline distributable cash with all PIK debt', () => {
-      const result = calculateFullInvestorAnalysis(baseParams);
-      const hdcResult = calculateHDCAnalysis(baseParams, result);
+      const result = calculateFullInvestorAnalysis(baseParams as any);
+      const hdcResult = calculateHDCAnalysis(baseParams as any);
 
       console.log('\\n=== BASELINE (All PIK, No Current Pay) ===');
       console.log('Year 1 Analysis:');
@@ -129,8 +129,8 @@ describe('Outside Investor Sub-Debt Current Pay & DSCR Management', () => {
           outsideInvestorPikCurrentPayPct: pct
         };
 
-        const result = calculateFullInvestorAnalysis(params);
-        const hdcResult = calculateHDCAnalysis(params, result);
+        const result = calculateFullInvestorAnalysis(params as any);
+        const hdcResult = calculateHDCAnalysis(params as any);
 
         const year1CashFlow = result.investorCashFlows[0];
         const baseCost = baseParams.projectCost + baseParams.predevelopmentCosts;
@@ -143,15 +143,15 @@ describe('Outside Investor Sub-Debt Current Pay & DSCR Management', () => {
         console.log(`- Annual interest: $${annualInterest.toFixed(3)}M`);
         console.log(`- Current pay portion: $${currentPayAmount.toFixed(3)}M`);
         console.log(`- Year 1 operating CF: $${year1CashFlow.operatingCashFlow.toFixed(3)}M`);
-        console.log(`- HDC fees paid: $${(hdcResult.hdcCashFlows[0]?.hdcFeesCollected || 0).toFixed(3)}M`);
-        console.log(`- HDC fees deferred: $${(hdcResult.hdcCashFlows[0]?.hdcFeesDeferred || 0).toFixed(3)}M`);
+        console.log(`- HDC fees paid: $${(hdcResult.hdcCashFlows[0]?.hdcFeeIncome || 0).toFixed(3)}M`);
+        console.log(`- HDC fees deferred: $${(hdcResult.hdcCashFlows[0]?.hdcFeeDeferred || 0).toFixed(3)}M`);
 
         results.push({
           pct,
           currentPay: currentPayAmount,
           operatingCF: year1CashFlow.operatingCashFlow,
-          hdcFeesPaid: hdcResult.hdcCashFlows[0]?.hdcFeesCollected || 0,
-          hdcFeesDeferred: hdcResult.hdcCashFlows[0]?.hdcFeesDeferred || 0
+          hdcFeesPaid: hdcResult.hdcCashFlows[0]?.hdcFeeIncome || 0,
+          hdcFeeDeferred: hdcResult.hdcCashFlows[0]?.hdcFeeDeferred || 0
         });
       });
 
@@ -182,8 +182,8 @@ describe('Outside Investor Sub-Debt Current Pay & DSCR Management', () => {
         outsideInvestorPikCurrentPayPct: 100 // Full current pay
       };
 
-      const result = calculateFullInvestorAnalysis(stressParams);
-      const hdcResult = calculateHDCAnalysis(stressParams, result);
+      const result = calculateFullInvestorAnalysis(stressParams as any);
+      const hdcResult = calculateHDCAnalysis(stressParams as any);
 
       console.log('\\n=== DEFERRAL PRIORITY TEST (Stressed Cash Flow) ===');
       console.log(`Year 1 NOI: $${stressParams.yearOneNOI}M (reduced for stress test)`);
@@ -203,13 +203,14 @@ describe('Outside Investor Sub-Debt Current Pay & DSCR Management', () => {
       console.log(`- Outside investor current pay: $${outsideInterest.toFixed(3)}M`);
 
       const year1HDC = hdcResult.hdcCashFlows[0];
+      const totalDeferredFees = hdcResult.hdcCashFlows.reduce((sum, cf) => sum + (cf.hdcFeeDeferred || 0), 0);
       console.log('\\nActual Year 1 results:');
-      console.log(`- HDC fees collected: $${(year1HDC?.hdcFeesCollected || 0).toFixed(3)}M`);
-      console.log(`- HDC fees deferred: $${(year1HDC?.hdcFeesDeferred || 0).toFixed(3)}M`);
-      console.log(`- Total HDC deferrals: $${(hdcResult.totalDeferredFees || 0).toFixed(3)}M`);
+      console.log(`- HDC fees collected: $${(year1HDC?.hdcFeeIncome || 0).toFixed(3)}M`);
+      console.log(`- HDC fees deferred: $${(year1HDC?.hdcFeeDeferred || 0).toFixed(3)}M`);
+      console.log(`- Total HDC deferrals: $${totalDeferredFees.toFixed(3)}M`);
 
       // In a stressed scenario, we expect HDC fees to defer first
-      if (year1HDC?.hdcFeesDeferred > 0) {
+      if ((year1HDC?.hdcFeeDeferred ?? 0) > 0) {
         console.log('✓ HDC fees are being deferred as expected in stressed scenario');
       }
     });
@@ -258,7 +259,7 @@ describe('Outside Investor Sub-Debt Current Pay & DSCR Management', () => {
       console.log('\\n=== DSCR TARGET (1.05x) MAINTENANCE TEST ===');
 
       scenarios.forEach(scenario => {
-        const result = calculateFullInvestorAnalysis(scenario.params);
+        const result = calculateFullInvestorAnalysis(scenario.params as any);
 
         console.log(`\\n${scenario.name}:`);
         console.log(`- Year 1 NOI: $${scenario.params.yearOneNOI}M`);
@@ -332,8 +333,8 @@ describe('Outside Investor Sub-Debt Current Pay & DSCR Management', () => {
         outsideInvestorPikCurrentPayPct: 50
       };
 
-      const result = calculateFullInvestorAnalysis(complexParams);
-      const hdcResult = calculateHDCAnalysis(complexParams, result);
+      const result = calculateFullInvestorAnalysis(complexParams as any);
+      const hdcResult = calculateHDCAnalysis(complexParams as any);
 
       console.log('\\n=== COMPLEX WATERFALL TEST ===');
       console.log('All payment types enabled:');
@@ -367,8 +368,8 @@ describe('Outside Investor Sub-Debt Current Pay & DSCR Management', () => {
 
       console.log('\\nActual Year 1 results:');
       console.log(`- Operating cash to investor: $${year1Investor.operatingCashFlow.toFixed(3)}M`);
-      console.log(`- HDC fees collected: $${(year1HDC?.hdcFeesCollected || 0).toFixed(3)}M`);
-      console.log(`- HDC fees deferred: $${(year1HDC?.hdcFeesDeferred || 0).toFixed(3)}M`);
+      console.log(`- HDC fees collected: $${(year1HDC?.hdcFeeIncome || 0).toFixed(3)}M`);
+      console.log(`- HDC fees deferred: $${(year1HDC?.hdcFeeDeferred || 0).toFixed(3)}M`);
 
       // Verify waterfall priority
       const totalRequested = hdcTaxFee + aumFee + hdcCurrentPay + outsideCurrentPay;
@@ -389,7 +390,7 @@ describe('Outside Investor Sub-Debt Current Pay & DSCR Management', () => {
         // 3. HDC current pay defers third
         // 4. Outside investor current pay defers last
 
-        if (year1HDC?.hdcFeesDeferred > 0) {
+        if ((year1HDC?.hdcFeeDeferred ?? 0) > 0) {
           console.log('✓ HDC fees being deferred (correct priority)');
         }
       } else {
@@ -411,8 +412,8 @@ describe('Outside Investor Sub-Debt Current Pay & DSCR Management', () => {
         expenseGrowth: 3
       };
 
-      const result = calculateFullInvestorAnalysis(multiYearParams);
-      const hdcResult = calculateHDCAnalysis(multiYearParams, result);
+      const result = calculateFullInvestorAnalysis(multiYearParams as any);
+      const hdcResult = calculateHDCAnalysis(multiYearParams as any);
 
       console.log('\\n=== MULTI-YEAR DEFERRAL TRACKING ===');
       console.log('Starting with stressed Year 1, growing NOI over time');
@@ -429,10 +430,10 @@ describe('Outside Investor Sub-Debt Current Pay & DSCR Management', () => {
 
           console.log(`\\nYear ${yearNum}:`);
           console.log(`- Projected NOI: $${projectedNOI.toFixed(3)}M`);
-          console.log(`- HDC fees collected: $${(cashFlow.hdcFeesCollected || 0).toFixed(3)}M`);
-          console.log(`- HDC fees deferred: $${(cashFlow.hdcFeesDeferred || 0).toFixed(3)}M`);
+          console.log(`- HDC fees collected: $${(cashFlow.hdcFeeIncome || 0).toFixed(3)}M`);
+          console.log(`- HDC fees deferred: $${(cashFlow.hdcFeeDeferred || 0).toFixed(3)}M`);
 
-          const deferredThisYear = cashFlow.hdcFeesDeferred || 0;
+          const deferredThisYear = cashFlow.hdcFeeDeferred || 0;
           if (!isNaN(deferredThisYear)) {
             cumulativeDeferred += deferredThisYear;
           }
@@ -441,14 +442,13 @@ describe('Outside Investor Sub-Debt Current Pay & DSCR Management', () => {
       }
 
       // Check exit catch-up
+      const totalDeferredFees = hdcResult.hdcCashFlows.reduce((sum, cf) => sum + (cf.hdcFeeDeferred || 0), 0);
       console.log(`\\nAt Exit:`);
-      console.log(`- Total deferred fees: $${(hdcResult.totalDeferredFees || 0).toFixed(3)}M`);
+      console.log(`- Total deferred fees: $${totalDeferredFees.toFixed(3)}M`);
       console.log(`- HDC exit proceeds: $${(hdcResult.hdcExitProceeds || 0).toFixed(3)}M`);
 
       // Verify deferred fees are caught up at exit (if exit proceeds exist)
-      const hdcExitProceeds = hdcResult.hdcExitProceeds || hdcResult.exitProceeds || 0;
-      const totalDeferredFees = hdcResult.totalDeferredFees || 0;
-      expect(hdcExitProceeds).toBeGreaterThanOrEqual(totalDeferredFees);
+      expect(hdcResult.hdcExitProceeds || 0).toBeGreaterThanOrEqual(totalDeferredFees);
       console.log('✓ Deferred fees recovered at exit');
     });
   });

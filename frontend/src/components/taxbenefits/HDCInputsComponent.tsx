@@ -158,6 +158,9 @@ interface HDCInputsComponentProps {
   setInvestorPromoteShare: (value: number) => void;
 
   // Opportunity Zone parameters
+  // IMPL-071: OZ enabled toggle
+  ozEnabled?: boolean;
+  setOzEnabled?: (value: boolean) => void;
   ozType: 'standard' | 'rural';
   setOzType: (value: 'standard' | 'rural') => void;
   ozVersion: '1.0' | '2.0';  // IMPL-017: OZ legislation version
@@ -166,6 +169,8 @@ interface HDCInputsComponentProps {
   setDeferredCapitalGains: (value: number) => void;
   capitalGainsTaxRate: number;
   setCapitalGainsTaxRate: (value: number) => void;
+  // IMPL-071: Depreciation info for recapture display
+  totalDepreciation?: number;
 
   // Investor Type
   investorType?: 'ordinary' | 'stcg' | 'ltcg' | 'custom';
@@ -212,6 +217,8 @@ interface HDCInputsComponentProps {
   setStateLIHTCUserPercentage?: (value: number) => void;
   stateLIHTCUserAmount?: number;
   setStateLIHTCUserAmount?: (value: number) => void;
+  stateLIHTCSyndicationYear?: 0 | 1 | 2; // IMPL-073
+  setStateLIHTCSyndicationYear?: (value: 0 | 1 | 2) => void;
 
   // Federal LIHTC (v7.0.11)
   lihtcEnabled?: boolean;
@@ -288,6 +295,7 @@ interface HDCInputsComponentProps {
 
 const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
   const handlePresetSelect = async (presetId: string) => {
+    debugger; // BREAKPOINT 2: Preset handler entry - inspect presetId
     // Check if it's a saved configuration
     if (presetId.startsWith('saved-config-')) {
       const configId = parseInt(presetId.replace('saved-config-', ''));
@@ -473,6 +481,7 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
 
     // IMPL-036: Re-enable auto-balance after preset loading is complete
     props.endConfigLoading?.();
+    debugger; // BREAKPOINT 3: After preset values applied - inspect props
 
     if (props.onPresetSelect) {
       props.onPresetSelect(presetId);
@@ -720,6 +729,9 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           projectCost={props.projectCost}
           totalCapitalStructure={props.totalCapitalStructure}
           interestReserveEnabled={props.interestReserveEnabled}
+          setInterestReserveEnabled={props.setInterestReserveEnabled}
+          interestReserveMonths={props.interestReserveMonths}
+          setInterestReserveMonths={props.setInterestReserveMonths}
           interestReserveAmount={props.interestReserveAmount}
           hdcPlatformMode={props.hdcPlatformMode}
           setHdcPlatformMode={props.setHdcPlatformMode}
@@ -761,6 +773,8 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
             setStateLIHTCUserPercentage={props.setStateLIHTCUserPercentage}
             stateLIHTCUserAmount={props.stateLIHTCUserAmount}
             setStateLIHTCUserAmount={props.setStateLIHTCUserAmount}
+            stateLIHTCSyndicationYear={props.stateLIHTCSyndicationYear}
+            setStateLIHTCSyndicationYear={props.setStateLIHTCSyndicationYear}
             formatCurrency={props.formatCurrency}
             isReadOnly={props.isReadOnly}
           />
@@ -768,6 +782,8 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
 
         {/* Panel 4: Opportunity Zone */}
         <OpportunityZoneSection
+          ozEnabled={props.ozEnabled}
+          setOzEnabled={props.setOzEnabled}
           ozType={props.ozType}
           setOzType={props.setOzType}
           ozVersion={props.ozVersion}
@@ -780,6 +796,8 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           ltCapitalGainsRate={props.ltCapitalGainsRate}
           niitRate={props.niitRate}
           stateCapitalGainsRate={props.stateCapitalGainsRate}
+          totalDepreciation={props.totalDepreciation}
+          depreciationRecaptureRate={props.depreciationRecaptureRate}
           isReadOnly={props.taxSectionReadOnly || props.isReadOnly}
         />
 

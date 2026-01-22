@@ -114,7 +114,10 @@ export const HDCComprehensiveReportButton: React.FC<HDCComprehensiveReportProps>
       // Year 1 tax benefit from engine (IMPL-041: conformity-adjusted)
       const year1TaxBenefit = investorResults.investorCashFlows?.[0]?.taxBenefit || 0;
 
-      // Calculate depreciable basis
+      // IMPL-065: Depreciation calculation using IRS-mandated formulas (same as engine)
+      // These are standardized rules (IRS Pub 946) that will always match engine calculations.
+      // Engine's depreciationSchedule doesn't expose all intermediate values needed for display,
+      // so we derive them here using the same deterministic formulas.
       const totalProjectCost = projectCost + predevelopmentCosts;
       const depreciableBasis = totalProjectCost - landValue;
       const costSegPct = params.yearOneDepreciationPct || 20;

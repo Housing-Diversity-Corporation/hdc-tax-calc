@@ -64,6 +64,9 @@ interface CapitalStructureSectionProps {
   predevelopmentCosts: number;
   totalCapitalStructure: number;
   interestReserveEnabled: boolean;
+  setInterestReserveEnabled: (value: boolean) => void;
+  interestReserveMonths: number;
+  setInterestReserveMonths: (value: number) => void;
   interestReserveAmount: number;
   subDebtPriority?: {
     outsideInvestor: number;
@@ -142,6 +145,9 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
   predevelopmentCosts,
   totalCapitalStructure,
   interestReserveEnabled,
+  setInterestReserveEnabled,
+  interestReserveMonths,
+  setInterestReserveMonths,
   interestReserveAmount,
   subDebtPriority = { outsideInvestor: 1, hdc: 2, investor: 3 },
   setSubDebtPriority,
@@ -168,7 +174,52 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
             </span>
           )}
         </div>
-        
+
+        {/* Interest Reserve Toggle and Input */}
+        <div className="hdc-input-group" style={{ marginBottom: '0.75rem', paddingBottom: '0.75rem', borderBottom: '1px solid rgba(146, 195, 194, 0.3)' }}>
+          <HDCCheckbox
+            checked={interestReserveEnabled}
+            onCheckedChange={setInterestReserveEnabled}
+            disabled={isReadOnly}
+            label="Include Interest Reserve"
+            labelClassName="text-sm font-semibold"
+          />
+          <div style={{ fontSize: '0.65rem', color: '#666', marginTop: '0.25rem', paddingLeft: '1.5rem' }}>
+            Covers debt service during construction/lease-up period
+          </div>
+
+          {interestReserveEnabled && (
+            <div className="mt-2 p-2 rounded" style={{ border: '1px solid var(--hdc-mercury)', marginLeft: '1.5rem' }}>
+              <div className="hdc-input-group">
+                <label className="hdc-input-label" style={{ color: 'var(--hdc-cabbage-pont)', fontSize: '0.75rem' }}>
+                  Reserve Period (months)
+                </label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="24"
+                  value={interestReserveMonths}
+                  onChange={(e) => setInterestReserveMonths(Math.min(24, Math.max(1, Number(e.target.value) || 12)))}
+                  className="hdc-input"
+                  disabled={isReadOnly}
+                  style={{ fontSize: '0.75rem' }}
+                />
+              </div>
+              <div style={{ marginTop: '0.5rem' }}>
+                <div className="hdc-result-label" style={{ fontSize: '0.7rem', color: 'var(--hdc-faded-jade)' }}>
+                  Calculated Reserve Amount
+                </div>
+                <div className="hdc-result-value" style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>
+                  {formatCurrency(interestReserveAmount)}
+                </div>
+                <div style={{ fontSize: '0.6rem', color: '#666', marginTop: '0.25rem' }}>
+                  Reserve covers shortfall between debt service and ramping NOI using S-curve methodology
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="hdc-input-group">
           <HDCCheckbox
             checked={autoBalanceCapital}

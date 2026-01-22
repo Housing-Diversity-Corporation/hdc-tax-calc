@@ -148,9 +148,11 @@ const InvestorProfileSection: React.FC<InvestorProfileSectionProps> = ({
     setCapitalGainsTaxRate(federalCapitalGainsRate + niitRate + (isNonConforming ? 0 : stateCapitalGainsRate));
   }, [investorState, federalCapitalGainsRate, stateCapitalGainsRate, setCapitalGainsTaxRate]);
 
-  // Calculate effective rates (exclude state tax for non-conforming states)
+  // Calculate effective rates
+  // IMPL-066: OZ conformity affects OZ benefits, not ordinary income tax rate
+  // isNonConforming is still used for OZ-related capital gains calculations below
   const isNonConforming = investorState && HDC_OZ_STRATEGY[investorState]?.status === 'NO_GO';
-  const effectiveOrdinaryRate = federalOrdinaryRate + (isNonConforming ? 0 : stateOrdinaryRate);
+  const effectiveOrdinaryRate = federalOrdinaryRate + stateOrdinaryRate; // IMPL-066: Always include state rate
   const effectiveCapitalGainsRate = capitalGainsTaxRate;
 
   return (
@@ -320,12 +322,13 @@ const InvestorProfileSection: React.FC<InvestorProfileSectionProps> = ({
                 </div>
 
                 {/* State Rate */}
+                {/* IMPL-066: Always display actual state rate - OZ conformity is independent of income tax */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.25rem 0', fontSize: '0.875rem' }}>
                   <span style={{ color: '#666' }}>State Rate:</span>
                   <span style={{ fontWeight: 500 }}>
-                    {isNonConforming ? (
+                    {stateOrdinaryRate === 0 ? (
                       <span style={{ color: '#999', fontStyle: 'italic' }}>
-                        0.0% (Non-conforming)
+                        0.0% (No State Income Tax)
                       </span>
                     ) : (
                       `${stateOrdinaryRate.toFixed(1)}%`
@@ -333,16 +336,21 @@ const InvestorProfileSection: React.FC<InvestorProfileSectionProps> = ({
                   </span>
                 </div>
 
-                {/* NIIT (only for Non-REP) */}
-                {localInvestorTrack === 'non-rep' && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.25rem 0', fontSize: '0.875rem' }}>
-                    <span style={{ color: '#666' }}>NIIT:</span>
-                    <span style={{ fontWeight: 500 }}>
-                      {doesNIITApply(investorState) ? `${NIIT_RATE}%` :
-                       <span style={{ color: '#999', fontStyle: 'italic' }}>0.0% (Territory)</span>}
-                    </span>
-                  </div>
-                )}
+                {/* NIIT - show for both REP and Non-REP with explanation */}
+                {/* IMPL-068: REP investors are exempt from NIIT per IRC §1411 */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.25rem 0', fontSize: '0.875rem' }}>
+                  <span style={{ color: '#666' }}>NIIT:</span>
+                  <span style={{ fontWeight: 500 }}>
+                    {localInvestorTrack === 'rep' ? (
+                      <span style={{ color: '#999', fontStyle: 'italic' }}>
+                        0.0% (REP Exempt)
+                      </span>
+                    ) : (
+                      doesNIITApply(investorState) ? `${NIIT_RATE}%` :
+                      <span style={{ color: '#999', fontStyle: 'italic' }}>0.0% (Territory)</span>
+                    )}
+                  </span>
+                </div>
 
                 {/* Divider */}
                 <div style={{ borderTop: '1px solid var(--hdc-mercury)', margin: '0.5rem 0' }}></div>

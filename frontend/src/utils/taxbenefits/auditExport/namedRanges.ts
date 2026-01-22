@@ -140,8 +140,9 @@ export const INPUT_RANGES = {
   StateLIHTCRate: { col: 1, row: 69 },
   StateLIHTCSyndRate: { col: 1, row: 70 },
   StateLIHTCPath: { col: 1, row: 71 },
+  StateLIHTCSyndYear: { col: 1, row: 72 }, // IMPL-073
 
-  // Fee Structure (rows 74-80)
+  // Fee Structure (rows 75-81)
   AUMFeePct: { col: 1, row: 74 },
   AUMCurrentPayEnabled: { col: 1, row: 75 },
   AUMCurrentPayPct: { col: 1, row: 76 },

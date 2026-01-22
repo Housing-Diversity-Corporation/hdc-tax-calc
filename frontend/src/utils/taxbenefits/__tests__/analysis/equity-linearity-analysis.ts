@@ -4,7 +4,7 @@
  * Tests the relationship between investor equity percentage and Year 1 net tax benefit
  * to determine if the relationship is linear or non-linear.
  *
- * Reference: OZBenefits Constitution v2.0, CALCULATION_FLOW_ORDER.md
+ * Reference: TaxBenefits Constitution v2.0, CALCULATION_FLOW_ORDER.md
  */
 
 import { calculateFullInvestorAnalysis } from '../../calculations.js';

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { DEFAULT_VALUES } from '../../utils/taxbenefits';
-import { HDC_OZ_STRATEGY } from '../../utils/taxbenefits/hdcOzStrategy';
+import { getStateTaxRate } from '../../utils/taxbenefits/stateProfiles';
 import { ValidationResult } from '../../utils/taxbenefits/validation';
 
 export const useHDCState = () => {
@@ -155,6 +155,7 @@ export const useHDCState = () => {
   const [investorHasStateLiability, setInvestorHasStateLiability] = useState(true);
   const [stateLIHTCUserPercentage, setStateLIHTCUserPercentage] = useState<number | undefined>(undefined);
   const [stateLIHTCUserAmount, setStateLIHTCUserAmount] = useState<number | undefined>(undefined);
+  const [stateLIHTCSyndicationYear, setStateLIHTCSyndicationYear] = useState<0 | 1 | 2>(0); // IMPL-076: Default Year 0 (syndicator funds at close)
 
   // Federal LIHTC (v7.0.11)
   const [lihtcEnabled, setLihtcEnabled] = useState(true);
@@ -164,7 +165,9 @@ export const useHDCState = () => {
   const [ddaQctBoost, setDdaQctBoost] = useState(false);
 
   // Handle state selection change
-  // IMPL-053: Use HDC_OZ_STRATEGY (derived from STATE_TAX_PROFILES) as single source of truth
+  // IMPL-066: Use getStateTaxRate() directly from stateProfiles (single source of truth)
+  // Note: stateTaxRate is for ordinary income (depreciation benefits)
+  // stateCapitalGainsRate is for capital gains (OZ exit, property sale)
   const handleStateChange = (stateCode: string) => {
     setSelectedState(stateCode);
     if (stateCode === 'NONE' || stateCode === '') {
@@ -172,9 +175,14 @@ export const useHDCState = () => {
       setStateTaxRate(0);
     } else if (stateCode === 'CUSTOM') {
       // Keep current rate for custom
-    } else if (HDC_OZ_STRATEGY[stateCode]) {
-      setStateCapitalGainsRate(HDC_OZ_STRATEGY[stateCode].rate);
-      setStateTaxRate(HDC_OZ_STRATEGY[stateCode].rate);
+    } else {
+      // IMPL-066: Use getStateTaxRate() for ordinary income rate (topRate from stateProfiles)
+      // This correctly handles states like WA (topRate=0 for ordinary income)
+      const ordinaryIncomeRate = getStateTaxRate(stateCode);
+      setStateTaxRate(ordinaryIncomeRate);
+      // For capital gains, use same rate (most states) - WA's 7% CG tax is separate
+      // and handled via specialRules, not in standard CG rate field
+      setStateCapitalGainsRate(ordinaryIncomeRate);
     }
   };
 
@@ -368,6 +376,7 @@ export const useHDCState = () => {
     investorHasStateLiability, setInvestorHasStateLiability,
     stateLIHTCUserPercentage, setStateLIHTCUserPercentage,
     stateLIHTCUserAmount, setStateLIHTCUserAmount,
+    stateLIHTCSyndicationYear, setStateLIHTCSyndicationYear, // IMPL-073
 
     // Federal LIHTC (v7.0.11)
     lihtcEnabled, setLihtcEnabled,

@@ -221,24 +221,23 @@ export function determineSyndicationRate(
   investorHasStateLiability: boolean,
   syndicationRateOverride?: number
 ): number {
-  // If override provided, use it
-  if (syndicationRateOverride !== undefined) {
-    return syndicationRateOverride / 100;
-  }
-
   // Grant programs: always 100% (direct to project)
   if (program.transferability === 'grant') {
     return 1.0;
   }
 
-  // IMPL-047: Toggle overrides in-state/out-of-state logic for ALL program types
+  // ISS-020: Checkbox takes PRIORITY over manual override
   // If investor has state tax liability → 100% direct use
-  // If investor does NOT have liability → syndicate at program rate
   if (investorHasStateLiability) {
     return 1.0;  // Direct use - investor can use credits directly
-  } else {
-    return program.syndicationRate / 100;  // Syndicated path
   }
+
+  // No liability → use override or program default
+  if (syndicationRateOverride !== undefined) {
+    return syndicationRateOverride / 100;
+  }
+
+  return program.syndicationRate / 100;  // Syndicated path
 }
 
 /**

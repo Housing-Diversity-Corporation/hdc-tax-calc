@@ -49,6 +49,8 @@ interface TaxCreditsSectionProps {
   setStateLIHTCUserPercentage?: (value: number) => void;
   stateLIHTCUserAmount?: number;
   setStateLIHTCUserAmount?: (value: number) => void;
+  stateLIHTCSyndicationYear?: 0 | 1 | 2; // IMPL-073
+  setStateLIHTCSyndicationYear?: (value: 0 | 1 | 2) => void;
 
   // Formatting
   formatCurrency: (value: number) => string;
@@ -113,6 +115,8 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
   setStateLIHTCUserPercentage,
   stateLIHTCUserAmount,
   setStateLIHTCUserAmount,
+  stateLIHTCSyndicationYear,
+  setStateLIHTCSyndicationYear,
   // Common
   formatCurrency,
   isReadOnly = false,
@@ -164,13 +168,6 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
 
   // Get program metadata for property state
   const stateProgram = getStateLIHTCProgram(propertyState);
-
-  // Get all jurisdictions sorted alphabetically
-  const sortedJurisdictions = useMemo(() => {
-    return Object.entries(HDC_OZ_STRATEGY)
-      .sort(([, a], [, b]) => a.name.localeCompare(b.name))
-      .map(([code, data]) => ({ code, name: data.name }));
-  }, []);
 
   // IMPL-035: Auto-set syndication rate based on in-state vs out-of-state investor
   // No longer auto-populates investorState from propertyState - states are independent
@@ -526,30 +523,36 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
                     </div>
                   )}
 
-                  {/* Investor State (for State LIHTC matching) */}
+                  {/* ISS-017: Display investor state from Panel 5 (read-only) with eligibility status */}
                   <div className="hdc-input-group">
                     <label className="hdc-input-label">
-                      Investor State (for State LIHTC)
+                      Investor State Eligibility
                       <span style={{ fontSize: '0.7rem', color: '#666', display: 'block', fontWeight: 'normal' }}>
-                        Same as Property State = 100% syndication rate
+                        Set in Panel 5 (Investor Profile)
                       </span>
                     </label>
-                    <Select
-                      value={investorState || ''}
-                      onValueChange={setInvestorState}
-                      disabled={isReadOnly}
+                    <div
+                      className="hdc-input"
+                      style={{
+                        backgroundColor: 'var(--hdc-alabaster)',
+                        cursor: 'default',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
                     >
-                      <SelectTrigger className="hdc-input">
-                        <SelectValue placeholder="Select state..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {sortedJurisdictions.map(jurisdiction => (
-                          <SelectItem key={jurisdiction.code} value={jurisdiction.code}>
-                            {jurisdiction.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <span>{investorState ? (HDC_OZ_STRATEGY[investorState]?.name || investorState) : 'Not set'}</span>
+                      <span style={{
+                        fontSize: '0.75rem',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        fontWeight: 600,
+                        backgroundColor: investorState === propertyState ? 'rgba(127, 189, 69, 0.2)' : 'rgba(255, 165, 0, 0.2)',
+                        color: investorState === propertyState ? 'var(--hdc-cabbage-pont)' : '#b86e00',
+                      }}>
+                        {investorState === propertyState ? 'In-State (100%)' : 'Out-of-State'}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Syndication Rate */}
@@ -567,6 +570,32 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
                       disabled={isReadOnly}
                     />
                   </div>
+
+                  {/* IMPL-073: Syndication Year (only for out-of-state syndicated path) */}
+                  {investorState !== propertyState && syndicationRate < 100 && (
+                    <div className="hdc-input-group">
+                      <label htmlFor="syndicationYear" className="hdc-input-label">
+                        Syndication Proceeds Year
+                        <span style={{ fontSize: '0.65rem', color: '#666', display: 'block', fontWeight: 'normal', marginTop: '2px' }}>
+                          Year cash is received from credit sale
+                        </span>
+                      </label>
+                      <Select
+                        value={String(stateLIHTCSyndicationYear ?? 1)}
+                        onValueChange={(val) => setStateLIHTCSyndicationYear?.(parseInt(val) as 0 | 1 | 2)}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger className="hdc-input">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">At Close (Year 0)</SelectItem>
+                          <SelectItem value="1">Year 1 (Default)</SelectItem>
+                          <SelectItem value="2">Year 2</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                   {/* Has State Liability */}
                   <div className="flex items-center space-x-2" style={{ marginTop: '0.75rem', marginBottom: '0.75rem' }}>

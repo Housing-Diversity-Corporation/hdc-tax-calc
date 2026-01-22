@@ -1,9 +1,10 @@
 # TaxBenefits Calculator — Implementation Tracker
 
-**Document Version:** 7.7
-**Last Updated:** 2026-01-18
+**Document Version:** 8.2
+**Last Updated:** 2026-01-21
 **Branch:** main
-**Current Test Count:** 1,176 passing
+**Current Test Count:** 1,195 passing (1 pre-existing failure: ISS-014)
+**Validation Status:** 13/15 Three Sigma scenarios complete (Production Certification ✅)
 
 ---
 
@@ -11,6 +12,11 @@
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v8.2 | 2026-01-21 | Added IMPL-074-077 (Syndication Year timing logic), ISS-019/020/021 (State LIHTC validation fixes, Eligible vs Qualified Basis display) |
+| v8.1 | 2026-01-20 | Added IMPL-073: State LIHTC Syndication as Capital Return (refactored from equity offset to capital return model) |
+| v8.0 | 2026-01-20 | Added Phase 14: IMPL-068-072 (Validation Session), Bug Fixes ISS-015/016/017, Open Issues section |
+| v7.9 | 2026-01-19 | Added Phase 13: IMPL-064/064b (Excel Input Sync), IMPL-065/065-3A/065-3B (Calculation Architecture Audit), IMPL-066 (State Tax Architecture) |
+| v7.8 | 2026-01-18 | Added IMPL-062: Tier 2 Validation (48 checks, 8 categories) |
 | v7.7 | 2026-01-18 | Added Phase 12: IMPL-056 (Live Excel Model), IMPL-061 (Tax Benefit Calculation Fix + Constitution) |
 | v7.6 | 2026-01-15 | Added IMPL-060: OZ Benefits Dropdown Breakdown in Returns Buildup Strip |
 | v7.5 | 2026-01-15 | Renamed documentation from "OZBenefits" to "TaxBenefits" |
@@ -150,10 +156,141 @@
 |------|-------------|--------|------|
 | IMPL-056 | Live Calculation Excel Model (14 sheets, ~100 named ranges, live formulas) | ✅ Complete | 2026-01-18 |
 | IMPL-061 | Tax Benefit Calculation Fix + CALCULATION_ARCHITECTURE.md Constitution | ✅ Complete | 2026-01-18 |
+| IMPL-062 | Tier 2 Validation Expansion (48 checks across 8 categories) | ✅ Complete | 2026-01-18 |
 
-**IMPL-056 Details:** Replaced documentation-style Audit Export with live calculation Excel model. All formulas actually compute — auditor can change any input and watch outputs recalculate. 16/16 validation checks passing.
+**IMPL-056 Details:** Replaced documentation-style Audit Export with live calculation Excel model. All formulas actually compute — auditor can change any input and watch outputs recalculate.
 
 **IMPL-061 Details:** Fixed bug where Tax Planning Capacity displayed $72M instead of ~$15M. Root cause: redundant calculation in `useHDCCalculations.ts`. Fix: Wire display to use engine values (single source of truth). Added `CALCULATION_ARCHITECTURE.md` to constitution.
+
+**IMPL-062 Details:** Expanded validation sheet from 16 to 48 checks across 8 categories: Capital Stack (6), Depreciation (6), Tax Benefits (6), LIHTC (8), Operating CF (6), Exit Waterfall (6), Debt at Exit (4), Investor Returns (6). Added invariant checks for cross-validation (Sources = Uses, CostSeg + S/L = Basis, etc.).
+
+### Phase 13: Calculation Architecture Audit (Jan 19, 2026)
+
+| IMPL | Description | Status | Date |
+|------|-------------|--------|------|
+| IMPL-064 | Excel Export Input Sync (Inputs sheet reflects all calculation params) | ✅ Complete | 2026-01-19 |
+| IMPL-064b | Investor State Prop Fix (pass investorState to validation sheet) | ✅ Complete | 2026-01-19 |
+| IMPL-065 | Calculation Architecture Audit (18 violations identified, report generated) | ✅ Complete | 2026-01-19 |
+| IMPL-065-3A | Remove calculatePlatformValues() reimplementation, remove hardcoded 11% fallback | ✅ Complete | 2026-01-19 |
+| IMPL-065-3B | Remove ozDeferralNPV from hook (was 10% vs engine's 8%), use engine value | ✅ Complete | 2026-01-19 |
+| IMPL-066 | State Tax Architecture (investor state rate lookup from single source) | ✅ Complete | 2026-01-19 |
+| IMPL-067 | Add Returns Buildup to Excel Export (Summary sheet section with component breakdown) | ✅ Complete | 2026-01-19 |
+
+**IMPL-065 Details:** Comprehensive audit enforcing the principle "All financial calculations belong in `calculations.ts` - hooks pass values, components display values, export sheets write formula strings." Found 18 violations across hooks, components, and export sheets. Key finding: `validationSheet.ts` had `calculatePlatformValues()` reimplementing ~155 lines of engine logic. Fixed by replacing with `extractPlatformValues()` that uses engine values directly.
+
+**IMPL-065-3B Details:** Discovered `ozDeferralNPV` was calculated both in hook (10% discount rate) and engine (8% discount rate). This caused inconsistency. Removed hook calculation and now uses `mainAnalysisResults.ozDeferralNPV` as single source of truth.
+
+**IMPL-067 Details:** Added Returns Buildup section to Summary sheet in Excel export. Includes all return components (Federal LIHTC, State LIHTC, Depreciation Benefits, OZ Benefits with sub-components, Operating Cash Flow, Exit Proceeds, Sub-Debt) with validation check (Sum = Total). Mirrors UI ReturnsBuiltupStrip component using same engine values.
+
+### Phase 14: Three Sigma Validation Session (Jan 17-20, 2026)
+
+| IMPL | Description | Status | Date |
+|------|-------------|--------|------|
+| IMPL-068 | Fix effective tax rate display for REP investors | ✅ Complete | 2026-01-19 |
+| IMPL-069 | Fix NJ bonus conformity (was 30%, correct is 0%) | ✅ Complete | 2026-01-19 |
+| IMPL-070 | Fix split-rate header display in validation sheet | ✅ Complete | 2026-01-19 |
+| IMPL-071 | Expose OZ toggle in UI (was hidden despite ozEnabled state) | ✅ Complete | 2026-01-20 |
+| IMPL-072 | Fix ISS-012 (OZ NPV calc) + ISS-013 (OZ export) | ✅ Complete | 2026-01-20 |
+
+**Phase 14 Details:** Weekend validation session using Three Sigma scenarios. Completed 9 of 15 scenarios with 432 validation checks passing. Fixed critical bugs in State LIHTC export flow (ISS-015/016/017).
+
+### Bug Fixes (Jan 2026)
+
+| ISS | Description | Root Cause | Fix | Date |
+|-----|-------------|------------|-----|------|
+| ISS-015 | Syndication rate export showed 85 instead of 100 | syndicationRate not passed to export | HDCResultsComponent.tsx, inputsSheet.ts | 2026-01-20 |
+| ISS-016 | State LIHTC annual credit = $0 in export | stateLIHTCRate hardcoded to 0 | lihtcSheet.ts, types/index.ts, calculations.ts, ReturnsBuiltupStrip.tsx | 2026-01-20 |
+| ISS-017 | Duplicate investor state dropdown causing 10x MOIC bug | Two dropdowns allowed state mismatch | TaxCreditsSection.tsx (replaced with read-only display) | 2026-01-20 |
+
+### Feature: State LIHTC Capital Return Model (Jan 20, 2026)
+
+| IMPL | Description | Status | Date |
+|------|-------------|--------|------|
+| IMPL-073 | State LIHTC Syndication as Capital Return | ✅ Complete | 2026-01-20 |
+
+**IMPL-073 Details:** Refactored State LIHTC syndication from an equity offset model to a capital return model.
+
+**Previous Behavior:**
+- Syndicated proceeds reduced investor equity at close via `syndicatedEquityOffset`
+- MOIC denominator = `investorEquity - syndicatedEquityOffset`
+- Created confusing "net investment" concept
+
+**New Behavior:**
+- Investor commits full equity at close (gross investment)
+- Syndication proceeds are cash returned in Year 0, 1, or 2 (configurable via new "Syndication Year" input)
+- MOIC denominator = gross `investorEquity` (no offset)
+- Syndication proceeds appear in Returns Buildup as "State LIHTC Syndication" line item
+- Capital Stack shows full equity (no offset display)
+
+**Files Modified:**
+- `types/taxbenefits/index.ts` - Added `stateLIHTCSyndicationYear`, `stateLIHTCSyndicationProceeds`
+- `calculations.ts` - Removed equity offset, added proceeds to cash flow at selected year
+- `useHDCState.ts` - Added syndication year state
+- `TaxCreditsSection.tsx` - Added "Syndication Year" selector (Year 0/1/2)
+- `ReturnsBuiltupStrip.tsx` - Added "State LIHTC Syndication" component
+- `CapitalStructureSection.tsx` - Removed offset display, simplified to show full equity
+- `StateLIHTCIntegrationSection.tsx` - Updated treatment label to "Capital Return"
+- Excel export files - Added syndication year input and proceeds row
+
+### Feature: Syndication Year Timing Logic (Jan 21, 2026)
+
+| IMPL | Description | Status | Date |
+|------|-------------|--------|------|
+| IMPL-074 | Net Investment breakdown in Summary/Export (Gross → Offset → Net) | ✅ Complete | 2026-01-21 |
+| IMPL-075 | MOIC denominator conditional on Syndication Year (Y0=net, Y1+=gross) | ✅ Complete | 2026-01-21 |
+| IMPL-076 | Double-counting bug fix for Year 0 syndication + default changed to Y0 | ✅ Complete | 2026-01-21 |
+| IMPL-077 | Syndication Year export capture fix + Initial Investment display by scenario | ✅ Complete | 2026-01-21 |
+
+**IMPL-074 Details:** When syndication offset exists, Summary and Investor Returns sheets now display breakdown: Investor Equity (Gross) → Less: Syndication Offset → Net Investment (MOIC basis). Provides audit trail for MOIC denominator calculation.
+
+**IMPL-075 Details:** MOIC denominator now varies by syndication timing:
+- Year 0 syndication: Syndicator funds offset at close → MOIC uses net equity
+- Year 1+ syndication: Investor funds full amount → MOIC uses gross equity
+
+**IMPL-076 Details:** Fixed critical double-counting bug where Year 0 syndication was:
+1. Reducing equity ($35M → $11M via syndicatedEquityOffset) ✓
+2. ALSO appearing as +$24M cash inflow in Year 0 ✗
+
+This caused impossible 275% IRR. Fix: Year 0 syndication proceeds are netted in equity only (no cash flow line item). Year 1+ proceeds appear as cash flow in selected year. Default syndication year changed from 1 to 0.
+
+**IMPL-077 Details:** Two fixes for export accuracy:
+1. Export now captures `stateLIHTCSyndicationYear` from engine results (was missing from ExportAuditButton params)
+2. Initial Investment row in Investor Returns sheet uses correct formula based on syndication year:
+   - Year 0: `-(InvestorEquity-StateLIHTCSyndProceeds+InvestorSubDebt)` (net equity)
+   - Year 1+: `-(InvestorEquity+InvestorSubDebt)` (gross equity)
+
+**Files Modified:**
+- `calculations.ts` - MOIC denominator logic, cash flow timing, default year
+- `useHDCState.ts` - Default syndication year changed to 0
+- `HDCResultsComponent.tsx` - Added stateLIHTCSyndicationYear to export params
+- `investorReturnsSheet.ts` - Initial Investment formula, Summary section display
+- `summarySheet.ts` - Total Investment calculation, display breakdown
+- `inputsSheet.ts` - Default syndication year changed to 0
+- `useHDCCalculations.test.ts` - Updated tests for Year 0 vs Year 1+ behavior
+
+### Bug Fixes: State LIHTC Validation (Jan 20-21, 2026)
+
+| ISS | Description | Root Cause | Fix | Date |
+|-----|-------------|------------|-----|------|
+| ISS-019 | State LIHTC investor validation | Investor state check incomplete | Updated validation in stateLIHTCCalculations.ts | 2026-01-20 |
+| ISS-020 | Tax liability checkbox integration | Missing path toggle logic | Added checkbox to toggle direct (100% credits) vs syndicated (75% cash) path based on investor's state tax liability | 2026-01-20 |
+| ISS-021 | Eligible Basis vs Qualified Basis display in LIHTC sheet | eligibleBasis already included 130% boost | lihtcSheet.ts: Eligible Basis now shows pre-boost ($80M), added DDA/QCT Boost row (30%), Qualified Basis shows post-boost ($104M) | 2026-01-21 |
+
+**ISS-020 Details:** When investor has no state tax liability (out-of-state or no income tax), the tax liability checkbox now correctly routes to syndication path. Direct use path requires in-state investor with tax liability to use credits directly.
+
+**ISS-021 Details:** LIHTC sheet was showing $104M for both Eligible and Qualified Basis because the boost was applied too early. Fixed to properly distinguish:
+- **Eligible Basis:** Project Cost - Land (pre-boost) = $80M
+- **DDA/QCT Boost:** 30% (only shown when applicable)
+- **Qualified Basis:** Eligible Basis × (1 + Boost) × Applicable Fraction = $104M
+
+---
+
+## Open Issues
+
+| ISS | Description | Priority | Notes |
+|-----|-------------|----------|-------|
+| ISS-014 | stateConformityAdjustment test failure | Low | Pre-existing, non-blocking |
+| ISS-018 | Returns Buildup LIHTC catch-up allocation display | Low | Cosmetic - catch-up shows in Federal row instead of split |
 
 ---
 
@@ -163,6 +300,7 @@
 |------|-------|
 | IMPL-014 / 014a | Only 014b implemented |
 | IMPL-022 | Skipped |
+| IMPL-063 | Skipped |
 | IMPL-034 | Obsolete — no quarantined tests remain |
 | IMPL-026A/C/E | 026B used for output cleanup; 026C/D/E renumbered to 049A/B/C |
 | IMPL-027 | Skipped |
@@ -187,8 +325,12 @@
 | Phase 9: State LIHTC UI Clarity | 045-048 | 5/5 | ✅ 100% |
 | Phase 10: Pre-Debug Cleanup | 026B, 049A-C | 4/4 | ✅ 100% |
 | Phase 11: UI Cleanup & OZ Fixes | 050-055, 057-060 | 11/11 | ✅ 100% |
-| Phase 12: Live Excel & Architecture | 056, 061 | 2/2 | ✅ 100% |
-| **Total** | **61 IMPLs** | **61/61** | **✅ 100%** |
+| Phase 12: Live Excel & Architecture | 056, 061, 062 | 3/3 | ✅ 100% |
+| Phase 13: Calculation Architecture Audit | 064, 064b, 065, 065-3A, 065-3B, 066, 067 | 7/7 | ✅ 100% |
+| Phase 14: Three Sigma Validation | 068-072 | 5/5 | ✅ 100% |
+| Feature: State LIHTC Capital Return | 073 | 1/1 | ✅ 100% |
+| Feature: Syndication Year Timing | 074-077 | 4/4 | ✅ 100% |
+| **Total** | **79 IMPLs** | **79/79** | **✅ 100%** |
 
 ---
 
@@ -196,6 +338,10 @@
 
 | Date | Test Count | Notes |
 |------|------------|-------|
+| 2026-01-21 | 1,195 | Post IMPL-074-077 (Syndication Year timing logic, ISS-019/020 fixes) |
+| 2026-01-20 | 1,182 | Post Phase 14 (Three Sigma Validation: ISS-015/016/017 fixes, 9/15 scenarios validated) |
+| 2026-01-19 | 1,175 | Post Phase 13 (Calculation Architecture Audit: 6 IMPLs, single source of truth enforcement) |
+| 2026-01-18 | 1,178 | Post IMPL-062 (Tier 2 Validation: 48 checks, 8 categories) |
 | 2026-01-18 | 1,176 | Post IMPL-056/061 (Live Excel Model, Tax Benefit Fix) |
 | 2026-01-14 | 1,167 | Post IMPL-055 (OZ step-up, state data fixes) |
 | 2026-01-07 | 1,167 | Post IMPL-049C (codebase cleanup, 8,700 lines removed) |
@@ -237,8 +383,12 @@ All Claude Code prompts must reference `VALIDATION_PROTOCOL.md` and require:
 | Document | Purpose |
 |----------|---------|
 | [VALIDATION_PROTOCOL.md](./VALIDATION_PROTOCOL.md) | Pre/post implementation validation checklist |
+| [VALIDATION_SCENARIOS.md](./VALIDATION_SCENARIOS.md) | Validated scenario tracker (13/15+ complete, Production ✅) |
 | [debugging-patterns.md](./debugging-patterns.md) | Known debugging patterns and solutions |
 | [constitution/CALCULATION_ARCHITECTURE.md](./constitution/CALCULATION_ARCHITECTURE.md) | Single source of truth principle for calculations |
+| [audits/CALCULATION-ARCHITECTURE-AUDIT-2026-01-19.md](./audits/CALCULATION-ARCHITECTURE-AUDIT-2026-01-19.md) | IMPL-065 calculation architecture audit report |
+| [audits/IMPL-065-PHASE-3B-ANALYSIS.md](./audits/IMPL-065-PHASE-3B-ANALYSIS.md) | Phase 3B detailed analysis (hook vs engine calculations) |
+| [audits/RETURNS-BUILDUP-STRIP-AUDIT-2026-01-19.md](./audits/RETURNS-BUILDUP-STRIP-AUDIT-2026-01-19.md) | Returns Buildup Strip data source audit (IMPL-067 pre-req) |
 
 ---
 

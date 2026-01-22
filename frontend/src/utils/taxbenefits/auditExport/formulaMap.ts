@@ -1017,25 +1017,23 @@ const supportingFormulas: FormulaEntry[] = [
   {
     id: 'util-conformity-001',
     name: 'State Bonus Depreciation Conformity Rate',
-    description: 'IMPL-041: Returns the percentage (0.0-1.0) of federal bonus depreciation recognized by a state.',
+    description: 'IMPL-069: Returns the percentage (0.0-1.0) of federal bonus depreciation recognized by a state. Reads from stateProfiles.data.json.',
     tsFile: 'stateProfiles.ts',
-    tsLine: 172,
+    tsLine: 130,
     tsLogic: `
-      const STATE_BONUS_CONFORMITY_RATES: Record<string, number> = {
-        'CA': 0.0,    // California doesn't conform to federal bonus
-        'NY': 0.5,    // New York partial conformity (50% of bonus allowed)
-        'PA': 0.0,    // Pennsylvania doesn't conform
-        'NJ': 0.3,    // New Jersey limited conformity (30% of bonus allowed)
-        'IL': 0.0,    // Illinois doesn't conform
-        // All other states default to 1.0 (full conformity)
-      };
-      return STATE_BONUS_CONFORMITY_RATES[code] ?? 1.0;
+      // IMPL-069: Read from JSON single source of truth (OZ_2_0_Addendum_v9_0.md)
+      // bonusDepreciation is 0-100 in JSON, convert to 0.0-1.0
+      const bonusPct = getStateBonusDepreciation(code);
+      return bonusPct / 100;
+      // NJ = 0% per N.J.S.A. 54A:1-2
+      // OR = 100% (ONLY state with full conformity)
+      // CA, NY, PA, IL, GA, NE, SC, KS = 0%
     `,
-    excelFormula: '=VLOOKUP(StateCode, ConformityTable, 2, FALSE)  // Default 1.0 if not found',
+    excelFormula: '=StateProfiles[bonusDepreciation]/100  // From JSON single source of truth',
     dependencies: ['stateCode'],
     output: 'bonusConformityRate',
     category: 'supporting',
-    notes: 'All states accept straight-line (27.5-year MACRS). This only affects accelerated/bonus depreciation. Used by calc-taxben-001.'
+    notes: 'All states accept straight-line (27.5-year MACRS). This only affects accelerated/bonus depreciation. Only OR has 100% conformity.'
   },
 
   // Depreciable Basis Utility

@@ -7,6 +7,7 @@
 
 import { CalculationParams } from '../../types/taxbenefits';
 import { calculateDepreciableBasis } from './depreciableBasisUtility';
+import { getStateBonusConformityRate } from './stateProfiles';
 
 export interface DepreciationYear {
   year: number;
@@ -198,18 +199,9 @@ function calculateStateBenefit(
   state: string,
   isBonusDepreciation: boolean
 ): { grossBenefit: number; conformityAdjustment: number; netBenefit: number } {
-  // State conformity rules for bonus depreciation
-  const STATE_BONUS_CONFORMITY: Record<string, number> = {
-    'CA': 0.0,    // California doesn't conform to federal bonus
-    'NY': 0.5,    // New York partial conformity
-    'PA': 0.0,    // Pennsylvania doesn't conform
-    'NJ': 0.3,    // New Jersey limited conformity
-    'IL': 0.0,    // Illinois doesn't conform
-    'DEFAULT': 1.0 // Most states conform fully
-  };
-
+  // IMPL-069: Use single source of truth from stateProfiles.data.json
   const conformityRate = isBonusDepreciation
-    ? (STATE_BONUS_CONFORMITY[state] ?? STATE_BONUS_CONFORMITY.DEFAULT)
+    ? getStateBonusConformityRate(state)
     : 1.0; // All states accept straight-line depreciation
 
   const grossBenefit = depreciation * (stateTaxRate / 100);

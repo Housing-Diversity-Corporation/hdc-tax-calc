@@ -118,8 +118,14 @@ export function buildInputsSheet(params: CalculationParams): SheetResult {
 
     { label: 'State LIHTC Enabled', rangeName: 'StateLIHTCEnabled', value: params.stateLIHTCEnabled ? 1 : 0, units: '0/1' },
     { label: 'State LIHTC Rate (%)', rangeName: 'StateLIHTCRate', value: 0, units: '%' },
-    { label: 'State LIHTC Syndication Rate', rangeName: 'StateLIHTCSyndRate', value: params.syndicationRate || 85, units: '%' },
-    { label: 'State LIHTC Path', rangeName: 'StateLIHTCPath', value: 'syndicated', units: '' },
+    // ISS-016: State LIHTC annual credit from UI calculation (not derived from rate)
+    { label: 'State LIHTC Annual Credit', rangeName: 'StateLIHTCAnnualCredit', value: params.stateLIHTCAnnualCredit || 0, units: '$M' },
+    // ISS-015: Use actual syndicationRate from params (percentage 0-100), default 85 for backwards compat
+    { label: 'State LIHTC Syndication Rate', rangeName: 'StateLIHTCSyndRate', value: params.syndicationRate ?? 85, units: '%' },
+    // ISS-015: Path is 'direct' if syndicationRate is 100%, otherwise 'syndicated'
+    { label: 'State LIHTC Path', rangeName: 'StateLIHTCPath', value: (params.syndicationRate === 100) ? 'direct' : 'syndicated', units: '' },
+    // IMPL-076: Year syndication proceeds are received (0=close/default, 1, 2)
+    { label: 'State LIHTC Syndication Year', rangeName: 'StateLIHTCSyndYear', value: params.stateLIHTCSyndicationYear ?? 0, units: 'year' },
 
     // Blank row
     { label: '', rangeName: '', value: '', units: '' },

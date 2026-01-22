@@ -24,11 +24,13 @@ export function buildTaxBenefitsSheet(
   const stateRate = params.stateTaxRate || 0;
   const conformity = params.bonusConformityRate ?? 1;
 
-  // Effective tax rates
-  // For bonus: Federal + NIIT + (State × conformity)
-  // For MACRS: Federal + NIIT + State (full)
-  const effectiveForBonus = federalRate + niitRate + stateRate * conformity;
-  const effectiveForMACRS = federalRate + niitRate + stateRate;
+  // IMPL-070: Use pre-calculated effective rates from params (single source of truth)
+  // These rates are calculated by useHDCCalculations hook with correct logic:
+  // - REP investors: Federal + (State × conformity) -- NO NIIT
+  // - Non-REP investors: Federal + NIIT + (State × conformity)
+  // Fallback to manual calculation only if params don't have the values
+  const effectiveForBonus = params.effectiveTaxRateForBonus ?? (federalRate + niitRate + stateRate * conformity);
+  const effectiveForMACRS = params.effectiveTaxRateForStraightLine ?? (federalRate + niitRate + stateRate);
 
   // Header
   ws['A1'] = { t: 's', v: 'TAX BENEFITS' };

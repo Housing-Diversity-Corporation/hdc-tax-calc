@@ -32,7 +32,10 @@ describe('Waterfall Distribution Fix - Free Investment Analysis', () => {
     taxDeliveryMonths: 12,
     aumFeeEnabled: false,
     aumFeeRate: 1,
-    
+    aumCurrentPayEnabled: false,
+    aumCurrentPayPct: 50,
+    constructionDelayMonths: 0,
+
     // Capital structure - very low investor equity to maximize coverage
     investorEquityPct: 10,        // 10% = $1M investor equity
     philanthropicEquityPct: 0,
@@ -48,6 +51,7 @@ describe('Waterfall Distribution Fix - Free Investment Analysis', () => {
     seniorDebtRate: 5,
     philDebtRate: 0,
     seniorDebtAmortization: 30,
+    seniorDebtIOYears: 0,
     philDebtAmortization: 30,
     
     // PIK settings

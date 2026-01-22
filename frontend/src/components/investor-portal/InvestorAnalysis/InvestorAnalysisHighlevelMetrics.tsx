@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '../../ui/card';
 import { formatCurrencyMillions, formatCurrency } from '../../../utils/taxbenefits/formatters';
 import type { InvestorAnalysisResults, CalculationParams, HDCAnalysisResults } from '../../../types/taxbenefits';
-import InvestmentSummarySection from '../../taxbenefits/results/InvestmentSummarySection';
+// IMPL-058: InvestmentSummarySection removed - duplicate info shown in SimplifiedFreeInvestmentSection
 import SimplifiedFreeInvestmentSection from './SimplifiedFreeInvestmentSection';
 import SimplifiedTaxPlanningSection from './SimplifiedTaxPlanningSection';
 import InvestorCashFlowSection from '../../taxbenefits/results/InvestorCashFlowSection';
@@ -266,19 +266,11 @@ const InvestorAnalysisHighlevelMetrics: React.FC<InvestorAnalysisHighlevelMetric
         )}
 
 
-        {/* Container for Investment/Free Investment and Tax Planning sections */}
+        {/* Container for Free Investment and Tax Planning sections */}
+        {/* IMPL-058: InvestmentSummarySection removed - investor equity shown in Free Investment section */}
         <div className="flex flex-col md:grid md:grid-cols-2 gap-4 md:gap-6 w-full items-start">
-          {/* Left Column - Investment Amount and Free Investment Analysis */}
-          <div className="w-full grid grid-rows-[minmax(150px,0.45fr)_minmax(200px,0.55fr)] gap-2 h-auto md:h-full">
-            {/* Investment Amount Section */}
-            <InvestmentSummarySection
-              investorEquity={investorEquity}
-              hdcFee={hdcFee}
-              formatCurrency={formatCurrencyMillions}
-              compact={true}
-            />
-
-            {/* Free Investment Analysis Section */}
+          {/* Left Column - Free Investment Analysis (includes Investor Equity) */}
+          <div className="w-full h-auto md:h-full">
             <SimplifiedFreeInvestmentSection
               year1NetBenefit={year1NetBenefit}
               investorEquity={investorEquity}

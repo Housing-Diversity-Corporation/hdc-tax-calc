@@ -5,7 +5,7 @@
 
 import { calculateFullInvestorAnalysis } from '../../calculations';
 import { calculateHDCAnalysis } from '../../hdcAnalysis';
-import { CalculationParams } from '../../../types/taxbenefits';
+import { CalculationParams } from '../../../../types/taxbenefits';
 
 describe('HDC Waterfall Comprehensive Tests', () => {
   // Base parameters for all tests
@@ -21,6 +21,7 @@ describe('HDC Waterfall Comprehensive Tests', () => {
 
     // Capital Structure
     investorEquityPct: 20,
+    philanthropicEquityPct: 10,
     philanthropicDebtPct: 10,
     philanthropicDebtRate: 2.0,
     seniorDebtPct: 60,
@@ -91,12 +92,12 @@ describe('HDC Waterfall Comprehensive Tests', () => {
       expect(year1.outsideInvestorCurrentPay).toBe(0); // No outside investor
 
       // Check DSCR is maintained
-      expect(year1.dscr).toBeCloseTo(1.05, 2);
+      expect(year1.dscr!).toBeCloseTo(1.05, 2);
 
       console.log('Test 1 - Basic Waterfall Results:', {
         investorIRR: results.investorIRR.toFixed(2) + '%',
         multiple: results.multiple.toFixed(2) + 'x',
-        year1DSCR: year1.dscr.toFixed(3),
+        year1DSCR: (year1.dscr ?? 0).toFixed(3),
         year1CashFlow: year1.totalCashFlow
       });
     });
@@ -195,9 +196,9 @@ describe('HDC Waterfall Comprehensive Tests', () => {
       expect(year2.aumFeeAccrued).toBeCloseTo(75000, 0); // 50% accrued
 
       console.log('Test 2c - AUM Fee 50/50 Split:', {
-        paid: year1.aumFeePaid,
-        accrued: year1.aumFeeAccrued,
-        total: year1.aumFeePaid + year1.aumFeeAccrued
+        paid: year1.aumFeePaid ?? 0,
+        accrued: year1.aumFeeAccrued ?? 0,
+        total: (year1.aumFeePaid ?? 0) + (year1.aumFeeAccrued ?? 0)
       });
     });
   });
@@ -223,7 +224,7 @@ describe('HDC Waterfall Comprehensive Tests', () => {
       console.log('Test 3a - Outside Investor Current Pay:', {
         currentPay: year1.outsideInvestorCurrentPay,
         pikAccrued: year1.outsideInvestorPIKAccrued,
-        dscr: year1.dscr.toFixed(3)
+        dscr: (year1.dscr ?? 0).toFixed(3)
       });
     });
 
@@ -276,22 +277,22 @@ describe('HDC Waterfall Comprehensive Tests', () => {
 
       // Every year should maintain exactly 1.05 DSCR
       results.investorCashFlows.forEach((cf, index) => {
-        expect(cf.dscr).toBeCloseTo(1.05, 2);
-        console.log(`Year ${index + 1} DSCR: ${cf.dscr.toFixed(4)}`);
+        expect(cf.dscr!).toBeCloseTo(1.05, 2);
+        console.log(`Year ${index + 1} DSCR: ${(cf.dscr ?? 0).toFixed(4)}`);
       });
 
       // Check for deferrals
       const hasDeferrals = results.investorCashFlows.some(cf =>
-        cf.aumFeeAccrued > 0
+        (cf.aumFeeAccrued ?? 0) > 0
       );
 
       console.log('Test 4 - DSCR Management:', {
-        allAt105: results.investorCashFlows.every(cf => Math.abs(cf.dscr - 1.05) < 0.01),
+        allAt105: results.investorCashFlows.every(cf => Math.abs((cf.dscr ?? 0) - 1.05) < 0.01),
         hasDeferrals,
         year1Details: {
-          dscr: results.investorCashFlows[0].dscr,
-          aumPaid: results.investorCashFlows[0].aumFeePaid,
-          aumDeferred: results.investorCashFlows[0].aumFeeAccrued
+          dscr: results.investorCashFlows[0].dscr ?? 0,
+          aumPaid: results.investorCashFlows[0].aumFeePaid ?? 0,
+          aumDeferred: results.investorCashFlows[0].aumFeeAccrued ?? 0
         }
       });
     });
@@ -320,7 +321,7 @@ describe('HDC Waterfall Comprehensive Tests', () => {
 
       console.log('Test 4b - Deferral Priority:', {
         noi: year1.noi,
-        dscr: year1.dscr.toFixed(3),
+        dscr: (year1.dscr ?? 0).toFixed(3),
         hdcTaxFeeDeferred: year1|| 0,
         aumFeeDeferred: year1.aumFeeAccrued,
         hdcSubDebtDeferred: year1.hdcSubDebtPIKAccrued || 0
@@ -363,7 +364,7 @@ describe('HDC Waterfall Comprehensive Tests', () => {
       };
 
       const results = calculateFullInvestorAnalysis(params);
-      const hdcResults = calculateHDCAnalysis(params, results);
+      const hdcResults = calculateHDCAnalysis(params as any);
 
       // Verify all components are working
       const year1 = results.investorCashFlows[0];
@@ -376,7 +377,7 @@ describe('HDC Waterfall Comprehensive Tests', () => {
       expect(year2.aumFeeAccrued).toBeGreaterThan(0);
 
       expect(year1.outsideInvestorCurrentPay).toBeGreaterThan(0);
-      expect(year1.dscr).toBeCloseTo(1.05, 2);
+      expect(year1.dscr!).toBeCloseTo(1.05, 2);
 
       // Check HDC analysis
       expect(hdcResults.totalHDCReturns).toBeGreaterThan(0);
@@ -399,7 +400,7 @@ describe('HDC Waterfall Comprehensive Tests', () => {
           aumDeferred: year1.aumFeeAccrued,
           outsideInvestor: year1.outsideInvestorCurrentPay,
           totalCashFlow: year1.totalCashFlow,
-          dscr: year1.dscr.toFixed(3)
+          dscr: (year1.dscr ?? 0).toFixed(3)
         },
         year5OZTax: year5.ozYear5TaxPayment
       });
@@ -417,11 +418,11 @@ describe('HDC Waterfall Comprehensive Tests', () => {
       };
 
       const results = calculateFullInvestorAnalysis(params);
-      const hdcResults = calculateHDCAnalysis(params, results);
+      const hdcResults = calculateHDCAnalysis(params as any);
 
       // Get exit values
       const finalYear = results.investorCashFlows[9];
-      const exitValue = finalYear.exitValue || 0;
+      const exitValue = results.exitProceeds || 0;
 
       // Verify waterfall order at exit:
       // 1. Pay off senior debt

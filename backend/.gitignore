@@ -1,0 +1,49 @@
+# Environment variables
+.env
+.env*
+
+# Application properties files
+/src/main/resources/application.properties
+/src/main/resources/application-local.properties
+/src/main/resources/application-production.properties
+application*.properties
+
+# Build output
+target/
+*.class
+
+# Logs
+*.log
+logs/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Security - Credentials & Keys
+*.pem
+*.key
+*.p12
+*.jks
+*client_secret*.json
+*service-account*.json
+*credentials*.json
+
+# iCloud duplicate edge cases
+*.properties 2
+*.properties 3
+*application.properties 2
+*application-local.properties 2
+.env 2
+.env 3
+*.env 2
+*.pem 2
+*.key 2
+*credentials*.json 2

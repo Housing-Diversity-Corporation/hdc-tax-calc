@@ -131,24 +131,6 @@ const OutsideInvestorSection: React.FC<OutsideInvestorSectionProps> = ({
             <span className="hdc-result-value">{formatPercent(annualizedRate)}</span>
           </div>
         </div>
-
-        {/* Note */}
-        <div style={{
-          marginTop: '0.75rem',
-          padding: '0.375rem',
-          borderRadius: '0.25rem',
-          borderLeft: '2px solid var(--hdc-faded-jade)'
-        }}>
-          <p style={{
-            fontSize: '0.7rem',
-            color: 'var(--hdc-faded-jade)',
-            margin: 0,
-            fontStyle: 'italic'
-          }}>
-            This subordinated debt from an outside investor reduces available cash flow to the primary investor
-            and must be repaid in full at exit before any equity distributions.
-          </p>
-        </div>
       </div>
     </CollapsibleSection>
   );

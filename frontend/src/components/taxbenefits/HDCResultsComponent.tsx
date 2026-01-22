@@ -1,5 +1,5 @@
 import React from 'react';
-import InvestmentSummarySection from './results/InvestmentSummarySection';
+// IMPL-058: InvestmentSummarySection removed - consolidated into CapitalStructureSection
 import CapitalStructureSection from './results/CapitalStructureSection';
 import DSCRAnalysisSection from './results/DSCRAnalysisSection';
 import FreeInvestmentAnalysisSection from './results/FreeInvestmentAnalysisSection';
@@ -57,6 +57,9 @@ interface HDCResultsComponentProps {
   total10YearDepreciation: number;
   totalTaxBenefit: number;
   effectiveTaxRateForDepreciation: number;
+  // IMPL-068: Split rates for validation sheet export
+  effectiveTaxRateForBonus?: number;      // Effective rate for bonus depreciation (conformity-adjusted)
+  effectiveTaxRateForStraightLine?: number; // Effective rate for straight-line MACRS (full state rate)
   yearOneDepreciation: number;
   annualStraightLineDepreciation: number;
   years2to10Depreciation: number;
@@ -78,6 +81,7 @@ interface HDCResultsComponentProps {
   investorPromoteShare: number;
   federalTaxRate: number;
   selectedState: string;
+  investorState?: string;  // IMPL-064: Investor's state for tax calculations (separate from property state)
   ltCapitalGainsRate: number;
   niitRate: number;
   stateCapitalGainsRate: number;
@@ -345,6 +349,15 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
                 stateCapitalGainsRate: props.stateCapitalGainsRate,
                 selectedState: props.selectedState,
                 placedInServiceMonth: props.placedInServiceMonth || 7,
+                // IMPL-064: Add missing investor tax params
+                investorState: props.investorState || props.selectedState, // Use investorState, fallback to selectedState
+                investorTrack: props.investorTrack,
+                bonusConformityRate: props.isConformingState ? 1 : 0, // TODO: Pass actual rate from hook
+
+                // IMPL-068: Pass actual effective tax rates (not hardcoded)
+                effectiveTaxRate: props.effectiveTaxRateForDepreciation,
+                effectiveTaxRateForBonus: props.effectiveTaxRateForBonus ?? props.effectiveTaxRateForDepreciation,
+                effectiveTaxRateForStraightLine: props.effectiveTaxRateForStraightLine ?? props.effectiveTaxRateForDepreciation,
 
                 // Capital Structure - Equity
                 investorEquityPct: props.investorEquityPct,
@@ -400,6 +413,23 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
                 deferredCapitalGains: props.deferredCapitalGains,
                 capitalGainsTaxRate: props.ozCapitalGainsTaxRate,
 
+                // IMPL-064: Add missing LIHTC params (metadata uses decimals, params expect percentages)
+                lihtcEnabled: props.lihtcResult != null,
+                applicableFraction: props.lihtcResult?.metadata?.applicableFraction != null
+                  ? props.lihtcResult.metadata.applicableFraction * 100 : undefined,
+                creditRate: props.lihtcResult?.metadata?.creditRate != null
+                  ? props.lihtcResult.metadata.creditRate * 100 : undefined,
+                ddaQctBoost: props.lihtcResult?.metadata?.boostMultiplier === 1.3,
+                stateLIHTCEnabled: props.stateLihtcEnabled,
+                // ISS-015: Pass actual syndicationRate for export (convert 0.0-1.0 to percentage 0-100)
+                syndicationRate: props.stateLIHTCIntegration?.syndicationRate != null
+                  ? props.stateLIHTCIntegration.syndicationRate * 100 : undefined,
+                // ISS-016: Pass State LIHTC annual credit for export (grossCredit is 10× annual)
+                stateLIHTCAnnualCredit: props.stateLIHTCIntegration?.grossCredit != null
+                  ? props.stateLIHTCIntegration.grossCredit / 10 : undefined,
+                // IMPL-077: Pass Syndication Year from engine results
+                stateLIHTCSyndicationYear: props.mainAnalysisResults.stateLIHTCSyndicationYear,
+
                 // HDC Fees
                 hdcFeeRate: props.hdcFeeRate,
                 hdcDeferredInterestRate: props.hdcDeferredInterestRate,
@@ -451,13 +481,7 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
           )}
         </div>
 
-        <InvestmentSummarySection
-          investorEquity={props.investorEquity}
-          syndicatedEquityOffset={props.mainAnalysisResults?.syndicatedEquityOffset}
-          hdcFee={props.hdcFee}
-          formatCurrency={props.formatCurrency}
-        />
-
+        {/* IMPL-058: InvestmentSummarySection removed - info consolidated below */}
         <CapitalStructureSection
           investorEquityPct={props.investorEquityPct}
           philanthropicEquityPct={props.philanthropicEquityPct}
@@ -465,7 +489,11 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
           philDebtPct={props.philDebtPct}
           hdcSubDebtPct={props.hdcSubDebtPct}
           investorSubDebtPct={props.investorSubDebtPct}
+          outsideInvestorSubDebtPct={props.outsideInvestorSubDebtPct}
           totalCapitalStructure={props.totalCapitalStructure}
+          // IMPL-058: Dollar amounts for consolidated display
+          investorEquity={props.investorEquity}
+          syndicatedEquityOffset={props.mainAnalysisResults?.syndicatedEquityOffset}
           // State LIHTC Integration (IMPL-018)
           stateLIHTCProceeds={props.stateLIHTCIntegration?.netProceeds}
           stateLIHTCEnabled={props.stateLihtcEnabled}

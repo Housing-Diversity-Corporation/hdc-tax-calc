@@ -53,15 +53,7 @@ const InvestorCashFlowSection: React.FC<InvestorCashFlowSectionProps> = ({
   return (
     <CollapsibleSection title={`${holdPeriod}-Year Investor Analysis & Cash Flow Model`}>
        
-       {/* Initial Investment */}
        <div style={{ marginTop: '0.5rem' }}>
-         <div className="hdc-result-row" style={{ marginBottom: '0.5rem' }}>
-           <span className="hdc-result-label" style={{ fontWeight: 600 }}>Initial Investment:</span>
-           <span className="hdc-result-value hdc-value-negative">
-             ({formatCurrency(totalInvestment)})
-           </span>
-         </div>
-         
          {/* Income Sources Header */}
          <div style={{ 
            fontSize: '0.75rem', 
@@ -127,38 +119,8 @@ const InvestorCashFlowSection: React.FC<InvestorCashFlowSectionProps> = ({
            </div>
          )}
          
-         {/* Summary Metrics */}
-         <div className="hdc-result-row summary" style={{ marginTop: '0.5rem' }}>
-           <span className="hdc-result-label" style={{ 
-             fontWeight: 600,
-             color: 'var(--hdc-brown-rust)' 
-           }}>
-             Net Total Returns:
-           </span>
-           <span className="hdc-result-value" style={{ 
-             color: 'var(--hdc-brown-rust)',
-             fontWeight: 700 
-           }}>
-             {formatCurrency(totalReturns)}
-           </span>
-         </div>
-         
-         <div className="hdc-result-row">
-           <span className="hdc-result-label" style={{ 
-             fontWeight: 600,
-             color: 'var(--hdc-brown-rust)' 
-           }}>
-             Investor Multiple:
-           </span>
-           <span className="hdc-result-value" style={{ 
-             color: 'var(--hdc-brown-rust)',
-             fontWeight: 700 
-           }}>
-             {multipleOnInvested.toFixed(2)}x
-           </span>
-         </div>
-         
-         <div className="hdc-result-row">
+         {/* Summary Metrics - IRR only (MOIC/Returns shown in ReturnsBuiltupStrip) */}
+         <div className="hdc-result-row" style={{ marginTop: '0.5rem' }}>
            <span className="hdc-result-label" style={{ 
              fontWeight: 600,
              color: 'var(--hdc-brown-rust)' 

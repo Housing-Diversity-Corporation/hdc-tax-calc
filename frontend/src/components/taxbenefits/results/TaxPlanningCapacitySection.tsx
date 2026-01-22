@@ -93,26 +93,7 @@ const TaxPlanningCapacitySection: React.FC<TaxPlanningCapacitySectionProps> = ({
              <span className="hdc-result-value">{formatCurrency(totalNetTaxBenefits)}</span>
            </div>
 
-           {federalLihtcTotalCredits !== undefined && federalLihtcTotalCredits > 0 && (
-             <div className="hdc-result-row">
-               <span className="hdc-result-label">Federal LIHTC Credits:</span>
-               <span className="hdc-result-value">{formatCurrency(federalLihtcTotalCredits)}</span>
-             </div>
-           )}
-
-           {stateLihtcEnabled && stateLihtcTotalCredits !== undefined && stateLihtcTotalCredits > 0 && (
-             <div className="hdc-result-row">
-               <span className="hdc-result-label">State LIHTC Credits:</span>
-               <span className="hdc-result-value">{formatCurrency(stateLihtcTotalCredits)}</span>
-             </div>
-           )}
-
-           {ozEnabled && ozDeferralNPV !== undefined && ozDeferralNPV > 0 && (
-             <div className="hdc-result-row">
-               <span className="hdc-result-label">OZ Deferral NPV:</span>
-               <span className="hdc-result-value">{formatCurrency(ozDeferralNPV)}</span>
-             </div>
-           )}
+           {/* LIHTC and OZ shown in ReturnsBuiltupStrip and dedicated sections */}
 
            <div className="hdc-result-row summary" style={{ borderTop: '1px solid rgba(146, 195, 194, 0.3)', paddingTop: '0.5rem', marginTop: '0.5rem' }}>
              <span className="hdc-result-label" style={{ fontWeight: 600 }}>Total 10-Year Benefits:</span>

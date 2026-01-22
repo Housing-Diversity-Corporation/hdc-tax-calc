@@ -59,11 +59,14 @@ const createMockCashFlow = (year: number, overrides: Partial<CashFlowItem> = {})
   totalCashFlow: year === 1 ? 10000000 : 4000000,
   cumulativeReturns: year * 5000000,
   noi: 5000000,
-  seniorDebtService: 2000000,
-  philDebtService: 500000,
+  hardDebtService: 2500000,
   dscr: 1.05,
   federalLIHTCCredit: 500000,
   stateLIHTCCredit: 100000,
+  debtServicePayments: 2500000,
+  cashAfterDebtService: 2500000,
+  aumFeeAmount: 0,
+  cashAfterDebtAndFees: 2500000,
   ...overrides
 });
 
@@ -105,6 +108,17 @@ const createMockHDCResults = (overrides: Partial<HDCAnalysisResults> = {}): HDCA
   hdcCashFlows: [],
   totalHDCReturns: 25000000,
   hdcExitProceeds: 15000000,
+  hdcPromoteProceeds: 10000000,
+  philanthropicEquityRepayment: 5000000,
+  hdcSubDebtRepayment: 2000000,
+  hdcMultiple: 0,
+  hdcIRR: 0,
+  hdcFeeIncome: 1500000,
+  hdcPhilanthropicIncome: 5000000,
+  hdcOperatingPromoteIncome: 10000000,
+  hdcAumFeeIncome: 5000000,
+  hdcSubDebtCurrentPayIncome: 0,
+  hdcSubDebtPIKAccrued: 3000000,
   hdcInitialInvestment: 0,
   hdcTaxBenefitFromFees: 1500000,
   hdcAumFees: 5000000,
@@ -130,7 +144,13 @@ const createMockParams = (overrides: Partial<CalculationParams> = {}): Calculati
   federalLIHTCCredits: [400000, 500000, 500000, 500000, 500000, 500000, 500000, 500000, 500000, 500000, 100000],
   stateLIHTCIntegration: {
     creditPath: 'direct_use',
-    yearlyCredits: [80000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 20000]
+    syndicationRate: 0,
+    grossCredit: 1000000,
+    netProceeds: 1000000,
+    yearlyCredits: [80000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 20000],
+    totalCreditBenefit: 1000000,
+    treatment: 'tax_benefit',
+    warnings: []
   },
   ...overrides
 } as CalculationParams);
@@ -206,7 +226,13 @@ describe('HDCComprehensiveReportButton', () => {
         federalLIHTCCredits: [400000, 500000, 500000, 500000, 500000, 500000, 500000, 500000, 500000, 500000, 100000],
         stateLIHTCIntegration: {
           creditPath: 'direct_use',
-          yearlyCredits: [80000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 20000]
+          syndicationRate: 0,
+          grossCredit: 1000000,
+          netProceeds: 1000000,
+          yearlyCredits: [80000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 20000],
+          totalCreditBenefit: 1000000,
+          treatment: 'tax_benefit',
+          warnings: []
         }
       });
 
@@ -214,16 +240,16 @@ describe('HDCComprehensiveReportButton', () => {
       let remainingFederal = 0;
       let remainingState = 0;
 
-      if (params.federalLIHTCCredits && params.federalLIHTCCredits.length > params.holdPeriod) {
-        for (let i = params.holdPeriod; i < params.federalLIHTCCredits.length; i++) {
+      if (params.federalLIHTCCredits && params.federalLIHTCCredits.length > params.holdPeriod!) {
+        for (let i = params.holdPeriod!; i < params.federalLIHTCCredits.length; i++) {
           remainingFederal += params.federalLIHTCCredits[i] || 0;
         }
       }
 
       if (params.stateLIHTCIntegration?.creditPath === 'direct_use' &&
           params.stateLIHTCIntegration.yearlyCredits &&
-          params.stateLIHTCIntegration.yearlyCredits.length > params.holdPeriod) {
-        for (let i = params.holdPeriod; i < params.stateLIHTCIntegration.yearlyCredits.length; i++) {
+          params.stateLIHTCIntegration.yearlyCredits.length > params.holdPeriod!) {
+        for (let i = params.holdPeriod!; i < params.stateLIHTCIntegration.yearlyCredits.length; i++) {
           remainingState += params.stateLIHTCIntegration.yearlyCredits[i] || 0;
         }
       }
@@ -298,8 +324,8 @@ describe('HDCComprehensiveReportButton', () => {
 
       let remainingFederal = 0;
 
-      if (params.federalLIHTCCredits && params.federalLIHTCCredits.length > params.holdPeriod) {
-        for (let i = params.holdPeriod; i < params.federalLIHTCCredits.length; i++) {
+      if (params.federalLIHTCCredits && params.federalLIHTCCredits.length > params.holdPeriod!) {
+        for (let i = params.holdPeriod!; i < params.federalLIHTCCredits.length; i++) {
           remainingFederal += params.federalLIHTCCredits[i] || 0;
         }
       }
@@ -339,8 +365,8 @@ describe('HDCComprehensiveReportButton', () => {
 
       let remainingFederal = 0;
 
-      if (params.federalLIHTCCredits && params.federalLIHTCCredits.length > params.holdPeriod) {
-        for (let i = params.holdPeriod; i < params.federalLIHTCCredits.length; i++) {
+      if (params.federalLIHTCCredits && params.federalLIHTCCredits.length > params.holdPeriod!) {
+        for (let i = params.holdPeriod!; i < params.federalLIHTCCredits.length; i++) {
           remainingFederal += params.federalLIHTCCredits[i] || 0;
         }
       }
@@ -356,8 +382,8 @@ describe('HDCComprehensiveReportButton', () => {
 
       let remainingFederal = 0;
 
-      if (params.federalLIHTCCredits && params.federalLIHTCCredits.length > params.holdPeriod) {
-        for (let i = params.holdPeriod; i < params.federalLIHTCCredits.length; i++) {
+      if (params.federalLIHTCCredits && params.federalLIHTCCredits.length > params.holdPeriod!) {
+        for (let i = params.holdPeriod!; i < params.federalLIHTCCredits.length; i++) {
           remainingFederal += params.federalLIHTCCredits[i] || 0;
         }
       }

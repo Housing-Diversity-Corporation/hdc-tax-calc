@@ -66,6 +66,7 @@ const PresetSelector: React.FC<PresetSelectorProps> = ({
   const inProgressConfigs = userConfigurations.filter(config => config.completionStatus === 'in-progress' || !config.completionStatus);
 
   const handlePresetChange = (value: string) => {
+    debugger; // BREAKPOINT 1: Preset dropdown selection
     setSelectedPreset(value);
 
     if (value && onPresetSelect) {

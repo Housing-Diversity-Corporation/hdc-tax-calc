@@ -48,6 +48,10 @@ export interface CashFlowItem {
   ozRecaptureAvoided?: number; // IMPL-048: This year's recapture avoided (OZ 10+ year holds only)
   stateLIHTCCredit?: number; // State LIHTC credit for direct use path (IMPL-018)
   federalLIHTCCredit?: number; // Federal LIHTC credit for this year (IMPL-021b)
+  stateLIHTCSyndicationProceeds?: number; // IMPL-073: State LIHTC syndication proceeds (capital return)
+  // IMPL-061: Depreciation breakdown for Returns Buildup Strip
+  bonusTaxBenefit?: number; // Year 1 bonus depreciation tax benefit
+  year1MacrsTaxBenefit?: number; // Year 1 MACRS (partial year) tax benefit
   // TIER 2: Phil Debt Conversion fields
   philConvertedToPIK?: boolean; // Flag that phil current pay was converted to PIK for covenant protection
   stage2DSCR?: number; // DSCR after phil conversion (if TIER 2 triggered)
@@ -135,7 +139,10 @@ export interface InvestorAnalysisResults {
   holdPeriod: number;
   interestReserveAmount: number;
   investorEquity: number;
-  syndicatedEquityOffset?: number; // IMPL-046: State LIHTC syndication offset (for UI display)
+  syndicatedEquityOffset?: number; // IMPL-074: State LIHTC syndication reduces net equity for MOIC/IRR
+  stateLIHTCSyndicationProceeds?: number; // IMPL-073: State LIHTC syndication proceeds (capital return in Returns Buildup)
+  // IMPL-075: Syndication year determines MOIC denominator (Year 0 = net, Year 1+ = gross)
+  stateLIHTCSyndicationYear?: 0 | 1 | 2; // Year syndication proceeds are received
 
   // Preferred equity results (IMPL-7.0-009)
   preferredEquityResult?: PreferredEquityResult;
@@ -166,8 +173,16 @@ export interface InvestorAnalysisResults {
   ozRecaptureAvoided?: number;  // Avoided 25% federal recapture tax on depreciation
   ozDeferralNPV?: number;       // NPV of 5-year capital gains tax deferral (8% discount rate)
   ozExitAppreciation?: number;  // Tax savings from tax-free exit appreciation
+  // IMPL-057: OZ step-up basis savings (Year 5 - varies with OZ version)
+  ozStepUpSavings?: number;     // Tax savings from step-up basis (10% standard / 30% rural in OZ 2.0)
   // IMPL-048b: Remaining LIHTC credits (Year 11+ catch-up for shorter hold periods)
   remainingLIHTCCredits?: number;
+  // ISS-016: Remaining State LIHTC credits separately for Returns Buildup
+  remainingStateLIHTCCredits?: number;
+  // IMPL-061: Depreciation breakdown for Returns Buildup Strip
+  year1BonusTaxBenefit?: number;      // Year 1 bonus depreciation tax benefit
+  year1MacrsTaxBenefit?: number;      // Year 1 MACRS (partial year) tax benefit
+  years2ExitMacrsTaxBenefit?: number; // Years 2-Exit MACRS tax benefit
 }
 
 export interface HDCAnalysisResults {
@@ -301,10 +316,12 @@ export interface CalculationParams {
   // State LIHTC (v7.0.3)
   stateLIHTCEnabled?: boolean;          // Enable state LIHTC calculations
   syndicationRate?: number;             // State credit syndication rate (60-100%, default 85%)
+  stateLIHTCAnnualCredit?: number;      // State LIHTC annual credit ($M) for export (ISS-016)
   investorHasStateLiability?: boolean;  // Whether investor has state tax liability (default true)
   investorState?: string;               // Investor's state code for state LIHTC calculations (2-letter code)
   stateLIHTCUserPercentage?: number;    // User-specified percentage for supplement/standalone programs
   stateLIHTCUserAmount?: number;        // User-specified dollar amount for supplement/standalone programs
+  stateLIHTCSyndicationYear?: 0 | 1 | 2; // IMPL-073: Year syndication proceeds are received (default 1)
 
   // Preferred Equity (v7.0.6)
   prefEquityEnabled?: boolean;          // Enable preferred equity layer

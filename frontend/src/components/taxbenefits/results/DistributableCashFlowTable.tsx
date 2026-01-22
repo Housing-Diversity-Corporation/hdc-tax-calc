@@ -301,59 +301,6 @@ const DistributableCashFlowTable: React.FC<DistributableCashFlowTableProps> = ({
           </tbody>
         </table>
       </div>
-
-        <div className="mt-4 text-xs" style={{color: '#666'}}>
-          <div className="mb-2">
-            <strong>Progressive DSCR Analysis:</strong>
-          </div>
-          <div className="ml-4 space-y-1">
-            <div><strong>Hard DSCR:</strong> NOI ÷ (Senior Debt + Philanthropic Debt Service) - Shows coverage on primary debt obligations</div>
-            <div><strong>Sub DSCR:</strong> NOI ÷ (Hard Debt + Net Sub-Debt Cost) - Coverage including subordinated debt payments</div>
-            <div className="text-xs text-gray-500">Note: Investor sub-debt interest is income to investor, improving net cash position</div>
-            <div><strong style={{color: 'var(--hdc-cabbage-pont)'}}>Final DSCR:</strong> Maintained at exactly 1.05x through cash management system</div>
-          </div>
-
-          <div className="mt-3 mb-2">
-            <strong>Payment Priority Waterfall:</strong>
-          </div>
-          <ol className="list-decimal ml-6 space-y-1">
-            <li><strong>Hard Debt Service</strong> - Senior debt + Philanthropic debt (always paid first)</li>
-            <li><strong>Sub-Debt Interest</strong> - Outside Investor, HDC, and Investor sub-debt current pay
-              <div className="text-xs text-gray-500 ml-4">(Note: Investor sub-debt is income to investor, improving their returns)</div>
-            </li>
-            <li><strong>HDC Tax Benefit Fee</strong> - {hdcFeeRate}% of depreciation tax benefits</li>
-            {aumFeeEnabled && <li><strong>HDC AUM Fee</strong> - {aumFeeRate}% of project cost annually</li>}
-            <li><strong>Distributable Cash</strong> - Remaining cash for equity distributions</li>
-          </ol>
-
-          <div className="mt-3" style={{padding: '0.5rem', borderRadius: '4px'}}>
-            <strong>Cash Management System:</strong>
-            <div className="mt-1">The system maintains exactly 1.05x DSCR to comply with philanthropic lender covenants.</div>
-            <div className="mt-1">When cash is constrained, payments defer in priority order (lowest priority first):</div>
-            <ol className="list-decimal ml-6 mt-1">
-              <li>HDC Tax Benefit Fee (first to defer)</li>
-              {aumFeeEnabled && <li>HDC AUM Fee</li>}
-              <li>Other sub-debt current pay</li>
-              <li>Outside investor sub-debt (last to defer, highest priority)</li>
-            </ol>
-            {(hasTaxDeferrals || hasAumDeferrals) && (
-              <div className="mt-2" style={{borderTop: '1px solid rgba(127, 189, 69, 0.3)', paddingTop: '0.5rem'}}>
-                <strong>Payment Status Indicators:</strong>
-                <div className="ml-4">
-                  <span>• Default color: Payment made in full</span><br/>
-                  <span style={{color: '#ff9800'}}>• Orange: Partial payment (some portion deferred)</span><br/>
-                  <span style={{color: '#dc3545'}}>• Red: Fully deferred or deferred amounts</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {constructionDelayMonths > 0 && (
-            <div className="mt-2" style={{color: 'var(--hdc-gulf-stream)'}}>
-              <strong>Construction Period:</strong> No rental income for first {constructionDelayMonths} months while building is under construction.
-            </div>
-          )}
-        </div>
       </div>
     </CollapsibleSection>
   );

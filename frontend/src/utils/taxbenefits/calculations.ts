@@ -260,15 +260,18 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
   // Calculate investor equity based on effective project cost
   const investorEquity = effectiveProjectCost * (paramInvestorEquityPct / 100);
 
-  // State LIHTC syndicated proceeds offset (IMPL-026D)
-  // When investor is out-of-state, credits are sold for cash
-  // which directly reduces investor equity requirement (debt unchanged)
-  let syndicatedEquityOffset = 0;
+  // IMPL-073: State LIHTC syndication as capital return (shown in Returns Buildup)
+  // IMPL-074: MOIC/IRR denominator uses NET equity (after syndication offset) for investor marketing
+  // Syndication proceeds are also shown as cash returned in a specific year
+  let stateLIHTCSyndicationProceeds = 0;
+  const stateLIHTCSyndicationYear = params.stateLIHTCSyndicationYear ?? 0; // IMPL-076: Default Year 0 (syndicator funds at close)
   if (paramStateLIHTCIntegration?.creditPath === 'syndicated' &&
       paramStateLIHTCIntegration.netProceeds > 0) {
-    syndicatedEquityOffset = paramStateLIHTCIntegration.netProceeds;
+    stateLIHTCSyndicationProceeds = paramStateLIHTCIntegration.netProceeds;
   }
-  const investorEquityAfterOffset = Math.max(0, investorEquity - syndicatedEquityOffset);
+  // IMPL-074: Syndication offset reduces net equity for MOIC/IRR calculation
+  const syndicatedEquityOffset = stateLIHTCSyndicationProceeds;
+  const investorEquityAfterOffset = investorEquity - syndicatedEquityOffset;
 
   // Calculate P&I payment for use after IO period ends
   const monthlySeniorDebtPIPayment = calculateMonthlyPayment(seniorDebtAmount, seniorDebtRate, seniorDebtAmortYears);
@@ -395,6 +398,9 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
     let grossDepreciationTaxBenefit = 0; // Benefit before any adjustments
     let depreciationTaxBenefit = 0; // Net benefit to investor
     let yearlyDepreciationAmount = 0; // IMPL-048: Track raw depreciation for OZ recapture avoided
+    // IMPL-061: Track bonus vs MACRS breakdown for Returns Buildup Strip
+    let bonusTaxBenefit = 0; // Year 1 bonus depreciation tax benefit
+    let year1MacrsTaxBenefit = 0; // Year 1 MACRS (partial year) tax benefit
 
     if (year >= placedInServiceYear) {
       const depreciationYear = year - placedInServiceYear + 1; // Which year of depreciation this is
@@ -429,9 +435,10 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
         const effectiveRateForBonus = paramEffectiveTaxRateForBonus ?? paramEffectiveTaxRate;
         const effectiveRateForMACRS = paramEffectiveTaxRateForStraightLine ?? paramEffectiveTaxRate;
 
-        const bonusTaxBenefit = bonusDepreciation * (effectiveRateForBonus / 100);
-        const macrsTaxBenefit = year1MACRS * (effectiveRateForMACRS / 100);
-        grossDepreciationTaxBenefit = bonusTaxBenefit + macrsTaxBenefit;
+        // IMPL-061: Assign to outer-scope variables for cash flow storage
+        bonusTaxBenefit = bonusDepreciation * (effectiveRateForBonus / 100);
+        year1MacrsTaxBenefit = year1MACRS * (effectiveRateForMACRS / 100);
+        grossDepreciationTaxBenefit = bonusTaxBenefit + year1MacrsTaxBenefit;
         depreciationTaxBenefit = grossDepreciationTaxBenefit; // Full benefit to investor
 
         // IMPL-048: Track raw depreciation amount for OZ recapture avoided calculation
@@ -1251,6 +1258,18 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
       ozRecaptureAvoided = yearlyDepreciationAmount * 0.25;
     }
 
+    // IMPL-073/076: State LIHTC syndication proceeds (capital return)
+    // CRITICAL: Year 0 means syndicator funds at close - proceeds already netted in equity
+    // Year 1+ means investor funds full amount, gets capital return later
+    let yearSyndicationProceeds = 0;
+    if (stateLIHTCSyndicationProceeds > 0 && stateLIHTCSyndicationYear > 0) {
+      // Only add cash flow for Year 1+ syndication (investor gets capital return)
+      // Year 0 syndication: proceeds already reduce equity, no cash flow line item
+      if (year === stateLIHTCSyndicationYear) {
+        yearSyndicationProceeds = stateLIHTCSyndicationProceeds;
+      }
+    }
+
     // CRITICAL FIX (Jan 2025): HDC tax benefit fee deducted from annual cash flows
     // This ensures fees are treated as operating expenses, NOT upfront capital costs
     // Subtract outside investor current pay, AUM fee paid, and HDC tax benefit fee from cash flow
@@ -1263,8 +1282,10 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
     // These are already reflected in reduced operatingCashFlow via cashAfterDebtAndFees
     // IMPL-048: Added ozRecaptureAvoided - recognized annually as depreciation is taken
     // IMPL-054: Added stepUpTaxSavings - OZ step-up benefit in Year 5
+    // IMPL-073: Added yearSyndicationProceeds - State LIHTC syndication as capital return
     const totalCashFlow = yearlyTaxBenefit + operatingCashFlow + federalLIHTCCredit + stateLIHTCCredit +
-                         investorSubDebtInterestReceived + excessReserveDistribution + ozRecaptureAvoided + stepUpTaxSavings;
+                         investorSubDebtInterestReceived + excessReserveDistribution + ozRecaptureAvoided + stepUpTaxSavings +
+                         yearSyndicationProceeds;
     cumulativeReturns += totalCashFlow;
 
     // DSCR already calculated above before HDC fee determination
@@ -1315,6 +1336,10 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
       ozRecaptureAvoided, // IMPL-048: This year's recapture avoided (OZ 10+ year holds only)
       stateLIHTCCredit, // State LIHTC credit for direct use path (IMPL-018)
       federalLIHTCCredit, // Federal LIHTC credit (IMPL-021b) - 100% to investor
+      stateLIHTCSyndicationProceeds: yearSyndicationProceeds, // IMPL-073: Syndication proceeds (capital return)
+      // IMPL-061: Depreciation breakdown for Returns Buildup Strip
+      bonusTaxBenefit, // Year 1 bonus depreciation tax benefit
+      year1MacrsTaxBenefit, // Year 1 MACRS (partial year) tax benefit
       totalCashFlow,
       cumulativeReturns,
       operationalDSCR,
@@ -1534,8 +1559,19 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
   // This replaces the lump-sum calculation to properly time the benefit recognition
   const ozRecaptureAvoided = investorCashFlows.reduce((sum, cf) => sum + (cf.ozRecaptureAvoided || 0), 0);
 
+  // IMPL-057: Sum up step-up tax savings from cash flows (Year 5 only, varies with OZ version)
+  const ozStepUpSavings = investorCashFlows.reduce((sum, cf) => sum + (cf.stepUpTaxSavings || 0), 0);
+
+  // IMPL-061: Sum up depreciation breakdown for Returns Buildup Strip
+  const totalDepreciationTaxBenefit = investorCashFlows.reduce((sum, cf) => sum + cf.taxBenefit, 0);
+  const year1BonusTaxBenefit = investorCashFlows.reduce((sum, cf) => sum + (cf.bonusTaxBenefit || 0), 0);
+  const year1MacrsTaxBenefit = investorCashFlows.reduce((sum, cf) => sum + (cf.year1MacrsTaxBenefit || 0), 0);
+  // Years 2-Exit MACRS = total depreciation - Year 1 components
+  const years2ExitMacrsTaxBenefit = totalDepreciationTaxBenefit - year1BonusTaxBenefit - year1MacrsTaxBenefit;
+
   // Total OZ benefits (recapture is now summed from annual cash flows)
-  const totalOzBenefits = ozRecaptureAvoided + ozDeferralNPV + ozExitAppreciation;
+  // IMPL-057: Include step-up savings in total OZ benefits
+  const totalOzBenefits = ozRecaptureAvoided + ozDeferralNPV + ozExitAppreciation + ozStepUpSavings;
 
   // IMPL-048: Build IRR cash flow array with correct timing
   // Exit proceeds go in final year (not as separate element) to avoid off-by-one error
@@ -1549,8 +1585,12 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
   // Correct approach: HDC tax benefit fees (10% of depreciation) are NOT upfront costs
   // They are paid annually from operating cash flows (deducted at line 1080-1082)
   // See HDC_CALCULATION_LOGIC.md "Investor Initial Investment & IRR Calculation" section
-  // IMPL-026D: Use investorEquityAfterOffset to reflect syndicated state LIHTC proceeds
-  const totalInvestment = investorEquityAfterOffset;
+  // IMPL-075: MOIC denominator depends on syndication timing
+  // - Year 0: Syndicator funds at close → denominator = net equity (gross - offset)
+  // - Year 1+: Investor funds full, gets capital return → denominator = gross equity
+  const totalInvestment = stateLIHTCSyndicationYear === 0
+    ? investorEquityAfterOffset  // Year 0: Net equity
+    : investorEquity;            // Year 1+: Gross equity
   // IMPL-029: Include OZ benefits in totalReturns
   // IMPL-030C: Include remaining LIHTC credits (Year 11 catch-up) in totalReturns
   // IMPL-048b: Don't double-count ozRecaptureAvoided - it's already in cumulativeReturns (via annual totalCashFlow)
@@ -1596,15 +1636,26 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
     holdPeriod: paramHoldPeriod,
     interestReserveAmount: interestReserveAmount,
     investorEquity: investorEquity, // CRITICAL: Single source of truth for investor equity (used by UI)
-    syndicatedEquityOffset: syndicatedEquityOffset, // IMPL-046: State LIHTC syndication offset for UI display
+    syndicatedEquityOffset: syndicatedEquityOffset, // IMPL-074: Used to reduce net equity for MOIC/IRR
+    stateLIHTCSyndicationProceeds, // IMPL-073: State LIHTC syndication as capital return
+    // IMPL-075: Syndication year determines MOIC denominator
+    stateLIHTCSyndicationYear: stateLIHTCSyndicationYear as 0 | 1 | 2,
     preferredEquityResult, // IMPL-7.0-009: Preferred equity waterfall integration
     preferredEquityAtExit, // IMPL-7.0-009: Amount paid to preferred equity at exit
     // IMPL-029: OZ benefits for 10+ year holds
     ozRecaptureAvoided,
     ozDeferralNPV,
     ozExitAppreciation,
+    // IMPL-057: OZ step-up basis savings (Year 5, varies with OZ version)
+    ozStepUpSavings,
     // IMPL-048b: Expose remaining LIHTC credits for UI display
-    remainingLIHTCCredits
+    remainingLIHTCCredits,
+    // ISS-016: Expose remaining State LIHTC separately for Returns Buildup
+    remainingStateLIHTCCredits: remainingStateLIHTC,
+    // IMPL-061: Depreciation breakdown for Returns Buildup Strip
+    year1BonusTaxBenefit,
+    year1MacrsTaxBenefit,
+    years2ExitMacrsTaxBenefit
   };
 
   // NEW: Add tax planning calculations if requested

@@ -25,9 +25,19 @@ export function buildInvestorReturnsSheet(
 
   const holdPeriod = params.holdPeriod || 10;
   const projectCost = params.projectCost;
-  const investorEquity = projectCost * params.investorEquityPct / 100;
+  const investorEquityGross = projectCost * params.investorEquityPct / 100;
   const investorSubDebt = projectCost * (params.investorSubDebtPct || 0) / 100;
-  const totalInvestment = investorEquity + investorSubDebt;
+
+  // IMPL-074/077: Get syndication offset and year from engine results
+  const syndicationOffset = results.syndicatedEquityOffset || 0;
+  const syndicationYear = results.stateLIHTCSyndicationYear ?? params.stateLIHTCSyndicationYear ?? 0;
+  const investorEquityNet = investorEquityGross - syndicationOffset;
+  // IMPL-077: Initial investment depends on syndication year
+  // Year 0: Syndicator funds at close → net equity
+  // Year 1+: Investor funds full amount → gross equity
+  const totalInvestment = syndicationYear === 0
+    ? investorEquityNet + investorSubDebt   // Year 0: net equity
+    : investorEquityGross + investorSubDebt; // Year 1+: gross equity
 
   // OZ parameters
   const ozEnabled = params.ozEnabled ?? false;
@@ -60,9 +70,14 @@ export function buildInvestorReturnsSheet(
   ws[`A${currentRow}`] = { t: 's', v: '=== CASH FLOWS ===' };
   currentRow++;
 
-  // Initial Investment (Year 0)
+  // IMPL-077: Initial Investment (Year 0) - depends on syndication year
+  // Year 0: net equity (syndicator funded offset)
+  // Year 1+: gross equity (investor funds full amount)
   ws[`A${currentRow}`] = { t: 's', v: 'Initial Investment' };
-  ws['B' + currentRow] = { t: 'n', v: -totalInvestment, f: '-(InvestorEquity+InvestorSubDebt)' } as FormulaCell;
+  const investmentFormula = syndicationYear === 0
+    ? '-(InvestorEquity-StateLIHTCSyndProceeds+InvestorSubDebt)'  // Year 0: net equity
+    : '-(InvestorEquity+InvestorSubDebt)';                        // Year 1+: gross equity
+  ws['B' + currentRow] = { t: 'n', v: -totalInvestment, f: investmentFormula } as FormulaCell;
   for (let year = 1; year <= holdPeriod; year++) {
     const col = String.fromCharCode(66 + year);
     ws[`${col}${currentRow}`] = { t: 'n', v: 0 };
@@ -104,6 +119,20 @@ export function buildInvestorReturnsSheet(
     ws[`${col}${currentRow}`] = { t: 'n', v: cf?.stateLIHTCCredit || 0, f: `IF(AND(StateLIHTCEnabled,StateLIHTCPath="direct"),StateLIHTC_Y${year},0)` } as FormulaCell;
   }
   const stateLihtcRow = currentRow;
+  currentRow++;
+
+  // IMPL-076: State LIHTC Syndication (capital return - only for Year 1+ syndication)
+  // Year 0 syndication: proceeds already netted in equity, no cash flow line item
+  // Year 1+: Capital return appears in selected year
+  ws[`A${currentRow}`] = { t: 's', v: 'State LIHTC Syndication' };
+  ws['B' + currentRow] = { t: 'n', v: 0 };
+  for (let year = 1; year <= holdPeriod; year++) {
+    const col = String.fromCharCode(66 + year);
+    const cf = cashFlows[year - 1];
+    // Only show syndication proceeds for Year 1+ (Year 0 = already netted in equity)
+    ws[`${col}${currentRow}`] = { t: 'n', v: cf?.stateLIHTCSyndicationProceeds || 0, f: `IF(AND(StateLIHTCEnabled,StateLIHTCPath="syndicated",StateLIHTCSyndYear>0,StateLIHTCSyndYear=${year}),StateLIHTCSyndProceeds,0)` } as FormulaCell;
+  }
+  const stateLihtcSyndRow = currentRow;
   currentRow++;
 
   // Operating Cash
@@ -245,19 +274,56 @@ export function buildInvestorReturnsSheet(
   ws[`A${currentRow}`] = { t: 's', v: '=== SUMMARY ===' };
   currentRow++;
 
-  ws[`A${currentRow}`] = { t: 's', v: 'Total Investment' };
-  ws[`B${currentRow}`] = { t: 'n', v: totalInvestment, f: `ABS(B${investmentRow})` } as FormulaCell;
-  namedRanges.push({ name: 'InvTotalInvestment', ref: `Investor_Returns!$B$${currentRow}` });
-  currentRow++;
+  // Track the row where net investment appears for MOIC formula
+  let investmentDisplayRow: number;
+
+  // IMPL-077: Show investment breakdown based on syndication timing
+  // Year 0: Syndicator funds offset at close → MOIC uses net equity
+  // Year 1+: Investor funds full amount → MOIC uses gross equity
+  if (syndicationOffset > 0 && syndicationYear === 0) {
+    // Year 0 syndication: show gross/offset/net breakdown
+    ws[`A${currentRow}`] = { t: 's', v: 'Investor Equity (Gross)' };
+    ws[`B${currentRow}`] = { t: 'n', v: investorEquityGross, f: 'InvestorEquity' } as FormulaCell;
+    currentRow++;
+
+    ws[`A${currentRow}`] = { t: 's', v: 'Less: Syndication Offset' };
+    ws[`B${currentRow}`] = { t: 'n', v: -syndicationOffset, f: '-StateLIHTCSyndProceeds' } as FormulaCell;
+    currentRow++;
+
+    ws[`A${currentRow}`] = { t: 's', v: 'Net Investment (MOIC basis)' };
+    ws[`B${currentRow}`] = { t: 'n', v: investorEquityNet, f: 'InvestorEquity-StateLIHTCSyndProceeds' } as FormulaCell;
+    namedRanges.push({ name: 'InvNetInvestment', ref: `Investor_Returns!$B$${currentRow}` });
+    investmentDisplayRow = currentRow;
+    currentRow++;
+  } else if (syndicationOffset > 0 && syndicationYear > 0) {
+    // Year 1+ syndication: investor funds full amount, MOIC uses gross equity
+    ws[`A${currentRow}`] = { t: 's', v: 'Total Investment (MOIC basis)' };
+    ws[`B${currentRow}`] = { t: 'n', v: totalInvestment, f: `ABS(B${investmentRow})` } as FormulaCell;
+    namedRanges.push({ name: 'InvTotalInvestment', ref: `Investor_Returns!$B$${currentRow}` });
+    investmentDisplayRow = currentRow;
+    currentRow++;
+
+    // Show syndication info as note (not part of MOIC calculation)
+    ws[`A${currentRow}`] = { t: 's', v: `  → Syndication Y${syndicationYear} (capital return)` };
+    ws[`B${currentRow}`] = { t: 'n', v: syndicationOffset, f: 'StateLIHTCSyndProceeds' } as FormulaCell;
+    currentRow++;
+  } else {
+    ws[`A${currentRow}`] = { t: 's', v: 'Total Investment' };
+    ws[`B${currentRow}`] = { t: 'n', v: totalInvestment, f: `ABS(B${investmentRow})` } as FormulaCell;
+    namedRanges.push({ name: 'InvTotalInvestment', ref: `Investor_Returns!$B$${currentRow}` });
+    investmentDisplayRow = currentRow;
+    currentRow++;
+  }
 
   ws[`A${currentRow}`] = { t: 's', v: 'Total Returns' };
   const lastYearCol = String.fromCharCode(66 + holdPeriod);
   ws[`B${currentRow}`] = { t: 'n', v: results.totalReturns, f: `${lastYearCol}${cumulativeRow}` } as FormulaCell;
   namedRanges.push({ name: 'InvTotalReturns', ref: `Investor_Returns!$B$${currentRow}` });
+  const totalReturnsRow = currentRow;
   currentRow++;
 
   ws[`A${currentRow}`] = { t: 's', v: 'Multiple (MOIC)' };
-  ws[`B${currentRow}`] = { t: 'n', v: results.multiple, f: `B${currentRow - 1}/B${currentRow - 2}` } as FormulaCell;
+  ws[`B${currentRow}`] = { t: 'n', v: results.multiple, f: `B${totalReturnsRow}/B${investmentDisplayRow}` } as FormulaCell;
   namedRanges.push({ name: 'InvestorMOIC', ref: `Investor_Returns!$B$${currentRow}` });
   currentRow++;
 

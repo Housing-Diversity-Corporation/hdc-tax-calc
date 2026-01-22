@@ -118,47 +118,23 @@ export const getStateBonusDepreciation = (code: string): number => {
 };
 
 /**
- * State bonus depreciation conformity rates for federal bonus depreciation
- *
- * This determines what percentage of federal bonus depreciation the state
- * recognizes for state tax purposes. Different from getStateBonusDepreciation()
- * which checks if the state has its OWN bonus depreciation program.
- *
- * @remarks
- * - 0.0 = State does NOT conform to federal bonus depreciation (CA, PA, IL)
- * - 0.3 = State has 30% limited conformity (NJ)
- * - 0.5 = State has 50% partial conformity (NY)
- * - 1.0 = State fully conforms to federal bonus depreciation (most states)
- *
- * All states accept straight-line depreciation (27.5-year MACRS).
- * This only affects the bonus/accelerated portion.
- *
- * @source IMPL-041: State Conformity Integration
- */
-const STATE_BONUS_CONFORMITY_RATES: Record<string, number> = {
-  'CA': 0.0,    // California doesn't conform to federal bonus
-  'NY': 0.5,    // New York partial conformity (50% of bonus allowed)
-  'PA': 0.0,    // Pennsylvania doesn't conform
-  'NJ': 0.3,    // New Jersey limited conformity (30% of bonus allowed)
-  'IL': 0.0,    // Illinois doesn't conform
-  // All other states default to 1.0 (full conformity)
-};
-
-/**
  * Get state bonus depreciation conformity rate for tax benefit calculations
+ *
+ * IMPL-069: Now reads from stateProfiles.data.json (single source of truth)
+ * The JSON bonusDepreciation field is 0-100%, this converts to 0.0-1.0
  *
  * Returns the percentage (0.0 to 1.0) of federal bonus depreciation that
  * the state recognizes for state income tax purposes.
  *
  * @param code - Two-letter jurisdiction code
- * @returns Conformity rate (0.0 to 1.0), defaults to 1.0 for unlisted states
+ * @returns Conformity rate (0.0 to 1.0), defaults to 0.0 for unlisted states
  *
  * @example
  * ```typescript
- * getStateBonusConformityRate('NJ');  // 0.3 (30% conformity)
+ * getStateBonusConformityRate('NJ');  // 0.0 (0% conformity per N.J.S.A. 54A:1-2)
  * getStateBonusConformityRate('CA');  // 0.0 (0% conformity)
- * getStateBonusConformityRate('OR');  // 1.0 (full conformity)
- * getStateBonusConformityRate('GA');  // 1.0 (default, full conformity)
+ * getStateBonusConformityRate('OR');  // 1.0 (full conformity - ONLY state with 100%)
+ * getStateBonusConformityRate('GA');  // 0.0 (0% conformity)
  * ```
  *
  * @remarks
@@ -168,9 +144,14 @@ const STATE_BONUS_CONFORMITY_RATES: Record<string, number> = {
  * const conformity = getStateBonusConformityRate(code);
  * const stateBenefitOnBonus = bonusDepreciation * stateRate * conformity;
  * ```
+ *
+ * @source OZ_2_0_Addendum_v9_0.md (authoritative source for state conformity data)
  */
 export const getStateBonusConformityRate = (code: string): number => {
-  return STATE_BONUS_CONFORMITY_RATES[code] ?? 1.0;
+  // IMPL-069: Read from JSON single source of truth
+  // bonusDepreciation is 0-100 in JSON, convert to 0.0-1.0
+  const bonusPct = getStateBonusDepreciation(code);
+  return bonusPct / 100;
 };
 
 // ========== STATE LIHTC FUNCTIONS ==========

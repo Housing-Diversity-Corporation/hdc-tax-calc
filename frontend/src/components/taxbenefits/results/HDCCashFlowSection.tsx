@@ -208,36 +208,6 @@ const HDCCashFlowSection: React.FC<HDCCashFlowSectionProps> = ({
                   </span>
                 </div>
               </div>
-
-              {/* Explanation of why HDC gets more than 50% if there are deferred fees */}
-              {((hdcAnalysisResults.accumulatedAumFeesAtExit || 0) > 0 || (hdcAnalysisResults.hdcDeferredTaxFeesAtExit || 0) > 0) && (
-                <div style={{
-                  marginTop: '1rem',
-                  padding: '0.75rem',
-                  borderLeft: '3px solid var(--hdc-brown-rust)',
-                  fontSize: '0.85rem'
-                }}>
-                  <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'var(--hdc-brown-rust)' }}>
-                    Why HDC Gets More Than {100 - investorPromoteShare}% at Exit:
-                  </div>
-                  <div style={{ color: '#666', lineHeight: 1.5 }}>
-                    During the hold period, some HDC fees are deferred due to DSCR constraints (maintaining 1.05x coverage).
-                    These deferred fees are paid from the investor's share of exit proceeds:
-                  </div>
-                  <div style={{ marginTop: '0.5rem' }}>
-                    {(hdcAnalysisResults.hdcDeferredTaxFeesAtExit || 0) > 0 && (
-                      <div>• Deferred Tax Benefit Fees: <span style={{ fontWeight: 600 }}>{formatCurrency(hdcAnalysisResults.hdcDeferredTaxFeesAtExit || 0)}</span></div>
-                    )}
-                    {(hdcAnalysisResults.accumulatedAumFeesAtExit || 0) > 0 && (
-                      <div>• Accumulated AUM Fees: <span style={{ fontWeight: 600 }}>{formatCurrency(hdcAnalysisResults.accumulatedAumFeesAtExit || 0)}</span></div>
-                    )}
-                  </div>
-                  <div style={{ marginTop: '0.5rem', fontStyle: 'italic', color: '#888' }}>
-                    Total deferred fees of {formatCurrency((hdcAnalysisResults.hdcDeferredTaxFeesAtExit || 0) + (hdcAnalysisResults.accumulatedAumFeesAtExit || 0))} are collected at exit,
-                    reducing investor proceeds.
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* HDC Sub-Debt Interest */}

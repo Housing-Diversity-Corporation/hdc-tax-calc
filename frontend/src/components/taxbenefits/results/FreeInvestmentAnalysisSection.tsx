@@ -47,21 +47,14 @@ const FreeInvestmentAnalysisSection: React.FC<FreeInvestmentAnalysisSectionProps
       return { months: 12, display: '12' };
     }
 
-    // Use actual depreciation schedule data if available
-    let annualBenefitAfterYear1: number;
-
-    if (depreciationSchedule && depreciationSchedule.annualBenefitAfterYear1) {
-      // Use the actual average benefit from years 2+ from the depreciation schedule
-      annualBenefitAfterYear1 = depreciationSchedule.annualBenefitAfterYear1;
-    } else {
-      // Fallback to more accurate estimate based on straight-line depreciation
-      // Years 2+ get ~11% of Year 1 benefit (not 20%)
-      annualBenefitAfterYear1 = year1NetBenefit * 0.11;
+    // IMPL-065: Use engine value only - no hardcoded fallback
+    // If depreciation schedule isn't available, we cannot accurately calculate recovery time
+    if (!depreciationSchedule?.annualBenefitAfterYear1 || depreciationSchedule.annualBenefitAfterYear1 <= 0) {
+      // Cannot calculate without engine data - show as extended/unknown
+      return { months: 999, display: '>120' };
     }
 
-    if (annualBenefitAfterYear1 <= 0) {
-      return { months: 999, display: '>120' }; // More than 10 years
-    }
+    const annualBenefitAfterYear1 = depreciationSchedule.annualBenefitAfterYear1;
 
     const additionalYearsNeeded = remainingAfterYear1 / annualBenefitAfterYear1;
     const totalMonths = 12 + (additionalYearsNeeded * 12); // 12 months for year 1 + additional months
@@ -91,15 +84,7 @@ const FreeInvestmentAnalysisSection: React.FC<FreeInvestmentAnalysisSectionProps
             border: '1px solid rgba(127, 189, 69, 0.2)'
           }}>
             <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'var(--hdc-faded-jade)' }}>
-              Year 1 Tax Benefit Calculation:
-            </div>
-            <div className="hdc-result-row" style={{ fontSize: '0.875rem', paddingLeft: '1rem' }}>
-              <span className="hdc-result-label">Year 1 Depreciation (tax loss):</span>
-              <span className="hdc-result-value">{formatCurrency(yearOneDepreciation)}</span>
-            </div>
-            <div className="hdc-result-row" style={{ fontSize: '0.875rem', paddingLeft: '1rem' }}>
-              <span className="hdc-result-label">× Effective Tax Rate:</span>
-              <span className="hdc-result-value">{effectiveTaxRateForDepreciation.toFixed(2)}%</span>
+              Year 1 Tax Benefit:
             </div>
             <div className="hdc-result-row" style={{
               fontSize: '0.875rem',
@@ -111,12 +96,6 @@ const FreeInvestmentAnalysisSection: React.FC<FreeInvestmentAnalysisSectionProps
               <span className="hdc-result-label" style={{ fontWeight: 600 }}>= Gross Tax Benefit:</span>
               <span className="hdc-result-value" style={{ fontWeight: 600 }}>
                 {formatCurrency(year1TaxBenefit)}
-              </span>
-            </div>
-            <div className="hdc-result-row" style={{ fontSize: '0.875rem', paddingLeft: '1rem' }}>
-              <span className="hdc-result-label">− HDC Fee ({hdcFeeRate || 10}%):</span>
-              <span className="hdc-result-value" style={{ color: 'var(--hdc-strikemaster)' }}>
-                ({formatCurrency(hdcFee)})
               </span>
             </div>
             <div className="hdc-result-row" style={{
@@ -141,13 +120,6 @@ const FreeInvestmentAnalysisSection: React.FC<FreeInvestmentAnalysisSectionProps
             fontWeight: 600
           }}>
             {formatCurrency(year1NetBenefit)}
-          </span>
-        </div>
-        
-        <div className="hdc-result-row">
-          <span className="hdc-result-label">Investor Equity:</span>
-          <span className="hdc-result-value">
-            {formatCurrency(freeInvestmentHurdle)}
           </span>
         </div>
         
@@ -189,25 +161,6 @@ const FreeInvestmentAnalysisSection: React.FC<FreeInvestmentAnalysisSectionProps
           }}>
             {recoveryTime.display === '>120' ? 'Extended (>10 years)' : `${recoveryTime.display} months`}
           </span>
-        </div>
-
-        {/* Add insight message */}
-        <div style={{
-          marginTop: '0.75rem',
-          padding: '0.5rem',
-          fontSize: '0.875rem',
-          fontWeight: recoveryTime.months <= 12 ? 600 : 400,
-          color: recoveryTime.months <= 12 ? 'var(--hdc-brown-rust)' :
-                 recoveryTime.months <= 36 ? 'var(--hdc-cabbage-pont)' :
-                 'var(--hdc-strikemaster)'
-        }}>
-          {recoveryTime.months <= 12 ?
-            `Full investment recovery in ${recoveryTime.display} months - Immediate positive returns` :
-           recoveryTime.months <= 36 ?
-            `Excellent recovery timeline - Full ownership achieved within ${recoveryTime.display} months` :
-           recoveryTime.months <= 60 ?
-            'Strong recovery profile - Investment recovered faster than typical real estate' :
-            'Consider optimizing capital structure to accelerate recovery timeline'}
         </div>
       </div>
     </CollapsibleSection>

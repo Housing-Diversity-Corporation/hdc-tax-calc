@@ -87,7 +87,7 @@ const HDCCalculatorMain = () => {
     taxBenefitDelayMonths, setTaxBenefitDelayMonths,
 
     // Opportunity Zone
-    ozEnabled,
+    ozEnabled, setOzEnabled,
     ozType, setOzType,
     ozVersion, setOzVersion,
     ozDeferredCapitalGains, setOzDeferredCapitalGains,
@@ -124,6 +124,7 @@ const HDCCalculatorMain = () => {
     investorHasStateLiability, setInvestorHasStateLiability,
     stateLIHTCUserPercentage, setStateLIHTCUserPercentage,
     stateLIHTCUserAmount, setStateLIHTCUserAmount,
+    stateLIHTCSyndicationYear, setStateLIHTCSyndicationYear, // IMPL-073
 
     // Federal LIHTC (v7.0.11)
     lihtcEnabled, setLihtcEnabled,
@@ -262,7 +263,8 @@ const HDCCalculatorMain = () => {
     syndicationRate,
     investorHasStateLiability,
     stateLIHTCUserPercentage,
-    stateLIHTCUserAmount
+    stateLIHTCUserAmount,
+    stateLIHTCSyndicationYear // IMPL-073
   });
 
   // IMPL-020a: Interest reserve amount now comes from useHDCCalculations hook (single source of truth)
@@ -449,6 +451,8 @@ const HDCCalculatorMain = () => {
           setConstructionDelayMonths={setConstructionDelayMonths}
           taxBenefitDelayMonths={taxBenefitDelayMonths}
           setTaxBenefitDelayMonths={setTaxBenefitDelayMonths}
+          ozEnabled={ozEnabled}
+          setOzEnabled={setOzEnabled}
           ozType={ozType}
           setOzType={setOzType}
           ozVersion={ozVersion}
@@ -457,6 +461,7 @@ const HDCCalculatorMain = () => {
           setDeferredCapitalGains={setOzDeferredCapitalGains}
           capitalGainsTaxRate={ozCapitalGainsTaxRate}
           setCapitalGainsTaxRate={setOzCapitalGainsTaxRate}
+          totalDepreciation={calculations.totalDepreciation}
           investorTrack={investorTrack}
           setInvestorTrack={setInvestorTrack}
           includeDepreciationSchedule={includeDepreciationSchedule}
@@ -483,6 +488,8 @@ const HDCCalculatorMain = () => {
           setStateLIHTCUserPercentage={setStateLIHTCUserPercentage}
           stateLIHTCUserAmount={stateLIHTCUserAmount}
           setStateLIHTCUserAmount={setStateLIHTCUserAmount}
+          stateLIHTCSyndicationYear={stateLIHTCSyndicationYear}
+          setStateLIHTCSyndicationYear={setStateLIHTCSyndicationYear}
           lihtcEnabled={lihtcEnabled}
           setLihtcEnabled={setLihtcEnabled}
           applicableFraction={applicableFraction}
@@ -565,6 +572,9 @@ const HDCCalculatorMain = () => {
           total10YearDepreciation={calculations.total10YearDepreciation}
           totalTaxBenefit={calculations.totalTaxBenefit}
           effectiveTaxRateForDepreciation={calculations.effectiveTaxRateForDepreciation}
+          // IMPL-068: Pass split rates for validation sheet export
+          effectiveTaxRateForBonus={calculations.effectiveTaxRateForBonus}
+          effectiveTaxRateForStraightLine={calculations.effectiveTaxRateForStraightLine}
           yearOneDepreciation={calculations.yearOneDepreciation}
           annualStraightLineDepreciation={calculations.annualStraightLineDepreciation}
           years2to10Depreciation={calculations.years2to10Depreciation}
@@ -610,6 +620,7 @@ const HDCCalculatorMain = () => {
           investorPromoteShare={investorPromoteShare}
           federalTaxRate={federalTaxRate}
           selectedState={selectedState}
+          investorState={investorState}
           ltCapitalGainsRate={ltCapitalGainsRate}
           niitRate={niitRate}
           stateCapitalGainsRate={stateCapitalGainsRate}

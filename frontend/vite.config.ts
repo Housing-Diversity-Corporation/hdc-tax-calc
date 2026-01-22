@@ -22,6 +22,7 @@ export default defineConfig(({ mode }) => {
       // These settings are for your EC2 instance to work behind Nginx
       host: '0.0.0.0',
       allowedHosts: ['hdc.angelfhr.com'],
+      hmr: false, // Disabled for debugging - re-enable when done
       warmup: {
         clientFiles: ['./src/main.tsx', './src/App.tsx'],
       },

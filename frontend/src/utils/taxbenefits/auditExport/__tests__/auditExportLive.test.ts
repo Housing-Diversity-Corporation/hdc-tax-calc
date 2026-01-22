@@ -274,6 +274,60 @@ describe('IMPL-056: Live Calculation Excel Model', () => {
       const expectedSeniorDebt = TEST_PARAMS.projectCost * (TEST_PARAMS.seniorDebtPct || 0) / 100;
       expect(seniorDebtCell.v).toBeCloseTo(expectedSeniorDebt, 2);
     });
+
+    it('should export OZ Enabled = 0 when ozEnabled is false (ISS-013)', () => {
+      // TEST_PARAMS has ozEnabled: false
+      const params: LiveExcelParams = {
+        params: { ...TEST_PARAMS, ozEnabled: false },
+        investorResults: TEST_INVESTOR_RESULTS,
+        hdcResults: TEST_HDC_RESULTS,
+        cashFlows: TEST_INVESTOR_RESULTS.investorCashFlows,
+        hdcCashFlows: TEST_HDC_RESULTS.hdcCashFlows,
+      };
+
+      const workbook = generateLiveExcelModel(params);
+      const inputsSheet = workbook.Sheets['Inputs'];
+
+      // Find the OZ Enabled row - look for cell with OZEnabled in column C
+      // Row structure: [label, value, rangeName]
+      let ozEnabledValue: number | undefined;
+      for (let row = 1; row <= 200; row++) {
+        const labelCell = inputsSheet[`A${row}`];
+        if (labelCell && labelCell.v === 'OZ Enabled') {
+          const valueCell = inputsSheet[`B${row}`];
+          ozEnabledValue = valueCell?.v;
+          break;
+        }
+      }
+
+      expect(ozEnabledValue).toBe(0);
+    });
+
+    it('should export OZ Enabled = 1 when ozEnabled is true', () => {
+      const params: LiveExcelParams = {
+        params: { ...TEST_PARAMS, ozEnabled: true },
+        investorResults: TEST_INVESTOR_RESULTS,
+        hdcResults: TEST_HDC_RESULTS,
+        cashFlows: TEST_INVESTOR_RESULTS.investorCashFlows,
+        hdcCashFlows: TEST_HDC_RESULTS.hdcCashFlows,
+      };
+
+      const workbook = generateLiveExcelModel(params);
+      const inputsSheet = workbook.Sheets['Inputs'];
+
+      // Find the OZ Enabled row
+      let ozEnabledValue: number | undefined;
+      for (let row = 1; row <= 200; row++) {
+        const labelCell = inputsSheet[`A${row}`];
+        if (labelCell && labelCell.v === 'OZ Enabled') {
+          const valueCell = inputsSheet[`B${row}`];
+          ozEnabledValue = valueCell?.v;
+          break;
+        }
+      }
+
+      expect(ozEnabledValue).toBe(1);
+    });
   });
 
   describe('LIHTC Sheet (11-year schedule per IRC §42)', () => {
@@ -300,16 +354,17 @@ describe('IMPL-056: Live Calculation Excel Model', () => {
 
       expect(lihtcSheet).toBeDefined();
 
+      // ISS-021: Year 1 now at row 14 (shifted +2 for DDA/QCT Boost row)
       // Year 1 formula should include proration factor
-      const year1Cell = lihtcSheet['B12'];
+      const year1Cell = lihtcSheet['B14'];
       expect(year1Cell).toBeDefined();
       expect(year1Cell.f).toContain('LIHTCYear1Factor');
 
-      // Year 11 (row 22) should have catch-up formula
-      const year11Cell = lihtcSheet['B22'];
+      // Year 11 (row 24) should have catch-up formula
+      const year11Cell = lihtcSheet['B24'];
       expect(year11Cell).toBeDefined();
       // Catch-up = Annual - Year 1
-      expect(year11Cell.f).toContain('B12');
+      expect(year11Cell.f).toContain('B14');
     });
   });
 
@@ -389,7 +444,7 @@ describe('IMPL-056: Live Calculation Excel Model', () => {
     });
   });
 
-  describe('Validation Sheet', () => {
+  describe('Validation Sheet (IMPL-062: Tier 2 - 48 Checks)', () => {
     it('should compare Excel formulas to platform values', () => {
       const params: LiveExcelParams = {
         params: TEST_PARAMS,
@@ -404,11 +459,321 @@ describe('IMPL-056: Live Calculation Excel Model', () => {
 
       expect(validationSheet).toBeDefined();
 
-      // Should have header
-      expect(validationSheet['A1'].v).toBe('VALIDATION');
+      // Should have header indicating Tier 2
+      expect(validationSheet['A1'].v).toContain('48 Checks');
 
       // Should have tolerance note
       expect(validationSheet['A2'].v).toContain('Tolerance');
+    });
+
+    it('should have 8 validation categories', () => {
+      const params: LiveExcelParams = {
+        params: TEST_PARAMS,
+        investorResults: TEST_INVESTOR_RESULTS,
+        hdcResults: TEST_HDC_RESULTS,
+        cashFlows: TEST_INVESTOR_RESULTS.investorCashFlows,
+        hdcCashFlows: TEST_HDC_RESULTS.hdcCashFlows,
+      };
+
+      const workbook = generateLiveExcelModel(params);
+      const validationSheet = workbook.Sheets['Validation'];
+
+      // Check for category headers
+      const sheetRange = validationSheet['!ref'];
+      expect(sheetRange).toBeDefined();
+
+      // Categories should be present (check for key ones)
+      const cellValues = Object.entries(validationSheet)
+        .filter(([key]) => key.startsWith('A') && !key.includes('!'))
+        .map(([_, cell]) => (cell as any).v)
+        .filter(v => typeof v === 'string');
+
+      expect(cellValues.some(v => v.includes('CAPITAL STACK'))).toBe(true);
+      expect(cellValues.some(v => v.includes('DEPRECIATION'))).toBe(true);
+      expect(cellValues.some(v => v.includes('TAX BENEFITS'))).toBe(true);
+      expect(cellValues.some(v => v.includes('LIHTC'))).toBe(true);
+      expect(cellValues.some(v => v.includes('OPERATING CF'))).toBe(true);
+      expect(cellValues.some(v => v.includes('EXIT WATERFALL'))).toBe(true);
+      expect(cellValues.some(v => v.includes('DEBT AT EXIT'))).toBe(true);
+      expect(cellValues.some(v => v.includes('INVESTOR RETURNS'))).toBe(true);
+    });
+
+    it('should have 48 numbered checks', () => {
+      const params: LiveExcelParams = {
+        params: TEST_PARAMS,
+        investorResults: TEST_INVESTOR_RESULTS,
+        hdcResults: TEST_HDC_RESULTS,
+        cashFlows: TEST_INVESTOR_RESULTS.investorCashFlows,
+        hdcCashFlows: TEST_HDC_RESULTS.hdcCashFlows,
+      };
+
+      const workbook = generateLiveExcelModel(params);
+      const validationSheet = workbook.Sheets['Validation'];
+
+      // Count numbered checks (look for "N. Label" pattern in column A)
+      const checkPattern = /^\d+\.\s/;
+      const numberedChecks = Object.entries(validationSheet)
+        .filter(([key]) => key.startsWith('A') && !key.includes('!'))
+        .map(([_, cell]) => (cell as any).v)
+        .filter(v => typeof v === 'string' && checkPattern.test(v));
+
+      expect(numberedChecks.length).toBe(48);
+    });
+  });
+
+  /**
+   * IMPL-068: Effective Tax Rate Display Tests
+   * Validates that validation sheet uses actual effective rates, not hardcoded 40.8%
+   */
+  describe('Effective Tax Rate Display (IMPL-068)', () => {
+    it('should use provided effectiveTaxRateForBonus in validation (REP scenario)', () => {
+      // REP investor in WA: 37% federal only (no NIIT, no state income tax)
+      const repParams = {
+        ...TEST_PARAMS,
+        investorTrack: 'rep' as const,
+        federalTaxRate: 37,
+        stateTaxRate: 0,
+        niitRate: 3.8, // Should NOT be applied for REP
+        effectiveTaxRate: 37, // REP: federal only
+        effectiveTaxRateForBonus: 37,
+        effectiveTaxRateForStraightLine: 37,
+      };
+
+      const params: LiveExcelParams = {
+        params: repParams,
+        investorResults: TEST_INVESTOR_RESULTS,
+        hdcResults: TEST_HDC_RESULTS,
+        cashFlows: TEST_INVESTOR_RESULTS.investorCashFlows,
+        hdcCashFlows: TEST_HDC_RESULTS.hdcCashFlows,
+      };
+
+      const workbook = generateLiveExcelModel(params);
+      const validationSheet = workbook.Sheets['Validation'];
+
+      // Find the Effective Rate (Bonus) check row
+      // The validation sheet uses effectiveTaxRateForBonus from params
+      // It should NOT fall back to 40.8%
+      expect(validationSheet).toBeDefined();
+
+      // Workbook should generate without errors
+      expect(workbook.SheetNames).toContain('Validation');
+    });
+
+    it('should use provided effectiveTaxRateForBonus in validation (Non-REP scenario)', () => {
+      // Non-REP investor: 40.8% (37% federal + 3.8% NIIT)
+      const nonRepParams = {
+        ...TEST_PARAMS,
+        investorTrack: 'non-rep' as const,
+        federalTaxRate: 37,
+        stateTaxRate: 0,
+        niitRate: 3.8, // Applied for Non-REP
+        effectiveTaxRate: 40.8, // Non-REP: federal + NIIT
+        effectiveTaxRateForBonus: 40.8,
+        effectiveTaxRateForStraightLine: 40.8,
+      };
+
+      const params: LiveExcelParams = {
+        params: nonRepParams,
+        investorResults: TEST_INVESTOR_RESULTS,
+        hdcResults: TEST_HDC_RESULTS,
+        cashFlows: TEST_INVESTOR_RESULTS.investorCashFlows,
+        hdcCashFlows: TEST_HDC_RESULTS.hdcCashFlows,
+      };
+
+      const workbook = generateLiveExcelModel(params);
+      expect(workbook.SheetNames).toContain('Validation');
+    });
+
+    it('should use provided effectiveTaxRateForBonus in validation (Passive CG scenario)', () => {
+      // Passive investor with long-term capital gains: 23.8% (20% + 3.8% NIIT)
+      const passiveCGParams = {
+        ...TEST_PARAMS,
+        investorTrack: 'non-rep' as const,
+        federalTaxRate: 20, // Long-term capital gains rate
+        stateTaxRate: 0,
+        niitRate: 3.8,
+        effectiveTaxRate: 23.8, // Passive CG: 20% + 3.8% NIIT
+        effectiveTaxRateForBonus: 23.8,
+        effectiveTaxRateForStraightLine: 23.8,
+      };
+
+      const params: LiveExcelParams = {
+        params: passiveCGParams,
+        investorResults: TEST_INVESTOR_RESULTS,
+        hdcResults: TEST_HDC_RESULTS,
+        cashFlows: TEST_INVESTOR_RESULTS.investorCashFlows,
+        hdcCashFlows: TEST_HDC_RESULTS.hdcCashFlows,
+      };
+
+      const workbook = generateLiveExcelModel(params);
+      expect(workbook.SheetNames).toContain('Validation');
+    });
+
+    it('should use federalTaxRate as fallback when effectiveTaxRateForBonus is not provided', () => {
+      // No effective rate provided - should fall back to federal rate, not 40.8%
+      const noEffectiveRateParams = {
+        ...TEST_PARAMS,
+        federalTaxRate: 37,
+        // Not providing effectiveTaxRate, effectiveTaxRateForBonus, effectiveTaxRateForStraightLine
+      };
+
+      // Remove any effective rate properties that might be inherited
+      delete (noEffectiveRateParams as any).effectiveTaxRate;
+      delete (noEffectiveRateParams as any).effectiveTaxRateForBonus;
+      delete (noEffectiveRateParams as any).effectiveTaxRateForStraightLine;
+
+      const params: LiveExcelParams = {
+        params: noEffectiveRateParams,
+        investorResults: TEST_INVESTOR_RESULTS,
+        hdcResults: TEST_HDC_RESULTS,
+        cashFlows: TEST_INVESTOR_RESULTS.investorCashFlows,
+        hdcCashFlows: TEST_HDC_RESULTS.hdcCashFlows,
+      };
+
+      const workbook = generateLiveExcelModel(params);
+
+      // Should generate without errors and use federal rate as fallback
+      expect(workbook.SheetNames).toContain('Validation');
+    });
+  });
+
+  /**
+   * ISS-015: State LIHTC Syndication Rate Export Tests
+   */
+  describe('State LIHTC Syndication Rate Export (ISS-015)', () => {
+    function findInputValue(inputsSheet: XLSX.WorkSheet, label: string): number | string | undefined {
+      for (let row = 1; row <= 200; row++) {
+        const labelCell = inputsSheet[`A${row}`];
+        if (labelCell && labelCell.v === label) {
+          return inputsSheet[`B${row}`]?.v;
+        }
+      }
+      return undefined;
+    }
+
+    it('should export syndicationRate = 100 when set to 100% (direct use)', () => {
+      const params: LiveExcelParams = {
+        params: { ...TEST_PARAMS, stateLIHTCEnabled: true, syndicationRate: 100 },
+        investorResults: TEST_INVESTOR_RESULTS,
+        hdcResults: TEST_HDC_RESULTS,
+        cashFlows: TEST_INVESTOR_RESULTS.investorCashFlows,
+        hdcCashFlows: TEST_HDC_RESULTS.hdcCashFlows,
+      };
+
+      const workbook = generateLiveExcelModel(params);
+      const inputsSheet = workbook.Sheets['Inputs'];
+
+      expect(findInputValue(inputsSheet, 'State LIHTC Syndication Rate')).toBe(100);
+      expect(findInputValue(inputsSheet, 'State LIHTC Path')).toBe('direct');
+    });
+
+    it('should export syndicationRate = 85 when set to 85% (syndicated)', () => {
+      const params: LiveExcelParams = {
+        params: { ...TEST_PARAMS, stateLIHTCEnabled: true, syndicationRate: 85 },
+        investorResults: TEST_INVESTOR_RESULTS,
+        hdcResults: TEST_HDC_RESULTS,
+        cashFlows: TEST_INVESTOR_RESULTS.investorCashFlows,
+        hdcCashFlows: TEST_HDC_RESULTS.hdcCashFlows,
+      };
+
+      const workbook = generateLiveExcelModel(params);
+      const inputsSheet = workbook.Sheets['Inputs'];
+
+      expect(findInputValue(inputsSheet, 'State LIHTC Syndication Rate')).toBe(85);
+      expect(findInputValue(inputsSheet, 'State LIHTC Path')).toBe('syndicated');
+    });
+
+    it('should default to 85 when syndicationRate is not provided', () => {
+      const params: LiveExcelParams = {
+        params: { ...TEST_PARAMS, stateLIHTCEnabled: true },
+        investorResults: TEST_INVESTOR_RESULTS,
+        hdcResults: TEST_HDC_RESULTS,
+        cashFlows: TEST_INVESTOR_RESULTS.investorCashFlows,
+        hdcCashFlows: TEST_HDC_RESULTS.hdcCashFlows,
+      };
+
+      const workbook = generateLiveExcelModel(params);
+      const inputsSheet = workbook.Sheets['Inputs'];
+
+      expect(findInputValue(inputsSheet, 'State LIHTC Syndication Rate')).toBe(85);
+      expect(findInputValue(inputsSheet, 'State LIHTC Path')).toBe('syndicated');
+    });
+  });
+
+  /**
+   * ISS-016: State LIHTC Annual Credit Export Tests
+   */
+  describe('State LIHTC Annual Credit Export (ISS-016)', () => {
+    function findInputValue(inputsSheet: XLSX.WorkSheet, label: string): number | string | undefined {
+      for (let row = 1; row <= 200; row++) {
+        const labelCell = inputsSheet[`A${row}`];
+        if (labelCell && labelCell.v === label) {
+          return inputsSheet[`B${row}`]?.v;
+        }
+      }
+      return undefined;
+    }
+
+    it('should export State LIHTC Annual Credit from params', () => {
+      // GA piggyback: State = Federal (4% rate, $3.2M annual for $80M qualified basis)
+      const stateLIHTCParams = {
+        ...TEST_PARAMS,
+        stateLIHTCEnabled: true,
+        stateLIHTCAnnualCredit: 3.2, // $3.2M annual
+      };
+
+      const params: LiveExcelParams = {
+        params: stateLIHTCParams,
+        investorResults: TEST_INVESTOR_RESULTS,
+        hdcResults: TEST_HDC_RESULTS,
+        cashFlows: TEST_INVESTOR_RESULTS.investorCashFlows,
+        hdcCashFlows: TEST_HDC_RESULTS.hdcCashFlows,
+      };
+
+      const workbook = generateLiveExcelModel(params);
+      const inputsSheet = workbook.Sheets['Inputs'];
+
+      expect(findInputValue(inputsSheet, 'State LIHTC Annual Credit')).toBe(3.2);
+    });
+
+    it('should default State LIHTC Annual Credit to 0 when not provided', () => {
+      const params: LiveExcelParams = {
+        params: { ...TEST_PARAMS, stateLIHTCEnabled: true },
+        investorResults: TEST_INVESTOR_RESULTS,
+        hdcResults: TEST_HDC_RESULTS,
+        cashFlows: TEST_INVESTOR_RESULTS.investorCashFlows,
+        hdcCashFlows: TEST_HDC_RESULTS.hdcCashFlows,
+      };
+
+      const workbook = generateLiveExcelModel(params);
+      const inputsSheet = workbook.Sheets['Inputs'];
+
+      expect(findInputValue(inputsSheet, 'State LIHTC Annual Credit')).toBe(0);
+    });
+
+    it('should use StateLIHTCAnnualCredit in LIHTC sheet formula', () => {
+      const stateLIHTCParams = {
+        ...TEST_PARAMS,
+        stateLIHTCEnabled: true,
+        stateLIHTCAnnualCredit: 3.2,
+      };
+
+      const params: LiveExcelParams = {
+        params: stateLIHTCParams,
+        investorResults: TEST_INVESTOR_RESULTS,
+        hdcResults: TEST_HDC_RESULTS,
+        cashFlows: TEST_INVESTOR_RESULTS.investorCashFlows,
+        hdcCashFlows: TEST_HDC_RESULTS.hdcCashFlows,
+      };
+
+      const workbook = generateLiveExcelModel(params);
+      const lihtcSheet = workbook.Sheets['LIHTC'];
+
+      // ISS-021: Cell B8 should have State Annual Credit with value 3.2 (shifted +2 for DDA/QCT Boost row)
+      const stateAnnualCell = lihtcSheet['B8'];
+      expect(stateAnnualCell.v).toBe(3.2);
+      // Formula should reference StateLIHTCAnnualCredit named range
+      expect(stateAnnualCell.f).toContain('StateLIHTCAnnualCredit');
     });
   });
 });

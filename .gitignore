@@ -87,3 +87,15 @@ SOLAR_RGB_FIX.md
 
 # Test coverage
 coverage/
+
+# iCloud duplicate edge cases
+*.properties 2
+*.properties 3
+*application.properties 2
+*application-local.properties 2
+.env 2
+.env 3
+*.env 2
+*.pem 2
+*.key 2
+*credentials*.json 2

@@ -49,6 +49,7 @@ describe('useHDCCalculations Hook - Integration Tests', () => {
     seniorDebtRate: 5,
     philDebtRate: 0,
     seniorDebtAmortization: 35,
+    seniorDebtIOYears: 0,
     philDebtAmortization: 60,
     
     // PIK settings
@@ -157,25 +158,30 @@ describe('useHDCCalculations Hook - Integration Tests', () => {
         );
       });
 
-      it('should include only federal for REP in non-conforming state (exclude state & NIIT)', () => {
+      it('should include federal + state for REP in non-conforming state (IMPL-066: state tax always applies)', () => {
+        // IMPL-066: State income tax is INDEPENDENT of OZ conformity
+        // OZ conformity only affects OZ benefits (deferral, step-up), NOT state income tax
         const repNonConformingProps = {
           ...defaultProps,
           investorTrack: 'rep' as const,
-          selectedState: 'NY', // Non-conforming (status: 'NO_GO')
+          selectedState: 'NY', // Non-conforming for OZ, but state tax still applies
           // IMPL-035: investorState drives tax calculations
           investorState: 'NY',
           federalTaxRate: 35,
-          stateCapitalGainsRate: 10.9,
+          stateCapitalGainsRate: 10.9, // NY state ordinary income rate
           niitRate: 3.8
         };
         const { result } = renderHook(() => useHDCCalculations(repNonConformingProps));
 
-        // FORMULA: Federal only (NO state because non-conforming, NO NIIT for active income)
-        expect(result.current.effectiveTaxRateForDepreciation).toBe(repNonConformingProps.federalTaxRate);
+        // FORMULA: Federal + State (NO NIIT for active income, but state tax ALWAYS applies per IMPL-066)
+        // NY ordinary income rate is 10.9%
+        const nyOrdinaryRate = 10.9;
+        const expectedRate = repNonConformingProps.federalTaxRate + nyOrdinaryRate;
+        expect(result.current.effectiveTaxRateForDepreciation).toBe(expectedRate); // 35 + 10.9 = 45.9
 
-        // Verify state is NOT included
+        // Verify NIIT is NOT included (REP is exempt)
         expect(result.current.effectiveTaxRateForDepreciation).toBeLessThan(
-          repNonConformingProps.federalTaxRate + repNonConformingProps.stateCapitalGainsRate
+          expectedRate + repNonConformingProps.niitRate
         );
       });
     });
@@ -223,29 +229,27 @@ describe('useHDCCalculations Hook - Integration Tests', () => {
         expect(result.current.effectiveTaxRateForDepreciation).toBe(expectedRate);
       });
 
-      it('should include federal + NIIT only for Non-REP in non-conforming state (exclude state)', () => {
+      it('should include federal + NIIT + state for Non-REP in non-conforming state (IMPL-066: state tax always applies)', () => {
+        // IMPL-066: State income tax is INDEPENDENT of OZ conformity
+        // OZ conformity only affects OZ benefits (deferral, step-up), NOT state income tax
         const nonRepNonConformingProps = {
           ...defaultProps,
           investorTrack: 'non-rep' as const,
           passiveGainType: 'short-term' as const,
-          selectedState: 'NY', // Non-conforming
+          selectedState: 'NY', // Non-conforming for OZ, but state tax still applies
           // IMPL-035: investorState drives tax calculations
           investorState: 'NY',
           federalTaxRate: 37,
-          stateCapitalGainsRate: 10.9,
+          stateCapitalGainsRate: 10.9, // NY state ordinary income rate
           niitRate: 3.8
         };
         const { result } = renderHook(() => useHDCCalculations(nonRepNonConformingProps));
 
-        // FORMULA: Federal + NIIT (NO state because non-conforming)
-        // NIIT still applies because it's federal, not state
-        const expectedRate = nonRepNonConformingProps.federalTaxRate + nonRepNonConformingProps.niitRate;
-        expect(result.current.effectiveTaxRateForDepreciation).toBe(expectedRate);
-
-        // Verify state is NOT included
-        expect(result.current.effectiveTaxRateForDepreciation).toBeLessThan(
-          nonRepNonConformingProps.federalTaxRate + nonRepNonConformingProps.niitRate + nonRepNonConformingProps.stateCapitalGainsRate
-        );
+        // FORMULA: Federal + NIIT + State (state tax ALWAYS applies per IMPL-066)
+        // NY ordinary income rate is 10.9%
+        const nyOrdinaryRate = 10.9;
+        const expectedRate = nonRepNonConformingProps.federalTaxRate + nonRepNonConformingProps.niitRate + nyOrdinaryRate;
+        expect(result.current.effectiveTaxRateForDepreciation).toBeCloseTo(expectedRate, 1); // 37 + 3.8 + 10.9 = 51.7
       });
 
       it('should exclude NIIT for territories even for Non-REP investors', () => {
@@ -710,6 +714,161 @@ describe('useHDCCalculations Hook - Integration Tests', () => {
       // 10-year total should be reasonable but not exceed project cost
       expect(result.current.total10YearDepreciation).toBeGreaterThan(10000000);
       expect(result.current.total10YearDepreciation).toBeLessThan(52000000);
+    });
+  });
+
+  /**
+   * State LIHTC Investor State Validation
+   *
+   * CORRECT BUSINESS RULE: Credits belong to PROPERTY state, not investor state.
+   * WA investor in GA property SHOULD receive syndicated GA State LIHTC proceeds.
+   * IMPL-073: Syndication is now a capital return (not equity offset), fixing MOIC.
+   */
+  describe('State LIHTC Investor State Validation', () => {
+    const stateLIHTCProps = {
+      ...defaultProps,
+      selectedState: 'GA', // Property in GA (has State LIHTC program)
+      lihtcEnabled: true,
+      lihtcEligibleBasis: 80000000,
+      applicableFraction: 100,
+      creditRate: 0.04, // 4% as decimal
+      ddaQctBoost: false,
+      placedInServiceMonth: 7,
+      stateLIHTCEnabled: true,
+      syndicationRate: 85,
+      investorHasStateLiability: false,
+    };
+
+    it('should return syndicated stateLIHTCIntegration for out-of-state investor without liability', () => {
+      // WA investor in GA property - gets GA credits via syndication
+      const propsWithWA = {
+        ...stateLIHTCProps,
+        investorState: 'WA', // WA has no state income tax, but gets GA credits syndicated
+      };
+
+      const { result } = renderHook(() => useHDCCalculations(propsWithWA));
+
+      // State LIHTC integration should exist - credits belong to property state (GA)
+      expect(result.current.stateLIHTCIntegration).not.toBeNull();
+      expect(result.current.stateLIHTCIntegration?.creditPath).toBe('syndicated');
+      expect(result.current.stateLIHTCIntegration?.syndicationRate).toBe(0.85);
+      expect(result.current.stateLIHTCIntegration?.netProceeds).toBeGreaterThan(0);
+    });
+
+    it('should return valid stateLIHTCIntegration when investor state has program', () => {
+      // GA investor in GA property (in-state) - should work
+      const propsWithGA = {
+        ...stateLIHTCProps,
+        investorState: 'GA', // GA has State LIHTC program
+      };
+
+      const { result } = renderHook(() => useHDCCalculations(propsWithGA));
+
+      // State LIHTC integration should exist
+      expect(result.current.stateLIHTCIntegration).not.toBeNull();
+      expect(result.current.stateLIHTCIntegration?.grossCredit).toBeGreaterThan(0);
+    });
+
+    it('should return valid stateLIHTCIntegration for out-of-state investor with State LIHTC program', () => {
+      // VA investor in GA property - VA has State LIHTC, should work
+      const propsWithVA = {
+        ...stateLIHTCProps,
+        investorState: 'VA', // VA has State LIHTC program
+      };
+
+      const { result } = renderHook(() => useHDCCalculations(propsWithVA));
+
+      // State LIHTC integration should exist because VA has a program
+      expect(result.current.stateLIHTCIntegration).not.toBeNull();
+      expect(result.current.stateLIHTCIntegration?.grossCredit).toBeGreaterThan(0);
+    });
+
+    it('should have much higher MOIC with Year 0 syndication (IMPL-075/076: net equity, no cash flow)', () => {
+      // IMPL-075: Year 0 syndication uses net equity as MOIC denominator
+      // IMPL-076: Year 0 syndication has NO cash flow line item (already netted in equity)
+      // Use larger equity % to ensure net equity > 0
+      const propsWithYear0Syndication = {
+        ...stateLIHTCProps,
+        investorState: 'WA',
+        investorEquityPct: 40, // $86M × 40% = $34.4M equity > $27.2M syndication
+        stateLIHTCSyndicationYear: 0 as 0 | 1 | 2, // Year 0: syndicator funds at close
+      };
+
+      const propsWithStateLIHTCDisabled = {
+        ...stateLIHTCProps,
+        investorState: 'WA',
+        investorEquityPct: 40,
+        stateLIHTCEnabled: false,
+      };
+
+      const { result: resultWithYear0 } = renderHook(() => useHDCCalculations(propsWithYear0Syndication));
+      const { result: resultWithoutStateLIHTC } = renderHook(() => useHDCCalculations(propsWithStateLIHTCDisabled));
+
+      // IMPL-075: With Year 0 syndication, MOIC uses smaller net equity denominator
+      const moicYear0 = resultWithYear0.current.mainAnalysisResults.equityMultiple;
+      const moicWithoutLIHTC = resultWithoutStateLIHTC.current.mainAnalysisResults.equityMultiple;
+
+      expect(moicYear0).toBeGreaterThan(moicWithoutLIHTC);
+
+      // IMPL-076: Year 0 syndication should NOT have syndication proceeds in cash flows
+      // (they're already netted in equity - no double counting)
+      const cashFlows = resultWithYear0.current.investorCashFlows;
+      const syndicationProceedsInCashFlows = cashFlows.reduce(
+        (sum: number, cf) => sum + (cf.stateLIHTCSyndicationProceeds || 0),
+        0
+      );
+      expect(syndicationProceedsInCashFlows).toBe(0); // No cash flow line item for Year 0
+
+      // Verify net equity calculation - offset still exists even though no cash flow
+      const investorResults = resultWithYear0.current.mainAnalysisResults;
+      const grossEquity = investorResults.investorEquity;
+      const offset = investorResults.syndicatedEquityOffset || 0;
+      const netEquity = grossEquity - offset;
+      expect(netEquity).toBeGreaterThan(0);
+      expect(offset).toBeGreaterThan(0); // Offset reduces equity
+    });
+
+    it('should use gross equity denominator for Year 1+ syndication (IMPL-075/076)', () => {
+      // IMPL-075: Year 1+ syndication uses gross equity as MOIC denominator
+      // IMPL-076: Year 1+ syndication HAS cash flow line item (capital return)
+      // Investor funds full amount, gets capital return in Year 1+
+      const propsWithYear1Syndication = {
+        ...stateLIHTCProps,
+        investorState: 'WA',
+        investorEquityPct: 40,
+        stateLIHTCSyndicationYear: 1 as 0 | 1 | 2, // Year 1: investor funds full, gets return
+      };
+
+      const propsWithStateLIHTCDisabled = {
+        ...stateLIHTCProps,
+        investorState: 'WA',
+        investorEquityPct: 40,
+        stateLIHTCEnabled: false,
+      };
+
+      const { result: resultWithYear1 } = renderHook(() => useHDCCalculations(propsWithYear1Syndication));
+      const { result: resultWithoutStateLIHTC } = renderHook(() => useHDCCalculations(propsWithStateLIHTCDisabled));
+
+      // IMPL-075: Year 1+ uses gross equity denominator
+      // MOIC should still be higher (more returns) but not dramatically so
+      const moicYear1 = resultWithYear1.current.mainAnalysisResults.equityMultiple;
+      const moicWithoutLIHTC = resultWithoutStateLIHTC.current.mainAnalysisResults.equityMultiple;
+
+      expect(moicYear1).toBeGreaterThan(moicWithoutLIHTC);
+      // But NOT 2x+ higher like Year 0 (gross equity denominator)
+      expect(moicYear1 / moicWithoutLIHTC).toBeLessThan(2);
+
+      // IMPL-076: Year 1+ syndication SHOULD have syndication proceeds in cash flows
+      // (capital return appears in Year 1)
+      const cashFlows = resultWithYear1.current.investorCashFlows;
+      const syndicationProceedsInCashFlows = cashFlows.reduce(
+        (sum: number, cf) => sum + (cf.stateLIHTCSyndicationProceeds || 0),
+        0
+      );
+      expect(syndicationProceedsInCashFlows).toBeGreaterThan(0); // Cash flow line item exists
+
+      // Specifically in Year 1
+      expect(cashFlows[0]?.stateLIHTCSyndicationProceeds || 0).toBeGreaterThan(0);
     });
   });
 });

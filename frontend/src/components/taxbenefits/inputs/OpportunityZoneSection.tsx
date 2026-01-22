@@ -2,9 +2,13 @@ import React, { useState } from 'react';
 import '../../../styles/taxbenefits/hdcCalculator.css';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { Input } from '../../ui/input';
+import { Switch } from '../../ui/switch';
 import { getOzStepUpPercent } from '../../../utils/taxbenefits/constants';
 
 interface OpportunityZoneSectionProps {
+  // IMPL-071: OZ enabled toggle
+  ozEnabled?: boolean;
+  setOzEnabled?: (value: boolean) => void;
   ozType: 'standard' | 'rural';
   setOzType: (value: 'standard' | 'rural') => void;
   ozVersion: '1.0' | '2.0';  // IMPL-017: OZ legislation version
@@ -17,12 +21,17 @@ interface OpportunityZoneSectionProps {
   ltCapitalGainsRate?: number; // Federal LTCG rate
   niitRate?: number; // Net Investment Income Tax
   stateCapitalGainsRate?: number; // State capital gains rate
+  // IMPL-071: Depreciation info for recapture display when OZ disabled
+  totalDepreciation?: number;
+  depreciationRecaptureRate?: number;
 
   // Read-only mode
   isReadOnly?: boolean;
 }
 
 const OpportunityZoneSection: React.FC<OpportunityZoneSectionProps> = ({
+  ozEnabled = true,
+  setOzEnabled,
   ozType,
   setOzType,
   ozVersion,
@@ -35,6 +44,8 @@ const OpportunityZoneSection: React.FC<OpportunityZoneSectionProps> = ({
   ltCapitalGainsRate = 20,
   niitRate = 3.8,
   stateCapitalGainsRate = 0,
+  totalDepreciation = 0,
+  depreciationRecaptureRate = 25,
   isReadOnly = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -81,13 +92,69 @@ const OpportunityZoneSection: React.FC<OpportunityZoneSectionProps> = ({
 
         {isExpanded && (
           <>
+            {/* IMPL-071: OZ Enabled Toggle */}
+            <div className="hdc-input-group" style={{ marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <label className="hdc-input-label" style={{ marginBottom: 0 }}>
+                  Enable Opportunity Zone Benefits
+                </label>
+                <Switch
+                  checked={ozEnabled}
+                  onCheckedChange={(checked) => setOzEnabled?.(checked)}
+                  disabled={isReadOnly}
+                />
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem' }}>
+                {ozEnabled
+                  ? 'OZ benefits active: capital gains deferral, step-up basis, and recapture avoidance'
+                  : 'OZ disabled: standard depreciation recapture applies at exit'}
+              </div>
+            </div>
+
+            {/* Show depreciation recapture warning when OZ is disabled */}
+            {!ozEnabled && totalDepreciation > 0 && (
+              <div style={{
+                padding: '0.75rem',
+                marginBottom: '1rem',
+                border: '1px solid var(--hdc-brown-rust)',
+                borderRadius: '4px',
+                backgroundColor: 'rgba(139, 69, 19, 0.05)',
+              }}>
+                <div style={{ fontWeight: 600, color: 'var(--hdc-brown-rust)', marginBottom: '0.5rem' }}>
+                  Depreciation Recapture at Exit
+                </div>
+                <div className="hdc-result-row" style={{ fontSize: '0.875rem' }}>
+                  <span className="hdc-result-label">Cumulative Depreciation:</span>
+                  <span className="hdc-result-value">
+                    ${(totalDepreciation * 1000000).toLocaleString()}
+                  </span>
+                </div>
+                <div className="hdc-result-row" style={{ fontSize: '0.875rem' }}>
+                  <span className="hdc-result-label">Recapture Rate:</span>
+                  <span className="hdc-result-value">{depreciationRecaptureRate}%</span>
+                </div>
+                <div className="hdc-result-row summary" style={{
+                  marginTop: '0.5rem',
+                  paddingTop: '0.5rem',
+                  borderTop: '1px solid var(--hdc-mercury)'
+                }}>
+                  <span className="hdc-result-label" style={{ fontWeight: 600 }}>
+                    Estimated Recapture Tax:
+                  </span>
+                  <span className="hdc-result-value" style={{ fontWeight: 700, color: 'var(--hdc-brown-rust)' }}>
+                    ${(totalDepreciation * (depreciationRecaptureRate / 100) * 1000000).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* OZ Version (IMPL-017) */}
-            <div className="hdc-input-group">
+            <div className="hdc-input-group" style={{ opacity: ozEnabled ? 1 : 0.5 }}>
               <label className="hdc-input-label">OZ Legislation Version</label>
               <Select
                 value={ozVersion}
                 onValueChange={(value) => setOzVersion(value as '1.0' | '2.0')}
-                disabled={isReadOnly}
+                disabled={isReadOnly || !ozEnabled}
               >
                 <SelectTrigger className="hdc-input" style={isReadOnly ? { opacity: 0.6, cursor: 'not-allowed' } : {}}>
                   <SelectValue />
@@ -105,12 +172,12 @@ const OpportunityZoneSection: React.FC<OpportunityZoneSectionProps> = ({
             </div>
 
             {/* OZ Type */}
-            <div className="hdc-input-group" style={{ marginTop: '1rem' }}>
+            <div className="hdc-input-group" style={{ marginTop: '1rem', opacity: ozEnabled ? 1 : 0.5 }}>
               <label className="hdc-input-label">OZ Type</label>
               <Select
                 value={ozType}
                 onValueChange={(value) => setOzType(value as 'standard' | 'rural')}
-                disabled={isReadOnly}
+                disabled={isReadOnly || !ozEnabled}
               >
                 <SelectTrigger className="hdc-input" style={isReadOnly ? { opacity: 0.6, cursor: 'not-allowed' } : {}}>
                   <SelectValue />
@@ -128,7 +195,7 @@ const OpportunityZoneSection: React.FC<OpportunityZoneSectionProps> = ({
             </div>
 
             {/* Deferred Capital Gains */}
-            <div className="hdc-input-group" style={{ marginTop: '1rem' }}>
+            <div className="hdc-input-group" style={{ marginTop: '1rem', opacity: ozEnabled ? 1 : 0.5 }}>
               <label className="hdc-input-label">
                 Deferred Capital Gains ($M)
                 <span style={{ fontSize: '0.7rem', color: '#666', display: 'block', fontWeight: 'normal' }}>
@@ -142,7 +209,7 @@ const OpportunityZoneSection: React.FC<OpportunityZoneSectionProps> = ({
                 value={deferredCapitalGains}
                 onChange={(e) => setDeferredCapitalGains(Number(e.target.value) || 0)}
                 className="hdc-input"
-                disabled={isReadOnly}
+                disabled={isReadOnly || !ozEnabled}
               />
             </div>
 
@@ -165,8 +232,8 @@ const OpportunityZoneSection: React.FC<OpportunityZoneSectionProps> = ({
               </div>
             </div>
 
-            {/* Year 5 Tax Preview */}
-            {deferredCapitalGains > 0 && (
+            {/* Year 5 Tax Preview - only show when OZ is enabled */}
+            {ozEnabled && deferredCapitalGains > 0 && (
               <div style={{ marginTop: '1.5rem' }}>
                 <h4 style={{
                   fontSize: '0.875rem',

@@ -56,7 +56,7 @@ function createBaselineParams(overrides?: Partial<CalculationParams>): Calculati
     prefEquityPct: 15, // 15% = $1.5M
     prefEquityTargetMOIC: 1.7, // Target 1.7x = $2.55M
     prefEquityAccrualRate: 12,
-    prefEquityOZEligible: false,
+    prefEquityOzEligible: false,
 
     // Sub-debt
     hdcSubDebtPct: 0,
@@ -216,9 +216,8 @@ describe('IMPL-7.0-009: Preferred Equity Waterfall Integration', () => {
     test('09: TIER 3 - Preferred equity before outside investor sub-debt', () => {
       const params = createBaselineParams({
         prefEquityPct: 15,
-        outsideInvestorSubDebtEnabled: true,
         outsideInvestorSubDebtPct: 10,
-        outsideInvestorSubDebtRate: 8,
+        outsideInvestorSubDebtPikRate: 8,
       });
 
       const result = calculateFullInvestorAnalysis(params);
@@ -324,8 +323,7 @@ describe('IMPL-7.0-009: Preferred Equity Waterfall Integration', () => {
     test('15: Preferred equity with philanthropic debt', () => {
       const params = createBaselineParams({
         philanthropicDebtPct: 10,
-        philDebtRate: 0,
-        philDebtPIKInterest: false,
+        philanthropicDebtRate: 0,
         prefEquityPct: 15,
       });
 

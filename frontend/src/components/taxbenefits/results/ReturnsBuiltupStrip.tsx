@@ -4,6 +4,10 @@
  * IMPL-036: Reorder, sticky, collapsible styling
  * IMPL-026a: Dark mode compatibility and 2 decimal currency formatting
  * IMPL-048b: Fix component sum validation and include missing components
+ * IMPL-057: Include OZ Step-Up Savings in OZ Benefits (fixes version toggle display)
+ * IMPL-060: OZ Benefits collapsible dropdown with component breakdown
+ * IMPL-061: Depreciation Benefits collapsible dropdown with 3-line breakdown
+ * IMPL-073: State LIHTC Syndication as Capital Return (separate line from direct credits)
  *
  * Shows component-by-component contribution to investor multiple.
  * Modeled after Atrium Court HDC Model v3.0 (Page 2).
@@ -17,6 +21,9 @@
  * - IMPL-036: Reordered (tax benefits → operating cash → exit), sticky, collapsible
  * - IMPL-048b: Federal LIHTC includes Year 11+ catch-up credits
  * - IMPL-048b: Operating Cash Flow includes excess reserve distribution
+ * - IMPL-057: OZ Benefits now includes step-up savings (varies with OZ version)
+ * - IMPL-060: OZ Benefits row expands to show individual component breakdown
+ * - IMPL-061: Depreciation Benefits row expands to show Year 1 Bonus, Year 1 MACRS, Years 2-Exit
  *
  * Component Order (IMPL-036):
  * 1. Tax Benefits: Federal LIHTC, State LIHTC, Depreciation Benefits, OZ Benefits
@@ -27,9 +34,9 @@
  * IMPORTANT: All monetary values in this component are in MILLIONS.
  * We convert to dollars (multiply by 1,000,000) before formatting.
  *
- * @version 1.4.0
- * @date 2026-01-06
- * @task IMPL-028, IMPL-031, IMPL-036, IMPL-026a, IMPL-048b
+ * @version 1.7.0
+ * @date 2026-01-16
+ * @task IMPL-028, IMPL-031, IMPL-036, IMPL-026a, IMPL-048b, IMPL-057, IMPL-060, IMPL-061
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -52,12 +59,21 @@ interface ReturnsBuiltupStripProps {
   cashFlows: CashFlowItem[];
 }
 
+/** IMPL-060/061: Sub-component for dropdown breakdown (OZ Benefits, Depreciation) */
+interface SubComponent {
+  label: string;
+  value: number;
+  multiple: number;
+}
+
 interface ReturnComponent {
   label: string;
   value: number;
   multiple: number;
   color: string;
   category: 'tax' | 'cash' | 'exit' | 'fees';
+  /** IMPL-060/061: Expandable sub-components for OZ Benefits and Depreciation */
+  subComponents?: SubComponent[];
 }
 
 // ============================================================================
@@ -121,12 +137,22 @@ function deriveReturnComponents(
     0
   );
   // IMPL-048b: Include remaining LIHTC credits (Year 11+ catch-up) in Federal LIHTC total
-  const remainingLIHTCCredits = results.remainingLIHTCCredits || 0;
-  const federalLIHTCTotal = federalLIHTCFromCashFlows + remainingLIHTCCredits;
+  // ISS-016: Split catch-up between federal and state (remainingLIHTCCredits includes both)
+  const remainingStateLIHTCCredits = results.remainingStateLIHTCCredits || 0;
+  const remainingFederalLIHTCCredits = (results.remainingLIHTCCredits || 0) - remainingStateLIHTCCredits;
+  const federalLIHTCTotal = federalLIHTCFromCashFlows + remainingFederalLIHTCCredits;
 
   // Sum State LIHTC from cash flows
-  const stateLIHTCTotal = cashFlows.reduce(
+  const stateLIHTCFromCashFlows = cashFlows.reduce(
     (sum, cf) => sum + (cf.stateLIHTCCredit || 0),
+    0
+  );
+  // ISS-016: Include state catch-up credits in state LIHTC total
+  const stateLIHTCTotal = stateLIHTCFromCashFlows + remainingStateLIHTCCredits;
+
+  // IMPL-073: Sum State LIHTC Syndication Proceeds from cash flows (capital return)
+  const syndicationProceedsTotal = cashFlows.reduce(
+    (sum, cf) => sum + (cf.stateLIHTCSyndicationProceeds || 0),
     0
   );
 
@@ -151,10 +177,12 @@ function deriveReturnComponents(
   const subDebtInterestReceivedTotal = results.investorSubDebtInterestReceived || 0;
 
   // IMPL-031: OZ Benefits (for 10+ year holds)
+  // IMPL-057: Include step-up savings (varies with OZ version: 10% standard / 30% rural in OZ 2.0)
   const ozRecaptureAvoided = results.ozRecaptureAvoided || 0;
   const ozDeferralNPV = results.ozDeferralNPV || 0;
   const ozExitAppreciation = results.ozExitAppreciation || 0;
-  const totalOzBenefits = ozRecaptureAvoided + ozDeferralNPV + ozExitAppreciation;
+  const ozStepUpSavings = results.ozStepUpSavings || 0;
+  const totalOzBenefits = ozRecaptureAvoided + ozDeferralNPV + ozExitAppreciation + ozStepUpSavings;
 
   // Calculate fees paid during hold period (these reduce annual cash flows)
   const aumFeePaidTotal = cashFlows.reduce(
@@ -190,8 +218,6 @@ function deriveReturnComponents(
   }
 
   // IMPL-045: State LIHTC Credits (direct use path only)
-  // Note: Syndicated State LIHTC proceeds are shown in Capital Structure section
-  // as they reduce investment (denominator) rather than increase returns (numerator)
   if (stateLIHTCTotal > 0) {
     components.push({
       label: 'State LIHTC Credits',
@@ -202,24 +228,106 @@ function deriveReturnComponents(
     });
   }
 
+  // IMPL-073: State LIHTC Syndication Proceeds (out-of-state investors = capital return)
+  // This is actual cash received from selling syndicated credits, shown as 'cash' category
+  if (syndicationProceedsTotal > 0) {
+    components.push({
+      label: 'State LIHTC Syndication',
+      value: syndicationProceedsTotal,
+      multiple: syndicationProceedsTotal / totalInvestment,
+      color: COMPONENT_COLORS.stateLIHTC, // Same gold color as State LIHTC
+      category: 'cash', // This is a cash return, not a tax benefit
+    });
+  }
+
+  // IMPL-061: Depreciation Benefits with sub-components for dropdown breakdown
   if (depreciationTotal > 0) {
+    // Build sub-components array (only non-zero values)
+    const depreciationSubComponents: SubComponent[] = [];
+
+    const year1Bonus = results.year1BonusTaxBenefit || 0;
+    const year1Macrs = results.year1MacrsTaxBenefit || 0;
+    const years2Exit = results.years2ExitMacrsTaxBenefit || 0;
+
+    if (year1Bonus > 0) {
+      depreciationSubComponents.push({
+        label: 'Year 1 Bonus Depreciation',
+        value: year1Bonus,
+        multiple: year1Bonus / totalInvestment,
+      });
+    }
+
+    if (year1Macrs > 0) {
+      depreciationSubComponents.push({
+        label: 'Year 1 MACRS Depreciation',
+        value: year1Macrs,
+        multiple: year1Macrs / totalInvestment,
+      });
+    }
+
+    if (years2Exit > 0) {
+      depreciationSubComponents.push({
+        label: 'Years 2-Exit MACRS',
+        value: years2Exit,
+        multiple: years2Exit / totalInvestment,
+      });
+    }
+
     components.push({
       label: 'Depreciation Benefits',
       value: depreciationTotal,
       multiple: depreciationTotal / totalInvestment,
       color: COMPONENT_COLORS.depreciation,
       category: 'tax',
+      subComponents: depreciationSubComponents.length > 0 ? depreciationSubComponents : undefined,
     });
   }
 
   // IMPL-031: OZ Benefits (tax-related)
+  // IMPL-060: Add sub-components for dropdown breakdown
   if (totalOzBenefits > 0) {
+    // Build sub-components array (only non-zero values)
+    const ozSubComponents: SubComponent[] = [];
+
+    if (ozStepUpSavings > 0) {
+      ozSubComponents.push({
+        label: 'Step-Up Basis Savings',
+        value: ozStepUpSavings,
+        multiple: ozStepUpSavings / totalInvestment,
+      });
+    }
+
+    if (ozExitAppreciation > 0) {
+      ozSubComponents.push({
+        label: 'Exclusion of Appreciation',
+        value: ozExitAppreciation,
+        multiple: ozExitAppreciation / totalInvestment,
+      });
+    }
+
+    if (ozDeferralNPV > 0) {
+      ozSubComponents.push({
+        label: 'Deferral NPV',
+        value: ozDeferralNPV,
+        multiple: ozDeferralNPV / totalInvestment,
+      });
+    }
+
+    if (ozRecaptureAvoided > 0) {
+      ozSubComponents.push({
+        label: 'Recapture Avoided',
+        value: ozRecaptureAvoided,
+        multiple: ozRecaptureAvoided / totalInvestment,
+      });
+    }
+
     components.push({
       label: 'OZ Benefits',
       value: totalOzBenefits,
       multiple: totalOzBenefits / totalInvestment,
       color: COMPONENT_COLORS.ozBenefits,
       category: 'tax',
+      subComponents: ozSubComponents.length > 0 ? ozSubComponents : undefined,
     });
   }
 
@@ -314,35 +422,37 @@ interface ComponentRowProps {
 }
 
 /**
- * Individual component row with value, multiple, and percentage of total
- * Uses CSS classes for dark mode compatibility
+ * IMPL-060: OZ Benefits sub-row component
+ * Indented row for individual OZ benefit components
  */
-const ComponentRow: React.FC<ComponentRowProps> = ({
-  component,
-  totalValue
-}) => {
-  // Calculate this component's percentage of total returns
+const SubRow: React.FC<{
+  subComponent: SubComponent;
+  totalValue: number;
+  parentColor: string;
+}> = ({ subComponent, totalValue, parentColor }) => {
   const percentOfTotal = totalValue > 0
-    ? (component.value / totalValue) * 100
+    ? (subComponent.value / totalValue) * 100
     : 0;
 
   return (
     <div
-      className="returns-component-row"
+      className="returns-component-row oz-sub-row"
       style={{
         display: 'flex',
         alignItems: 'center',
         gap: '1rem',
-        padding: '0.5rem 0',
+        padding: '0.35rem 0 0.35rem 1.5rem', // Indented
+        backgroundColor: 'rgba(139, 92, 246, 0.05)', // Subtle purple background
       }}
     >
-      {/* Color indicator */}
+      {/* Indent spacer + smaller color indicator */}
       <div style={{
-        width: '4px',
-        height: '24px',
-        backgroundColor: component.color,
+        width: '3px',
+        height: '18px',
+        backgroundColor: parentColor,
         borderRadius: '2px',
         flexShrink: 0,
+        opacity: 0.6,
       }} />
 
       {/* Label */}
@@ -350,48 +460,178 @@ const ComponentRow: React.FC<ComponentRowProps> = ({
         className="returns-value"
         style={{
           flex: 1,
-          fontSize: '0.85rem',
+          fontSize: '0.8rem',
           minWidth: '140px',
+          opacity: 0.9,
         }}
       >
-        {component.label}
+        {subComponent.label}
       </div>
 
       {/* Value */}
       <div
         className="returns-value"
         style={{
-          fontSize: '0.9rem',
-          fontWeight: 600,
+          fontSize: '0.8rem',
+          fontWeight: 500,
           textAlign: 'right',
           minWidth: '80px',
         }}
       >
-        {formatMillionsAsCurrency(component.value)}
+        {formatMillionsAsCurrency(subComponent.value)}
       </div>
 
       {/* Multiple contribution */}
       <div style={{
-        fontSize: '0.9rem',
-        fontWeight: 600,
-        color: component.color,
+        fontSize: '0.8rem',
+        fontWeight: 500,
+        color: parentColor,
         textAlign: 'right',
         minWidth: '50px',
+        opacity: 0.9,
       }}>
-        {component.multiple.toFixed(2)}x
+        {subComponent.multiple.toFixed(2)}x
       </div>
 
       {/* Percentage of total */}
       <div style={{
-        fontSize: '0.85rem',
-        fontWeight: 600,
-        color: component.value >= 0 ? component.color : 'var(--hdc-strikemaster)',
+        fontSize: '0.8rem',
+        fontWeight: 500,
+        color: parentColor,
         textAlign: 'right',
         minWidth: '50px',
+        opacity: 0.9,
       }}>
         {percentOfTotal.toFixed(1)}%
       </div>
     </div>
+  );
+};
+
+/**
+ * Individual component row with value, multiple, and percentage of total
+ * Uses CSS classes for dark mode compatibility
+ * IMPL-060: Enhanced to support expandable OZ Benefits with sub-components
+ */
+const ComponentRow: React.FC<ComponentRowProps> = ({
+  component,
+  totalValue
+}) => {
+  // IMPL-060: Track expansion state for OZ Benefits
+  const [isExpanded, setIsExpanded] = useState(false);
+  const hasSubComponents = component.subComponents && component.subComponents.length > 0;
+
+  // Calculate this component's percentage of total returns
+  const percentOfTotal = totalValue > 0
+    ? (component.value / totalValue) * 100
+    : 0;
+
+  return (
+    <>
+      <div
+        className="returns-component-row"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1rem',
+          padding: '0.5rem 0',
+          cursor: hasSubComponents ? 'pointer' : 'default',
+        }}
+        onClick={hasSubComponents ? () => setIsExpanded(!isExpanded) : undefined}
+        role={hasSubComponents ? 'button' : undefined}
+        tabIndex={hasSubComponents ? 0 : undefined}
+        onKeyDown={hasSubComponents ? (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsExpanded(!isExpanded);
+          }
+        } : undefined}
+      >
+        {/* Color indicator */}
+        <div style={{
+          width: '4px',
+          height: '24px',
+          backgroundColor: component.color,
+          borderRadius: '2px',
+          flexShrink: 0,
+        }} />
+
+        {/* Label with optional expand/collapse indicator */}
+        <div
+          className="returns-value"
+          style={{
+            flex: 1,
+            fontSize: '0.85rem',
+            minWidth: '140px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+          }}
+        >
+          {hasSubComponents && (
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              color: component.color,
+              transition: 'transform 0.2s ease',
+              transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+            }}>
+              <ChevronDown size={14} style={{ transform: 'rotate(-90deg)' }} />
+            </span>
+          )}
+          {component.label}
+        </div>
+
+        {/* Value */}
+        <div
+          className="returns-value"
+          style={{
+            fontSize: '0.9rem',
+            fontWeight: 600,
+            textAlign: 'right',
+            minWidth: '80px',
+          }}
+        >
+          {formatMillionsAsCurrency(component.value)}
+        </div>
+
+        {/* Multiple contribution */}
+        <div style={{
+          fontSize: '0.9rem',
+          fontWeight: 600,
+          color: component.color,
+          textAlign: 'right',
+          minWidth: '50px',
+        }}>
+          {component.multiple.toFixed(2)}x
+        </div>
+
+        {/* Percentage of total */}
+        <div style={{
+          fontSize: '0.85rem',
+          fontWeight: 600,
+          color: component.value >= 0 ? component.color : 'var(--hdc-strikemaster)',
+          textAlign: 'right',
+          minWidth: '50px',
+        }}>
+          {percentOfTotal.toFixed(1)}%
+        </div>
+      </div>
+
+      {/* IMPL-060: Expandable sub-rows for OZ Benefits */}
+      {hasSubComponents && isExpanded && (
+        <div className="oz-sub-components">
+          {component.subComponents!.map((sub) => (
+            <SubRow
+              key={sub.label}
+              subComponent={sub}
+              totalValue={totalValue}
+              parentColor={component.color}
+            />
+          ))}
+        </div>
+      )}
+    </>
   );
 };
 

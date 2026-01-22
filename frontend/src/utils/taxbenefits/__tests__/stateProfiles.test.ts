@@ -249,7 +249,7 @@ describe('State Tax Profiles - Individual State Tests', () => {
       const wa = getStateTaxProfile('WA');
       expect(wa?.specialRules).toContain('7% capital gains tax');
       expect(wa?.specialRules).toContain('$270K');
-      expect(wa?.topRate).toBe(7); // IMPL-053: Updated to reflect 7% CG tax
+      expect(wa?.topRate).toBe(0); // No income tax; 7% CG tax is in specialRules
       expect(wa?.ozConformity).toBe('none'); // IMPL-053: WA does not conform to OZ
     });
   });
@@ -541,18 +541,25 @@ describe('State Tax Profiles - Business Logic', () => {
  * percentage (0.0-1.0) of federal bonus depreciation a state recognizes
  * for state income tax purposes.
  */
-describe('State Bonus Depreciation Conformity - IMPL-041', () => {
+/**
+ * IMPL-069: Updated to match OZ_2_0_Addendum_v9_0.md (authoritative source)
+ * Now reads from stateProfiles.data.json single source of truth
+ * Oregon is the ONLY state with 100% bonus depreciation conformity
+ */
+describe('State Bonus Depreciation Conformity - IMPL-041/IMPL-069', () => {
   describe('getStateBonusConformityRate', () => {
-    it('should return 0.3 (30%) for New Jersey', () => {
-      expect(getStateBonusConformityRate('NJ')).toBe(0.3);
+    it('should return 0.0 (0%) for New Jersey per N.J.S.A. 54A:1-2', () => {
+      // IMPL-069: NJ has 0% conformity, not 30%
+      expect(getStateBonusConformityRate('NJ')).toBe(0.0);
     });
 
     it('should return 0.0 (0%) for California', () => {
       expect(getStateBonusConformityRate('CA')).toBe(0.0);
     });
 
-    it('should return 0.5 (50%) for New York', () => {
-      expect(getStateBonusConformityRate('NY')).toBe(0.5);
+    it('should return 0.0 (0%) for New York', () => {
+      // IMPL-069: NY has 0% conformity, not 50%
+      expect(getStateBonusConformityRate('NY')).toBe(0.0);
     });
 
     it('should return 0.0 (0%) for Pennsylvania', () => {
@@ -563,24 +570,26 @@ describe('State Bonus Depreciation Conformity - IMPL-041', () => {
       expect(getStateBonusConformityRate('IL')).toBe(0.0);
     });
 
-    it('should return 1.0 (full conformity) for Oregon', () => {
+    it('should return 1.0 (full conformity) for Oregon - ONLY state with 100%', () => {
+      // IMPL-069: Oregon is the ONLY state with full bonus depreciation conformity
       expect(getStateBonusConformityRate('OR')).toBe(1.0);
     });
 
-    it('should return 1.0 (full conformity) for Georgia', () => {
-      expect(getStateBonusConformityRate('GA')).toBe(1.0);
+    it('should return 0.0 (0%) for Georgia', () => {
+      // IMPL-069: GA has 0% conformity per OZ_2_0_Addendum_v9_0.md
+      expect(getStateBonusConformityRate('GA')).toBe(0.0);
     });
 
-    it('should return 1.0 (full conformity) for unlisted states', () => {
-      // Test states not explicitly listed should default to full conformity
-      expect(getStateBonusConformityRate('TX')).toBe(1.0);
-      expect(getStateBonusConformityRate('FL')).toBe(1.0);
-      expect(getStateBonusConformityRate('WA')).toBe(1.0);
+    it('should return 0.0 for states without income tax (TX, FL, WA)', () => {
+      // States with no income tax have 0% conformity (no benefit anyway)
+      expect(getStateBonusConformityRate('TX')).toBe(0.0);
+      expect(getStateBonusConformityRate('FL')).toBe(0.0);
+      expect(getStateBonusConformityRate('WA')).toBe(0.0);
     });
 
-    it('should return 1.0 for undefined state code', () => {
-      // Edge case: unknown state should default to full conformity
-      expect(getStateBonusConformityRate('XX')).toBe(1.0);
+    it('should return 0.0 for undefined state code', () => {
+      // IMPL-069: Unknown states return 0 (no data in JSON = no conformity assumed)
+      expect(getStateBonusConformityRate('XX')).toBe(0.0);
     });
   });
 
@@ -610,25 +619,28 @@ describe('State Bonus Depreciation Conformity - IMPL-041', () => {
       expect(caBonusBenefit).toBe(370000);
     });
 
-    it('should calculate partial benefit for partial-conformity states (NJ)', () => {
+    it('should calculate federal-only benefit for zero-conformity states (NJ) per IMPL-069', () => {
       const njRate = getStateTaxRate('NJ'); // ~10.75%
-      const njConformity = getStateBonusConformityRate('NJ'); // 0.3
+      const njConformity = getStateBonusConformityRate('NJ'); // 0.0 per N.J.S.A. 54A:1-2
 
-      // 30% of state benefit on bonus
+      // IMPL-069: NJ has 0% conformity - no state benefit on bonus depreciation
+      expect(njConformity).toBe(0.0);
+
+      // Federal-only benefit on bonus
       const njBonusBenefit = BONUS_DEPRECIATION * (FEDERAL_RATE + (njRate / 100) * njConformity);
 
-      // Expected: 37% + (10.75% × 0.3) = 40.225% = $402,250
-      expect(njBonusBenefit).toBeCloseTo(402250, -1); // Within $10
+      // Expected: 37% federal only (no state benefit) = $370,000
+      expect(njBonusBenefit).toBeCloseTo(370000, -1); // Within $10
     });
 
-    it('should correctly split Year 1 tax benefit between bonus and MACRS', () => {
+    it('should correctly split Year 1 tax benefit between bonus and MACRS (NJ)', () => {
       const njRate = getStateTaxRate('NJ');
-      const njConformity = getStateBonusConformityRate('NJ');
+      const njConformity = getStateBonusConformityRate('NJ'); // 0.0 per IMPL-069
 
       const bonusDepreciation = 200000; // 20% of $1M
       const year1MACRS = 14545; // ~$400K/27.5/12*4.5 months
 
-      // Bonus: federal-only adjusted
+      // Bonus: federal-only (NJ has 0% conformity per IMPL-069)
       const bonusTaxBenefit = bonusDepreciation * (FEDERAL_RATE + (njRate / 100) * njConformity);
 
       // MACRS: full state rate (all states accept straight-line)
@@ -639,10 +651,10 @@ describe('State Bonus Depreciation Conformity - IMPL-041', () => {
       // MACRS should use full rate
       expect(macrsTaxBenefit / year1MACRS).toBeCloseTo(FEDERAL_RATE + njRate / 100, 2);
 
-      // Bonus should use reduced rate
-      expect(bonusTaxBenefit / bonusDepreciation).toBeCloseTo(FEDERAL_RATE + (njRate / 100) * njConformity, 2);
+      // Bonus should use federal-only rate (0% state conformity)
+      expect(bonusTaxBenefit / bonusDepreciation).toBeCloseTo(FEDERAL_RATE, 2);
 
-      // Total should be less than if full conformity
+      // Total should be less than if full conformity (bonus gets federal only, MACRS gets full)
       const fullConformityTotal = (bonusDepreciation + year1MACRS) * (FEDERAL_RATE + njRate / 100);
       expect(totalYear1Benefit).toBeLessThan(fullConformityTotal);
     });

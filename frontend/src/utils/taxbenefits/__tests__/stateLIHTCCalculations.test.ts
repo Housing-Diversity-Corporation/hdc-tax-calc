@@ -960,16 +960,31 @@ describe('State LIHTC Calculations', () => {
       });
     });
 
-    describe('Override takes precedence', () => {
-      it('syndicationRateOverride should override toggle', () => {
+    // ISS-020: Checkbox takes priority over override
+    describe('Checkbox takes precedence over override', () => {
+      it('investorHasStateLiability checkbox should override syndicationRateOverride', () => {
         const result = calculateStateLIHTC({
           federalAnnualCredit: 1000000,
           propertyState: 'GA',
           investorState: 'NY',
           pisMonth: 7,
-          investorHasStateLiability: true, // Would give 1.0
+          investorHasStateLiability: true, // Checkbox ON → direct use (1.0)
+          syndicationRateOverride: 75, // Override is ignored when checkbox is true
+        });
+        // ISS-020: Checkbox takes priority → 1.0 (direct use)
+        expect(result.syndicationRate).toBe(1.0);
+      });
+
+      it('syndicationRateOverride only applies when checkbox is false', () => {
+        const result = calculateStateLIHTC({
+          federalAnnualCredit: 1000000,
+          propertyState: 'GA',
+          investorState: 'NY',
+          pisMonth: 7,
+          investorHasStateLiability: false, // No liability → syndicate
           syndicationRateOverride: 75, // Override to 75%
         });
+        // Override only used when checkbox is false
         expect(result.syndicationRate).toBe(0.75);
       });
     });

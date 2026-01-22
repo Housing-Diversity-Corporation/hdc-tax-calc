@@ -6,9 +6,9 @@ import {
 } from '../../utils/taxbenefits';
 import { calculateInterestReserve } from '../../utils/taxbenefits/interestReserveCalculation';
 import { calculateDepreciableBasis, calculateLIHTCEligibleBasis } from '../../utils/taxbenefits/depreciableBasisUtility';
-import { getOzBenefits, HDC_OZ_STRATEGY } from '../../utils/taxbenefits/hdcOzStrategy';
+import { getOzBenefits } from '../../utils/taxbenefits/hdcOzStrategy';
 import { ALL_JURISDICTIONS, getEffectiveTaxRate, doesNIITApply } from '../../utils/taxbenefits/stateData';
-import { getStateBonusConformityRate } from '../../utils/taxbenefits/stateProfiles';
+import { getStateBonusConformityRate, getStateTaxRate } from '../../utils/taxbenefits/stateProfiles';
 import { getOzStepUpPercent } from '../../utils/taxbenefits/constants';
 import { calculateLIHTCSchedule, LIHTCCreditSchedule } from '../../utils/taxbenefits/lihtcCreditCalculations';
 import { calculateStateLIHTC, StateLIHTCCalculationResult } from '../../utils/taxbenefits/stateLIHTCCalculations';
@@ -117,6 +117,7 @@ interface UseHDCCalculationsProps {
   investorHasStateLiability?: boolean;
   stateLIHTCUserPercentage?: number;
   stateLIHTCUserAmount?: number;
+  stateLIHTCSyndicationYear?: 0 | 1 | 2; // IMPL-073
 }
 
 export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
@@ -245,8 +246,8 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
 
     const NIIT_RATE = 3.8; // Net Investment Income Tax
 
-    // Check if investor's state is non-conforming (NO_GO) - investor doesn't get state OZ benefits
-    const isNonConforming = investorStateForTax && HDC_OZ_STRATEGY[investorStateForTax]?.status === 'NO_GO';
+    // IMPL-066: Removed isNonConforming check - OZ conformity is independent of state income tax
+    // OZ conformity affects OZ benefits (deferral, step-up), NOT state income tax rates
 
     // Check if NIIT applies (false for territories)
     const niitApplies = doesNIITApply(investorStateForTax || '');
@@ -260,7 +261,9 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
 
     if (props.investorTrack === 'rep' || props.investorTrack === undefined) {
       // Track 1: REPs - Active losses offset ordinary income (W-2)
-      const stateRate = isNonConforming ? 0 : (isConformingState ? CONFORMING_STATES[investorStateForTax].rate : 0);
+      // IMPL-066: State income tax rate is INDEPENDENT of OZ conformity
+      // Use getStateTaxRate() directly - returns topRate (ordinary income rate)
+      const stateRate = getStateTaxRate(investorStateForTax);
 
       // Straight-line: Full state rate (all states accept straight-line depreciation)
       effectiveTaxRateForStraightLine = props.federalTaxRate + stateRate;
@@ -274,10 +277,11 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     } else {
       // Track 2: Non-REPs - Passive losses offset passive gains
       const niitRate = niitApplies ? NIIT_RATE : 0;
-      const stateRate = isNonConforming ? 0 :
-        (isConformingState ?
-          (props.passiveGainType === 'long-term' ? props.stateCapitalGainsRate : CONFORMING_STATES[investorStateForTax].rate)
-          : 0);
+      // IMPL-066: State income tax rate is INDEPENDENT of OZ conformity
+      // For passive gains, use stateCapitalGainsRate for long-term, ordinary rate for short-term
+      const stateRate = props.passiveGainType === 'long-term'
+        ? props.stateCapitalGainsRate
+        : getStateTaxRate(investorStateForTax);
 
       // Straight-line: Full state rate
       effectiveTaxRateForStraightLine = props.federalTaxRate + niitRate + stateRate;
@@ -431,6 +435,11 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
   const stateLIHTCResult: StateLIHTCCalculationResult | null = useMemo(() => {
     if (!props.stateLIHTCEnabled || !lihtcResult) return null;
 
+    // ISS-019 CORRECTED: Credits exist if PROPERTY STATE has program (not investor state)
+    // - Property state program check is done inside calculateStateLIHTC (returns $0 if no program)
+    // - Investor's home state LIHTC program is IRRELEVANT
+    // - Monetization path (direct vs syndicated) determined by investorHasStateLiability checkbox
+
     try {
       // IMPL-035: investorState is independent - no fallback to selectedState
       return calculateStateLIHTC({
@@ -577,6 +586,8 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       selectedState: props.selectedState,
       // State LIHTC Integration (IMPL-018)
       stateLIHTCIntegration: stateLIHTCIntegration,
+      // IMPL-073: State LIHTC syndication year for capital return model
+      stateLIHTCSyndicationYear: props.stateLIHTCSyndicationYear,
       // Federal LIHTC Credits (IMPL-021b) - 100% to investor, no promote split
       federalLIHTCCredits: lihtcResult?.yearlyBreakdown?.map(y => y.creditAmount) || []
     });
@@ -717,42 +728,21 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     };
   }, [props.selectedState, props.projectLocation]);
 
-  // Calculate OZ Deferral NPV (v7.0.14)
-  const ozDeferralNPV = useMemo(() => {
-    if (!props.ozEnabled || !props.deferredCapitalGains) return 0;
-
-    // TODO: Make discountRate a user-configurable parameter in future
-    const discountRate = 0.10; // 10% discount rate
-    // IMPL-017: Use centralized helper for OZ version support
-    const stepUpPercent = getOzStepUpPercent(props.ozVersion || '2.0', props.ozType || 'standard');
-    const ltCGRate = props.ltCapitalGainsRate || 20;
-    const niit = props.niitRate || 3.8;
-    const stateCG = props.stateCapitalGainsRate || 0;
-    const taxRate = (ltCGRate + niit + stateCG) / 100;
-
-    // NPV = deferredGains × (1 - stepUp) × taxRate × (1 - 1/(1+r)^5)
-    const taxableGains = props.deferredCapitalGains * (1 - stepUpPercent);
-    const taxDeferred = taxableGains * taxRate;
-    const npvFactor = 1 - 1 / Math.pow(1 + discountRate, 5);
-
-    return taxDeferred * npvFactor;
-  }, [
-    props.ozEnabled,
-    props.deferredCapitalGains,
-    props.ozType,
-    props.ltCapitalGainsRate,
-    props.niitRate,
-    props.stateCapitalGainsRate
-  ]);
+  // IMPL-065: OZ Deferral NPV now comes from engine (single source of truth)
+  // Engine uses 8% discount rate (calculations.ts:1529)
+  // Previously hook used 10% - this was inconsistent
 
   // IMPL-020a: Unified benefits summary (fixes TaxPlanningCapacitySection violations)
   // Single source of truth for all investor benefit calculations
   const unifiedBenefitsSummary = useMemo(() => {
+    // IMPL-065: Use engine's ozDeferralNPV (8% discount rate)
+    const engineOzDeferralNPV = mainAnalysisResults?.ozDeferralNPV || 0;
+
     const total10YearBenefits =
       (taxCalculations.netTaxBenefit || 0) +
       (lihtcResult?.totalCredits || 0) +
       (props.stateLIHTCEnabled ? (stateLIHTCResult?.netBenefit || 0) : 0) +
-      (props.ozEnabled ? (ozDeferralNPV || 0) : 0);
+      (props.ozEnabled ? engineOzDeferralNPV : 0);
 
     const investorEquity = mainAnalysisResults?.investorEquity || 0;
     const benefitMultiple = investorEquity > 0 ? total10YearBenefits / investorEquity : 0;
@@ -770,7 +760,6 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     stateLIHTCResult,
     props.stateLIHTCEnabled,
     props.ozEnabled,
-    ozDeferralNPV,
     mainAnalysisResults,
     investmentCalculations
   ]);
@@ -831,8 +820,8 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     // State LIHTC Integration (IMPL-018)
     stateLIHTCIntegration,
 
-    // OZ Deferral NPV (v7.0.14)
-    ozDeferralNPV,
+    // OZ Deferral NPV (v7.0.14) - IMPL-065: From engine (single source of truth)
+    ozDeferralNPV: mainAnalysisResults.ozDeferralNPV || 0,
 
     // IMPL-020a: Unified benefits summary for UI components
     unifiedBenefitsSummary,
