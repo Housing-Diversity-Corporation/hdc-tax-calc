@@ -1,7 +1,7 @@
 # TaxBenefits Calculator — Implementation Tracker
 
-**Document Version:** 8.2
-**Last Updated:** 2026-01-21
+**Document Version:** 8.5
+**Last Updated:** 2026-01-22
 **Branch:** main
 **Current Test Count:** 1,195 passing (1 pre-existing failure: ISS-014)
 **Validation Status:** 13/15 Three Sigma scenarios complete (Production Certification ✅)
@@ -12,6 +12,9 @@
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v8.5 | 2026-01-22 | ISS-023: Fixed Time to Recovery using gross equity instead of net for Y0 syndication |
+| v8.4 | 2026-01-22 | IMPL-078: Merged Free Investment Analysis + Tax Planning Capacity into single InvestmentRecoverySection |
+| v8.3 | 2026-01-21 | ISS-022: Fixed Tax Planning Capacity double-counting bug (was showing ~$117M instead of ~$56M) |
 | v8.2 | 2026-01-21 | Added IMPL-074-077 (Syndication Year timing logic), ISS-019/020/021 (State LIHTC validation fixes, Eligible vs Qualified Basis display) |
 | v8.1 | 2026-01-20 | Added IMPL-073: State LIHTC Syndication as Capital Return (refactored from equity offset to capital return model) |
 | v8.0 | 2026-01-20 | Added Phase 14: IMPL-068-072 (Validation Session), Bug Fixes ISS-015/016/017, Open Issues section |
@@ -275,6 +278,8 @@ This caused impossible 275% IRR. Fix: Year 0 syndication proceeds are netted in 
 | ISS-019 | State LIHTC investor validation | Investor state check incomplete | Updated validation in stateLIHTCCalculations.ts | 2026-01-20 |
 | ISS-020 | Tax liability checkbox integration | Missing path toggle logic | Added checkbox to toggle direct (100% credits) vs syndicated (75% cash) path based on investor's state tax liability | 2026-01-20 |
 | ISS-021 | Eligible Basis vs Qualified Basis display in LIHTC sheet | eligibleBasis already included 130% boost | lihtcSheet.ts: Eligible Basis now shows pre-boost ($80M), added DDA/QCT Boost row (30%), Qualified Basis shows post-boost ($104M) | 2026-01-21 |
+| ISS-022 | Tax Planning Capacity showing wildly inflated numbers | Double-counting bug in hook's depreciation calculation | useHDCCalculations.ts: Use engine's `investorTaxBenefits` instead of buggy `taxCalculations.netTaxBenefit` | 2026-01-21 |
+| ISS-023 | Time to Recovery showing 7.4 years instead of ~1.4 years for Y0 syndication | Recovery used gross equity ($35M) instead of net equity ($11M) | InvestmentRecoverySection.tsx: Use `totalInvestment` (MOIC basis) for recovery calculation | 2026-01-22 |
 
 **ISS-020 Details:** When investor has no state tax liability (out-of-state or no income tax), the tax liability checkbox now correctly routes to syndication path. Direct use path requires in-state investor with tax liability to use credits directly.
 
@@ -282,6 +287,30 @@ This caused impossible 275% IRR. Fix: Year 0 syndication proceeds are netted in 
 - **Eligible Basis:** Project Cost - Land (pre-boost) = $80M
 - **DDA/QCT Boost:** 30% (only shown when applicable)
 - **Qualified Basis:** Eligible Basis × (1 + Boost) × Applicable Fraction = $104M
+
+**ISS-022 Details:** Tax Planning Capacity section was showing ~$117M Total 10-Year Benefits (should be ~$56M) and ~$231M Depreciation Offset (should be ~$40-60M). Root cause: `useHDCCalculations.ts` lines 299-301 had a double-counting bug where `years2toNDepreciation` (already TOTAL for years 2-N) was multiplied by `(holdPeriod - 1)` again, inflating by ~9x. Fixed by using the engine's correct `mainAnalysisResults.investorTaxBenefits` in `unifiedBenefitsSummary` instead of the buggy hook calculation.
+
+**ISS-023 Details:** Time to Full Recovery was showing 7.4 years instead of ~1.4 years for Year 0 syndicated scenarios. Root cause: `InvestmentRecoverySection.tsx` used `investorEquity` (gross $35M) instead of `totalInvestment` (net $11M after Y0 syndication offset). Fix: Added `totalInvestment` prop and updated all recovery calculations (Year 1 Coverage, Free Investment Status, Time to Recovery) to use MOIC basis. This aligns with IMPL-075 which established that Y0 syndication uses net equity for MOIC.
+
+### Phase 15: UI Consolidation (Jan 22, 2026)
+
+| IMPL | Description | Status | Date |
+|------|-------------|--------|------|
+| IMPL-078 | Merge Free Investment Analysis + Tax Planning Capacity sections | ✅ Complete | 2026-01-22 |
+
+**IMPL-078 Details:** Merged two overlapping UI sections into a single coherent "Investment Recovery & Tax Planning" section:
+- **Created:** `InvestmentRecoverySection.tsx` - New merged component with simplified props
+- **Deleted:** `FreeInvestmentAnalysisSection.tsx` - Functionality merged
+- **Deleted:** `TaxPlanningCapacitySection.tsx` - Functionality merged
+- **Updated:** `HDCResultsComponent.tsx` - Uses new merged component
+
+**Key Improvements:**
+- Single source of truth: All values from calculation engine (ISS-022 fix)
+- Simplified props: 11 props instead of 33+ combined
+- Cleaner UI: Three logical sections (Summary, Recovery Timeline, Excess Capacity)
+- Conditional display: Excess Capacity only shows when benefits > investment
+- Time to Recovery: Now uses ALL benefit sources (depreciation + LIHTC + syndication)
+- Code reduction: ~150 lines vs ~455 combined
 
 ---
 
@@ -330,7 +359,8 @@ This caused impossible 275% IRR. Fix: Year 0 syndication proceeds are netted in 
 | Phase 14: Three Sigma Validation | 068-072 | 5/5 | ✅ 100% |
 | Feature: State LIHTC Capital Return | 073 | 1/1 | ✅ 100% |
 | Feature: Syndication Year Timing | 074-077 | 4/4 | ✅ 100% |
-| **Total** | **79 IMPLs** | **79/79** | **✅ 100%** |
+| Phase 15: UI Consolidation | 078 | 1/1 | ✅ 100% |
+| **Total** | **80 IMPLs** | **80/80** | **✅ 100%** |
 
 ---
 
@@ -338,6 +368,7 @@ This caused impossible 275% IRR. Fix: Year 0 syndication proceeds are netted in 
 
 | Date | Test Count | Notes |
 |------|------------|-------|
+| 2026-01-22 | 1,176 | Post IMPL-078 (UI Consolidation: merged Investment Recovery sections) |
 | 2026-01-21 | 1,195 | Post IMPL-074-077 (Syndication Year timing logic, ISS-019/020 fixes) |
 | 2026-01-20 | 1,182 | Post Phase 14 (Three Sigma Validation: ISS-015/016/017 fixes, 9/15 scenarios validated) |
 | 2026-01-19 | 1,175 | Post Phase 13 (Calculation Architecture Audit: 6 IMPLs, single source of truth enforcement) |

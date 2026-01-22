@@ -2,8 +2,8 @@ import React from 'react';
 // IMPL-058: InvestmentSummarySection removed - consolidated into CapitalStructureSection
 import CapitalStructureSection from './results/CapitalStructureSection';
 import DSCRAnalysisSection from './results/DSCRAnalysisSection';
-import FreeInvestmentAnalysisSection from './results/FreeInvestmentAnalysisSection';
-import TaxPlanningCapacitySection from './results/TaxPlanningCapacitySection';
+// IMPL-078: FreeInvestmentAnalysisSection and TaxPlanningCapacitySection merged into InvestmentRecoverySection
+import InvestmentRecoverySection from './results/InvestmentRecoverySection';
 import InvestorCashFlowSection from './results/InvestorCashFlowSection';
 import HDCCashFlowSection from './results/HDCCashFlowSection';
 import DistributableCashFlowTable from './results/DistributableCashFlowTable';
@@ -176,9 +176,7 @@ interface HDCResultsComponentProps {
 }
 
 const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
-  // Get Year 5 OZ Tax from cash flows (calculated in main engine)
-  const year5CashFlow = props.investorCashFlows?.[4]; // Year 5 is index 4
-  const year5OZTaxDue = year5CashFlow?.ozYear5TaxPayment || 0;
+  // IMPL-078: year5OZTaxDue removed - no longer needed after merging sections
 
   return (
     <div className="p-4 md:p-6 rounded-lg shadow h-full hdc-results-container"
@@ -524,46 +522,20 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
           formatCurrency={props.formatCurrency}
         />
 
-        <FreeInvestmentAnalysisSection
-          year1TaxBenefit={props.year1TaxBenefit}
-          hdcFee={props.year1HdcFee}
-          year1NetBenefit={props.year1NetBenefit}
-          freeInvestmentHurdle={props.freeInvestmentHurdle}
-          formatCurrency={props.formatCurrency}
-          yearOneDepreciation={props.yearOneDepreciation}
-          effectiveTaxRateForDepreciation={props.effectiveTaxRateForDepreciation}
-          hdcFeeRate={props.hdcFeeRate}
-          depreciationSchedule={props.mainAnalysisResults?.depreciationSchedule}
-        />
-
-        <TaxPlanningCapacitySection
-          totalNetTaxBenefits={props.totalNetTaxBenefits}
+        {/* IMPL-078: Merged Investment Recovery & Tax Planning Section */}
+        {/* ISS-023: totalInvestment is MOIC basis (net for Y0 syndication, gross otherwise) */}
+        <InvestmentRecoverySection
+          investorEquity={props.investorEquity}
+          totalInvestment={props.totalInvestment}
+          year1TaxBenefit={props.investorCashFlows?.[0]?.taxBenefit || 0}
+          total10YearBenefits={props.total10YearBenefits || 0}
+          benefitMultiple={props.benefitMultiple || 0}
+          excessBenefits={props.excessBenefits || 0}
+          investorCashFlows={props.investorCashFlows}
           totalCapitalGainsRate={props.totalCapitalGainsRate}
-          investmentRecovered={props.investmentRecovered}
           effectiveTaxRateForDepreciation={props.effectiveTaxRateForDepreciation}
           depreciationRecaptureRate={props.depreciationRecaptureRate}
-          year5OZTaxDue={year5OZTaxDue}
           formatCurrency={props.formatCurrency}
-          // New props for depreciation details
-          yearOneDepreciation={props.yearOneDepreciation}
-          yearOneDepreciationPct={props.yearOneDepreciationPct}
-          years2to10Depreciation={props.years2to10Depreciation}
-          total10YearDepreciation={props.total10YearDepreciation}
-          depreciableBasis={props.depreciableBasis}
-          annualStraightLineDepreciation={props.annualStraightLineDepreciation}
-          totalTaxBenefit={props.totalTaxBenefit}
-          hdcFee={props.hdcFee}
-          // Unified Benefits Summary (v7.0.14)
-          investorEquity={props.investorEquity}
-          federalLihtcTotalCredits={props.federalLihtcTotalCredits}
-          stateLihtcTotalCredits={props.stateLihtcTotalCredits}
-          stateLihtcEnabled={props.stateLihtcEnabled}
-          ozDeferralNPV={props.ozDeferralNPV}
-          ozEnabled={props.ozEnabled}
-          // IMPL-020a: Pre-calculated benefits from engine (single source of truth)
-          total10YearBenefits={props.total10YearBenefits}
-          benefitMultiple={props.benefitMultiple}
-          excessBenefits={props.excessBenefits}
         />
 
         <InvestorCashFlowSection

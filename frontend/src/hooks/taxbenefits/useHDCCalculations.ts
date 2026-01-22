@@ -734,12 +734,17 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
 
   // IMPL-020a: Unified benefits summary (fixes TaxPlanningCapacitySection violations)
   // Single source of truth for all investor benefit calculations
+  // ISS-022: Use engine's investorTaxBenefits (correct) instead of hook's taxCalculations.netTaxBenefit (buggy)
+  // The hook calculation had a double-counting bug in years2toNDepreciation × (holdPeriod - 1)
   const unifiedBenefitsSummary = useMemo(() => {
     // IMPL-065: Use engine's ozDeferralNPV (8% discount rate)
     const engineOzDeferralNPV = mainAnalysisResults?.ozDeferralNPV || 0;
 
+    // ISS-022: Use engine's investorTaxBenefits (single source of truth)
+    const engineTaxBenefits = mainAnalysisResults?.investorTaxBenefits || 0;
+
     const total10YearBenefits =
-      (taxCalculations.netTaxBenefit || 0) +
+      engineTaxBenefits +
       (lihtcResult?.totalCredits || 0) +
       (props.stateLIHTCEnabled ? (stateLIHTCResult?.netBenefit || 0) : 0) +
       (props.ozEnabled ? engineOzDeferralNPV : 0);
@@ -749,13 +754,13 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
 
     const year5TaxPayment = mainAnalysisResults?.investorCashFlows?.find(cf => cf.year === 5)?.ozYear5TaxPayment || 0;
     const investmentRecovered = investmentCalculations?.investmentRecovered || 0;
+    // ISS-022: Use engine's investorTaxBenefits for excessBenefits calculation
     const excessBenefits = Math.max(0,
-      (taxCalculations.netTaxBenefit || 0) - investmentRecovered - year5TaxPayment
+      engineTaxBenefits - investmentRecovered - year5TaxPayment
     );
 
     return { total10YearBenefits, benefitMultiple, excessBenefits };
   }, [
-    taxCalculations.netTaxBenefit,
     lihtcResult,
     stateLIHTCResult,
     props.stateLIHTCEnabled,
