@@ -1,8 +1,8 @@
 # Validation Scenario Tracker
 
-**Version:** 1.4
-**Last Updated:** 2026-01-24
-**Status:** 18 of 20+ scenarios validated (90% Institutional Certification)
+**Version:** 1.5
+**Last Updated:** 2026-01-27
+**Status:** 19 of 25 scenarios validated (76% Institutional Certification)
 
 ---
 
@@ -114,16 +114,41 @@ This document tracks all validated scenarios for the TaxBenefits Calculator. It 
 
 ---
 
-## Remaining (Scenarios 20-25)
+## Interest Reserve / S-Curve Validation (Scenario 20)
+
+| # | Scenario | Config | Key Validation | MOIC | Date | Status |
+|---|----------|--------|----------------|------|------|--------|
+| 20 | Trace 4001 Interest Reserve | $85M, $3M Stabilized NOI, 18-mo reserve, S-curve | S-curve functional, stabilized DSCR display | 2.70x | 2026-01-27 | ✅ |
+
+**Configuration:**
+- Project Cost: $85M
+- Stabilized NOI: $3M
+- Interest Reserve: 18 months ($1,562,772)
+- S-curve lease-up enabled
+
+**Expected Results:**
+
+| Metric | Value |
+|--------|-------|
+| Year 1 Effective Occupancy | ~31% (S-curve) |
+| Year 1 DSCR | 0.37x (lease-up, reserve-covered) |
+| Stabilized DSCR (displayed) | 1.14x |
+| Excess Reserve | ~$2.7K (≈0%) |
+| Total Returns | $66.05M / 2.70x |
+
+**Validates:** ISS-053 (S-curve), ISS-054 (stabilized DSCR), ISS-055 (Stabilized NOI label)
+
+---
+
+## Remaining (Scenarios 21-25)
 
 | # | Scenario | Config | Key Validation | Status |
 |---|----------|--------|----------------|--------|
-| 20 | January Closing | Month 1 | Credit timing (max proration) | ☐ |
-| 21 | December Closing | Month 12 | Credit timing (min proration) | ☐ |
-| 22 | Sub-Debt Layer | HDC sub-debt | Waterfall priority | ☐ |
-| 23 | High Cost Seg (40%) | — | Depreciation acceleration | ☐ |
-| 24 | Short Hold (7yr) | — | Exit timing, OZ recapture | ☐ |
-| 25 | Long Hold (15yr) | — | Full OZ benefit capture | ☐ |
+| 21 | January Closing | Month 1 | Credit timing (max proration) | ☐ |
+| 22 | December Closing | Month 12 | Credit timing (min proration) | ☐ |
+| 23 | Sub-Debt Layer | HDC sub-debt | Waterfall priority | ☐ |
+| 24 | High Cost Seg (40%) | — | Depreciation acceleration | ☐ |
+| 25 | Short Hold (7yr) | — | Exit timing, OZ recapture | ☐ |
 
 ---
 
@@ -134,7 +159,8 @@ This document tracks all validated scenarios for the TaxBenefits Calculator. It 
 | Limited Certification | 5 | 5 | ✅ |
 | Production Certification | 10 | 11 | ✅ |
 | Capital Stack Enhancement | 4 | 4 | ✅ |
-| Institutional Certification | 20 | 18 | 90% |
+| Interest Reserve/S-Curve | 1 | 1 | ✅ |
+| Institutional Certification | 25 | 19 | 76% |
 
 ---
 
@@ -158,6 +184,11 @@ This document tracks all validated scenarios for the TaxBenefits Calculator. It 
 | ISS-036 | Capital Stack validation tolerance | 0.001 threshold too tight | capitalStackSheet.ts (changed to 0.01) | 2026-01-24 |
 | ISS-037 | DSCR breakdown columns missing | No Must-Pay/Phil columns | operatingCFSheet.ts | 2026-01-24 |
 | ISS-038b | DSCR breakdown in Summary | No conditional rows | summarySheet.ts | 2026-01-24 |
+| ISS-051 v2 | HDC promote base inflated | Independent calculation missed soft-pay deductions | hdcAnalysis.ts | 2026-01-27 |
+| ISS-052 | Operating Cash Flow 406% overstated | Excess Reserve included + sub-debt sign error | calculations.ts, summarySheet.ts | 2026-01-27 |
+| ISS-053 | S-curve non-functional (100% reserve returned) | Override forced 100% occupancy in Year 1 | calculations.ts | 2026-01-27 |
+| ISS-054 | DSCR showed 0.37x during lease-up | Min DSCR included Year 1 lease-up value | KPIStrip.tsx | 2026-01-27 |
+| ISS-055 | "Year 1 NOI" semantically incorrect | S-curve reduces actual Year 1 NOI | Global rename to "Stabilized NOI" | 2026-01-27 |
 
 ---
 

@@ -18,6 +18,8 @@ Check this document FIRST when encountering unexpected behavior to save debuggin
 | Pattern | Symptom | Time Saved |
 |---------|---------|------------|
 | [Hidden Value Bug](#pattern-hidden-value-bug) | UI doesn't respond to parameter changes | 4+ hours |
+| [Layer-by-Layer Validation](#pattern-layer-by-layer-validation) | Display value incorrect, unclear where the bug is | 2+ hours |
+| [Excess Reserve Diagnostic](#pattern-excess-reserve-diagnostic) | Interest reserve nearly 100% returned | 3+ hours |
 
 ---
 
@@ -118,6 +120,98 @@ For any new calculated value:
 - [ ] Returned in baseResults? ← Often missed
 - [ ] Included in UI component totals? ← Often missed
 - [ ] UI responds to parameter changes? ← Final verification
+
+---
+
+## Pattern: Layer-by-Layer Validation
+
+**ISS Reference:** ISS-052 (2026-01-27)
+**Discovered During:** Operating Cash Flow 406% overstatement debugging
+
+### Symptoms
+
+- A display value is clearly wrong (e.g., 406% too high)
+- Per-year values in Excel look correct, but total is wrong
+- Or vice versa: total looks correct but per-year is off
+
+### Diagnosis Steps
+
+When a display value is wrong, trace through layers systematically:
+
+1. **Check Excel export** — Does the wrong value appear there too?
+   - If YES: Bug is in engine or aggregation
+   - If NO: Bug is in UI display logic
+
+2. **Check Waterfall sheet** — Are per-year values correct?
+   - If YES: Bug is in aggregation/totaling
+   - If NO: Bug is in waterfall calculation
+
+3. **Check conservation** — Does Investor + HDC = Total Available?
+   - If YES: Waterfall split is correct, look elsewhere
+   - If NO: Waterfall has a bug
+
+4. **Trace aggregation** — If per-year correct but total wrong, find where sum is computed
+
+### Example: ISS-052
+
+**Problem:** Operating Cash showed $1.95M but per-year waterfall summed to $385K.
+
+**Layer trace:**
+- Excel export: $1.95M (wrong appears in export too → not UI bug)
+- Waterfall per-year: $0-50K each, sums to ~$385K (correct)
+- Conservation: Investor + HDC = Total ✓
+- Aggregation: `totalOperatingCash` was computed separately and included Excess Reserve
+
+**Root cause:** Two separate bugs:
+1. `totalOperatingCash` included Excess Reserve component
+2. Sub-debt handler returned `-paid` instead of `paid` (sign error)
+
+### Fix Pattern
+
+Split aggregated values into components and verify each independently.
+
+---
+
+## Pattern: Excess Reserve Diagnostic
+
+**ISS Reference:** ISS-053 (2026-01-27)
+**Discovered During:** S-curve appeared non-functional
+
+### Symptoms
+
+- Interest reserve is enabled with S-curve lease-up
+- Excess Reserve equals ~100% of Calculated Reserve
+- Year 1 DSCR shows impossible values (e.g., 0.37x but property cash-flows)
+
+### Root Cause
+
+The S-curve calculation exists but is being overridden to 100% occupancy.
+
+### Quick Diagnostic
+
+| Excess Reserve | Meaning |
+|----------------|---------|
+| ≈ $0 | Healthy — reserve consumed during lease-up |
+| ≈ 100% of Calculated Reserve | Bug — S-curve not being applied |
+
+### Example: ISS-053
+
+**Problem:** $1.56M interest reserve calculated, but $1.56M returned as excess.
+
+**Investigation:**
+- S-curve formula existed and was called
+- But later code reset `effectiveOccupancy = 1.0` unconditionally
+- This override defeated the entire S-curve calculation
+
+**Fix:** Remove the override, trust the S-curve calculation.
+
+### Investigation Steps
+
+If excess reserve equals nearly all of the calculated reserve:
+
+1. Is S-curve being overridden? (Search for `effectiveOccupancy = 1`)
+2. Is reserve draw logic executing? (Add console.log in draw function)
+3. Is effectiveOccupancy reaching 100% too early? (Log values per month)
 
 ---
 

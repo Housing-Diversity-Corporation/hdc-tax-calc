@@ -71,8 +71,58 @@ If you find financial math outside the core engine:
 
 ---
 
+## Sign Convention Standard
+
+Cash flows use the following sign convention:
+- **Positive:** Cash outflows FROM the project (payments to investors, debt service, fees)
+- **Negative:** Cash inflows TO the project (rare in operating phase)
+
+When implementing waterfall handlers, a payment should return a **positive** value
+to be deducted from remaining cash:
+
+```typescript
+// CORRECT: Payment deducts from remaining cash
+return paid;
+
+// WRONG: This would ADD to remaining cash (ISS-052 bug)
+return -paid;
+```
+
+---
+
+## Override Anti-Pattern
+
+Avoid "safety" overrides that defeat intended calculations:
+
+```typescript
+// BAD: Override wipes out the S-curve we just calculated (ISS-053 bug)
+if (year === interestReservePeriodYears) {
+  effectiveOccupancy = 1.0;  // Defeats S-curve!
+}
+```
+
+If a calculation is complex enough to implement, trust it. Overrides should only
+apply to edge cases, not default behavior.
+
+---
+
+## DSCR Display Standard
+
+DSCR KPIs should reflect **stabilized operations**, not lease-up periods (ISS-054):
+
+- When interest reserve is enabled, Year 1 may have DSCR < 1.0x (covered by reserve)
+- Display the DSCR from the first **stabilized year** (effectiveOccupancy ≥ 99%)
+- This aligns with lender underwriting practice (loans sized to stabilized NOI)
+
+Functions: `findStabilizedYear()` and `calculateStabilizedDSCR()` in KPIStrip.tsx
+
+---
+
 ## History
 
 | Date | Change | Reference |
 |------|--------|-----------|
 | 2026-01-18 | Initial creation | IMPL-057 audit findings |
+| 2026-01-27 | Added Sign Convention Standard | ISS-052 |
+| 2026-01-27 | Added Override Anti-Pattern | ISS-053 |
+| 2026-01-27 | Added DSCR Display Standard | ISS-054 |
