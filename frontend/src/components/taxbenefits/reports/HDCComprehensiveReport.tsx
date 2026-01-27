@@ -282,7 +282,7 @@ export const HDCComprehensiveReportButton: React.FC<HDCComprehensiveReportProps>
         ['Project Cost', formatMoney(projectCost)],
         ['Land Value', formatMoney(landValue)],
         ['Predevelopment Costs', formatMoney(predevelopmentCosts)],
-        ['Year 1 NOI', formatMoney(yearOneNOI)],
+        ['Stabilized NOI', formatMoney(yearOneNOI)],
         ['Revenue Growth', formatPercent(params.revenueGrowth || 0)],
         ['Expense Growth', formatPercent(params.expenseGrowth || 0)],
         ['Exit Cap Rate', formatPercent(params.exitCapRate || 5)],
@@ -315,11 +315,12 @@ export const HDCComprehensiveReportButton: React.FC<HDCComprehensiveReportProps>
         ['Source', 'Percentage', 'Rate', 'Terms'],
         ['Investor Equity', formatPercent(params.investorEquityPct || 35), '-', '-'],
         ['Philanthropic Equity', formatPercent(params.philanthropicEquityPct || 0), '-', '-'],
-        ['Senior Debt', formatPercent(params.seniorDebtPct || 50), formatPercent(params.seniorDebtRate || 7), `${params.seniorDebtAmortization || 30} yr amort`],
-        ['Philanthropic Debt', formatPercent(params.philanthropicDebtPct || 0), formatPercent(params.philanthropicDebtRate || 4), 'Interest Only'],
+        ['Senior Debt', formatPercent(params.seniorDebtPct || 50), formatPercent(params.seniorDebtRate || 7), `${params.seniorDebtAmortization || 30}yr amort, ${params.seniorDebtIOYears || 0}yr IO`],
+        ['Philanthropic Debt', formatPercent(params.philanthropicDebtPct || 0), formatPercent(params.philanthropicDebtRate || 4), `${params.philDebtAmortization || 35}yr amort`],
         ['HDC Sub-Debt', formatPercent(params.hdcSubDebtPct || 0), formatPercent(params.hdcSubDebtPikRate || 12), params.pikCurrentPayEnabled ? `${params.pikCurrentPayPct || 50}% Current` : 'Full PIK'],
         ['Investor Sub-Debt', formatPercent(params.investorSubDebtPct || 0), formatPercent(params.investorSubDebtPikRate || 12), params.investorPikCurrentPayEnabled ? `${params.investorPikCurrentPayPct || 50}% Current` : 'Full PIK'],
-        ['Outside Investor Sub-Debt', formatPercent(params.outsideInvestorSubDebtPct || 0), formatPercent(params.outsideInvestorSubDebtPikRate || 12), params.outsideInvestorPikCurrentPayEnabled ? `${params.outsideInvestorPikCurrentPayPct || 50}% Current` : 'Full PIK']
+        ['Outside Investor Sub-Debt', formatPercent(params.outsideInvestorSubDebtPct || 0), formatPercent(params.outsideInvestorSubDebtPikRate || 12), params.outsideInvestorPikCurrentPayEnabled ? `${params.outsideInvestorPikCurrentPayPct || 50}% Current` : 'Full PIK'],
+        ['HDC Debt Fund', formatPercent(params.hdcDebtFundPct || 0), formatPercent(params.hdcDebtFundPikRate || 8), params.hdcDebtFundCurrentPayEnabled ? `${params.hdcDebtFundCurrentPayPct || 50}% Current` : 'Full PIK']
       ];
 
       autoTable(doc, {
@@ -359,6 +360,7 @@ export const HDCComprehensiveReportButton: React.FC<HDCComprehensiveReportProps>
 
       if (params.ozEnabled) {
         taxInputs.push(['OZ Investment', 'Yes']);
+        taxInputs.push(['OZ Version', params.ozVersion || '2.0']);
         taxInputs.push(['OZ Type', params.ozType === 'rural' ? 'Rural' : 'Standard']);
         taxInputs.push(['Deferred Capital Gains', formatMoney((params.deferredCapitalGains || 0) * 1000000)]);
       }
@@ -367,6 +369,57 @@ export const HDCComprehensiveReportButton: React.FC<HDCComprehensiveReportProps>
         startY: yPosition,
         head: [taxInputs[0]],
         body: taxInputs.slice(1),
+        theme: 'striped',
+        headStyles: { fillColor: [64, 127, 127] },
+        columnStyles: { 0: { fontStyle: 'bold', cellWidth: 60 } },
+        margin: { left: margin },
+        tableWidth: 120
+      });
+
+      // LIHTC & PAB Parameters (ISS-045)
+      yPosition = (doc as any).lastAutoTable.finalY + lineHeight * 2;
+      checkPageBreak(80);
+
+      doc.setFontSize(11);
+      doc.setTextColor(...secondaryColor);
+      doc.text('LIHTC & PAB Structure', margin, yPosition);
+      yPosition += lineHeight;
+
+      const lihtcInputs: (string | number)[][] = [
+        ['Parameter', 'Value'],
+        ['Federal LIHTC Enabled', params.lihtcEnabled ? 'Yes' : 'No'],
+      ];
+
+      if (params.lihtcEnabled) {
+        lihtcInputs.push(['LIHTC Credit Rate', formatPercent((params.creditRate || 0.04) * 100)]);
+        lihtcInputs.push(['Applicable Fraction', formatPercent(params.applicableFraction || 100)]);
+        lihtcInputs.push(['DDA/QCT Boost', params.ddaQctBoost ? 'Yes (130%)' : 'No']);
+        lihtcInputs.push(['Placed in Service Month', String(params.placedInServiceMonth || 7)]);
+      }
+
+      lihtcInputs.push(['State LIHTC Enabled', params.stateLIHTCEnabled ? 'Yes' : 'No']);
+      if (params.stateLIHTCEnabled) {
+        lihtcInputs.push(['Investor State', params.investorState || 'N/A']);
+        lihtcInputs.push(['Syndication Rate', formatPercent(params.syndicationRate || 85)]);
+        lihtcInputs.push(['Syndication Year', String(params.stateLIHTCSyndicationYear ?? 0)]);
+      }
+
+      lihtcInputs.push(['PAB Enabled', params.pabEnabled ? 'Yes' : 'No']);
+      if (params.pabEnabled) {
+        lihtcInputs.push(['PAB % of Eligible Basis', formatPercent(params.pabPctOfEligibleBasis || 30)]);
+        lihtcInputs.push(['PAB Rate', formatPercent(params.pabRate || 4.5)]);
+        lihtcInputs.push(['PAB Amortization', `${params.pabAmortization || 40} years`]);
+        lihtcInputs.push(['PAB IO Years', String(params.pabIOYears || 0)]);
+      }
+
+      if (params.interestReserveEnabled) {
+        lihtcInputs.push(['Interest Reserve', `${params.interestReserveMonths || 12} months`]);
+      }
+
+      autoTable(doc, {
+        startY: yPosition,
+        head: [lihtcInputs[0] as string[]],
+        body: lihtcInputs.slice(1) as string[][],
         theme: 'striped',
         headStyles: { fillColor: [64, 127, 127] },
         columnStyles: { 0: { fontStyle: 'bold', cellWidth: 60 } },
@@ -384,11 +437,14 @@ export const HDCComprehensiveReportButton: React.FC<HDCComprehensiveReportProps>
 
       const feeInputs = [
         ['Fee Type', 'Rate', 'Payment'],
+        ['HDC Platform Mode', params.hdcPlatformMode || 'traditional', '-'],
         ['HDC Tax Benefit Fee', formatPercent(params.hdcFeeRate || 10), 'At Realization'],
         ['HDC AUM Fee', params.aumFeeEnabled ? formatPercent(params.aumFeeRate || 1) : 'Disabled',
          params.aumFeeEnabled && params.aumCurrentPayEnabled ? `${params.aumCurrentPayPct || 50}% Current` : 'Full Deferred'],
         ['HDC Deferred Interest', formatPercent(params.hdcDeferredInterestRate || 8), 'On Deferrals'],
-        ['Promote Split', `Investor: ${params.investorPromoteShare || 35}%`, `HDC: ${100 - (params.investorPromoteShare || 35)}%`]
+        ['Promote Split', `Investor: ${params.investorPromoteShare || 35}%`, `HDC: ${100 - (params.investorPromoteShare || 35)}%`],
+        ['HDC Advance Financing', params.hdcAdvanceFinancing ? 'Enabled' : 'Disabled',
+         params.hdcAdvanceFinancing ? `${params.taxDeliveryMonths || 18}mo @ ${formatPercent(params.advanceFinancingRate || 8)}` : '-']
       ];
 
       autoTable(doc, {

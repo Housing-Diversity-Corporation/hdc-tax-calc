@@ -27,8 +27,9 @@ export function buildExitSheet(
 
   // Get exit values from results
   const exitValue = results.exitValue || 0;
-  const seniorBalanceAtExit = results.remainingDebtAtExit || 0;
-  const philBalanceAtExit = projectCost * (params.philanthropicDebtPct || 0) / 100;
+  // ISS-050 v3: Use separate senior and phil debt values to prevent double-counting
+  const seniorBalanceAtExit = results.remainingSeniorDebtAtExit ?? results.remainingDebtAtExit ?? 0;
+  const philBalanceAtExit = results.remainingPhilDebtAtExit ?? (projectCost * (params.philanthropicDebtPct || 0) / 100);
   const hdcSubDebtAtExit = results.subDebtAtExit || 0;
   const invSubDebtAtExit = results.investorSubDebtAtExit || 0;
   const outsideSubDebtAtExit = results.outsideInvestorSubDebtAtExit || 0;
@@ -119,94 +120,108 @@ export function buildExitSheet(
   const netAfterFeesRow = currentRow;
   currentRow += 2;
 
+  // ISS-050: Get prior capital recovery values from calculation engine
+  const grossExitProceeds = results.grossExitProceeds || results.totalExitProceeds || 0;
+  const capitalAlreadyRecovered = results.capitalAlreadyRecovered || 0;
+  const remainingCapitalToRecover = results.remainingCapitalToRecover ?? investorEquity;
+  const exitReturnOfCapital = results.exitReturnOfCapital || Math.min(grossExitProceeds, remainingCapitalToRecover);
+  const exitProfitShare = results.exitProfitShare || 0;
+  const investorPromoteShare = params.investorPromoteShare / 100;
+  const hdcPromoteShare = 1 - investorPromoteShare;
+
+  // Calculate HDC share (conservation of capital: HDC = gross - investor)
+  const profit = Math.max(0, grossExitProceeds - exitReturnOfCapital);
+  const hdcProfitShare = profit * hdcPromoteShare;
+
+  // Equity Waterfall Section
+  ws[`A${currentRow}`] = { t: 's', v: '=== PRIOR CAPITAL RECOVERY ===' };
+  currentRow++;
+
+  ws[`A${currentRow}`] = { t: 's', v: 'Investor Equity' };
+  ws[`B${currentRow}`] = { t: 'n', v: investorEquity, f: 'InvestorEquity' } as FormulaCell;
+  currentRow++;
+
+  ws[`A${currentRow}`] = { t: 's', v: 'Capital Recovered (Hold Period)' };
+  ws[`B${currentRow}`] = { t: 'n', v: capitalAlreadyRecovered } as FormulaCell;
+  namedRanges.push({ name: 'CapitalRecoveredDuringHold', ref: `Exit!$B$${currentRow}` });
+  currentRow++;
+
+  ws[`A${currentRow}`] = { t: 's', v: 'Remaining Capital to Recover' };
+  ws[`B${currentRow}`] = { t: 'n', v: remainingCapitalToRecover } as FormulaCell;
+  namedRanges.push({ name: 'RemainingCapitalToRecover', ref: `Exit!$B$${currentRow}` });
+  currentRow += 2;
+
   // Equity Waterfall Section
   ws[`A${currentRow}`] = { t: 's', v: '=== EQUITY WATERFALL ===' };
   currentRow++;
 
-  // Step 1: Return of Capital
+  ws[`A${currentRow}`] = { t: 's', v: 'Gross Exit Proceeds' };
+  ws[`B${currentRow}`] = { t: 'n', v: grossExitProceeds, f: `B${grossAfterAllDebtRow}` } as FormulaCell;
+  namedRanges.push({ name: 'GrossExitProceeds', ref: `Exit!$B$${currentRow}` });
+  const grossExitRow = currentRow;
+  currentRow += 2;
+
+  // Step 1: Return of Capital (only remaining unrecovered)
   ws[`A${currentRow}`] = { t: 's', v: 'Step 1: Return of Capital' };
   currentRow++;
 
-  ws[`A${currentRow}`] = { t: 's', v: 'Investor ROC' };
-  ws[`B${currentRow}`] = { t: 'n', v: Math.min(results.exitProceeds, investorEquity), f: `MIN(B${netAfterFeesRow},InvestorEquity)` } as FormulaCell;
+  ws[`A${currentRow}`] = { t: 's', v: 'Investor ROC (Remaining Only)' };
+  ws[`B${currentRow}`] = { t: 'n', v: exitReturnOfCapital } as FormulaCell;
   namedRanges.push({ name: 'InvestorROC', ref: `Exit!$B$${currentRow}` });
   const invROCRow = currentRow;
   currentRow++;
 
-  ws[`A${currentRow}`] = { t: 's', v: 'Remaining' };
-  ws[`B${currentRow}`] = { t: 'n', v: 0, f: `B${netAfterFeesRow}-B${invROCRow}` } as FormulaCell;
-  const afterROCRow = currentRow;
+  ws[`A${currentRow}`] = { t: 's', v: 'Remaining for Profit Split' };
+  ws[`B${currentRow}`] = { t: 'n', v: profit, f: `B${grossExitRow}-B${invROCRow}` } as FormulaCell;
+  const profitRow = currentRow;
   currentRow += 2;
 
-  // Step 2: Preferred Return
-  ws[`A${currentRow}`] = { t: 's', v: 'Step 2: Preferred Return' };
+  // Step 2: Profit Split (per promote percentage)
+  ws[`A${currentRow}`] = { t: 's', v: 'Step 2: Profit Split' };
   currentRow++;
 
-  const prefReturnTarget = investorEquity * hurdleRate / 100 * holdPeriod;
-  ws[`A${currentRow}`] = { t: 's', v: 'Pref Return Target' };
-  ws[`B${currentRow}`] = { t: 'n', v: prefReturnTarget, f: `InvestorEquity*PromoteHurdleRate/100*HoldPeriod` } as FormulaCell;
-  const prefTargetRow = currentRow;
+  ws[`A${currentRow}`] = { t: 's', v: `Investor Share (${(investorPromoteShare * 100).toFixed(0)}%)` };
+  ws[`B${currentRow}`] = { t: 'n', v: exitProfitShare, f: `B${profitRow}*InvestorPromotePct/100` } as FormulaCell;
+  namedRanges.push({ name: 'InvestorProfitShare', ref: `Exit!$B$${currentRow}` });
+  const invProfitRow = currentRow;
   currentRow++;
 
-  ws[`A${currentRow}`] = { t: 's', v: 'Investor Pref Paid' };
-  ws[`B${currentRow}`] = { t: 'n', v: Math.min(prefReturnTarget, Math.max(0, results.exitProceeds - investorEquity)), f: `MIN(B${afterROCRow},B${prefTargetRow})` } as FormulaCell;
-  namedRanges.push({ name: 'InvestorPrefPaid', ref: `Exit!$B$${currentRow}` });
-  const prefPaidRow = currentRow;
-  currentRow++;
-
-  ws[`A${currentRow}`] = { t: 's', v: 'Remaining' };
-  ws[`B${currentRow}`] = { t: 'n', v: 0, f: `B${afterROCRow}-B${prefPaidRow}` } as FormulaCell;
-  const afterPrefRow = currentRow;
-  currentRow += 2;
-
-  // Step 3: Catch-Up
-  ws[`A${currentRow}`] = { t: 's', v: 'Step 3: Catch-Up' };
-  currentRow++;
-
-  ws[`A${currentRow}`] = { t: 's', v: 'Catch-Up Target' };
-  ws[`B${currentRow}`] = { t: 'n', v: 0, f: `(B${invROCRow}+B${prefPaidRow})*PromotePct/100/(1-PromotePct/100)` } as FormulaCell;
-  const catchupTargetRow = currentRow;
-  currentRow++;
-
-  ws[`A${currentRow}`] = { t: 's', v: 'HDC Catch-Up Paid' };
-  ws[`B${currentRow}`] = { t: 'n', v: 0, f: `MIN(B${afterPrefRow},B${catchupTargetRow})` } as FormulaCell;
-  namedRanges.push({ name: 'HDCCatchUpPaid', ref: `Exit!$B$${currentRow}` });
-  const catchupPaidRow = currentRow;
-  currentRow++;
-
-  ws[`A${currentRow}`] = { t: 's', v: 'Remaining' };
-  ws[`B${currentRow}`] = { t: 'n', v: 0, f: `B${afterPrefRow}-B${catchupPaidRow}` } as FormulaCell;
-  const afterCatchupRow = currentRow;
-  currentRow += 2;
-
-  // Step 4: Promote Split
-  ws[`A${currentRow}`] = { t: 's', v: 'Step 4: Promote Split' };
-  currentRow++;
-
-  ws[`A${currentRow}`] = { t: 's', v: 'Investor Promote Share' };
-  ws[`B${currentRow}`] = { t: 'n', v: 0, f: `B${afterCatchupRow}*(1-PromotePct/100)` } as FormulaCell;
-  namedRanges.push({ name: 'InvestorPromoteShare', ref: `Exit!$B$${currentRow}` });
-  const invPromoteRow = currentRow;
-  currentRow++;
-
-  ws[`A${currentRow}`] = { t: 's', v: 'HDC Promote Share' };
-  ws[`B${currentRow}`] = { t: 'n', v: 0, f: `B${afterCatchupRow}*PromotePct/100` } as FormulaCell;
-  namedRanges.push({ name: 'HDCPromoteShare', ref: `Exit!$B$${currentRow}` });
-  const hdcPromoteRow = currentRow;
+  ws[`A${currentRow}`] = { t: 's', v: `HDC Share (${(hdcPromoteShare * 100).toFixed(0)}%)` };
+  ws[`B${currentRow}`] = { t: 'n', v: hdcProfitShare, f: `B${profitRow}*(1-InvestorPromotePct/100)` } as FormulaCell;
+  namedRanges.push({ name: 'HDCProfitShare', ref: `Exit!$B$${currentRow}` });
+  const hdcProfitRow = currentRow;
   currentRow += 2;
 
   // Totals Section
   ws[`A${currentRow}`] = { t: 's', v: '=== TOTALS ===' };
   currentRow++;
 
+  const totalToInvestor = exitReturnOfCapital + exitProfitShare;
   ws[`A${currentRow}`] = { t: 's', v: 'Total to Investor' };
-  ws[`B${currentRow}`] = { t: 'n', v: results.exitProceeds, f: `B${invROCRow}+B${prefPaidRow}+B${invPromoteRow}` } as FormulaCell;
+  ws[`B${currentRow}`] = { t: 'n', v: totalToInvestor, f: `B${invROCRow}+B${invProfitRow}` } as FormulaCell;
   namedRanges.push({ name: 'TotalToInvestor', ref: `Exit!$B$${currentRow}` });
+  const totalInvRow = currentRow;
   currentRow++;
 
+  const totalToHDC = hdcProfitShare;
   ws[`A${currentRow}`] = { t: 's', v: 'Total to HDC' };
-  ws[`B${currentRow}`] = { t: 'n', v: 0, f: `B${catchupPaidRow}+B${hdcPromoteRow}+B${deferredAUMRow}` } as FormulaCell;
+  ws[`B${currentRow}`] = { t: 'n', v: totalToHDC, f: `B${hdcProfitRow}` } as FormulaCell;
   namedRanges.push({ name: 'TotalToHDC', ref: `Exit!$B$${currentRow}` });
+  const totalHDCRow = currentRow;
+  currentRow += 2;
+
+  // Conservation of Capital Check
+  ws[`A${currentRow}`] = { t: 's', v: '=== CONSERVATION CHECK ===' };
+  currentRow++;
+
+  const sumOfDistributions = totalToInvestor + totalToHDC;
+  ws[`A${currentRow}`] = { t: 's', v: 'Sum (Investor + HDC)' };
+  ws[`B${currentRow}`] = { t: 'n', v: sumOfDistributions, f: `B${totalInvRow}+B${totalHDCRow}` } as FormulaCell;
+  currentRow++;
+
+  ws[`A${currentRow}`] = { t: 's', v: 'Variance vs Gross' };
+  ws[`B${currentRow}`] = { t: 'n', v: sumOfDistributions - grossExitProceeds, f: `B${currentRow - 1}-B${grossExitRow}` } as FormulaCell;
+  namedRanges.push({ name: 'ExitVariance', ref: `Exit!$B$${currentRow}` });
 
   // Set sheet range
   ws['!ref'] = `A1:B${currentRow}`;

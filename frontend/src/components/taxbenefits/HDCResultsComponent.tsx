@@ -148,6 +148,33 @@ interface HDCResultsComponentProps {
   // Federal LIHTC (v7.0.11)
   lihtcResult?: LIHTCCreditScheduleType | null;
 
+  // Private Activity Bonds (IMPL-080 / ISS-030 / ISS-031)
+  pabEnabled?: boolean;
+  pabPctOfEligibleBasis?: number;
+  pabRate?: number;
+  pabAmortization?: number;
+  pabIOYears?: number;
+  lihtcEligibleBasis?: number;
+  // ISS-031: PAB as % of project cost (for capital stack display)
+  pabPctOfProject?: number;
+  pabFundingAmount?: number;
+
+  // ISS-034: HDC Debt Fund params for export
+  hdcDebtFundPct?: number;
+  hdcDebtFundPikRate?: number;
+  hdcDebtFundCurrentPayEnabled?: boolean;
+  hdcDebtFundCurrentPayPct?: number;
+
+  // ISS-035: LIHTC Eligible Basis Exclusions for export
+  commercialSpaceCosts?: number;
+  syndicationCosts?: number;
+  marketingCosts?: number;
+  financingFees?: number;
+  bondIssuanceCosts?: number;
+  operatingDeficitReserve?: number;
+  replacementReserve?: number;
+  otherExclusions?: number;
+
   // Helper functions
   formatCurrency: (value: number) => string;
 
@@ -419,14 +446,41 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
                   ? props.lihtcResult.metadata.creditRate * 100 : undefined,
                 ddaQctBoost: props.lihtcResult?.metadata?.boostMultiplier === 1.3,
                 stateLIHTCEnabled: props.stateLihtcEnabled,
+                // ISS-024: Pass full stateLIHTCIntegration for yearlyCredits access in export
+                stateLIHTCIntegration: props.stateLIHTCIntegration,
                 // ISS-015: Pass actual syndicationRate for export (convert 0.0-1.0 to percentage 0-100)
                 syndicationRate: props.stateLIHTCIntegration?.syndicationRate != null
                   ? props.stateLIHTCIntegration.syndicationRate * 100 : undefined,
-                // ISS-016: Pass State LIHTC annual credit for export (grossCredit is 10× annual)
-                stateLIHTCAnnualCredit: props.stateLIHTCIntegration?.grossCredit != null
-                  ? props.stateLIHTCIntegration.grossCredit / 10 : undefined,
+                // ISS-016/ISS-024: Pass State LIHTC annual credit using actual duration from yearlyCredits
+                stateLIHTCAnnualCredit: props.stateLIHTCIntegration?.grossCredit != null && props.stateLIHTCIntegration?.yearlyCredits
+                  ? props.stateLIHTCIntegration.grossCredit / Math.max(props.stateLIHTCIntegration.yearlyCredits.length - 1, 1)
+                  : undefined,
                 // IMPL-077: Pass Syndication Year from engine results
                 stateLIHTCSyndicationYear: props.mainAnalysisResults.stateLIHTCSyndicationYear,
+
+                // ISS-030: Pass PAB params for export
+                pabEnabled: props.pabEnabled,
+                pabPctOfEligibleBasis: props.pabPctOfEligibleBasis,
+                pabRate: props.pabRate,
+                pabAmortization: props.pabAmortization,
+                pabIOYears: props.pabIOYears,
+                lihtcEligibleBasis: props.lihtcEligibleBasis,
+
+                // ISS-034: Pass HDC Debt Fund params for export
+                hdcDebtFundPct: props.hdcDebtFundPct,
+                hdcDebtFundPikRate: props.hdcDebtFundPikRate,
+                hdcDebtFundCurrentPayEnabled: props.hdcDebtFundCurrentPayEnabled,
+                hdcDebtFundCurrentPayPct: props.hdcDebtFundCurrentPayPct,
+
+                // ISS-035: Pass exclusions for export
+                commercialSpaceCosts: props.commercialSpaceCosts,
+                syndicationCosts: props.syndicationCosts,
+                marketingCosts: props.marketingCosts,
+                financingFees: props.financingFees,
+                bondIssuanceCosts: props.bondIssuanceCosts,
+                operatingDeficitReserve: props.operatingDeficitReserve,
+                replacementReserve: props.replacementReserve,
+                otherExclusions: props.otherExclusions,
 
                 // HDC Fees
                 hdcFeeRate: props.hdcFeeRate,
@@ -492,6 +546,9 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
           // IMPL-058: Dollar amounts for consolidated display
           investorEquity={props.investorEquity}
           syndicatedEquityOffset={props.mainAnalysisResults?.syndicatedEquityOffset}
+          // ISS-031: PAB display
+          pabPctOfProject={props.pabPctOfProject}
+          pabFundingAmount={props.pabFundingAmount}
           // State LIHTC Integration (IMPL-018)
           stateLIHTCProceeds={props.stateLIHTCIntegration?.netProceeds}
           stateLIHTCEnabled={props.stateLihtcEnabled}

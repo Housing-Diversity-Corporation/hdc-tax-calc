@@ -80,11 +80,14 @@ describe('IMPL-026: KPIStrip', () => {
   // Mock cash flows - IMPL-026a: All values in MILLIONS
   // IMPL-026b: cumulativeReturns is running total of cash received (not net of investment)
   // Break-even = first year where cumulativeReturns >= investorEquity (8.2M)
+  // IMPL-081: Added mustPayDSCR and philDSCR for DSCR breakdown display
   const mockCashFlows: CashFlowItem[] = [
     {
       year: 1,
       noi: 5, // $5M
       operationalDSCR: 1.49,
+      mustPayDSCR: 1.49, // IMPL-081: Senior + PAB only
+      philDSCR: 1.35, // IMPL-081: Senior + PAB + Phil current pay
       debtServicePayments: 3.35, // $3.35M
       cashAfterDebtService: 1.65,
       aumFeeAmount: 0,
@@ -101,6 +104,8 @@ describe('IMPL-026: KPIStrip', () => {
       year: 2,
       noi: 5.15,
       operationalDSCR: 1.54,
+      mustPayDSCR: 1.54, // IMPL-081: Senior + PAB only
+      philDSCR: 1.40, // IMPL-081: Senior + PAB + Phil current pay
       debtServicePayments: 3.35,
       cashAfterDebtService: 1.8,
       aumFeeAmount: 0,
@@ -300,9 +305,12 @@ describe('IMPL-026: KPIStrip', () => {
     });
 
     it('should not show checkmark when DSCR < 1.25', () => {
+      // IMPL-081: Must set mustPayDSCR and philDSCR for DSCR breakdown display
       const lowDSCRCashFlows: CashFlowItem[] = mockCashFlows.map(cf => ({
         ...cf,
         operationalDSCR: 1.10, // Below threshold
+        mustPayDSCR: 1.10, // Below 1.25 threshold
+        philDSCR: 1.00, // Below 1.05 threshold
       }));
 
       render(<KPIStrip {...defaultProps} cashFlows={lowDSCRCashFlows} />);

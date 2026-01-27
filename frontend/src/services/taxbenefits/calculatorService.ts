@@ -58,10 +58,61 @@ export interface CalculatorConfiguration {
   taxBenefitDelayMonths?: number;
   ozEnabled?: boolean;
   ozType?: 'standard' | 'rural';
+  ozVersion?: '1.0' | '2.0';  // ISS-043: OZ legislation version
   deferredCapitalGains?: number;
   ozCapitalGainsTaxRate?: number;
   capitalGainsTaxRate?: number;
   stateTaxRate?: number;
+
+  // ISS-043: Senior Debt IO Years
+  seniorDebtIOYears?: number;
+
+  // ISS-043: HDC Platform Mode
+  hdcPlatformMode?: 'traditional' | 'leverage';
+
+  // ISS-043: Sub-debt payment priority (stored as JSON string)
+  subDebtPriority?: string;
+
+  // ISS-043: Private Activity Bonds (PABs)
+  pabEnabled?: boolean;
+  pabPctOfEligibleBasis?: number;
+  pabRate?: number;
+  pabTerm?: number;
+  pabAmortization?: number;
+  pabIOYears?: number;
+
+  // ISS-043: HDC Debt Fund
+  hdcDebtFundPct?: number;
+  hdcDebtFundPikRate?: number;
+  hdcDebtFundCurrentPayEnabled?: boolean;
+  hdcDebtFundCurrentPayPct?: number;
+
+  // ISS-043: Federal LIHTC
+  lihtcEnabled?: boolean;
+  applicableFraction?: number;
+  creditRate?: number;
+  placedInServiceMonth?: number;
+  ddaQctBoost?: boolean;
+
+  // ISS-043: State LIHTC
+  stateLIHTCEnabled?: boolean;
+  investorState?: string;
+  syndicationRate?: number;
+  investorHasStateLiability?: boolean;
+  stateLIHTCUserPercentage?: number;
+  stateLIHTCUserAmount?: number;
+  stateLIHTCSyndicationYear?: number;
+
+  // ISS-043: Eligible Basis Exclusions
+  commercialSpaceCosts?: number;
+  syndicationCosts?: number;
+  marketingCosts?: number;
+  financingFees?: number;
+  bondIssuanceCosts?: number;
+  operatingDeficitReserve?: number;
+  replacementReserve?: number;
+  otherExclusions?: number;
+
   hdcAdvanceFinancing?: boolean;
   taxAdvanceDiscountRate?: number;
   advanceFinancingRate?: number;

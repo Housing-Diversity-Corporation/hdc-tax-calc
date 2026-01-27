@@ -1,6 +1,7 @@
 /**
  * IMPL-056: Live Calculation Excel Model - Summary Sheet
  * IMPL-067: Added Returns Buildup section with component breakdown
+ * ISS-038b: Added DSCR breakdown (Must-Pay, Phil) when applicable
  *
  * Sheet 13: Dashboard pulling key metrics with IRR/MOIC.
  */
@@ -35,6 +36,9 @@ export function buildSummarySheet(
   const totalInvestment = syndicationYear === 0
     ? investorEquityNet + investorSubDebt   // Year 0: net equity
     : investorEquityGross + investorSubDebt; // Year 1+: gross equity
+
+  // ISS-038b: Show DSCR breakdown when PAB or Phil Current Pay is enabled
+  const showDSCRBreakdown = params.pabEnabled || params.philCurrentPayEnabled;
 
   let currentRow = 1;
 
@@ -137,7 +141,29 @@ export function buildSummarySheet(
 
   ws[`A${currentRow}`] = { t: 's', v: 'Avg DSCR' };
   ws[`B${currentRow}`] = { t: 'n', v: investorResults.investorCashFlows.reduce((s, cf) => s + (cf.dscr || 0), 0) / holdPeriod, f: 'AvgDSCR' } as FormulaCell;
-  currentRow += 2;
+  currentRow++;
+
+  // ISS-038b: DSCR breakdown when PAB or Phil Current Pay is enabled
+  if (showDSCRBreakdown) {
+    // Min Must-Pay DSCR = NOI / (Senior + PAB) - true hard floor
+    const minMustPayDSCR = Math.min(
+      ...investorResults.investorCashFlows.map(cf => cf.mustPayDSCR || 0).filter(d => d > 0)
+    );
+    ws[`A${currentRow}`] = { t: 's', v: 'Min Must-Pay DSCR' };
+    ws[`B${currentRow}`] = { t: 'n', v: minMustPayDSCR > 0 ? minMustPayDSCR : 0, f: 'MinMustPayDSCR' } as FormulaCell;
+    ws[`C${currentRow}`] = { t: 's', v: '(Senior + PAB only)' };
+    currentRow++;
+
+    // Min Phil DSCR = NOI / (Senior + PAB + Phil) - Amazon 1.05x
+    const minPhilDSCR = Math.min(
+      ...investorResults.investorCashFlows.map(cf => cf.philDSCR || 0).filter(d => d > 0)
+    );
+    ws[`A${currentRow}`] = { t: 's', v: 'Min Phil DSCR' };
+    ws[`B${currentRow}`] = { t: 'n', v: minPhilDSCR > 0 ? minPhilDSCR : 0, f: 'MinPhilDSCR' } as FormulaCell;
+    ws[`C${currentRow}`] = { t: 's', v: '(incl. Phil current pay)' };
+    currentRow++;
+  }
+  currentRow++; // Spacing before next section
 
   // === EXIT ===
   ws[`A${currentRow}`] = { t: 's', v: '=== EXIT ===' };
@@ -205,9 +231,10 @@ export function buildSummarySheet(
     0
   );
 
-  // Operating Cash Flow: engine value + excess reserve
+  // ISS-052: Operating Cash Flow should NOT include excess reserve (shown separately)
+  // This ensures it matches Waterfall "After AUM" total
   const excessReserveTotal = cashFlows.reduce((sum, cf) => sum + (cf.excessReserveDistribution || 0), 0);
-  const operatingCashTotal = (investorResults.investorOperatingCashFlows || 0) + excessReserveTotal;
+  const operatingCashTotal = investorResults.investorOperatingCashFlows || 0;
 
   // OZ Benefits total (from engine values)
   const ozBenefitsTotal = (investorResults.ozStepUpSavings || 0) +
@@ -275,6 +302,13 @@ export function buildSummarySheet(
     currentRow++;
   }
 
+  // ISS-052: Show excess reserve distribution as separate line item
+  if (excessReserveTotal > 0) {
+    ws[`A${currentRow}`] = { t: 's', v: 'Excess Reserve Distribution' };
+    ws[`B${currentRow}`] = { t: 'n', v: excessReserveTotal };
+    currentRow++;
+  }
+
   if (subDebtInterestReceived > 0) {
     ws[`A${currentRow}`] = { t: 's', v: 'Sub-Debt Interest Received' };
     ws[`B${currentRow}`] = { t: 'n', v: subDebtInterestReceived };
@@ -301,10 +335,10 @@ export function buildSummarySheet(
   namedRanges.push({ name: 'ReturnsBuildup_Total', ref: `Summary!$B$${currentRow}` });
   currentRow++;
 
-  // Validation: Calculate component sum
+  // Validation: Calculate component sum (ISS-052: excess reserve now separate)
   const componentSum = federalLIHTCTotal + stateLIHTCTotal + syndicationProceedsTotal +
                        (investorResults.investorTaxBenefits || 0) +
-                       ozBenefitsTotal + operatingCashTotal +
+                       ozBenefitsTotal + operatingCashTotal + excessReserveTotal +
                        subDebtInterestReceived +
                        (investorResults.exitProceeds || 0) +
                        subDebtAtExit;
@@ -327,13 +361,14 @@ export function buildSummarySheet(
   ws[`A${currentRow}`] = { t: 's', v: 'Status' };
   ws[`B${currentRow}`] = { t: 's', v: '✓ BALANCED', f: 'IF(ABS(B' + (currentRow - 1) + ')<0.001,"✓ BALANCED","✗ ERROR")' };
 
-  // Set sheet range
-  ws['!ref'] = `A1:B${currentRow}`;
+  // Set sheet range (ISS-038b: include column C for notes when DSCR breakdown shown)
+  ws['!ref'] = showDSCRBreakdown ? `A1:C${currentRow}` : `A1:B${currentRow}`;
 
   // Set column widths
   ws['!cols'] = [
     { wch: 30 }, // Label
     { wch: 20 }, // Value
+    { wch: 22 }, // Notes (ISS-038b)
   ];
 
   return { sheet: ws, namedRanges };

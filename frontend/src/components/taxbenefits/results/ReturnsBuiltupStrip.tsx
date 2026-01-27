@@ -159,13 +159,20 @@ function deriveReturnComponents(
   // Depreciation = investorTaxBenefits (already separate from LIHTC)
   const depreciationTotal = results.investorTaxBenefits || 0;
 
-  // IMPL-048b: Include excess reserve distribution in operating cash flow
+  // ISS-052: Excess reserve distribution shown separately (not included in operating cash)
+  // This ensures Operating Cash Flow matches Waterfall "After AUM" total
   const excessReserveTotal = cashFlows.reduce(
     (sum, cf) => sum + (cf.excessReserveDistribution || 0),
     0
   );
-  // Operating cash flow total (investor's share after promote split) + excess reserve
-  const operatingCashTotal = (results.investorOperatingCashFlows || 0) + excessReserveTotal;
+
+  // ISS-047c FIX: Compute operating cash flow directly from cashFlows array
+  // ISS-052: Do NOT add excess reserve here - it's shown as separate line item
+  const operatingCashFromFlows = cashFlows.reduce(
+    (sum, cf) => sum + (cf.operatingCashFlow || 0),
+    0
+  );
+  const operatingCashTotal = operatingCashFromFlows; // ISS-052: No excess reserve addition
 
   // Exit proceeds (already net of deferred fees)
   const exitProceedsTotal = results.exitProceeds || 0;
@@ -340,6 +347,17 @@ function deriveReturnComponents(
       value: operatingCashTotal,
       multiple: operatingCashTotal / totalInvestment,
       color: COMPONENT_COLORS.operatingCash,
+      category: 'cash',
+    });
+  }
+
+  // ISS-052: Excess reserve distribution shown separately (one-time distribution of unused interest reserve)
+  if (excessReserveTotal > 0) {
+    components.push({
+      label: 'Excess Reserve',
+      value: excessReserveTotal,
+      multiple: excessReserveTotal / totalInvestment,
+      color: COMPONENT_COLORS.operatingCash, // Same color family as operating cash
       category: 'cash',
     });
   }
@@ -667,12 +685,10 @@ const ReturnsBuiltupStrip: React.FC<ReturnsBuiltupStripProps> = ({
   // ─────────────────────────────────────────────────────────────────────────
   // Derived Values
   // ─────────────────────────────────────────────────────────────────────────
-  const { components, totalMultiple, totalValue } = useMemo(() => {
-    const comps = deriveReturnComponents(mainAnalysisResults, cashFlows);
-    const total = mainAnalysisResults.multiple || 0;
-    const value = mainAnalysisResults.totalReturns || 0;
-    return { components: comps, totalMultiple: total, totalValue: value };
-  }, [mainAnalysisResults, cashFlows]);
+  // ISS-047c: Compute directly from props (useMemo removed after debugging)
+  const components = deriveReturnComponents(mainAnalysisResults, cashFlows);
+  const totalMultiple = mainAnalysisResults.multiple || 0;
+  const totalValue = mainAnalysisResults.totalReturns || 0;
 
   // Don't render if no investment
   if (mainAnalysisResults.totalInvestment <= 0) {

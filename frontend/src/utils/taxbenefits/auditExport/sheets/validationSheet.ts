@@ -106,7 +106,7 @@ export function buildValidationSheet(
 
   // === CATEGORY 5: OPERATING CF (6 checks) ===
   currentRow = addCategory(ws, currentRow, 'OPERATING CF (6)');
-  currentRow = addCheck(ws, currentRow, 27, 'Year 1 NOI', 'NOI_Y1', platform.year1NOI);
+  currentRow = addCheck(ws, currentRow, 27, 'Stabilized NOI', 'NOI_Y1', platform.year1NOI);
   currentRow = addCheck(ws, currentRow, 28, 'Year 10 NOI', `NOI_Y${holdPeriod}`, platform.year10NOI);
   currentRow = addRatioCheck(ws, currentRow, 29, 'Min DSCR', 'MinDSCR', platform.minDSCR);
   currentRow = addRatioCheck(ws, currentRow, 30, 'Avg DSCR', 'AvgDSCR', platform.avgDSCR);

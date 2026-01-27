@@ -71,6 +71,16 @@ export interface CashFlowItem {
   finalCash?: number;                  // cashAfterSubDebt - fees paid
   dscrShortfallPct?: number;           // % reduction needed for 1.05x DSCR
 
+  // DSCR Breakdown (IMPL-081)
+  pabDebtService?: number;             // PAB annual debt service
+  mustPayDebtService?: number;         // Senior + PAB only (must-pay debt)
+  mustPayDSCR?: number;                // NOI / (Senior + PAB) - true hard floor
+  philDSCR?: number;                   // NOI / (Senior + PAB + Phil) - Amazon 1.05x
+
+  // HDC Debt Fund (IMPL-082)
+  hdcDebtFundCurrentPay?: number;      // HDC Debt Fund current pay
+  hdcDebtFundPIKAccrued?: number;      // HDC Debt Fund PIK accrued
+
   // Investment Portal extended fields
   exitProceeds?: number;
   afterTaxCashFlow?: number;
@@ -120,6 +130,9 @@ export interface InvestorAnalysisResults {
   investorSubDebtInterest: number;
   investorSubDebtInterestReceived: number;
   remainingDebtAtExit: number;
+  // ISS-050 v3: Separate senior and phil debt for exit sheet accuracy
+  remainingSeniorDebtAtExit?: number;
+  remainingPhilDebtAtExit?: number;
   subDebtAtExit: number;
   investorSubDebtAtExit: number;
   outsideInvestorSubDebtAtExit: number;
@@ -183,6 +196,12 @@ export interface InvestorAnalysisResults {
   year1BonusTaxBenefit?: number;      // Year 1 bonus depreciation tax benefit
   year1MacrsTaxBenefit?: number;      // Year 1 MACRS (partial year) tax benefit
   years2ExitMacrsTaxBenefit?: number; // Years 2-Exit MACRS tax benefit
+  // ISS-050: Exit waterfall prior capital recovery tracking
+  grossExitProceeds?: number;         // Exit proceeds after all debt, before equity waterfall
+  capitalAlreadyRecovered?: number;   // Capital recovered during hold period (tax benefits + operating cash)
+  remainingCapitalToRecover?: number; // investorEquity - capitalAlreadyRecovered
+  exitReturnOfCapital?: number;       // ROC paid at exit (only remaining unrecovered portion)
+  exitProfitShare?: number;           // Investor's share of profit at exit
 }
 
 export interface HDCAnalysisResults {
@@ -267,6 +286,13 @@ export interface CalculationParams {
   outsideInvestorSubDebtPikRate?: number;
   outsideInvestorPikCurrentPayEnabled?: boolean;
   outsideInvestorPikCurrentPayPct?: number;
+
+  // HDC Debt Fund Parameters (IMPL-082)
+  hdcDebtFundPct?: number;             // HDC Debt Fund as % of project cost
+  hdcDebtFundPikRate?: number;         // HDC Debt Fund PIK rate
+  hdcDebtFundCurrentPayEnabled?: boolean;
+  hdcDebtFundCurrentPayPct?: number;
+
   subDebtPriority?: {
     outsideInvestor: number;
     hdc: number;
@@ -309,6 +335,7 @@ export interface CalculationParams {
 
   // LIHTC Structure (v7.0.5)
   lihtcEnabled?: boolean;               // Enable LIHTC credit calculations
+  lihtcEligibleBasis?: number;          // LIHTC eligible basis in $ (for PAB calculations)
   applicableFraction?: number;          // Percentage of units that are qualified (40-100%, default 100%)
   creditRate?: number;                  // 4% or 9% credit rate (default 4%)
   ddaQctBoost?: boolean;                // DDA/QCT 30% boost (default false)
@@ -322,6 +349,24 @@ export interface CalculationParams {
   stateLIHTCUserPercentage?: number;    // User-specified percentage for supplement/standalone programs
   stateLIHTCUserAmount?: number;        // User-specified dollar amount for supplement/standalone programs
   stateLIHTCSyndicationYear?: 0 | 1 | 2; // IMPL-073: Year syndication proceeds are received (default 1)
+
+  // Private Activity Bonds (IMPL-080)
+  pabEnabled?: boolean;                // Enable PAB financing (requires LIHTC)
+  pabPctOfEligibleBasis?: number;      // PAB as % of LIHTC eligible basis (25-50%, default 30%)
+  pabRate?: number;                    // PAB interest rate (default 4.5%)
+  pabTerm?: number;                    // PAB term in years (default 40)
+  pabAmortization?: number;            // PAB amortization in years (default 40)
+  pabIOYears?: number;                 // PAB interest-only years (default 0)
+
+  // IMPL-083: Eligible Basis Exclusions (all in millions)
+  commercialSpaceCosts?: number;       // Non-residential space costs
+  syndicationCosts?: number;           // LIHTC syndication costs
+  marketingCosts?: number;             // Marketing and organizational costs
+  financingFees?: number;              // Loan fees, legal costs
+  bondIssuanceCosts?: number;          // PAB issuance costs
+  operatingDeficitReserve?: number;    // Operating deficit reserve
+  replacementReserve?: number;         // Replacement reserve
+  otherExclusions?: number;            // Other non-qualifying costs
 
   // Preferred Equity (v7.0.6)
   prefEquityEnabled?: boolean;          // Enable preferred equity layer
@@ -354,6 +399,16 @@ export interface CalculationParams {
   selectedState?: string;               // Selected state code
   depreciationRecaptureRate?: number;   // Depreciation recapture rate (default 25%)
   philanthropicEquityPct?: number;      // Philanthropic equity percentage (0-100%)
+  investorEquityRatio?: number;         // Ratio of investor equity to total equity (0-100%)
+  autoBalanceCapital?: boolean;         // Auto-balance capital structure
+  outsideInvestorSubDebtAmortization?: number; // Outside investor sub-debt amortization (years)
+  projectLocation?: string;             // Project location address
+  passiveGainType?: 'short-term' | 'long-term'; // Passive gain type
+  investorType?: 'ordinary' | 'stcg' | 'ltcg' | 'custom'; // Investor type classification
+  annualIncome?: number;                // Annual income for tax calculations
+  filingStatus?: 'single' | 'married';  // Tax filing status
+  ozCapitalGainsTaxRate?: number;       // OZ-specific capital gains tax rate
+  hdcPlatformMode?: 'traditional' | 'leverage'; // HDC platform mode
 
   // DSCR Cash Management parameters
   hdcDeferralInterestRate?: number;     // Annual interest rate on deferred HDC fees (e.g., 8%)
@@ -377,7 +432,7 @@ export interface HDCCalculationParams {
   projectCost: number;
   /** Predevelopment costs in millions */
   predevelopmentCosts?: number;
-  /** Year 1 NOI in millions */
+  /** Stabilized NOI in millions (actual Year 1 NOI is reduced by S-curve during lease-up) */
   yearOneNOI: number;
   revenueGrowth: number;
   expenseGrowth: number;
@@ -424,6 +479,8 @@ export interface HDCCalculationParams {
   investorCashFlows?: CashFlowItem[]; // Pass investor cash flows to access deferred fee data
   investorSubDebtAtExit?: number; // Pass from investor calculation for single source of truth
   investorEquity?: number; // Pass from investor calculation for equity recovery hurdle (includes interest reserve)
+  // ISS-050: Pass from investor calculation to ensure conservation of capital
+  grossExitProceeds?: number; // Use same value as investor calculation for consistent waterfall
 }
 
 export interface HDCInputsProps {

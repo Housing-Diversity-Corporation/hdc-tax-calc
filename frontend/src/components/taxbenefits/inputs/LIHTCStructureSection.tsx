@@ -34,7 +34,6 @@ interface LIHTCStructureSectionProps {
   predevelopmentCosts?: number;
   landValue?: number;
   interestReserve?: number;
-  leaseUpReserve?: number;
   syndicationCosts?: number;
   marketingCosts?: number;
   commercialSpaceCosts?: number;
@@ -83,7 +82,6 @@ const LIHTCStructureSection: React.FC<LIHTCStructureSectionProps> = ({
   predevelopmentCosts = 0,
   landValue,
   interestReserve = 0,
-  leaseUpReserve = 0,
   syndicationCosts = 0,
   marketingCosts = 0,
   commercialSpaceCosts = 0,
@@ -101,12 +99,11 @@ const LIHTCStructureSection: React.FC<LIHTCStructureSectionProps> = ({
       predevelopmentCosts,
       landValue,
       interestReserve,
-      leaseUpReserve,
       syndicationCosts,
       marketingCosts,
       commercialSpaceCosts,
     });
-  }, [projectCost, predevelopmentCosts, landValue, interestReserve, leaseUpReserve, syndicationCosts, marketingCosts, commercialSpaceCosts]);
+  }, [projectCost, predevelopmentCosts, landValue, interestReserve, syndicationCosts, marketingCosts, commercialSpaceCosts]);
 
   // Calculate preview if enabled
   const preview = useMemo(() => {
@@ -201,12 +198,6 @@ const LIHTCStructureSection: React.FC<LIHTCStructureSectionProps> = ({
                           <div className="hdc-result-row" style={{ fontSize: '0.8rem', color: 'var(--hdc-brown-rust)' }}>
                             <span className="hdc-result-label">Less: Interest Reserve</span>
                             <span className="hdc-result-value">({formatCurrency(basisBreakdown.interestReserve / 1000000)})</span>
-                          </div>
-                        )}
-                        {basisBreakdown.leaseUpReserve > 0 && (
-                          <div className="hdc-result-row" style={{ fontSize: '0.8rem', color: 'var(--hdc-brown-rust)' }}>
-                            <span className="hdc-result-label">Less: Lease-up Reserve</span>
-                            <span className="hdc-result-value">({formatCurrency(basisBreakdown.leaseUpReserve / 1000000)})</span>
                           </div>
                         )}
                         {basisBreakdown.syndicationCosts > 0 && (

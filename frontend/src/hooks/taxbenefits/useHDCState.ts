@@ -9,6 +9,9 @@ export const useHDCState = () => {
   // IMPL-036: Flag to suppress auto-balance during configuration loading
   // This prevents the auto-balance useEffect from overriding loaded config values
   const isLoadingConfigRef = useRef(false);
+  // ISS-044b: State version to trigger re-render when loading completes
+  // The ref alone doesn't cause re-render, so auto-balance never re-runs
+  const [isLoadingConfig, setIsLoadingConfig] = useState(false);
 
   // Validation framework state
   const [validationEnabled, setValidationEnabled] = useState(true);
@@ -65,6 +68,9 @@ export const useHDCState = () => {
   const [investorEquityPct, setInvestorEquityPct] = useState(DEFAULT_VALUES.INVESTOR_EQUITY_PCT);
   const [philanthropicEquityPct, setPhilanthropicEquityPct] = useState(DEFAULT_VALUES.PHILANTHROPIC_EQUITY_PCT);
   const [seniorDebtPct, setSeniorDebtPct] = useState(DEFAULT_VALUES.SENIOR_DEBT_PCT);
+  // ISS-032: Must-pay debt target = Senior + PAB combined (user's leverage target)
+  // When PAB enabled, Senior adjusts down to maintain this total
+  const [mustPayDebtTarget, setMustPayDebtTarget] = useState(DEFAULT_VALUES.SENIOR_DEBT_PCT);
   const [philDebtPct, setPhilDebtPct] = useState(DEFAULT_VALUES.PHIL_DEBT_PCT);
   const [hdcSubDebtPct, setHdcSubDebtPct] = useState(DEFAULT_VALUES.HDC_SUB_DEBT_PCT);
   const [hdcSubDebtPikRate, setHdcSubDebtPikRate] = useState(DEFAULT_VALUES.HDC_SUB_DEBT_PIK_RATE);
@@ -75,6 +81,13 @@ export const useHDCState = () => {
   const [outsideInvestorSubDebtAmortization, setOutsideInvestorSubDebtAmortization] = useState(10);
   const [outsideInvestorPikCurrentPayEnabled, setOutsideInvestorPikCurrentPayEnabled] = useState(false);
   const [outsideInvestorPikCurrentPayPct, setOutsideInvestorPikCurrentPayPct] = useState(0);
+
+  // HDC Debt Fund (IMPL-082) - Separate from Outside Investor
+  const [hdcDebtFundPct, setHdcDebtFundPct] = useState(0);
+  const [hdcDebtFundPikRate, setHdcDebtFundPikRate] = useState(8);
+  const [hdcDebtFundCurrentPayEnabled, setHdcDebtFundCurrentPayEnabled] = useState(false);
+  const [hdcDebtFundCurrentPayPct, setHdcDebtFundCurrentPayPct] = useState(50);
+
   const [investorEquityRatio, setInvestorEquityRatio] = useState(DEFAULT_VALUES.INVESTOR_EQUITY_RATIO);
   const [autoBalanceCapital, setAutoBalanceCapital] = useState(true);
   const [investorPromoteShare, setInvestorPromoteShare] = useState(DEFAULT_VALUES.INVESTOR_PROMOTE_SHARE);
@@ -164,6 +177,38 @@ export const useHDCState = () => {
   const [placedInServiceMonth, setPlacedInServiceMonth] = useState(7);
   const [ddaQctBoost, setDdaQctBoost] = useState(false);
 
+  // Private Activity Bonds (IMPL-080)
+  const [pabEnabled, setPabEnabled] = useState(false);
+  const [pabPctOfEligibleBasis, setPabPctOfEligibleBasis] = useState(30); // 30% default (WSHFC requirement)
+  const [pabRate, setPabRate] = useState(4.5); // Tax-exempt rate
+  const [pabTerm, setPabTerm] = useState(40);
+  const [pabAmortization, setPabAmortization] = useState(40);
+  const [pabIOYears, setPabIOYears] = useState(0);
+  // ISS-029: PAB funding amount (calculated externally, used for auto-balance)
+  // This is in $M and represents the actual PAB financing amount from eligible basis calculation
+  const [pabFundingAmount, setPabFundingAmount] = useState(0);
+
+  // IMPL-083: Eligible Basis Exclusions (all in millions, default $0)
+  const [commercialSpaceCosts, setCommercialSpaceCosts] = useState(0);
+  const [syndicationCosts, setSyndicationCosts] = useState(0);
+  const [marketingCosts, setMarketingCosts] = useState(0);
+  const [financingFees, setFinancingFees] = useState(0);
+  const [bondIssuanceCosts, setBondIssuanceCosts] = useState(0);
+  const [operatingDeficitReserve, setOperatingDeficitReserve] = useState(0);
+  const [replacementReserve, setReplacementReserve] = useState(0);
+  const [otherExclusions, setOtherExclusions] = useState(0);
+
+  // ISS-032: Track previous PAB state to detect enable/disable transitions
+  const prevPabEnabledRef = useRef(false);
+  const prevPabFundingRef = useRef(0);
+  // ISS-042: Track user's PAB % setting to distinguish user intent from derived changes
+  // Only adjust senior debt when user explicitly changes PAB %, not when eligible basis changes
+  const prevPabPctOfEligibleBasisRef = useRef(30); // Default matches initial state
+
+  // ISS-040d: Flag to prevent useEffect from interfering with active user input
+  // When user is editing Senior Debt field, we skip the PAB adjustment logic
+  const isUserEditingDebtRef = useRef(false);
+
   // Handle state selection change
   // IMPL-066: Use getStateTaxRate() directly from stateProfiles (single source of truth)
   // Note: stateTaxRate is for ordinary income (depreciation benefits)
@@ -186,24 +231,131 @@ export const useHDCState = () => {
     }
   };
 
+  // ISS-032: PAB replaces Senior Debt, not Equity
+  // When PAB is enabled/changes, adjust seniorDebtPct to maintain total must-pay leverage
+  // ISS-042: Only adjust when USER changes PAB settings, not when derived values change
+  useEffect(() => {
+    // ISS-044 DEBUG: Trace PAB adjustment
+    console.log('ISS-044 PAB-ADJUST: useEffect triggered');
+    console.log('  isLoadingConfigRef.current:', isLoadingConfigRef.current);
+    console.log('  isUserEditingDebtRef.current:', isUserEditingDebtRef.current);
+    console.log('  pabEnabled:', pabEnabled, 'prevPabEnabledRef:', prevPabEnabledRef.current);
+
+    // Skip during config loading - but STILL update refs to prevent stale state
+    // ISS-044 FIX: Refs must be updated even when skipping, otherwise Case 1 will
+    // fire later with stale ref values, causing double-reduction of senior debt
+    if (isLoadingConfigRef.current) {
+      console.log('  SKIPPED: config loading - but updating refs');
+      prevPabEnabledRef.current = pabEnabled;
+      prevPabFundingRef.current = pabFundingAmount;
+      prevPabPctOfEligibleBasisRef.current = pabPctOfEligibleBasis;
+      return;
+    }
+    // ISS-040d: Skip during active user editing to prevent input interference
+    // Refs are NOT updated here because we want the adjustment to fire after editing
+    if (isUserEditingDebtRef.current) {
+      console.log('  SKIPPED: user editing debt');
+      return;
+    }
+
+    const pabPct = projectCost > 0 ? (pabFundingAmount / projectCost) * 100 : 0;
+    console.log('  pabPct:', pabPct, '(pabFundingAmount:', pabFundingAmount, ')');
+    const wasEnabled = prevPabEnabledRef.current;
+    // ISS-042: Check if USER changed the PAB percentage setting (not derived from land value change)
+    const userChangedPabPct = Math.abs(pabPctOfEligibleBasis - prevPabPctOfEligibleBasisRef.current) > 0.01;
+    console.log('  userChangedPabPct:', userChangedPabPct, '(current:', pabPctOfEligibleBasis, 'prev:', prevPabPctOfEligibleBasisRef.current, ')');
+
+    console.log('  seniorDebtPct:', seniorDebtPct, 'mustPayDebtTarget:', mustPayDebtTarget);
+
+    // Case 1: PAB just enabled - capture current senior as target and reduce by PAB
+    if (pabEnabled && !wasEnabled && pabPct > 0) {
+      console.log('  CASE 1: PAB just enabled - reducing senior debt');
+      // Store current senior debt as the must-pay target
+      setMustPayDebtTarget(seniorDebtPct);
+      // Reduce senior debt by PAB amount
+      const newSenior = Math.max(0, seniorDebtPct - pabPct);
+      console.log('    newSenior:', newSenior, '(', seniorDebtPct, '-', pabPct, ')');
+      setSeniorDebtPct(Number(newSenior.toFixed(2)));
+    }
+    // Case 2: PAB % setting changed by USER while enabled - adjust senior to maintain target
+    // ISS-042: Only fires when user explicitly changes pabPctOfEligibleBasis, not when
+    // pabFundingAmount changes due to land value or other basis changes
+    else if (pabEnabled && wasEnabled && userChangedPabPct) {
+      console.log('  CASE 2: PAB % changed - adjusting senior debt');
+      const newSenior = Math.max(0, mustPayDebtTarget - pabPct);
+      console.log('    newSenior:', newSenior, '(', mustPayDebtTarget, '-', pabPct, ')');
+      setSeniorDebtPct(Number(newSenior.toFixed(2)));
+    }
+    // Case 3: PAB just disabled - restore senior to target
+    else if (!pabEnabled && wasEnabled) {
+      console.log('  CASE 3: PAB just disabled - restoring senior debt to', mustPayDebtTarget);
+      setSeniorDebtPct(mustPayDebtTarget);
+    }
+    else {
+      console.log('  NO CASE MATCHED - no adjustment');
+    }
+
+    // Update refs for next comparison
+    prevPabEnabledRef.current = pabEnabled;
+    prevPabFundingRef.current = pabFundingAmount;
+    prevPabPctOfEligibleBasisRef.current = pabPctOfEligibleBasis;
+    console.log('  Updated refs - prevPabEnabledRef:', pabEnabled);
+  }, [pabEnabled, pabFundingAmount, projectCost, mustPayDebtTarget, seniorDebtPct, pabPctOfEligibleBasis]);
+
+  // ISS-032: When user manually changes senior debt and PAB is disabled, update the target
+  useEffect(() => {
+    if (!pabEnabled && !isLoadingConfigRef.current) {
+      // Only update if significantly different to avoid loops
+      if (Math.abs(mustPayDebtTarget - seniorDebtPct) > 0.01) {
+        setMustPayDebtTarget(seniorDebtPct);
+      }
+    }
+  }, [seniorDebtPct, pabEnabled, mustPayDebtTarget]);
+
   // Auto-balance equity when enabled
   // IMPL-036: Skip auto-balance during configuration loading to preserve loaded values
+  // ISS-029: Now accounts for PAB funding as a source that reduces equity requirement
   useEffect(() => {
+    // ISS-044 DEBUG: Trace auto-balance execution
+    console.log('ISS-044 AUTO-BALANCE: useEffect triggered');
+    console.log('  isLoadingConfigRef.current:', isLoadingConfigRef.current);
+    console.log('  autoBalanceCapital:', autoBalanceCapital);
+    console.log('  investorEquityRatio:', investorEquityRatio);
+
     // IMPL-036: Skip if currently loading a configuration
-    if (isLoadingConfigRef.current) return;
-    if (!autoBalanceCapital) return;
-    if (investorEquityRatio < 0 || investorEquityRatio > 100) return;
+    if (isLoadingConfigRef.current) {
+      console.log('  SKIPPED: isLoadingConfigRef is true');
+      return;
+    }
+    if (!autoBalanceCapital) {
+      console.log('  SKIPPED: autoBalanceCapital is false');
+      return;
+    }
+    if (investorEquityRatio < 0 || investorEquityRatio > 100) {
+      console.log('  SKIPPED: investorEquityRatio out of range');
+      return;
+    }
 
     // Debug specifically for value 1
     if (Math.abs(hdcSubDebtPct - 1) < 0.001) {
       console.log('HDC Sub-debt is exactly 1, in useEffect');
     }
 
-    const totalDebt = seniorDebtPct + philDebtPct + hdcSubDebtPct + investorSubDebtPct + outsideInvestorSubDebtPct;
-    const remainingForEquity = Math.max(0, 100 - totalDebt);
+    const totalDebt = seniorDebtPct + philDebtPct + hdcSubDebtPct + investorSubDebtPct + outsideInvestorSubDebtPct + hdcDebtFundPct;
+    console.log('  totalDebt:', totalDebt, '(senior:', seniorDebtPct, 'phil:', philDebtPct, 'hdcSub:', hdcSubDebtPct, 'invSub:', investorSubDebtPct, 'outside:', outsideInvestorSubDebtPct, 'hdcDF:', hdcDebtFundPct, ')');
+
+    // ISS-029: Calculate PAB contribution as % of project cost
+    // PAB provides funding from eligible basis, reducing equity requirement
+    const pabPctOfProject = projectCost > 0 ? (pabFundingAmount / projectCost) * 100 : 0;
+    console.log('  pabPctOfProject:', pabPctOfProject, '(pabFundingAmount:', pabFundingAmount, 'projectCost:', projectCost, ')');
+
+    // Total sources = debt% + PAB% + equity% = 100%
+    const remainingForEquity = Math.max(0, 100 - totalDebt - pabPctOfProject);
+    console.log('  remainingForEquity:', remainingForEquity, '(100 -', totalDebt, '-', pabPctOfProject, ')');
 
     // If no room for equity, set both to 0
     if (remainingForEquity <= 0) {
+      console.log('  NO ROOM FOR EQUITY - setting to 0');
       if (investorEquityPct !== 0 || philanthropicEquityPct !== 0) {
         // Use setTimeout to break the update cycle
         setTimeout(() => {
@@ -216,34 +368,57 @@ export const useHDCState = () => {
 
     const newInvestorEquity = remainingForEquity * (investorEquityRatio / 100);
     const newPhilanthropicEquity = remainingForEquity - newInvestorEquity;
+    console.log('  newInvestorEquity:', newInvestorEquity, 'newPhilanthropicEquity:', newPhilanthropicEquity);
+    console.log('  current investorEquityPct:', investorEquityPct, 'philanthropicEquityPct:', philanthropicEquityPct);
 
     // Only update if there's a meaningful difference
     const investorDiff = Math.abs(investorEquityPct - newInvestorEquity);
     const philDiff = Math.abs(philanthropicEquityPct - newPhilanthropicEquity);
+    console.log('  investorDiff:', investorDiff, 'philDiff:', philDiff);
 
     if (investorDiff > 0.01 || philDiff > 0.01) {
+      console.log('  UPDATING equity values via setTimeout');
       // Use setTimeout to break the update cycle
       setTimeout(() => {
         setInvestorEquityPct(Number(newInvestorEquity.toFixed(2)));
         setPhilanthropicEquityPct(Number(newPhilanthropicEquity.toFixed(2)));
       }, 0);
+    } else {
+      console.log('  SKIPPED: difference too small');
     }
-  }, [seniorDebtPct, philDebtPct, hdcSubDebtPct, investorSubDebtPct, outsideInvestorSubDebtPct, investorEquityRatio, autoBalanceCapital, investorEquityPct, philanthropicEquityPct]);
+  }, [seniorDebtPct, philDebtPct, hdcSubDebtPct, investorSubDebtPct, outsideInvestorSubDebtPct, hdcDebtFundPct, investorEquityRatio, autoBalanceCapital, investorEquityPct, philanthropicEquityPct, pabFundingAmount, projectCost, isLoadingConfig]);  // ISS-044b: Added isLoadingConfig to re-run when loading completes
 
   // IMPL-036: Helper functions to control config loading state
   const startConfigLoading = useCallback(() => {
     isLoadingConfigRef.current = true;
+    setIsLoadingConfig(true);  // ISS-044b: Also set state for re-render
   }, []);
 
   const endConfigLoading = useCallback(() => {
     // Small delay to ensure all state updates have propagated
     setTimeout(() => {
       isLoadingConfigRef.current = false;
+      setIsLoadingConfig(false);  // ISS-044b: Triggers re-render so auto-balance re-runs
     }, 100);
   }, []);
 
-  // Calculate total capital structure
-  const totalCapitalStructure = investorEquityPct + philanthropicEquityPct + seniorDebtPct + philDebtPct + hdcSubDebtPct + investorSubDebtPct + outsideInvestorSubDebtPct;
+  // ISS-040d: Helper functions to control user editing state for debt inputs
+  // This prevents the PAB adjustment useEffect from interfering with active typing
+  const startDebtEditing = useCallback(() => {
+    isUserEditingDebtRef.current = true;
+  }, []);
+
+  const endDebtEditing = useCallback(() => {
+    isUserEditingDebtRef.current = false;
+  }, []);
+
+  // ISS-031: Calculate PAB as % of project cost for display and total
+  // PAB is sized from eligible basis but funds project cost, so we express it as % of project
+  const pabPctOfProject = projectCost > 0 ? (pabFundingAmount / projectCost) * 100 : 0;
+
+  // Calculate total capital structure (now includes PAB)
+  // ISS-031: PAB is included as its equivalent % of project cost
+  const totalCapitalStructure = investorEquityPct + philanthropicEquityPct + seniorDebtPct + philDebtPct + hdcSubDebtPct + investorSubDebtPct + outsideInvestorSubDebtPct + hdcDebtFundPct + pabPctOfProject;
 
   return {
     // Validation
@@ -296,6 +471,8 @@ export const useHDCState = () => {
     investorEquityPct, setInvestorEquityPct,
     philanthropicEquityPct, setPhilanthropicEquityPct,
     seniorDebtPct, setSeniorDebtPct,
+    // ISS-032: Must-pay debt target (Senior + PAB combined)
+    mustPayDebtTarget, setMustPayDebtTarget,
     philDebtPct, setPhilDebtPct,
     hdcSubDebtPct, setHdcSubDebtPct,
     hdcSubDebtPikRate, setHdcSubDebtPikRate,
@@ -307,6 +484,11 @@ export const useHDCState = () => {
     outsideInvestorSubDebtAmortization, setOutsideInvestorSubDebtAmortization,
     outsideInvestorPikCurrentPayEnabled, setOutsideInvestorPikCurrentPayEnabled,
     outsideInvestorPikCurrentPayPct, setOutsideInvestorPikCurrentPayPct,
+    // HDC Debt Fund (IMPL-082)
+    hdcDebtFundPct, setHdcDebtFundPct,
+    hdcDebtFundPikRate, setHdcDebtFundPikRate,
+    hdcDebtFundCurrentPayEnabled, setHdcDebtFundCurrentPayEnabled,
+    hdcDebtFundCurrentPayPct, setHdcDebtFundCurrentPayPct,
     subDebtPriority, setSubDebtPriority,
     investorEquityRatio, setInvestorEquityRatio,
     autoBalanceCapital, setAutoBalanceCapital,
@@ -380,6 +562,26 @@ export const useHDCState = () => {
 
     // Federal LIHTC (v7.0.11)
     lihtcEnabled, setLihtcEnabled,
+    // Private Activity Bonds (IMPL-080)
+    pabEnabled, setPabEnabled,
+    pabPctOfEligibleBasis, setPabPctOfEligibleBasis,
+    pabRate, setPabRate,
+    pabTerm, setPabTerm,
+    pabAmortization, setPabAmortization,
+    pabIOYears, setPabIOYears,
+    // ISS-029: PAB funding amount (set from calculations, used for auto-balance)
+    pabFundingAmount, setPabFundingAmount,
+    // ISS-031: PAB as % of project cost (for display in capital stack)
+    pabPctOfProject,
+    // IMPL-083: Eligible Basis Exclusions
+    commercialSpaceCosts, setCommercialSpaceCosts,
+    syndicationCosts, setSyndicationCosts,
+    marketingCosts, setMarketingCosts,
+    financingFees, setFinancingFees,
+    bondIssuanceCosts, setBondIssuanceCosts,
+    operatingDeficitReserve, setOperatingDeficitReserve,
+    replacementReserve, setReplacementReserve,
+    otherExclusions, setOtherExclusions,
     applicableFraction, setApplicableFraction,
     creditRate, setCreditRate,
     placedInServiceMonth, setPlacedInServiceMonth,
@@ -391,6 +593,10 @@ export const useHDCState = () => {
 
     // IMPL-036: Config loading helpers to suppress auto-balance during load
     startConfigLoading,
-    endConfigLoading
+    endConfigLoading,
+
+    // ISS-040d: Debt editing helpers to prevent PAB adjustment during user input
+    startDebtEditing,
+    endDebtEditing
   };
 };

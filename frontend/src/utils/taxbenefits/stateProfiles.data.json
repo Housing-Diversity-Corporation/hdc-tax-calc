@@ -237,12 +237,16 @@
         "cap": null,
         "sunset": null,
         "pw": false,
-        "authority": "O.C.G.A. §33-1-18"
+        "authority": "O.C.G.A. §33-1-18",
+        "creditDurationYears": 10,
+        "matchBasis": "federal_credit",
+        "timingConstraint": "before_allocation",
+        "structuringNotes": "Syndicator must be in partnership BEFORE DCA allocation. Credits cannot transfer after allocation. Bifurcation allows selling state credits separately from federal."
       },
       "hdcTier": 1,
       "combinedRate": 46.6,
       "prevailingWageNotes": null,
-      "lastUpdated": "2025-12-13",
+      "lastUpdated": "2026-01-22",
       "taxYear": 2024,
       "sourceUrl": null
     },
@@ -603,12 +607,16 @@
         "cap": null,
         "sunset": null,
         "pw": false,
-        "authority": "Neb. Rev. Stat. §77-5536"
+        "authority": "Neb. Rev. Stat. §77-2501",
+        "creditDurationYears": 6,
+        "matchBasis": "federal_credit",
+        "timingConstraint": "anytime",
+        "structuringNotes": "LB182 (Sept 2025): Freely transferable to any NE taxpayer. 6-year credit period. Broader buyer pool includes bank franchise tax."
       },
       "hdcTier": 1,
       "combinedRate": 47.6,
       "prevailingWageNotes": null,
-      "lastUpdated": "2025-12-13",
+      "lastUpdated": "2026-01-22",
       "taxYear": 2024,
       "sourceUrl": null
     },

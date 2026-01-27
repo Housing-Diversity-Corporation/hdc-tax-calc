@@ -151,25 +151,34 @@ export interface LIHTCEligibleBasisParams {
   landValue: number;
   /** Interest reserve in millions - excluded (financing cost) */
   interestReserve?: number;
-  /** Lease-up reserve in millions - excluded (financing cost) */
-  leaseUpReserve?: number;
   /** Syndication costs in millions - excluded per IRC §42 */
   syndicationCosts?: number;
-  /** Marketing costs in millions - excluded per IRC §42 */
+  /** Marketing/Org costs in millions - excluded per IRC §42 */
   marketingCosts?: number;
   /** Commercial space costs in millions - excluded (non-residential) */
   commercialSpaceCosts?: number;
+  // IMPL-083: Additional exclusions
+  /** Financing fees in millions - loan fees, legal costs */
+  financingFees?: number;
+  /** Bond issuance costs in millions - PAB-related costs */
+  bondIssuanceCosts?: number;
+  /** Operating deficit reserve in millions */
+  operatingDeficitReserve?: number;
+  /** Replacement reserve in millions */
+  replacementReserve?: number;
+  /** Other exclusions in millions - catch-all */
+  otherExclusions?: number;
 }
 
 /**
  * Calculate LIHTC Eligible Basis per IRC §42
  *
  * Formula: (Project Cost + Predevelopment)
- *          - Land - Interest Reserve - Lease-up Reserve
- *          - Syndication - Marketing - Commercial Space
+ *          - Land - Interest Reserve - Commercial Space
+ *          - Syndication - Marketing - Financing Fees - Bond Costs
+ *          - Operating Deficit Reserve - Replacement Reserve - Other
  *
- * NOTE: Does NOT include financing costs (loan fees, legal, org costs)
- * that are included in OZ depreciable basis.
+ * IMPL-083: Full exclusions list per IRC §42
  *
  * @param params - LIHTC eligible basis calculation parameters
  * @returns LIHTC eligible basis amount
@@ -180,26 +189,35 @@ export function calculateLIHTCEligibleBasis(params: LIHTCEligibleBasisParams): n
     predevelopmentCosts = 0,
     landValue,
     interestReserve = 0,
-    leaseUpReserve = 0,
     syndicationCosts = 0,
     marketingCosts = 0,
-    commercialSpaceCosts = 0
+    commercialSpaceCosts = 0,
+    // IMPL-083: Additional exclusions
+    financingFees = 0,
+    bondIssuanceCosts = 0,
+    operatingDeficitReserve = 0,
+    replacementReserve = 0,
+    otherExclusions = 0
   } = params;
 
   // Total project cost (base for eligible basis)
   const totalProjectCost = projectCost + predevelopmentCosts;
 
-  // LIHTC Eligible Basis:
-  // - Includes: project cost, predevelopment costs
-  // - Excludes: land, reserves, syndication, marketing, commercial space
-  // - Does NOT include: loan fees, legal costs, org costs (financing costs)
+  // LIHTC Eligible Basis per IRC §42:
+  // - Includes: project cost, predevelopment costs (hard + soft costs)
+  // - Excludes: land, reserves, syndication, marketing, commercial space,
+  //             financing fees, bond costs, and other non-qualifying costs
   const eligibleBasis = totalProjectCost
     - landValue
     - interestReserve
-    - leaseUpReserve
+    - commercialSpaceCosts
     - syndicationCosts
     - marketingCosts
-    - commercialSpaceCosts;
+    - financingFees
+    - bondIssuanceCosts
+    - operatingDeficitReserve
+    - replacementReserve
+    - otherExclusions;
 
   return Math.max(0, eligibleBasis); // Cannot be negative
 }
@@ -207,6 +225,7 @@ export function calculateLIHTCEligibleBasis(params: LIHTCEligibleBasisParams): n
 /**
  * Calculate LIHTC eligible basis breakdown with all components
  *
+ * IMPL-083: Full breakdown including all exclusions
  * Useful for debugging and display purposes
  */
 export function calculateLIHTCEligibleBasisBreakdown(params: LIHTCEligibleBasisParams) {
@@ -215,25 +234,35 @@ export function calculateLIHTCEligibleBasisBreakdown(params: LIHTCEligibleBasisP
     predevelopmentCosts = 0,
     landValue,
     interestReserve = 0,
-    leaseUpReserve = 0,
     syndicationCosts = 0,
     marketingCosts = 0,
-    commercialSpaceCosts = 0
+    commercialSpaceCosts = 0,
+    // IMPL-083: Additional exclusions
+    financingFees = 0,
+    bondIssuanceCosts = 0,
+    operatingDeficitReserve = 0,
+    replacementReserve = 0,
+    otherExclusions = 0
   } = params;
 
   const totalProjectCost = projectCost + predevelopmentCosts;
-  const totalExclusions = landValue + interestReserve + leaseUpReserve +
-    syndicationCosts + marketingCosts + commercialSpaceCosts;
+  const totalExclusions = landValue + interestReserve + commercialSpaceCosts +
+    syndicationCosts + marketingCosts + financingFees + bondIssuanceCosts +
+    operatingDeficitReserve + replacementReserve + otherExclusions;
   const eligibleBasis = Math.max(0, totalProjectCost - totalExclusions);
 
   return {
     totalProjectCost,
     landValue,
     interestReserve,
-    leaseUpReserve,
+    commercialSpaceCosts,
     syndicationCosts,
     marketingCosts,
-    commercialSpaceCosts,
+    financingFees,
+    bondIssuanceCosts,
+    operatingDeficitReserve,
+    replacementReserve,
+    otherExclusions,
     totalExclusions,
     eligibleBasis,
     // Helpful ratios

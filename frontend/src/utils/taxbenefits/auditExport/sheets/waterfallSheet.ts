@@ -68,11 +68,12 @@ export function buildWaterfallSheet(
     const afterOutside = availableCash - outsidePaid;
     ws[`E${row}`] = { t: 'n', v: afterOutside, f: `B${row}-D${row}` } as FormulaCell;
 
-    // HDC Current Pay Due
-    ws[`F${row}`] = { t: 'n', v: cf?.hdcSubDebtPIKAccrued || 0, f: `HDCCurrentPayDue_Y${year}` } as FormulaCell;
+    // HDC Current Pay Due (actual cash payment, not PIK accrual)
+    // ISS-052: Fixed to use subDebtInterest (cash paid) instead of hdcSubDebtPIKAccrued (accrued but not paid)
+    ws[`F${row}`] = { t: 'n', v: cf?.subDebtInterest || 0, f: `HDCCurrentPayDue_Y${year}` } as FormulaCell;
 
     // HDC Paid
-    const hdcPaid = Math.min(afterOutside, cf?.hdcSubDebtPIKAccrued || 0);
+    const hdcPaid = Math.min(afterOutside, cf?.subDebtInterest || 0);
     ws[`G${row}`] = { t: 'n', v: hdcPaid, f: `MIN(E${row},F${row})` } as FormulaCell;
     namedRanges.push({ name: `HDCPaid_Y${year}`, ref: `Waterfall!$G$${row}` });
 

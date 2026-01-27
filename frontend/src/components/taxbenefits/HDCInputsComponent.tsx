@@ -233,6 +233,36 @@ interface HDCInputsComponentProps {
   setDdaQctBoost?: (value: boolean) => void;
   lihtcEligibleBasis?: number;
 
+  // Private Activity Bonds (IMPL-080)
+  pabEnabled?: boolean;
+  setPabEnabled?: (value: boolean) => void;
+  pabPctOfEligibleBasis?: number;
+  setPabPctOfEligibleBasis?: (value: number) => void;
+  pabRate?: number;
+  setPabRate?: (value: number) => void;
+  pabAmortization?: number;
+  setPabAmortization?: (value: number) => void;
+  pabIOYears?: number;
+  setPabIOYears?: (value: number) => void;
+
+  // IMPL-083: Eligible Basis Exclusions
+  commercialSpaceCosts?: number;
+  setCommercialSpaceCosts?: (value: number) => void;
+  syndicationCosts?: number;
+  setSyndicationCosts?: (value: number) => void;
+  marketingCosts?: number;
+  setMarketingCosts?: (value: number) => void;
+  financingFees?: number;
+  setFinancingFees?: (value: number) => void;
+  bondIssuanceCosts?: number;
+  setBondIssuanceCosts?: (value: number) => void;
+  operatingDeficitReserve?: number;
+  setOperatingDeficitReserve?: (value: number) => void;
+  replacementReserve?: number;
+  setReplacementReserve?: (value: number) => void;
+  otherExclusions?: number;
+  setOtherExclusions?: (value: number) => void;
+
   // Helper functions
   handlePercentageChange: (setter: (value: number) => void, value: number) => void;
   handleStateChange: (stateCode: string) => void;
@@ -253,6 +283,16 @@ interface HDCInputsComponentProps {
   // Platform mode
   hdcPlatformMode?: 'traditional' | 'leverage';
   setHdcPlatformMode?: (value: 'traditional' | 'leverage') => void;
+
+  // HDC Debt Fund (IMPL-082)
+  hdcDebtFundPct?: number;
+  setHdcDebtFundPct?: (value: number) => void;
+  hdcDebtFundPikRate?: number;
+  setHdcDebtFundPikRate?: (value: number) => void;
+  hdcDebtFundCurrentPayEnabled?: boolean;
+  setHdcDebtFundCurrentPayEnabled?: (value: boolean) => void;
+  hdcDebtFundCurrentPayPct?: number;
+  setHdcDebtFundCurrentPayPct?: (value: number) => void;
 
   // Investment Portal Settings
   isInvestorFacing?: boolean;
@@ -291,6 +331,10 @@ interface HDCInputsComponentProps {
   // IMPL-036: Config loading helpers to suppress auto-balance during config load
   startConfigLoading?: () => void;
   endConfigLoading?: () => void;
+
+  // ISS-040d: Debt editing helpers to prevent PAB adjustment during user input
+  startDebtEditing?: () => void;
+  endDebtEditing?: () => void;
 }
 
 const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
@@ -323,6 +367,7 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           props.setSeniorDebtPct(config.seniorDebtPct ?? 0);
           props.setSeniorDebtRate(config.seniorDebtRate ?? 0);
           props.setSeniorDebtAmortization(config.seniorDebtAmortization ?? 30);
+          props.setSeniorDebtIOYears?.(config.seniorDebtIOYears ?? 0);  // ISS-043
           props.setPhilDebtPct(config.philDebtPct ?? 0);
           props.setPhilDebtRate(config.philDebtRate ?? 0);
           props.setPhilDebtAmortization(config.philDebtAmortization ?? 30);
@@ -340,6 +385,20 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           props.setOutsideInvestorSubDebtPikRate(config.outsideInvestorSubDebtPikRate ?? 8);
           props.setOutsideInvestorPikCurrentPayEnabled?.(config.outsideInvestorPikCurrentPayEnabled ?? false);
           props.setOutsideInvestorPikCurrentPayPct?.(config.outsideInvestorPikCurrentPayPct ?? 0);
+          // ISS-043: HDC Debt Fund
+          props.setHdcDebtFundPct?.(config.hdcDebtFundPct ?? 0);
+          props.setHdcDebtFundPikRate?.(config.hdcDebtFundPikRate ?? 8);
+          props.setHdcDebtFundCurrentPayEnabled?.(config.hdcDebtFundCurrentPayEnabled ?? false);
+          props.setHdcDebtFundCurrentPayPct?.(config.hdcDebtFundCurrentPayPct ?? 50);
+          // ISS-043: Sub-debt priority
+          if (config.subDebtPriority) {
+            try {
+              const priority = JSON.parse(config.subDebtPriority);
+              props.setSubDebtPriority?.(priority);
+            } catch {
+              // Use default if parsing fails
+            }
+          }
 
           // Interest Reserve
           props.setInterestReserveEnabled?.(config.interestReserveEnabled ?? false);
@@ -371,7 +430,9 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
 
           // Opportunity Zone parameters - only update if not in read-only mode
           if (!props.taxSectionReadOnly) {
+            props.setOzEnabled?.(config.ozEnabled ?? true);  // ISS-043
             props.setOzType?.(config.ozType ?? 'standard');
+            props.setOzVersion?.(config.ozVersion ?? '2.0');  // ISS-043
             props.setDeferredCapitalGains?.(config.deferredCapitalGains ?? 0);
             props.setCapitalGainsTaxRate?.(config.capitalGainsTaxRate ?? 23.8);
           }
@@ -405,6 +466,46 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           props.setProjectStatus?.(config.projectStatus ?? 'available');
           props.setMinimumInvestment?.(config.minimumInvestment ?? 0);
           props.setDealImageUrl?.(config.dealImageUrl ?? '');
+          // ISS-043: HDC Platform Mode
+          props.setHdcPlatformMode?.(config.hdcPlatformMode ?? 'traditional');
+          // ISS-043: Private Activity Bonds (PABs)
+          props.setPabEnabled?.(config.pabEnabled ?? false);
+          props.setPabPctOfEligibleBasis?.(config.pabPctOfEligibleBasis ?? 30);
+          props.setPabRate?.(config.pabRate ?? 4.5);
+          props.setPabAmortization?.(config.pabAmortization ?? 40);
+          props.setPabIOYears?.(config.pabIOYears ?? 0);
+          // ISS-043: Federal LIHTC
+          props.setLihtcEnabled?.(config.lihtcEnabled ?? true);
+          props.setApplicableFraction?.(config.applicableFraction ?? 100);
+          props.setCreditRate?.(config.creditRate ?? 0.04);
+          props.setPlacedInServiceMonth?.(config.placedInServiceMonth ?? 7);
+          props.setDdaQctBoost?.(config.ddaQctBoost ?? false);
+          // ISS-043: State LIHTC
+          props.setStateLIHTCEnabled?.(config.stateLIHTCEnabled ?? false);
+          props.setInvestorState?.(config.investorState ?? 'WA');
+          props.setSyndicationRate?.(config.syndicationRate ?? 75);
+          props.setInvestorHasStateLiability?.(config.investorHasStateLiability ?? true);
+          if (config.stateLIHTCUserPercentage !== undefined) {
+            props.setStateLIHTCUserPercentage?.(config.stateLIHTCUserPercentage);
+          }
+          if (config.stateLIHTCUserAmount !== undefined) {
+            props.setStateLIHTCUserAmount?.(config.stateLIHTCUserAmount);
+          }
+          props.setStateLIHTCSyndicationYear?.((config.stateLIHTCSyndicationYear ?? 0) as 0 | 1 | 2);
+          // ISS-043: Eligible Basis Exclusions
+          props.setCommercialSpaceCosts?.(config.commercialSpaceCosts ?? 0);
+          props.setSyndicationCosts?.(config.syndicationCosts ?? 0);
+          props.setMarketingCosts?.(config.marketingCosts ?? 0);
+          props.setFinancingFees?.(config.financingFees ?? 0);
+          props.setBondIssuanceCosts?.(config.bondIssuanceCosts ?? 0);
+          props.setOperatingDeficitReserve?.(config.operatingDeficitReserve ?? 0);
+          props.setReplacementReserve?.(config.replacementReserve ?? 0);
+          props.setOtherExclusions?.(config.otherExclusions ?? 0);
+          // ISS-043: AUM Current Pay (was missing)
+          props.setAumCurrentPayEnabled?.(config.aumCurrentPayEnabled ?? false);
+          props.setAumCurrentPayPct?.(config.aumCurrentPayPct ?? 50);
+          // ISS-043: HDC Deferred Interest Rate (was missing)
+          props.setHdcDeferredInterestRate?.(config.hdcDeferredInterestRate ?? 8);
 
           // IMPL-036: Re-enable auto-balance after config loading is complete
           props.endConfigLoading?.();
@@ -511,6 +612,7 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
         seniorDebtPct: props.seniorDebtPct,
         seniorDebtRate: props.seniorDebtRate,
         seniorDebtAmortization: props.seniorDebtAmortization,
+        seniorDebtIOYears: props.seniorDebtIOYears,  // ISS-043
         philDebtPct: props.philDebtPct,
         philDebtRate: props.philDebtRate,
         philDebtAmortization: props.philDebtAmortization,
@@ -528,6 +630,13 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
         outsideInvestorSubDebtPikRate: props.outsideInvestorSubDebtPikRate,
         outsideInvestorPikCurrentPayEnabled: props.outsideInvestorPikCurrentPayEnabled,
         outsideInvestorPikCurrentPayPct: props.outsideInvestorPikCurrentPayPct,
+        // ISS-043: HDC Debt Fund
+        hdcDebtFundPct: props.hdcDebtFundPct,
+        hdcDebtFundPikRate: props.hdcDebtFundPikRate,
+        hdcDebtFundCurrentPayEnabled: props.hdcDebtFundCurrentPayEnabled,
+        hdcDebtFundCurrentPayPct: props.hdcDebtFundCurrentPayPct,
+        // ISS-043: Sub-debt priority (stored as JSON string)
+        subDebtPriority: props.subDebtPriority ? JSON.stringify(props.subDebtPriority) : undefined,
         interestReserveEnabled: props.interestReserveEnabled,
         interestReserveMonths: props.interestReserveMonths,
         interestReserveAmount: props.interestReserveAmount,
@@ -549,6 +658,8 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
         constructionDelayMonths: props.constructionDelayMonths,
         taxBenefitDelayMonths: props.taxBenefitDelayMonths,
         ozType: props.ozType,
+        ozVersion: props.ozVersion,  // ISS-043
+        ozEnabled: props.ozEnabled,  // ISS-043
         deferredCapitalGains: props.deferredCapitalGains,
         capitalGainsTaxRate: props.capitalGainsTaxRate,
         stateTaxRate: props.stateTaxRate,
@@ -576,6 +687,37 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
         projectStatus: props.projectStatus,
         minimumInvestment: props.minimumInvestment,
         dealImageUrl: props.dealImageUrl,
+        // ISS-043: HDC Platform Mode
+        hdcPlatformMode: props.hdcPlatformMode,
+        // ISS-043: Private Activity Bonds (PABs)
+        pabEnabled: props.pabEnabled,
+        pabPctOfEligibleBasis: props.pabPctOfEligibleBasis,
+        pabRate: props.pabRate,
+        pabAmortization: props.pabAmortization,
+        pabIOYears: props.pabIOYears,
+        // ISS-043: Federal LIHTC
+        lihtcEnabled: props.lihtcEnabled,
+        applicableFraction: props.applicableFraction,
+        creditRate: props.creditRate,
+        placedInServiceMonth: props.placedInServiceMonth,
+        ddaQctBoost: props.ddaQctBoost,
+        // ISS-043: State LIHTC
+        stateLIHTCEnabled: props.stateLIHTCEnabled,
+        investorState: props.investorState,
+        syndicationRate: props.syndicationRate,
+        investorHasStateLiability: props.investorHasStateLiability,
+        stateLIHTCUserPercentage: props.stateLIHTCUserPercentage,
+        stateLIHTCUserAmount: props.stateLIHTCUserAmount,
+        stateLIHTCSyndicationYear: props.stateLIHTCSyndicationYear,
+        // ISS-043: Eligible Basis Exclusions
+        commercialSpaceCosts: props.commercialSpaceCosts,
+        syndicationCosts: props.syndicationCosts,
+        marketingCosts: props.marketingCosts,
+        financingFees: props.financingFees,
+        bondIssuanceCosts: props.bondIssuanceCosts,
+        operatingDeficitReserve: props.operatingDeficitReserve,
+        replacementReserve: props.replacementReserve,
+        otherExclusions: props.otherExclusions,
       };
 
       const isComplete = !!(
@@ -738,6 +880,31 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           isReadOnly={props.isReadOnly}
           // IMPL-020a: Pre-calculated effective project cost from engine
           effectiveProjectCost={props.effectiveProjectCost}
+          // Private Activity Bonds (IMPL-080)
+          lihtcEnabled={props.lihtcEnabled}
+          lihtcEligibleBasis={props.lihtcEligibleBasis}
+          pabEnabled={props.pabEnabled}
+          setPabEnabled={props.setPabEnabled}
+          pabPctOfEligibleBasis={props.pabPctOfEligibleBasis}
+          setPabPctOfEligibleBasis={props.setPabPctOfEligibleBasis}
+          pabRate={props.pabRate}
+          setPabRate={props.setPabRate}
+          pabAmortization={props.pabAmortization}
+          setPabAmortization={props.setPabAmortization}
+          pabIOYears={props.pabIOYears}
+          setPabIOYears={props.setPabIOYears}
+          // HDC Debt Fund (IMPL-082)
+          hdcDebtFundPct={props.hdcDebtFundPct}
+          setHdcDebtFundPct={props.setHdcDebtFundPct}
+          hdcDebtFundPikRate={props.hdcDebtFundPikRate}
+          setHdcDebtFundPikRate={props.setHdcDebtFundPikRate}
+          hdcDebtFundCurrentPayEnabled={props.hdcDebtFundCurrentPayEnabled}
+          setHdcDebtFundCurrentPayEnabled={props.setHdcDebtFundCurrentPayEnabled}
+          hdcDebtFundCurrentPayPct={props.hdcDebtFundCurrentPayPct}
+          setHdcDebtFundCurrentPayPct={props.setHdcDebtFundCurrentPayPct}
+          // ISS-040d: Debt editing helpers to prevent PAB adjustment during user input
+          startDebtEditing={props.startDebtEditing}
+          endDebtEditing={props.endDebtEditing}
         />
 
         {/* Panel 3: Tax Credits (Federal + State LIHTC consolidated) */}
@@ -775,6 +942,23 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
             setStateLIHTCUserAmount={props.setStateLIHTCUserAmount}
             stateLIHTCSyndicationYear={props.stateLIHTCSyndicationYear}
             setStateLIHTCSyndicationYear={props.setStateLIHTCSyndicationYear}
+            // IMPL-083: Eligible Basis Exclusions
+            commercialSpaceCosts={props.commercialSpaceCosts || 0}
+            setCommercialSpaceCosts={props.setCommercialSpaceCosts || (() => {})}
+            syndicationCosts={props.syndicationCosts || 0}
+            setSyndicationCosts={props.setSyndicationCosts || (() => {})}
+            marketingCosts={props.marketingCosts || 0}
+            setMarketingCosts={props.setMarketingCosts || (() => {})}
+            financingFees={props.financingFees || 0}
+            setFinancingFees={props.setFinancingFees || (() => {})}
+            bondIssuanceCosts={props.bondIssuanceCosts || 0}
+            setBondIssuanceCosts={props.setBondIssuanceCosts || (() => {})}
+            operatingDeficitReserve={props.operatingDeficitReserve || 0}
+            setOperatingDeficitReserve={props.setOperatingDeficitReserve || (() => {})}
+            replacementReserve={props.replacementReserve || 0}
+            setReplacementReserve={props.setReplacementReserve || (() => {})}
+            otherExclusions={props.otherExclusions || 0}
+            setOtherExclusions={props.setOtherExclusions || (() => {})}
             formatCurrency={props.formatCurrency}
             isReadOnly={props.isReadOnly}
           />

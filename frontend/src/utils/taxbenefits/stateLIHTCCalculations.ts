@@ -71,7 +71,9 @@ export interface StateLIHTCMetadata {
 }
 
 /**
- * Complete state LIHTC credit schedule over 11-year period
+ * Complete state LIHTC credit schedule
+ * IMPL-079: Now supports variable credit durations (default 10 years + 1 catch-up)
+ * Nebraska is 6 years, most states are 10 years
  */
 export interface StateLIHTCSchedule {
   /** Annual credit amount (full year) */
@@ -301,33 +303,37 @@ export function calculateGrantCredit(grantAmount: number): number {
 }
 
 /**
- * Generates 11-year state LIHTC credit schedule
+ * Generates state LIHTC credit schedule with variable duration
  *
- * Mirrors federal LIHTC structure:
+ * IMPL-079: Supports variable credit durations (not always 10 years)
  * - Year 1: Prorated by PIS month
- * - Years 2-10: Full annual credit
- * - Year 11: Catch-up to ensure total = 10 × annual
+ * - Years 2 to N: Full annual credit (N = creditDurationYears)
+ * - Year N+1: Catch-up to ensure total = N × annual
  *
  * @param annualCredit - Annual state credit
  * @param pisMonth - Placed-in-Service month (1-12)
+ * @param creditDurationYears - Credit period in years (default: 10, NE is 6)
  * @returns Complete state LIHTC schedule
  */
 export function generateStateLIHTCSchedule(
   annualCredit: number,
-  pisMonth: number
+  pisMonth: number,
+  creditDurationYears: number = 10
 ): StateLIHTCSchedule {
   // Calculate Year 1 proration
   const year1ProrationFactor = getYear1ProrationFactor(pisMonth);
   const year1Credit = annualCredit * year1ProrationFactor;
 
-  // Years 2-10: full annual credit
-  const years2to10Credit = annualCredit;
+  // Years 2 through N: full annual credit
+  const fullYearCredit = annualCredit;
 
-  // Year 11: catch-up
-  const year11Credit = annualCredit - year1Credit;
+  // Final year (N+1): catch-up for Year 1 proration shortfall
+  const catchUpCredit = annualCredit - year1Credit;
 
-  // Total credits
-  const totalCredits = year1Credit + 9 * annualCredit + year11Credit;
+  // Total credits = creditDurationYears × annualCredit
+  // (Year 1 prorated + middle full years + catch-up = N × annual)
+  const fullYearCount = creditDurationYears - 1; // e.g., 9 for 10-year, 5 for 6-year
+  const totalCredits = year1Credit + fullYearCount * annualCredit + catchUpCredit;
 
   // Build yearly breakdown
   const yearlyBreakdown: YearlyStateCredit[] = [];
@@ -341,30 +347,31 @@ export function generateStateLIHTCSchedule(
     description: `Year 1 (${monthsInService} months in service, ${(year1ProrationFactor * 100).toFixed(1)}% proration)`,
   });
 
-  // Years 2-10
-  for (let year = 2; year <= 10; year++) {
+  // Years 2 through N (creditDurationYears)
+  for (let year = 2; year <= creditDurationYears; year++) {
     yearlyBreakdown.push({
       year,
-      creditAmount: years2to10Credit,
+      creditAmount: fullYearCredit,
       prorationFactor: 1.0,
       description: `Year ${year} (full year)`,
     });
   }
 
-  // Year 11
-  const year11ProrationFactor = year11Credit / annualCredit;
+  // Final year (N+1): catch-up
+  const catchUpYear = creditDurationYears + 1;
+  const catchUpProrationFactor = catchUpCredit / (annualCredit || 1); // Avoid division by zero
   yearlyBreakdown.push({
-    year: 11,
-    creditAmount: year11Credit,
-    prorationFactor: year11ProrationFactor,
-    description: `Year 11 (catch-up, ${(year11ProrationFactor * 100).toFixed(1)}% of annual)`,
+    year: catchUpYear,
+    creditAmount: catchUpCredit,
+    prorationFactor: catchUpProrationFactor,
+    description: `Year ${catchUpYear} (catch-up, ${(catchUpProrationFactor * 100).toFixed(1)}% of annual)`,
   });
 
   return {
     annualCredit,
     year1Credit,
-    years2to10Credit,
-    year11Credit,
+    years2to10Credit: fullYearCredit, // Backward compat: full year credit amount
+    year11Credit: catchUpCredit,       // Backward compat: catch-up credit amount
     totalCredits,
     yearlyBreakdown,
   };
@@ -579,8 +586,11 @@ export function calculateStateLIHTC(
   // Step 6: Calculate net benefit
   const netAnnualBenefit = grossAnnualCredit * syndicationRate;
 
-  // Step 7: Generate 11-year schedule
-  const schedule = generateStateLIHTCSchedule(grossAnnualCredit, pisMonth);
+  // IMPL-079: Get credit duration from program (default 10 years)
+  const creditDurationYears = program.creditDurationYears ?? 10;
+
+  // Step 7: Generate schedule with variable duration
+  const schedule = generateStateLIHTCSchedule(grossAnnualCredit, pisMonth, creditDurationYears);
 
   // Step 8: Generate warnings
   const warnings = generateWarnings(program, params, syndicationRate);
@@ -601,7 +611,7 @@ export function calculateStateLIHTC(
   return {
     grossCredit: schedule.totalCredits,
     syndicationRate,
-    netBenefit: netAnnualBenefit * 10, // Total over 10 years
+    netBenefit: netAnnualBenefit * creditDurationYears, // Total over credit period
     programType,
     schedule,
     warnings,

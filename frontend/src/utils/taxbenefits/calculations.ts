@@ -157,6 +157,20 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
     outsideInvestorSubDebtPikRate: paramOutsideInvestorSubDebtPikRate = 8,
     outsideInvestorPikCurrentPayEnabled: paramOutsideInvestorPikCurrentPayEnabled = false,
     outsideInvestorPikCurrentPayPct: paramOutsideInvestorPikCurrentPayPct = 50,
+    // HDC Debt Fund Parameters (IMPL-082)
+    hdcDebtFundPct: paramHdcDebtFundPct = 0,
+    hdcDebtFundPikRate: paramHdcDebtFundPikRate = 8,
+    hdcDebtFundCurrentPayEnabled: paramHdcDebtFundCurrentPayEnabled = false,
+    hdcDebtFundCurrentPayPct: paramHdcDebtFundCurrentPayPct = 50,
+    // Private Activity Bonds (IMPL-080)
+    pabEnabled: paramPabEnabled = false,
+    pabPctOfEligibleBasis: paramPabPctOfEligibleBasis = 30,
+    pabRate: paramPabRate = 4.5,
+    pabAmortization: paramPabAmortization = 40,
+    pabIOYears: paramPabIOYears = 0,
+    // LIHTC Eligible Basis for PAB calculations
+    lihtcEnabled: paramLihtcEnabled = false,
+    lihtcEligibleBasis: paramLihtcEligibleBasis = 0,
     aumFeeEnabled: paramAumFeeEnabled = false,
     aumFeeRate: paramAumFeeRate = 0,
     aumCurrentPayEnabled: paramAumCurrentPayEnabled = false,
@@ -219,34 +233,67 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
   const seniorDebtRate = (params.seniorDebtRate || 6) / 100;
   const philDebtRate = (params.philanthropicDebtRate || 0) / 100;
   
-  // Calculate interest reserve using shared function (single source of truth)
-  const interestReserveAmount = calculateInterestReserve({
-    enabled: interestReserveEnabled,
-    months: interestReserveMonths,
-    projectCost: paramProjectCost,
-    predevelopmentCosts: paramPredevelopmentCosts,
-    yearOneNOI: paramYearOneNOI,
-    seniorDebtPct: params.seniorDebtPct || 0,
-    seniorDebtRate: params.seniorDebtRate || 6,
-    seniorDebtAmortization: seniorDebtAmortYears,
-    seniorDebtIOYears: seniorDebtIOYears,
-    outsideInvestorSubDebtPct: paramOutsideInvestorSubDebtPct,
-    outsideInvestorSubDebtPikRate: paramOutsideInvestorSubDebtPikRate,
-    outsideInvestorPikCurrentPayEnabled: paramOutsideInvestorPikCurrentPayEnabled,
-    outsideInvestorPikCurrentPayPct: paramOutsideInvestorPikCurrentPayPct,
-    hdcSubDebtPct: paramHdcSubDebtPct,
-    hdcSubDebtPikRate: paramHdcSubDebtPikRate,
-    hdcPikCurrentPayEnabled: paramPikCurrentPayEnabled,
-    hdcPikCurrentPayPct: paramPikCurrentPayPct,
-    investorSubDebtPct: paramInvestorSubDebtPct,
-    investorSubDebtPikRate: paramInvestorSubDebtPikRate,
-    investorPikCurrentPayEnabled: paramInvestorPikCurrentPayEnabled,
-    investorPikCurrentPayPct: paramInvestorPikCurrentPayPct,
-  });
+  // ISS-039: Calculate interest reserve using iterative convergence
+  // The reserve depends on debt service, which depends on (projectCost + reserve),
+  // creating a circular dependency. We iterate until the reserve converges.
+  const MAX_RESERVE_ITERATIONS = 10;
+  const RESERVE_TOLERANCE = 0.001; // $1K tolerance (values in millions)
 
-  // Now add interest reserve to effective project cost
-  // This allows it to be funded proportionally through capital structure
-  const effectiveProjectCost = baseProjectCost + interestReserveAmount;
+  // ISS-041: Pre-calculate PAB amount for interest reserve (based on lihtcEligibleBasis, not project cost)
+  const reservePabAmount = paramPabEnabled && paramLihtcEnabled && paramLihtcEligibleBasis > 0
+    ? paramLihtcEligibleBasis * (paramPabPctOfEligibleBasis / 100)
+    : 0;
+
+  let interestReserveAmount = 0;
+  let effectiveProjectCost = baseProjectCost;
+
+  if (interestReserveEnabled) {
+    for (let iter = 0; iter < MAX_RESERVE_ITERATIONS; iter++) {
+      // Calculate reserve based on current effective project cost
+      const newReserve = calculateInterestReserve({
+        enabled: interestReserveEnabled,
+        months: interestReserveMonths,
+        projectCost: effectiveProjectCost, // Use effective, includes previous reserve estimate
+        predevelopmentCosts: 0, // Already included in effectiveProjectCost via baseProjectCost
+        yearOneNOI: paramYearOneNOI,
+        seniorDebtPct: params.seniorDebtPct || 0,
+        seniorDebtRate: params.seniorDebtRate || 6,
+        seniorDebtAmortization: seniorDebtAmortYears,
+        seniorDebtIOYears: seniorDebtIOYears,
+        // ISS-041: Include PABs in hard debt service calculation
+        pabEnabled: paramPabEnabled,
+        pabAmount: reservePabAmount,
+        pabRate: paramPabRate,
+        pabAmortization: paramPabAmortization,
+        pabIOYears: paramPabIOYears,
+        outsideInvestorSubDebtPct: paramOutsideInvestorSubDebtPct,
+        outsideInvestorSubDebtPikRate: paramOutsideInvestorSubDebtPikRate,
+        outsideInvestorPikCurrentPayEnabled: paramOutsideInvestorPikCurrentPayEnabled,
+        outsideInvestorPikCurrentPayPct: paramOutsideInvestorPikCurrentPayPct,
+        hdcSubDebtPct: paramHdcSubDebtPct,
+        hdcSubDebtPikRate: paramHdcSubDebtPikRate,
+        hdcPikCurrentPayEnabled: paramPikCurrentPayEnabled,
+        hdcPikCurrentPayPct: paramPikCurrentPayPct,
+        investorSubDebtPct: paramInvestorSubDebtPct,
+        investorSubDebtPikRate: paramInvestorSubDebtPikRate,
+        investorPikCurrentPayEnabled: paramInvestorPikCurrentPayEnabled,
+        investorPikCurrentPayPct: paramInvestorPikCurrentPayPct,
+      });
+
+      // Check for convergence
+      if (Math.abs(newReserve - interestReserveAmount) < RESERVE_TOLERANCE) {
+        interestReserveAmount = newReserve;
+        break;
+      }
+
+      // Update reserve and effective project cost for next iteration
+      interestReserveAmount = newReserve;
+      effectiveProjectCost = baseProjectCost + interestReserveAmount;
+    }
+  }
+
+  // Final effective project cost with converged reserve
+  effectiveProjectCost = baseProjectCost + interestReserveAmount;
 
   // Calculate all capital components based on effective project cost
   const subDebtPrincipal = effectiveProjectCost * (paramHdcSubDebtPct / 100);
@@ -280,6 +327,16 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
   // Calculate annual interest-only payment for IO period
   const annualSeniorDebtIOPayment = seniorDebtAmount * seniorDebtRate;
 
+  // Private Activity Bonds (IMPL-080)
+  // PAB Amount = LIHTC Eligible Basis × PAB % (not project cost - avoids circular dependency)
+  const pabAmount = paramPabEnabled && paramLihtcEnabled && paramLihtcEligibleBasis > 0
+    ? paramLihtcEligibleBasis * (paramPabPctOfEligibleBasis / 100)
+    : 0;
+  const pabRate = paramPabRate / 100;
+  const monthlyPabPIPayment = calculateMonthlyPayment(pabAmount, pabRate, paramPabAmortization);
+  const annualPabPIPayment = monthlyPabPIPayment * 12;
+  const annualPabIOPayment = pabAmount * pabRate;
+
   // Philanthropic debt is always interest-only (no principal amortization)
   // When current pay is disabled, all interest accrues as PIK (no payments)
   // When current pay is enabled, a portion of interest is paid currently, rest accrues as PIK
@@ -293,11 +350,18 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
   let hdcPikBalance = subDebtPrincipal; // Track HDC PIK balance for compound interest
   let investorPikBalance = investorSubDebtPrincipal; // Track investor PIK balance for compound interest
   let outsideInvestorPikBalance = outsideInvestorSubDebtPrincipal; // Track outside investor PIK balance for compound interest
+  // HDC Debt Fund (IMPL-082) - Similar to outsideInvestor, visible in leverage mode
+  const hdcDebtFundPrincipal = effectiveProjectCost * (paramHdcDebtFundPct / 100);
+  let hdcDebtFundPikBalance = hdcDebtFundPrincipal;
   let philPikBalance = 0; // Track only the PIK portion of philanthropic debt, NOT the principal
 
   // Track total cost of outside investor debt
   let totalOutsideInvestorCashPaid = 0;
   let totalOutsideInvestorPIKAccrued = 0;
+
+  // Track total cost of HDC Debt Fund (IMPL-082)
+  let totalHdcDebtFundCashPaid = 0;
+  let totalHdcDebtFundPIKAccrued = 0;
   
   // Waterfall tracking
   let equityRecovered = 0; // Track how much of initial equity has been recovered
@@ -348,12 +412,40 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
     } else if (year === placedInServiceYear) {
       // First year of operations (might be partial)
       const monthsInService = 12 - (paramConstructionDelayMonths % 12);
-      if (monthsInService === 12) {
-        // Full year of operations
-        effectiveNOI = currentNOI;
+
+      // ISS-053: Apply S-curve lease-up in the placed-in-service year too
+      // The S-curve models gradual occupancy ramp-up during lease-up period
+      if (interestReserveEnabled && year <= interestReservePeriodYears) {
+        // Calculate average occupancy over the year using S-curve
+        const startMonth = (year - 1) * 12;
+        const endMonth = Math.min(year * 12, interestReserveMonths);
+        let totalOccupancy = 0;
+        let monthCount = 0;
+
+        for (let month = startMonth + 1; month <= endMonth; month++) {
+          const progress = Math.min(1, month / interestReserveMonths);
+          const monthlyOccupancy = calculateSCurve(progress, STANDARD_STEEPNESS);
+          totalOccupancy += monthlyOccupancy;
+          monthCount++;
+        }
+
+        effectiveOccupancy = monthCount > 0 ? totalOccupancy / monthCount : 0;
+
+        // Apply both partial year pro-rating AND S-curve occupancy
+        if (monthsInService === 12) {
+          effectiveNOI = currentNOI * effectiveOccupancy;
+        } else {
+          effectiveNOI = currentNOI * (monthsInService / 12) * effectiveOccupancy;
+        }
       } else {
-        // Partial year - pro-rate the NOI
-        effectiveNOI = currentNOI * (monthsInService / 12);
+        // No S-curve - use simple partial year logic
+        if (monthsInService === 12) {
+          // Full year of operations
+          effectiveNOI = currentNOI;
+        } else {
+          // Partial year - pro-rate the NOI
+          effectiveNOI = currentNOI * (monthsInService / 12);
+        }
       }
     } else {
       // Full operations - apply growth for years after placement
@@ -382,10 +474,10 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
 
         effectiveOccupancy = monthCount > 0 ? totalOccupancy / monthCount : 0;
 
-        // Ensure we reach 100% by the end of the reserve period
-        if (year === interestReservePeriodYears && endMonth >= interestReserveMonths) {
-          effectiveOccupancy = 1.0;
-        }
+        // ISS-053: REMOVED override that set effectiveOccupancy = 1.0
+        // The S-curve naturally produces correct average occupancy (~50% for 12-month reserve)
+        // This allows the interest reserve to be consumed during the lease-up shortfall
+        // Post-stabilization (year > interestReservePeriodYears) uses 100% occupancy below
       } else {
         effectiveOccupancy = 1.0;
       }
@@ -579,6 +671,20 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
       }
     }
 
+    // HDC Debt Fund interest calculation (IMPL-082)
+    let hdcDebtFundCurrentPayDue = 0;
+    let hdcDebtFundPIKAccrued = 0;
+    if (paramHdcDebtFundPct > 0 && hdcDebtFundPikBalance > 0) {
+      const hdcDebtFundFullInterest = hdcDebtFundPikBalance * (paramHdcDebtFundPikRate / 100);
+      if (paramHdcDebtFundCurrentPayEnabled && year > interestReservePeriodYears) {
+        hdcDebtFundCurrentPayDue = hdcDebtFundFullInterest * (paramHdcDebtFundCurrentPayPct / 100);
+        hdcDebtFundPIKAccrued = hdcDebtFundFullInterest - hdcDebtFundCurrentPayDue;
+      } else {
+        hdcDebtFundCurrentPayDue = 0;
+        hdcDebtFundPIKAccrued = hdcDebtFundFullInterest;
+      }
+    }
+
     let hdcSubDebtCurrentPayDue = 0;
     let hdcSubDebtPIKAccrued = 0;
     if (paramHdcSubDebtPct > 0 && hdcPikBalance > 0) {
@@ -623,8 +729,25 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
       annualSeniorDebtService = isInIOPeriod ? annualSeniorDebtIOPayment : annualSeniorDebtPIPayment;
     }
 
-    // Step 2: Calculate HARD DEBT service (for DSCR - only Senior + Phil)
-    const hardDebtService = annualSeniorDebtService + philDebtServiceThisYear;
+    // Step 1.6: Calculate PAB Debt Service (IMPL-080)
+    // PAB is pari passu with Senior Debt (both "must pay")
+    let annualPabDebtService = 0;
+    if (paramPabEnabled && pabAmount > 0 && year >= placedInServiceYear) {
+      const pabIoEndYear = placedInServiceYear + paramPabIOYears;
+      const isInPabIOPeriod = year < pabIoEndYear;
+      annualPabDebtService = isInPabIOPeriod ? annualPabIOPayment : annualPabPIPayment;
+    }
+
+    // Step 2: Calculate HARD DEBT service (for DSCR - Senior + PAB + Phil current pay)
+    // This is used for cash management and targets 1.05x
+    const hardDebtService = annualSeniorDebtService + annualPabDebtService + philDebtServiceThisYear;
+
+    // DSCR Breakdown (IMPL-081) - Display metrics only
+    // Must-Pay DSCR: Senior + PAB only (true hard floor - no PIK option)
+    const mustPayDebtService = annualSeniorDebtService + annualPabDebtService;
+    const mustPayDSCR = mustPayDebtService > 0 ? effectiveNOI / mustPayDebtService : 0;
+    // Phil DSCR: Senior + PAB + Phil current pay (Amazon 1.05x requirement)
+    const philDSCR = hardDebtService > 0 ? effectiveNOI / hardDebtService : 0;
 
     // Step 3: Calculate available cash maintaining exactly 1.05 DSCR
     // CRITICAL: The 0.05x buffer (5% above debt service) must be preserved
@@ -671,6 +794,7 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
 
     // Initialize payment tracking variables
     let outsideInvestorCurrentPay = 0;
+    let hdcDebtFundCurrentPay = 0;
     let hdcSubDebtCurrentPay = 0;
     let investorSubDebtInterestReceived = 0;
 
@@ -765,6 +889,18 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
         }
       },
       {
+        // HDC Debt Fund (IMPL-082) - Priority 1 (same as Outside Investor)
+        name: 'hdcDebtFundCurrentPay',
+        amount: hdcDebtFundCurrentPayDue,
+        priority: 1,
+        handler: (paid: number, deferred: number) => {
+          hdcDebtFundCurrentPay = paid;
+          hdcDebtFundPIKAccrued += deferred;
+          totalHdcDebtFundCashPaid += paid;
+          return paid; // Cash outflow
+        }
+      },
+      {
         name: 'hdcSubDebtCurrentPay',
         amount: hdcSubDebtCurrentPayDue,
         priority: 2,
@@ -781,7 +917,8 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
         handler: (paid: number, deferred: number) => {
           investorSubDebtInterestReceived = paid;
           investorSubDebtPIKAccrued += deferred;
-          return -paid; // Cash inflow to investor
+          // ISS-052: Fixed sign - payment is cash outflow from project (deducts from remainingCash)
+          return paid;
         }
       },
       {
@@ -946,11 +1083,13 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
     // Update PIK balances after payments
     outsideInvestorPikBalance += outsideInvestorSubDebtPIKAccrued;
     totalOutsideInvestorPIKAccrued += outsideInvestorSubDebtPIKAccrued;
+    hdcDebtFundPikBalance += hdcDebtFundPIKAccrued;
+    totalHdcDebtFundPIKAccrued += hdcDebtFundPIKAccrued;
     hdcPikBalance += hdcSubDebtPIKAccrued;
     investorPikBalance += investorSubDebtPIKAccrued;
 
     // Calculate total debt service for reporting (includes actual soft pay amounts)
-    const debtServicePayments = hardDebtService + outsideInvestorCurrentPay + hdcSubDebtCurrentPay - investorSubDebtInterestReceived;
+    const debtServicePayments = hardDebtService + outsideInvestorCurrentPay + hdcDebtFundCurrentPay + hdcSubDebtCurrentPay - investorSubDebtInterestReceived;
 
     // Cash after debt service (already accounted for in remainingCash)
     const cashAfterDebtService = remainingCash + aumFeePaid;
@@ -1291,15 +1430,15 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
     // DSCR already calculated above before HDC fee determination
 
     // Calculate DSCR including all sub-debt current pay portions (for monitoring)
-    const totalCurrentPayObligations = hardDebtService + hdcSubDebtCurrentPay +
+    const totalCurrentPayObligations = hardDebtService + hdcSubDebtCurrentPay + hdcDebtFundCurrentPay +
                                        investorSubDebtInterestReceived + outsideInvestorCurrentPay;
     const dscrWithCurrentPay = totalCurrentPayObligations > 0 ? effectiveNOI / totalCurrentPayObligations : 0;
 
     // IMPL-020a: Pre-calculate waterfall display values for UI
     const freeCash = effectiveNOI - hardDebtService;
     const hardDscr = hardDebtService > 0 ? effectiveNOI / hardDebtService : 0;
-    const totalSubDebtInterestNet = hdcSubDebtCurrentPay + outsideInvestorCurrentPay - investorSubDebtInterestReceived;
-    const totalSubDebtInterestGross = hdcSubDebtCurrentPay + outsideInvestorCurrentPay + Math.abs(investorSubDebtInterestReceived);
+    const totalSubDebtInterestNet = hdcSubDebtCurrentPay + hdcDebtFundCurrentPay + outsideInvestorCurrentPay - investorSubDebtInterestReceived;
+    const totalSubDebtInterestGross = hdcSubDebtCurrentPay + hdcDebtFundCurrentPay + outsideInvestorCurrentPay + Math.abs(investorSubDebtInterestReceived);
     const cashAfterSubDebt = freeCash - totalSubDebtInterestNet;
     const subDebtDscr = (hardDebtService + totalSubDebtInterestNet) > 0 ? effectiveNOI / (hardDebtService + totalSubDebtInterestNet) : 0;
     const finalCash = cashAfterDebtAndFees;
@@ -1315,6 +1454,7 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
       interestReserveBalance,
       excessReserveDistribution,
       hardDebtService,
+      pabDebtService: annualPabDebtService, // IMPL-080: PAB debt service
       debtServicePayments,
       cashAfterDebtService,
       aumFeeAmount,
@@ -1330,6 +1470,9 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
       investorPikBalance: investorCumulativePikBalance,
       outsideInvestorCurrentPay,
       outsideInvestorPIKAccrued: outsideInvestorSubDebtPIKAccrued,
+      // HDC Debt Fund (IMPL-082)
+      hdcDebtFundCurrentPay: hdcDebtFundCurrentPayDue,
+      hdcDebtFundPIKAccrued,
       hdcSubDebtPIKAccrued,
       ozYear5TaxPayment, // Track for display but excluded from totalCashFlow
       stepUpTaxSavings, // IMPL-054: Tax savings from step-up, included in totalCashFlow
@@ -1346,6 +1489,10 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
       dscr: actualDscr,
       targetDscr,
       dscrWithCurrentPay,
+      // DSCR Breakdown (IMPL-081)
+      mustPayDebtService,  // Senior + PAB only (true hard floor)
+      mustPayDSCR,         // NOI / (Senior + PAB)
+      philDSCR,            // NOI / (Senior + PAB + Phil current pay)
       // IMPL-020a: Waterfall display fields (pre-calculated for UI)
       revenue: currentRevenue,
       opex: currentExpenses,
@@ -1427,12 +1574,22 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
   // IMPL-7.0-009: Subtract preferred equity at TIER 3 (after hard debt, before common equity)
   const grossExitProceeds = Math.max(0, grossExitProceedsBeforePrefEquity - preferredEquityAtExit);
 
-  // IMPL-029: Return-of-capital-first waterfall
-  // 1. Return investor's equity basis first (100% to investor)
-  // 2. Then split remaining profit per promote percentage
+  // IMPL-029 + ISS-050: Return-of-capital-first waterfall with prior recovery tracking
+  // 1. Check how much capital was already recovered during hold period
+  // 2. Only give ROC at exit for remaining unrecovered capital
+  // 3. All other exit proceeds are profit, split per promote percentage
   const investorEquityBasis = investorEquity; // Use initial equity investment as basis
-  const returnOfCapital = Math.min(grossExitProceeds, investorEquityBasis);
-  const profit = Math.max(0, grossExitProceeds - investorEquityBasis);
+
+  // ISS-050 FIX: Account for capital already recovered during hold period
+  // cumulativeReturns includes: tax benefits, operating cash, sub-debt interest, etc.
+  const capitalAlreadyRecovered = Math.min(cumulativeReturns, investorEquityBasis);
+  const remainingCapitalToRecover = Math.max(0, investorEquityBasis - capitalAlreadyRecovered);
+
+  // Return of Capital is only for the REMAINING unrecovered capital
+  const returnOfCapital = Math.min(grossExitProceeds, remainingCapitalToRecover);
+
+  // Profit is everything after ROC - this is now larger when capital was already recovered
+  const profit = Math.max(0, grossExitProceeds - returnOfCapital);
   const investorProfitShare = profit * (paramInvestorPromoteShare / 100);
   const investorShareOfGross = returnOfCapital + investorProfitShare;
 
@@ -1617,6 +1774,9 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
     investorSubDebtInterest: investorCashFlows.reduce((sum, cf) => sum + cf.subDebtInterest, 0),
     investorSubDebtInterestReceived: investorCashFlows.reduce((sum, cf) => sum + (cf.investorSubDebtInterestReceived || 0), 0),
     remainingDebtAtExit: remainingDebt,
+    // ISS-050 v3: Export separate senior and phil debt for exit sheet accuracy
+    remainingSeniorDebtAtExit: remainingSeniorDebt,
+    remainingPhilDebtAtExit: remainingPhilDebt,
     subDebtAtExit: subDebtAtExit,
     investorSubDebtAtExit: investorSubDebtAtExit,
     outsideInvestorSubDebtAtExit: outsideInvestorSubDebtAtExit,
@@ -1655,7 +1815,13 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
     // IMPL-061: Depreciation breakdown for Returns Buildup Strip
     year1BonusTaxBenefit,
     year1MacrsTaxBenefit,
-    years2ExitMacrsTaxBenefit
+    years2ExitMacrsTaxBenefit,
+    // ISS-050: Exit waterfall prior capital recovery tracking
+    grossExitProceeds,
+    capitalAlreadyRecovered,
+    remainingCapitalToRecover,
+    exitReturnOfCapital: returnOfCapital,
+    exitProfitShare: investorProfitShare
   };
 
   // NEW: Add tax planning calculations if requested

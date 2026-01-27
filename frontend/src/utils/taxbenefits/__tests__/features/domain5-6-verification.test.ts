@@ -66,7 +66,7 @@ describe('Domain 5 & 6: Independent Math Verification (Trace 4001)', () => {
   });
 
   describe('Domain 5 Checkpoint 1: Year 10 NOI', () => {
-    it('should match hand calculation: Year 1 NOI × (1.03)^9', () => {
+    it('should match hand calculation: Stabilized NOI × (1.03)^9', () => {
       // MANUAL CALCULATION
       const year1NOI = 3.5; // $3.5M
       const growthRate = 0.03;
@@ -77,7 +77,7 @@ describe('Domain 5 & 6: Independent Math Verification (Trace 4001)', () => {
 
       console.log('\n=== CHECKPOINT 1: Year 10 NOI ===');
       console.log('Manual Calculation:');
-      console.log(`  Year 1 NOI: $${year1NOI}M`);
+      console.log(`  Stabilized NOI: $${year1NOI}M`);
       console.log(`  Growth Rate: ${growthRate * 100}%`);
       console.log(`  Years of Growth: ${years}`);
       console.log(`  Growth Factor: ${Math.pow(1.03, years).toFixed(4)}`);
@@ -214,7 +214,7 @@ describe('Domain 5 & 6: Independent Math Verification (Trace 4001)', () => {
 
       console.log('\n=== CHECKPOINT 4: DSCR Year 1 ===');
       console.log('Manual Calculation:');
-      console.log(`  Year 1 NOI: $${year1NOI.toFixed(3)}M`);
+      console.log(`  Stabilized NOI: $${year1NOI.toFixed(3)}M`);
       console.log(`  Senior Debt: $${seniorDebt.toFixed(2)}M`);
       console.log(`  Senior Debt Rate: ${seniorDebtRate * 100}%`);
       console.log(`  Year 1 Debt Service (IO): $${year1DebtService.toFixed(3)}M`);

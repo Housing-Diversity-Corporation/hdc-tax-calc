@@ -158,7 +158,7 @@ describe('Domain 7: Integration - End-to-End Validation', () => {
       const debtService = year1Flow.hardDebtService;
       const cashAfterDebt = year1Flow.cashAfterDebtService;
 
-      console.log('Year 1 NOI: $' + noi.toFixed(6) + 'M');
+      console.log('Stabilized NOI: $' + noi.toFixed(6) + 'M');
       console.log('Hard Debt Service: $' + debtService.toFixed(6) + 'M');
       console.log('Cash After Debt: $' + cashAfterDebt.toFixed(6) + 'M');
 

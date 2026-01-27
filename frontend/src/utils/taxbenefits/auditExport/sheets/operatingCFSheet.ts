@@ -1,5 +1,6 @@
 /**
  * IMPL-056: Live Calculation Excel Model - Operating Cash Flow Sheet
+ * ISS-037: Added DSCR breakdown columns (Must-Pay DSCR, Phil DSCR)
  *
  * Sheet 7: Year-by-year operating cash flows with DSCR tracking.
  */
@@ -26,6 +27,9 @@ export function buildOperatingCFSheet(
   ws['A1'] = { t: 's', v: 'OPERATING CASH FLOW' };
   ws['A2'] = { t: 's', v: '' };
 
+  // ISS-037: Check if DSCR breakdown should be shown
+  const showDSCRBreakdown = params.philCurrentPayEnabled || params.pabEnabled;
+
   // Column headers
   ws['A3'] = { t: 's', v: 'Year' };
   ws['B3'] = { t: 's', v: 'Occupancy %' };
@@ -35,6 +39,13 @@ export function buildOperatingCFSheet(
   ws['F3'] = { t: 's', v: 'DSCR' };
   ws['G3'] = { t: 's', v: 'Req for 1.05x' };
   ws['H3'] = { t: 's', v: 'Available for Soft Pay' };
+
+  // ISS-037: DSCR breakdown columns (when Phil current pay or PAB enabled)
+  if (showDSCRBreakdown) {
+    ws['I3'] = { t: 's', v: 'Must-Pay DS' };
+    ws['J3'] = { t: 's', v: 'Must-Pay DSCR' };
+    ws['K3'] = { t: 's', v: 'Phil DSCR' };
+  }
 
   // Year-by-year data
   for (let year = 1; year <= holdPeriod; year++) {
@@ -78,6 +89,24 @@ export function buildOperatingCFSheet(
     const availForSoft = Math.max(0, noi - req105);
     ws[`H${row}`] = { t: 'n', v: availForSoft, f: `MAX(0,C${row}-G${row})` } as FormulaCell;
     namedRanges.push({ name: `AvailForSoftPay_Y${year}`, ref: `Operating_CF!$H$${row}` });
+
+    // ISS-037: DSCR breakdown columns
+    if (showDSCRBreakdown) {
+      // Must-Pay Debt Service (Senior + PAB only)
+      const mustPayDS = cf?.mustPayDebtService || 0;
+      ws[`I${row}`] = { t: 'n', v: mustPayDS, f: `MustPayDS_Y${year}` } as FormulaCell;
+      namedRanges.push({ name: `MustPayDS_Y${year}`, ref: `Operating_CF!$I$${row}` });
+
+      // Must-Pay DSCR = NOI / (Senior + PAB)
+      const mustPayDSCR = cf?.mustPayDSCR || (mustPayDS > 0 ? noi / mustPayDS : 0);
+      ws[`J${row}`] = { t: 'n', v: mustPayDSCR, f: `IF(I${row}>0,C${row}/I${row},0)` } as FormulaCell;
+      namedRanges.push({ name: `MustPayDSCR_Y${year}`, ref: `Operating_CF!$J$${row}` });
+
+      // Phil DSCR = NOI / (Senior + PAB + Phil Current Pay)
+      const philDSCR = cf?.philDSCR || dscr; // Falls back to overall DSCR
+      ws[`K${row}`] = { t: 'n', v: philDSCR, f: `IF(D${row}>0,C${row}/D${row},0)` } as FormulaCell;
+      namedRanges.push({ name: `PhilDSCR_Y${year}`, ref: `Operating_CF!$K$${row}` });
+    }
   }
 
   // Summary rows
@@ -98,20 +127,45 @@ export function buildOperatingCFSheet(
   ws[`A${metricsRow + 3}`] = { t: 's', v: 'Total Available for Soft' };
   ws[`B${metricsRow + 3}`] = { t: 'n', v: cashFlows.reduce((sum, cf) => sum + Math.max(0, (cf.noi || 0) - (cf.hardDebtService || 0) * 1.05), 0), f: `SUM(H4:H${holdPeriod + 3})` } as FormulaCell;
 
-  // Set sheet range
-  ws['!ref'] = `A1:H${metricsRow + 3}`;
+  // ISS-037: DSCR breakdown summary metrics
+  let finalMetricsRow = metricsRow + 3;
+  if (showDSCRBreakdown) {
+    finalMetricsRow = metricsRow + 5;
 
-  // Set column widths
-  ws['!cols'] = [
-    { wch: 8 },  // Year
-    { wch: 12 }, // Occupancy
-    { wch: 12 }, // NOI
-    { wch: 15 }, // Hard Debt Service
-    { wch: 15 }, // Cash After Hard DS
-    { wch: 10 }, // DSCR
-    { wch: 12 }, // Req for 1.05x
-    { wch: 18 }, // Available for Soft Pay
+    ws[`A${metricsRow + 4}`] = { t: 's', v: 'Min Must-Pay DSCR' };
+    const minMustPayDSCR = Math.min(...cashFlows.map(cf => cf.mustPayDSCR || 0).filter(d => d > 0));
+    ws[`B${metricsRow + 4}`] = { t: 'n', v: minMustPayDSCR > 0 ? minMustPayDSCR : 0, f: `MIN(J4:J${holdPeriod + 3})` } as FormulaCell;
+    namedRanges.push({ name: 'MinMustPayDSCR', ref: `Operating_CF!$B$${metricsRow + 4}` });
+
+    ws[`A${metricsRow + 5}`] = { t: 's', v: 'Min Phil DSCR' };
+    const minPhilDSCR = Math.min(...cashFlows.map(cf => cf.philDSCR || 0).filter(d => d > 0));
+    ws[`B${metricsRow + 5}`] = { t: 'n', v: minPhilDSCR > 0 ? minPhilDSCR : 0, f: `MIN(K4:K${holdPeriod + 3})` } as FormulaCell;
+    namedRanges.push({ name: 'MinPhilDSCR', ref: `Operating_CF!$B$${metricsRow + 5}` });
+  }
+
+  // Set sheet range (ISS-037: extend to K if DSCR breakdown shown)
+  const lastCol = showDSCRBreakdown ? 'K' : 'H';
+  ws['!ref'] = `A1:${lastCol}${finalMetricsRow}`;
+
+  // Set column widths (ISS-037: add DSCR breakdown columns)
+  const cols = [
+    { wch: 8 },  // A: Year
+    { wch: 12 }, // B: Occupancy
+    { wch: 12 }, // C: NOI
+    { wch: 15 }, // D: Hard Debt Service
+    { wch: 15 }, // E: Cash After Hard DS
+    { wch: 10 }, // F: DSCR
+    { wch: 12 }, // G: Req for 1.05x
+    { wch: 18 }, // H: Available for Soft Pay
   ];
+  if (showDSCRBreakdown) {
+    cols.push(
+      { wch: 14 }, // I: Must-Pay DS
+      { wch: 14 }, // J: Must-Pay DSCR
+      { wch: 12 }, // K: Phil DSCR
+    );
+  }
+  ws['!cols'] = cols;
 
   return { sheet: ws, namedRanges };
 }

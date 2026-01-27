@@ -1,8 +1,10 @@
 /**
  * IMPL-056: Live Calculation Excel Model - LIHTC Sheet
+ * IMPL-079: Added State Credit Duration parameter for variable-duration state programs
  *
- * Sheet 6: 11-year LIHTC credit schedule per IRC §42.
- * Year 1 prorated, Years 2-10 full, Year 11 catch-up.
+ * Sheet 6: LIHTC credit schedule per IRC §42.
+ * Federal: 10-year period (Year 1 prorated, Years 2-10 full, Year 11 catch-up)
+ * State: Variable duration per state program (e.g., NE is 6 years)
  */
 
 import * as XLSX from 'xlsx';
@@ -29,28 +31,36 @@ export function buildLIHTCSheet(params: CalculationParams): SheetResult {
 
   // Calculate basis and credits
   // ISS-021: Properly distinguish Eligible Basis (pre-boost) vs Qualified Basis (post-boost)
-  const depreciableBasis = projectCost - landValue;
-  const eligibleBasis = depreciableBasis; // Pre-boost: Project Cost - Land
+  // IMPL-083: Use pre-calculated lihtcEligibleBasis from params (includes all exclusions)
+  // Fallback to simple calc (Project - Land) for backwards compatibility
+  const eligibleBasis = params.lihtcEligibleBasis ?? (projectCost - landValue);
   const qualifiedBasis = eligibleBasis * ddaBoost * applicableFraction; // Post-boost with applicable fraction
   const annualFedCredit = qualifiedBasis * creditRate;
   // ISS-016: annualStateCredit now comes from params (line 28), not calculated from rate
 
+  // IMPL-079: State credit duration (varies by state, e.g., NE is 6 years)
+  // Derive from yearlyCredits length - 1 (schedule includes catch-up year)
+  const stateCreditDuration = params.stateLIHTCIntegration?.yearlyCredits
+    ? Math.max(params.stateLIHTCIntegration.yearlyCredits.length - 1, 1)
+    : 10;
+  const stateCatchUpYear = stateCreditDuration + 1;
+
   // Year 1 proration factor: (13 - closing month) / 12
   const year1Factor = (13 - pisMonth) / 12;
   const year1FedCredit = annualFedCredit * year1Factor;
-  const year11FedCredit = annualFedCredit - year1FedCredit; // Catch-up
+  const year11FedCredit = annualFedCredit - year1FedCredit; // Federal catch-up always Year 11
   const year1StateCredit = annualStateCredit * year1Factor;
-  const year11StateCredit = annualStateCredit - year1StateCredit;
+  const stateCatchUpCredit = annualStateCredit - year1StateCredit; // State catch-up in year (duration+1)
 
   // Header
   ws['A1'] = { t: 's', v: 'LIHTC SCHEDULE' };
   ws['A2'] = { t: 's', v: '' };
 
   // ISS-021: Basis Calculation Section - Properly distinguish Eligible vs Qualified Basis
-  // Eligible Basis = Project Cost - Land (pre-boost)
+  // IMPL-083: Eligible Basis = Project Cost - Land - All Exclusions (pre-boost)
   ws['A3'] = { t: 's', v: 'Eligible Basis' };
-  ws['B3'] = { t: 'n', v: eligibleBasis, f: 'DepreciableBasis' } as FormulaCell;
-  ws['C3'] = { t: 's', v: '(Project - Land, pre-boost)' };
+  ws['B3'] = { t: 'n', v: eligibleBasis, f: 'LIHTCEligibleBasis' } as FormulaCell;
+  ws['C3'] = { t: 's', v: '(Cost - Land - Exclusions)' };
   namedRanges.push({ name: 'LIHTCEligibleBasis', ref: 'LIHTC!$B$3' });
 
   // DDA/QCT Boost row - only meaningful content when boost > 0
@@ -77,29 +87,35 @@ export function buildLIHTCSheet(params: CalculationParams): SheetResult {
   ws['B8'] = { t: 'n', v: annualStateCredit, f: 'IF(StateLIHTCEnabled,StateLIHTCAnnualCredit,0)' } as FormulaCell;
   namedRanges.push({ name: 'LIHTCAnnualStateCredit', ref: 'LIHTC!$B$8' });
 
-  ws['A9'] = { t: 's', v: '' };
+  // IMPL-079: State credit duration display (variable already defined above)
+  ws['A9'] = { t: 's', v: 'State Credit Duration' };
+  ws['B9'] = { t: 'n', v: stateCreditDuration };
+  ws['C9'] = { t: 's', v: stateCreditDuration === 10 ? '(standard)' : `(${stateCreditDuration}-year program)` };
+  namedRanges.push({ name: 'StateLIHTCDuration', ref: 'LIHTC!$B$9' });
+
+  ws['A10'] = { t: 's', v: '' };
 
   // Proration Section
-  ws['A10'] = { t: 's', v: 'PIS Month' };
-  ws['B10'] = { t: 'n', v: pisMonth, f: 'ClosingMonth' } as FormulaCell;
+  ws['A11'] = { t: 's', v: 'PIS Month' };
+  ws['B11'] = { t: 'n', v: pisMonth, f: 'ClosingMonth' } as FormulaCell;
 
-  ws['A11'] = { t: 's', v: 'Year 1 Proration Factor' };
-  ws['B11'] = { t: 'n', v: year1Factor, f: '(13-ClosingMonth)/12' } as FormulaCell;
-  namedRanges.push({ name: 'LIHTCYear1Factor', ref: 'LIHTC!$B$11' });
+  ws['A12'] = { t: 's', v: 'Year 1 Proration Factor' };
+  ws['B12'] = { t: 'n', v: year1Factor, f: '(13-ClosingMonth)/12' } as FormulaCell;
+  namedRanges.push({ name: 'LIHTCYear1Factor', ref: 'LIHTC!$B$12' });
 
-  ws['A12'] = { t: 's', v: '' };
+  ws['A13'] = { t: 's', v: '' };
 
   // Column headers for schedule
-  ws['A13'] = { t: 's', v: 'Year' };
-  ws['B13'] = { t: 's', v: 'Federal Credit' };
-  ws['C13'] = { t: 's', v: 'State Credit' };
-  ws['D13'] = { t: 's', v: 'Total Credit' };
-  ws['E13'] = { t: 's', v: 'Notes' };
+  ws['A14'] = { t: 's', v: 'Year' };
+  ws['B14'] = { t: 's', v: 'Federal Credit' };
+  ws['C14'] = { t: 's', v: 'State Credit' };
+  ws['D14'] = { t: 's', v: 'Total Credit' };
+  ws['E14'] = { t: 's', v: 'Notes' };
 
-  // ISS-021: 11-year schedule (rows shifted +2 due to new DDA/QCT Boost row)
+  // ISS-021: 11-year schedule (rows shifted +1 due to IMPL-079 State Credit Duration row)
   let cumFed = 0;
   let cumState = 0;
-  const scheduleStartRow = 14; // Data starts at row 14 (after headers at row 13)
+  const scheduleStartRow = 15; // Data starts at row 15 (after headers at row 14)
 
   for (let year = 1; year <= 11; year++) {
     const row = year + scheduleStartRow - 1; // Year 1 at row 14, Year 11 at row 24
@@ -112,26 +128,46 @@ export function buildLIHTCSheet(params: CalculationParams): SheetResult {
     let stateFormula = '';
     let notes = '';
 
+    // ISS-024: Handle variable state duration (federal is always 10-year/11-year schedule)
     if (year === 1) {
-      // Prorated first year
+      // Prorated first year (both federal and state)
       fedCredit = year1FedCredit;
       stateCredit = year1StateCredit;
       fedFormula = 'LIHTCAnnualFedCredit*LIHTCYear1Factor';
       stateFormula = 'LIHTCAnnualStateCredit*LIHTCYear1Factor';
       notes = 'Prorated';
     } else if (year <= 10) {
-      // Full years 2-10
+      // Full years 2-10 for federal
       fedCredit = annualFedCredit;
-      stateCredit = annualStateCredit;
       fedFormula = 'LIHTCAnnualFedCredit';
-      stateFormula = 'LIHTCAnnualStateCredit';
-      notes = 'Full year';
+
+      // State: full credit only within duration, catch-up in year (duration+1), then $0
+      if (year <= stateCreditDuration) {
+        stateCredit = annualStateCredit;
+        stateFormula = 'LIHTCAnnualStateCredit';
+        notes = 'Full year';
+      } else if (year === stateCatchUpYear) {
+        stateCredit = stateCatchUpCredit;
+        stateFormula = `LIHTCAnnualStateCredit-C${scheduleStartRow}`; // Annual - Year 1
+        notes = stateCreditDuration === 10 ? 'Full year' : `State catch-up (Y${stateCatchUpYear})`;
+      } else {
+        stateCredit = 0;
+        stateFormula = '0';
+        notes = 'Full year (fed only)';
+      }
     } else {
-      // Year 11 catch-up
+      // Year 11: Federal catch-up
       fedCredit = year11FedCredit;
-      stateCredit = year11StateCredit;
       fedFormula = `LIHTCAnnualFedCredit-B${scheduleStartRow}`; // Annual - Year 1
-      stateFormula = `LIHTCAnnualStateCredit-C${scheduleStartRow}`;
+
+      // State: catch-up only if stateCatchUpYear is 11, otherwise $0
+      if (stateCatchUpYear === 11) {
+        stateCredit = stateCatchUpCredit;
+        stateFormula = `LIHTCAnnualStateCredit-C${scheduleStartRow}`;
+      } else {
+        stateCredit = 0;
+        stateFormula = '0';
+      }
       notes = 'Catch-up';
     }
 
@@ -158,7 +194,8 @@ export function buildLIHTCSheet(params: CalculationParams): SheetResult {
   ws[`B${sumRow}`] = { t: 'n', v: cumFed, f: `SUM(B${scheduleStartRow}:B${scheduleStartRow + 10})` } as FormulaCell;
   ws[`C${sumRow}`] = { t: 'n', v: cumState, f: `SUM(C${scheduleStartRow}:C${scheduleStartRow + 10})` } as FormulaCell;
   ws[`D${sumRow}`] = { t: 'n', v: cumFed + cumState, f: `SUM(D${scheduleStartRow}:D${scheduleStartRow + 10})` } as FormulaCell;
-  ws[`E${sumRow}`] = { t: 's', v: '= 10 × Annual' };
+  // ISS-024: Dynamic label reflecting federal (10yr) and state (variable) durations
+  ws[`E${sumRow}`] = { t: 's', v: stateCreditDuration === 10 ? '= 10 × Annual' : `Fed: 10yr, State: ${stateCreditDuration}yr` };
 
   namedRanges.push({ name: 'TotalFedLIHTC', ref: `LIHTC!$B$${sumRow}` });
   namedRanges.push({ name: 'TotalStateLIHTC', ref: `LIHTC!$C$${sumRow}` });

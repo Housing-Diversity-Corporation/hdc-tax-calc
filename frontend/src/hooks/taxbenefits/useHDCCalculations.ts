@@ -110,6 +110,29 @@ interface UseHDCCalculationsProps {
   placedInServiceMonth?: number;
   ddaQctBoost?: boolean;
 
+  // Private Activity Bonds (IMPL-080)
+  pabEnabled?: boolean;
+  pabPctOfEligibleBasis?: number;
+  pabRate?: number;
+  pabAmortization?: number;
+  pabIOYears?: number;
+
+  // IMPL-083: Eligible Basis Exclusions
+  commercialSpaceCosts?: number;
+  syndicationCosts?: number;
+  marketingCosts?: number;
+  financingFees?: number;
+  bondIssuanceCosts?: number;
+  operatingDeficitReserve?: number;
+  replacementReserve?: number;
+  otherExclusions?: number;
+
+  // HDC Debt Fund (IMPL-082)
+  hdcDebtFundPct?: number;
+  hdcDebtFundPikRate?: number;
+  hdcDebtFundCurrentPayEnabled?: boolean;
+  hdcDebtFundCurrentPayPct?: number;
+
   // State LIHTC (v7.0.14)
   stateLIHTCEnabled?: boolean;
   investorState?: string;
@@ -121,7 +144,6 @@ interface UseHDCCalculationsProps {
 }
 
 export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
-  debugger; // BREAKPOINT 5: Hook entry - inspect incoming props
   // Calculate interest reserve amount using shared function (single source of truth)
   const interestReserveAmount = useMemo(() => {
     return calculateInterestReserve({
@@ -386,23 +408,47 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
 
   // Calculate LIHTC Eligible Basis (separate from OZ depreciable basis per IRC §42)
   // MOVED: Before mainAnalysisResults to enable State LIHTC integration (IMPL-018)
+  // IMPL-083: Full exclusions list
   const lihtcEligibleBasis = useMemo(() => {
     return calculateLIHTCEligibleBasis({
       projectCost: props.projectCost,
       predevelopmentCosts: props.predevelopmentCosts,
       landValue: props.landValue,
       interestReserve: interestReserveAmount,
-      leaseUpReserve: 0, // TODO: Add lease-up reserve when available
-      syndicationCosts: 0, // TODO: Add syndication costs when available
-      marketingCosts: 0, // TODO: Add marketing costs when available
-      commercialSpaceCosts: 0 // TODO: Add commercial space costs when available
+      // IMPL-083: All eligible basis exclusions
+      commercialSpaceCosts: props.commercialSpaceCosts || 0,
+      syndicationCosts: props.syndicationCosts || 0,
+      marketingCosts: props.marketingCosts || 0,
+      financingFees: props.financingFees || 0,
+      bondIssuanceCosts: props.bondIssuanceCosts || 0,
+      operatingDeficitReserve: props.operatingDeficitReserve || 0,
+      replacementReserve: props.replacementReserve || 0,
+      otherExclusions: props.otherExclusions || 0
     });
   }, [
     props.projectCost,
     props.predevelopmentCosts,
     props.landValue,
-    interestReserveAmount
+    interestReserveAmount,
+    // IMPL-083: Dependencies for exclusions
+    props.commercialSpaceCosts,
+    props.syndicationCosts,
+    props.marketingCosts,
+    props.financingFees,
+    props.bondIssuanceCosts,
+    props.operatingDeficitReserve,
+    props.replacementReserve,
+    props.otherExclusions
   ]);
+
+  // ISS-029: Calculate PAB amount for capital stack integration
+  // PAB = Eligible Basis × PAB % (only when both LIHTC and PAB are enabled)
+  const pabAmount = useMemo(() => {
+    if (!props.pabEnabled || !props.lihtcEnabled || lihtcEligibleBasis <= 0) {
+      return 0;
+    }
+    return lihtcEligibleBasis * ((props.pabPctOfEligibleBasis || 30) / 100);
+  }, [props.pabEnabled, props.lihtcEnabled, lihtcEligibleBasis, props.pabPctOfEligibleBasis]);
 
   // Calculate Federal LIHTC schedule (v7.0.11)
   // MOVED: Before mainAnalysisResults to enable State LIHTC integration (IMPL-018)
@@ -504,12 +550,6 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
 
   // Main investor analysis
   const mainAnalysisResults: InvestorAnalysisResults = useMemo(() => {
-    debugger; // BREAKPOINT 4: Main calculation - inspect all props
-    console.log('🔄 RECALCULATING mainAnalysisResults:', {
-      aumFeeRate: props.aumFeeRate,
-      aumFeeEnabled: props.aumFeeEnabled,
-      hdcDeferredInterestRate: props.hdcDeferredInterestRate
-    });
     return calculateFullInvestorAnalysis({
       projectCost: props.projectCost,
       predevelopmentCosts: props.predevelopmentCosts,
@@ -551,6 +591,19 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       outsideInvestorSubDebtPikRate: props.outsideInvestorSubDebtPikRate,
       outsideInvestorPikCurrentPayEnabled: props.outsideInvestorPikCurrentPayEnabled,
       outsideInvestorPikCurrentPayPct: props.outsideInvestorPikCurrentPayPct,
+      // HDC Debt Fund (IMPL-082)
+      hdcDebtFundPct: props.hdcDebtFundPct,
+      hdcDebtFundPikRate: props.hdcDebtFundPikRate,
+      hdcDebtFundCurrentPayEnabled: props.hdcDebtFundCurrentPayEnabled,
+      hdcDebtFundCurrentPayPct: props.hdcDebtFundCurrentPayPct,
+      // Private Activity Bonds (IMPL-080)
+      pabEnabled: props.pabEnabled,
+      pabPctOfEligibleBasis: props.pabPctOfEligibleBasis,
+      pabRate: props.pabRate,
+      pabAmortization: props.pabAmortization,
+      pabIOYears: props.pabIOYears,
+      lihtcEnabled: props.lihtcEnabled,
+      lihtcEligibleBasis: lihtcEligibleBasis,
       philCurrentPayEnabled: props.philCurrentPayEnabled,
       philCurrentPayPct: props.philCurrentPayPct,
       interestReserveEnabled: props.interestReserveEnabled,
@@ -598,6 +651,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     props.aumFeeRate,
     props.aumCurrentPayEnabled,
     props.aumCurrentPayPct,
+    props.investorPromoteShare, // ISS-047b: Explicit dependency for promote split changes
     taxCalculations.totalTaxBenefit,
     taxCalculations.netTaxBenefit,
     taxCalculations.hdcFee,
@@ -693,6 +747,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       investorPikCurrentPayPct: props.investorPikCurrentPayPct,
       investorSubDebtAtExit: mainAnalysisResults.investorSubDebtAtExit, // Pass from investor calc for single source of truth
       investorEquity: mainAnalysisResults.investorEquity, // Pass from investor calc for equity recovery hurdle
+      grossExitProceeds: mainAnalysisResults.grossExitProceeds || mainAnalysisResults.totalExitProceeds, // ISS-050: Pass for conservation of capital
       yearOneDepreciation: depreciationCalculations.yearOneDepreciation,
       annualStraightLineDepreciation: depreciationCalculations.annualStraightLineDepreciation,
       effectiveTaxRate: taxCalculations.effectiveTaxRateForDepreciation,
@@ -709,7 +764,9 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     taxCalculations.effectiveTaxRateForDepreciation,
     depreciationCalculations.yearOneDepreciation,
     depreciationCalculations.annualStraightLineDepreciation,
-    mainAnalysisResults.investorCashFlows
+    mainAnalysisResults.investorCashFlows,
+    mainAnalysisResults.grossExitProceeds,
+    mainAnalysisResults.totalExitProceeds
   ]);
 
   // Calculate OZ benefits based on GO/NO_GO system
@@ -818,6 +875,8 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     // Federal LIHTC (v7.0.11)
     lihtcEligibleBasis,
     lihtcResult,
+    // ISS-029: PAB amount for capital stack
+    pabAmount,
 
     // State LIHTC (v7.0.14)
     stateLIHTCResult,

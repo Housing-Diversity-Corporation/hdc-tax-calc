@@ -49,6 +49,11 @@ const HDCCalculatorMain = () => {
     outsideInvestorSubDebtPikRate, setOutsideInvestorSubDebtPikRate,
     outsideInvestorPikCurrentPayEnabled, setOutsideInvestorPikCurrentPayEnabled,
     outsideInvestorPikCurrentPayPct, setOutsideInvestorPikCurrentPayPct,
+    // HDC Debt Fund (IMPL-082)
+    hdcDebtFundPct, setHdcDebtFundPct,
+    hdcDebtFundPikRate, setHdcDebtFundPikRate,
+    hdcDebtFundCurrentPayEnabled, setHdcDebtFundCurrentPayEnabled,
+    hdcDebtFundCurrentPayPct, setHdcDebtFundCurrentPayPct,
     subDebtPriority, setSubDebtPriority,
 
     // Projections
@@ -132,6 +137,26 @@ const HDCCalculatorMain = () => {
     creditRate, setCreditRate,
     placedInServiceMonth, setPlacedInServiceMonth,
     ddaQctBoost, setDdaQctBoost,
+    // Private Activity Bonds (IMPL-080)
+    pabEnabled, setPabEnabled,
+    pabPctOfEligibleBasis, setPabPctOfEligibleBasis,
+    pabRate, setPabRate,
+    pabTerm, setPabTerm,
+    pabAmortization, setPabAmortization,
+    pabIOYears, setPabIOYears,
+    // ISS-029/ISS-031: PAB funding (synced from calculations)
+    pabFundingAmount, setPabFundingAmount,
+    // ISS-031: PAB as % of project cost
+    pabPctOfProject,
+    // IMPL-083: Eligible Basis Exclusions
+    commercialSpaceCosts, setCommercialSpaceCosts,
+    syndicationCosts, setSyndicationCosts,
+    marketingCosts, setMarketingCosts,
+    financingFees, setFinancingFees,
+    bondIssuanceCosts, setBondIssuanceCosts,
+    operatingDeficitReserve, setOperatingDeficitReserve,
+    replacementReserve, setReplacementReserve,
+    otherExclusions, setOtherExclusions,
 
     // Expandable sections
     taxCalculationExpanded, setTaxCalculationExpanded,
@@ -146,7 +171,11 @@ const HDCCalculatorMain = () => {
 
     // IMPL-036: Config loading helpers to suppress auto-balance during config load
     startConfigLoading,
-    endConfigLoading
+    endConfigLoading,
+
+    // ISS-040d: Debt editing helpers to prevent PAB adjustment during user input
+    startDebtEditing,
+    endDebtEditing
   } = useHDCState();
 
   // Helper function for percentage inputs
@@ -256,6 +285,27 @@ const HDCCalculatorMain = () => {
     creditRate,
     placedInServiceMonth,
     ddaQctBoost,
+    // Private Activity Bonds (IMPL-080)
+    pabEnabled,
+    pabPctOfEligibleBasis,
+    pabRate,
+    pabAmortization,
+    pabIOYears,
+    // IMPL-083: Eligible Basis Exclusions
+    commercialSpaceCosts,
+    syndicationCosts,
+    marketingCosts,
+    financingFees,
+    bondIssuanceCosts,
+    operatingDeficitReserve,
+    replacementReserve,
+    otherExclusions,
+
+    // HDC Debt Fund (IMPL-082)
+    hdcDebtFundPct,
+    hdcDebtFundPikRate,
+    hdcDebtFundCurrentPayEnabled,
+    hdcDebtFundCurrentPayPct,
 
     // State LIHTC (v7.0.14)
     stateLIHTCEnabled,
@@ -269,6 +319,13 @@ const HDCCalculatorMain = () => {
 
   // IMPL-020a: Interest reserve amount now comes from useHDCCalculations hook (single source of truth)
   const interestReserveAmount = calculations.interestReserveAmount || 0;
+
+  // ISS-029: Sync PAB amount from calculations to state for auto-balance
+  // This allows the auto-balance logic in useHDCState to account for PAB funding
+  useEffect(() => {
+    const pabAmount = calculations.pabAmount || 0;
+    setPabFundingAmount(pabAmount);
+  }, [calculations.pabAmount, setPabFundingAmount]);
 
   return (
     <div className="container mx-auto p-4 md:p-6" style={{fontFamily: 'Arial, sans-serif'}}>
@@ -501,6 +558,43 @@ const HDCCalculatorMain = () => {
           ddaQctBoost={ddaQctBoost}
           setDdaQctBoost={setDdaQctBoost}
           lihtcEligibleBasis={calculations.lihtcEligibleBasis}
+          // Private Activity Bonds (IMPL-080)
+          pabEnabled={pabEnabled}
+          setPabEnabled={setPabEnabled}
+          pabPctOfEligibleBasis={pabPctOfEligibleBasis}
+          setPabPctOfEligibleBasis={setPabPctOfEligibleBasis}
+          pabRate={pabRate}
+          setPabRate={setPabRate}
+          pabAmortization={pabAmortization}
+          setPabAmortization={setPabAmortization}
+          pabIOYears={pabIOYears}
+          setPabIOYears={setPabIOYears}
+          // IMPL-083: Eligible Basis Exclusions
+          commercialSpaceCosts={commercialSpaceCosts}
+          setCommercialSpaceCosts={setCommercialSpaceCosts}
+          syndicationCosts={syndicationCosts}
+          setSyndicationCosts={setSyndicationCosts}
+          marketingCosts={marketingCosts}
+          setMarketingCosts={setMarketingCosts}
+          financingFees={financingFees}
+          setFinancingFees={setFinancingFees}
+          bondIssuanceCosts={bondIssuanceCosts}
+          setBondIssuanceCosts={setBondIssuanceCosts}
+          operatingDeficitReserve={operatingDeficitReserve}
+          setOperatingDeficitReserve={setOperatingDeficitReserve}
+          replacementReserve={replacementReserve}
+          setReplacementReserve={setReplacementReserve}
+          otherExclusions={otherExclusions}
+          setOtherExclusions={setOtherExclusions}
+          // HDC Debt Fund (IMPL-082)
+          hdcDebtFundPct={hdcDebtFundPct}
+          setHdcDebtFundPct={setHdcDebtFundPct}
+          hdcDebtFundPikRate={hdcDebtFundPikRate}
+          setHdcDebtFundPikRate={setHdcDebtFundPikRate}
+          hdcDebtFundCurrentPayEnabled={hdcDebtFundCurrentPayEnabled}
+          setHdcDebtFundCurrentPayEnabled={setHdcDebtFundCurrentPayEnabled}
+          hdcDebtFundCurrentPayPct={hdcDebtFundCurrentPayPct}
+          setHdcDebtFundCurrentPayPct={setHdcDebtFundCurrentPayPct}
           handlePercentageChange={handlePercentageChange}
           handleStateChange={handleStateChange}
           formatCurrency={formatCurrencyMillions}
@@ -528,6 +622,8 @@ const HDCCalculatorMain = () => {
           setDealImageUrl={setDealImageUrl}
           startConfigLoading={startConfigLoading}
           endConfigLoading={endConfigLoading}
+          startDebtEditing={startDebtEditing}
+          endDebtEditing={endDebtEditing}
           />
         </div>
 
@@ -654,6 +750,30 @@ const HDCCalculatorMain = () => {
           stateLIHTCIntegration={calculations.stateLIHTCIntegration}
           ozDeferralNPV={calculations.ozDeferralNPV}
           ozEnabled={ozEnabled}
+          // ISS-030: Pass PAB props for export
+          pabEnabled={pabEnabled}
+          pabPctOfEligibleBasis={pabPctOfEligibleBasis}
+          pabRate={pabRate}
+          pabAmortization={pabAmortization}
+          pabIOYears={pabIOYears}
+          lihtcEligibleBasis={calculations.lihtcEligibleBasis}
+          // ISS-031: PAB for capital stack display
+          pabPctOfProject={pabPctOfProject}
+          pabFundingAmount={pabFundingAmount}
+          // ISS-034: HDC Debt Fund for export
+          hdcDebtFundPct={hdcDebtFundPct}
+          hdcDebtFundPikRate={hdcDebtFundPikRate}
+          hdcDebtFundCurrentPayEnabled={hdcDebtFundCurrentPayEnabled}
+          hdcDebtFundCurrentPayPct={hdcDebtFundCurrentPayPct}
+          // ISS-035: Exclusions for export
+          commercialSpaceCosts={commercialSpaceCosts}
+          syndicationCosts={syndicationCosts}
+          marketingCosts={marketingCosts}
+          financingFees={financingFees}
+          bondIssuanceCosts={bondIssuanceCosts}
+          operatingDeficitReserve={operatingDeficitReserve}
+          replacementReserve={replacementReserve}
+          otherExclusions={otherExclusions}
           // IMPL-020a: Pre-calculated benefits from engine (single source of truth)
           total10YearBenefits={calculations.unifiedBenefitsSummary?.total10YearBenefits}
           benefitMultiple={calculations.unifiedBenefitsSummary?.benefitMultiple}

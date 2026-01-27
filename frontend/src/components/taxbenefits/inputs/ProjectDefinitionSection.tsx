@@ -135,9 +135,9 @@ const ProjectDefinitionSection: React.FC<ProjectDefinitionSectionProps> = ({
               readOnly={isReadOnly}
             />
 
-            {/* Year 1 NOI */}
+            {/* Stabilized NOI */}
             <div className="hdc-input-group">
-              <label className="hdc-input-label">Year 1 NOI ($M)</label>
+              <label className="hdc-input-label">Stabilized NOI ($M)</label>
               <Input
                 type="number"
                 step="0.1"

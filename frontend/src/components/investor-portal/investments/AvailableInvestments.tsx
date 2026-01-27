@@ -207,7 +207,7 @@ const InvestmentsStandalonePage: React.FC<InvestmentsStandalonePageProps> = ({ o
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Year 1 NOI:</span>
+                  <span className="text-muted-foreground">Stabilized NOI:</span>
                   <span className="font-semibold">${deal.yearOneNOI.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm">

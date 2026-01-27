@@ -238,6 +238,11 @@ export const HDCTaxReportJsPDFButton: React.FC<HDCTaxReportJsPDFProps> = ({
         ['Parameter', 'Value'],
         ['Tax Status', investorTrack === 'rep' ? 'Real Estate Professional' : 'Passive Investor'],
         ['State', selectedState],
+        ['Federal Tax Rate', formatPercent(params.federalTaxRate || 37)],
+        ['State Tax Rate', formatPercent(params.stateTaxRate || 0)],
+        ['LT Capital Gains Rate', formatPercent(params.ltCapitalGainsRate || 20)],
+        ['NIIT Rate', formatPercent(params.niitRate || 3.8)],
+        ['Depreciation Recapture Rate', formatPercent(params.depreciationRecaptureRate || 25)],
       ];
 
       if (investorTrack === 'rep') {
@@ -547,6 +552,60 @@ export const HDCTaxReportJsPDFButton: React.FC<HDCTaxReportJsPDFProps> = ({
         doc.text(item, margin + 5, yPosition);
         yPosition += lineHeight;
       });
+
+      // LIHTC Tax Credits Section (ISS-045)
+      if (params.lihtcEnabled || params.stateLIHTCEnabled) {
+        checkPageBreak(120);
+        if (yPosition < 50) {
+          doc.addPage('a4', 'landscape');
+          currentPage++;
+          yPosition = margin;
+          addHeader();
+        }
+
+        addSectionTitle('LIHTC Tax Credit Analysis');
+
+        doc.setFontSize(11);
+        doc.setTextColor(...darkText);
+
+        const lihtcMetrics: [string, string][] = [];
+
+        if (params.lihtcEnabled) {
+          lihtcMetrics.push(['Federal LIHTC:', 'Enabled']);
+          lihtcMetrics.push(['Credit Rate:', formatPercent((params.creditRate || 0.04) * 100)]);
+          lihtcMetrics.push(['Applicable Fraction:', formatPercent(params.applicableFraction || 100)]);
+          if (params.ddaQctBoost) {
+            lihtcMetrics.push(['DDA/QCT Boost:', 'Yes (130% basis)']);
+          }
+          // Calculate 11-year federal credit total
+          const federalCreditsTotal = investorResults.investorCashFlows?.reduce((sum, cf) =>
+            sum + (cf.federalLIHTCCredit || 0), 0) || 0;
+          lihtcMetrics.push(['Federal Credits (11yr):', formatMoney(federalCreditsTotal)]);
+        }
+
+        if (params.stateLIHTCEnabled) {
+          lihtcMetrics.push(['State LIHTC:', 'Enabled']);
+          lihtcMetrics.push(['Investor State:', params.investorState || 'N/A']);
+          lihtcMetrics.push(['Syndication Rate:', formatPercent(params.syndicationRate || 85)]);
+          lihtcMetrics.push(['Syndication Year:', `Year ${params.stateLIHTCSyndicationYear ?? 0}`]);
+          // Calculate state credit total
+          const stateCreditsTotal = investorResults.investorCashFlows?.reduce((sum, cf) =>
+            sum + (cf.stateLIHTCCredit || 0), 0) || 0;
+          const syndicationProceeds = investorResults.stateLIHTCSyndicationProceeds || 0;
+          if (stateCreditsTotal > 0) {
+            lihtcMetrics.push(['State Credits (11yr):', formatMoney(stateCreditsTotal)]);
+          }
+          if (syndicationProceeds > 0) {
+            lihtcMetrics.push(['Syndication Proceeds:', formatMoney(syndicationProceeds)]);
+          }
+        }
+
+        lihtcMetrics.forEach(([label, value]) => {
+          doc.text(label, margin, yPosition);
+          doc.text(value, pageWidth - margin - 50, yPosition);
+          yPosition += lineHeight;
+        });
+      }
 
       // Page 6: OZ Tax Benefits & Timing
       if (ozBasis > 0 || params.ozEnabled) {

@@ -57,12 +57,12 @@ describe('Domain 6: Returns & Exit - Math Validation', () => {
       const exitCapRate = 6; // 6%
 
       // STEP-BY-STEP MATH:
-      // Year 10 NOI = Year 1 NOI × (1 + growth)^years
+      // Year 10 NOI = Stabilized NOI × (1 + growth)^years
       const growthFactor = Math.pow(1 + revenueGrowth / 100, yearsOfGrowth);
       const expectedYear10NOI = year1NOI * growthFactor;
 
       console.log('\n=== EXIT VALUE CALCULATION ===');
-      console.log('Year 1 NOI: $' + year1NOI.toFixed(6) + 'M');
+      console.log('Stabilized NOI: $' + year1NOI.toFixed(6) + 'M');
       console.log('Growth rate: ' + revenueGrowth + '%/year');
       console.log('Years of growth: ' + yearsOfGrowth);
       console.log('Growth factor: (1.03)^9 = ' + growthFactor.toFixed(6));

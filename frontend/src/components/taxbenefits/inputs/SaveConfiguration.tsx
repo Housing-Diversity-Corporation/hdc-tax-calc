@@ -39,14 +39,22 @@ const SaveConfiguration: React.FC<SaveConfigurationProps> = ({
   const [configName, setConfigName] = useState(`Configuration - ${new Date().toLocaleDateString()}`);
 
   const handleSave = () => {
+    console.log('ISS-043 DEBUG: Save button clicked');
+
     // Check if user is authenticated
-    if (!tokenService.isAuthenticated()) {
+    const isAuth = tokenService.isAuthenticated();
+    console.log('ISS-043 DEBUG: isAuthenticated =', isAuth);
+    console.log('ISS-043 DEBUG: authToken in localStorage =', localStorage.getItem('authToken'));
+
+    if (!isAuth) {
+      console.log('ISS-043 DEBUG: Not authenticated, showing toast warning');
       toast.warning('Authentication Required', {
         description: 'Please sign in to save calculator configurations.'
       });
       return;
     }
 
+    console.log('ISS-043 DEBUG: Authenticated, opening save dialog');
     // Reset config name with new timestamp
     setConfigName(`Configuration - ${new Date().toLocaleDateString()}`);
     // Show the save dialog

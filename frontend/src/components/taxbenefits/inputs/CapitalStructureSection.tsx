@@ -84,6 +84,31 @@ interface CapitalStructureSectionProps {
   isReadOnly?: boolean;
   // IMPL-020a: Pre-calculated effective project cost from engine (single source of truth)
   effectiveProjectCost?: number;
+  // Private Activity Bonds (IMPL-080)
+  lihtcEnabled?: boolean;
+  lihtcEligibleBasis?: number;
+  pabEnabled?: boolean;
+  setPabEnabled?: (value: boolean) => void;
+  pabPctOfEligibleBasis?: number;
+  setPabPctOfEligibleBasis?: (value: number) => void;
+  pabRate?: number;
+  setPabRate?: (value: number) => void;
+  pabAmortization?: number;
+  setPabAmortization?: (value: number) => void;
+  pabIOYears?: number;
+  setPabIOYears?: (value: number) => void;
+  // HDC Debt Fund (IMPL-082)
+  hdcDebtFundPct?: number;
+  setHdcDebtFundPct?: (value: number) => void;
+  hdcDebtFundPikRate?: number;
+  setHdcDebtFundPikRate?: (value: number) => void;
+  hdcDebtFundCurrentPayEnabled?: boolean;
+  setHdcDebtFundCurrentPayEnabled?: (value: boolean) => void;
+  hdcDebtFundCurrentPayPct?: number;
+  setHdcDebtFundCurrentPayPct?: (value: number) => void;
+  // ISS-040d: Debt editing helpers to prevent PAB adjustment during user input
+  startDebtEditing?: () => void;
+  endDebtEditing?: () => void;
 }
 
 const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
@@ -155,7 +180,32 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
   setHdcPlatformMode,
   isReadOnly = false,
   // IMPL-020a: Pre-calculated effective project cost from engine
-  effectiveProjectCost: propsEffectiveProjectCost
+  effectiveProjectCost: propsEffectiveProjectCost,
+  // Private Activity Bonds (IMPL-080)
+  lihtcEnabled = false,
+  lihtcEligibleBasis = 0,
+  pabEnabled = false,
+  setPabEnabled,
+  pabPctOfEligibleBasis = 30,
+  setPabPctOfEligibleBasis,
+  pabRate = 4.5,
+  setPabRate,
+  pabAmortization = 40,
+  setPabAmortization,
+  pabIOYears = 0,
+  setPabIOYears,
+  // HDC Debt Fund (IMPL-082)
+  hdcDebtFundPct = 0,
+  setHdcDebtFundPct,
+  hdcDebtFundPikRate = 8,
+  setHdcDebtFundPikRate,
+  hdcDebtFundCurrentPayEnabled = false,
+  setHdcDebtFundCurrentPayEnabled,
+  hdcDebtFundCurrentPayPct = 50,
+  setHdcDebtFundCurrentPayPct,
+  // ISS-040d: Debt editing helpers
+  startDebtEditing,
+  endDebtEditing
 }) => {
   // IMPL-020a: Use pre-calculated value from engine, fall back to local calc for backwards compatibility
   const effectiveProjectCost = propsEffectiveProjectCost ?? (projectCost + predevelopmentCosts + (interestReserveEnabled ? interestReserveAmount : 0));
@@ -255,7 +305,10 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
               disabled={isReadOnly || autoBalanceCapital}
               step="0.5"
               value={investorEquityPct}
-              onChange={(e) => handlePercentageChange(setInvestorEquityPct, Number(e.target.value) || 0)}
+              onChange={(e) => {
+                const val = e.target.valueAsNumber;
+                if (!isNaN(val)) handlePercentageChange(setInvestorEquityPct, val);
+              }}
               className={cn("hdc-input", autoBalanceCapital && "bg-gray-100")}
             />    
           </div>    
@@ -268,7 +321,10 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
               disabled={isReadOnly || autoBalanceCapital}
               step="0.5"
               value={philanthropicEquityPct}
-              onChange={(e) => handlePercentageChange(setPhilanthropicEquityPct, Number(e.target.value) || 0)}
+              onChange={(e) => {
+                const val = e.target.valueAsNumber;
+                if (!isNaN(val)) handlePercentageChange(setPhilanthropicEquityPct, val);
+              }}
               className={cn("hdc-input", autoBalanceCapital && "bg-gray-100")}
             />    
           </div>    
@@ -289,7 +345,12 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
               disabled={isReadOnly}
               step="0.5"
               value={seniorDebtPct}
-              onChange={(e) => handlePercentageChange(setSeniorDebtPct, Number(e.target.value) || 0)}
+              onFocus={() => startDebtEditing?.()}
+              onBlur={() => endDebtEditing?.()}
+              onChange={(e) => {
+                const val = e.target.valueAsNumber;
+                if (!isNaN(val)) handlePercentageChange(setSeniorDebtPct, val);
+              }}
               className="hdc-input"
             />
             {seniorDebtPct > 0 && (
@@ -302,7 +363,10 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
               disabled={isReadOnly}
                       step="0.1"
                       value={seniorDebtRate}
-                      onChange={(e) => setSeniorDebtRate(Number(e.target.value) || 0)}
+                      onChange={(e) => {
+                        const val = e.target.valueAsNumber;
+                        if (!isNaN(val)) setSeniorDebtRate(val);
+                      }}
                       className="hdc-input" style={{fontSize: '0.75rem'}}
                     />
                   </div>
@@ -376,8 +440,103 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
                 </div>
               </div>
             )}
-          </div>    
-          
+          </div>
+
+          {/* Private Activity Bonds (IMPL-080) - Visible when LIHTC enabled */}
+          {lihtcEnabled && (
+            <div className="hdc-input-group">
+              <div className="flex items-center justify-between">
+                <label className="hdc-input-label">Private Activity Bonds (PAB)</label>
+                <HDCCheckbox
+                  checked={pabEnabled}
+                  onCheckedChange={(checked) => setPabEnabled?.(checked)}
+                  disabled={isReadOnly}
+                />
+              </div>
+              {pabEnabled && lihtcEligibleBasis > 0 && (
+                <div className="mt-2 p-2 rounded" style={{border: '1px solid var(--hdc-mercury)'}}>
+                  <div className="hdc-result-label" style={{fontSize: '0.7rem', color: 'var(--hdc-faded-jade)', marginBottom: '0.5rem'}}>
+                    PAB Amount = LIHTC Eligible Basis × PAB %
+                  </div>
+                  <div className="hdc-input-group">
+                    <label className="hdc-input-label" style={{color: 'var(--hdc-cabbage-pont)'}}>PAB % of Eligible Basis</label>
+                    <Slider
+                      disabled={isReadOnly}
+                      min={25}
+                      max={55}
+                      step={1}
+                      value={[pabPctOfEligibleBasis]}
+                      onValueChange={(vals) => setPabPctOfEligibleBasis?.(vals[0])}
+                    />
+                    <div className="hdc-result-label" style={{fontSize: '0.7rem', color: 'var(--hdc-cabbage-pont)', marginTop: '0.25rem'}}>
+                      {pabPctOfEligibleBasis}% × {formatCurrency(lihtcEligibleBasis)} = <strong>{formatCurrency(lihtcEligibleBasis * pabPctOfEligibleBasis / 100)}</strong>
+                    </div>
+                    <div className="hdc-result-label" style={{fontSize: '0.65rem', color: '#888', marginTop: '0.25rem'}}>
+                      4% LIHTC requires 50%+ PAB financing of aggregate basis
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div className="hdc-input-group">
+                      <label className="hdc-input-label" style={{color: 'var(--hdc-cabbage-pont)'}}>Rate (%)</label>
+                      <Input
+                        type="number"
+                        disabled={isReadOnly}
+                        step="0.1"
+                        value={pabRate}
+                        onChange={(e) => {
+                          const val = e.target.valueAsNumber;
+                          if (!isNaN(val)) setPabRate?.(val);
+                        }}
+                        className="hdc-input" style={{fontSize: '0.75rem'}}
+                      />
+                    </div>
+                    <div className="hdc-input-group">
+                      <label className="hdc-input-label" style={{color: 'var(--hdc-cabbage-pont)'}}>Amortization</label>
+                      <Select
+                        value={pabAmortization.toString()}
+                        onValueChange={(value) => setPabAmortization?.(Number(value))}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger className="hdc-input" style={{fontSize: '0.75rem'}}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="30">30 Years</SelectItem>
+                          <SelectItem value="35">35 Years</SelectItem>
+                          <SelectItem value="40">40 Years</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="hdc-input-group mt-2">
+                    <label className="hdc-input-label" style={{color: 'var(--hdc-cabbage-pont)'}}>Interest-Only Years</label>
+                    <Select
+                      value={pabIOYears.toString()}
+                      onValueChange={(value) => setPabIOYears?.(Number(value))}
+                      disabled={isReadOnly}
+                    >
+                      <SelectTrigger className="hdc-input" style={{fontSize: '0.75rem'}}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">None</SelectItem>
+                        <SelectItem value="1">1 Year</SelectItem>
+                        <SelectItem value="2">2 Years</SelectItem>
+                        <SelectItem value="3">3 Years</SelectItem>
+                        <SelectItem value="5">5 Years</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+              {pabEnabled && !(lihtcEligibleBasis > 0) && (
+                <div className="hdc-result-label" style={{fontSize: '0.7rem', color: 'var(--hdc-gold)', marginTop: '0.25rem'}}>
+                  ⚠ Set project cost and land value in Basic Inputs to calculate eligible basis
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Philanthropic Debt */}
           <div className="hdc-input-group">
             <label className="hdc-input-label">Philanthropic Debt (%) {philDebtPct > 0 && `(${formatCurrency(effectiveProjectCost * philDebtPct / 100)})`}</label>
@@ -386,7 +545,10 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
               disabled={isReadOnly}
               step="0.5"
               value={philDebtPct}
-              onChange={(e) => handlePercentageChange(setPhilDebtPct, Number(e.target.value) || 0)}
+              onChange={(e) => {
+                const val = e.target.valueAsNumber;
+                if (!isNaN(val)) handlePercentageChange(setPhilDebtPct, val);
+              }}
               className="hdc-input"
             />
             {philDebtPct > 0 && (
@@ -399,7 +561,10 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
               disabled={isReadOnly}
                       step="0.1"
                       value={philDebtRate}
-                      onChange={(e) => setPhilDebtRate(Number(e.target.value) || 0)}
+                      onChange={(e) => {
+                        const val = e.target.valueAsNumber;
+                        if (!isNaN(val)) setPhilDebtRate(val);
+                      }}
                       className="hdc-input" style={{fontSize: '0.75rem'}}
                     />
                   </div>
@@ -597,32 +762,35 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
             );
           })()}
 
-          {/* HDC Platform Mode Toggle */}
+          {/* HDC Platform Mode Toggle (IMPL-082) */}
           <div className="hdc-input-group" style={{marginBottom: '0.75rem', paddingBottom: '0.75rem', borderBottom: '1px solid rgba(146, 195, 194, 0.3)'}}>
             <HDCCheckbox
               checked={hdcPlatformMode === 'leverage'}
               onCheckedChange={(checked) => setHdcPlatformMode?.(checked ? 'leverage' : 'traditional')}
               disabled={isReadOnly}
-              label="HDC Platform Mode (Outside Investor = HDC Debt Fund)"
+              label="HDC Platform Mode"
               labelClassName="text-sm font-semibold"
             />
             {hdcPlatformMode === 'leverage' && (
               <div className="hdc-result-label" style={{fontSize: '0.7rem', color: 'var(--hdc-cabbage-pont)', marginTop: '0.25rem', paddingLeft: '1.5rem'}}>
-                ✓ Outside Investor debt represents HDC Debt Fund gap financing
+                ✓ Enables HDC Debt Fund as separate gap financing layer
               </div>
             )}
           </div>
 
-          {/* Outside Investor Sub-Debt - Relabeled as HDC Debt Fund when platform mode is on */}
+          {/* Outside Investor Sub-Debt (IMPL-082: No longer relabeled) */}
           <div className="hdc-input-group">
             <label className="hdc-input-label">
-              {hdcPlatformMode ? 'HDC Debt Fund (Gap Financing)' : 'Outside Investor Sub-Debt'} (%) {outsideInvestorSubDebtPct > 0 && `(${formatCurrency(effectiveProjectCost * outsideInvestorSubDebtPct / 100)})`}</label>
+              Outside Investor Sub-Debt (%) {outsideInvestorSubDebtPct > 0 && `(${formatCurrency(effectiveProjectCost * outsideInvestorSubDebtPct / 100)})`}</label>
             <Input
               type="number"
               disabled={isReadOnly}
               step="0.5"
               value={outsideInvestorSubDebtPct}
-              onChange={(e) => handlePercentageChange(setOutsideInvestorSubDebtPct, Number(e.target.value) || 0)}
+              onChange={(e) => {
+                const val = e.target.valueAsNumber;
+                if (!isNaN(val)) handlePercentageChange(setOutsideInvestorSubDebtPct, val);
+              }}
               className="hdc-input"
             />
             {outsideInvestorSubDebtPct > 0 && (
@@ -689,22 +857,103 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
             )}
           </div>
 
+          {/* HDC Debt Fund (IMPL-082) - Separate from Outside Investor, visible in leverage mode */}
+          {hdcPlatformMode === 'leverage' && (
+            <div className="hdc-input-group">
+              <label className="hdc-input-label">
+                HDC Debt Fund (Gap Financing) (%) {hdcDebtFundPct > 0 && `(${formatCurrency(effectiveProjectCost * hdcDebtFundPct / 100)})`}
+              </label>
+              <Input
+                type="number"
+                disabled={isReadOnly}
+                step="0.5"
+                value={hdcDebtFundPct}
+                onChange={(e) => {
+                  const val = e.target.valueAsNumber;
+                  if (!isNaN(val)) setHdcDebtFundPct?.(val);
+                }}
+                className="hdc-input"
+              />
+              {hdcDebtFundPct > 0 && (
+                <div className="mt-2 p-2 rounded" style={{border: '1px solid var(--hdc-mercury)'}}>
+                  <div className="hdc-input-group">
+                    <label className="hdc-input-label" style={{color: 'var(--hdc-cabbage-pont)'}}>PIK Interest Rate (%)</label>
+                    <Slider
+                      disabled={isReadOnly}
+                      min={0}
+                      max={20}
+                      step={0.5}
+                      value={[hdcDebtFundPikRate]}
+                      onValueChange={(vals) => setHdcDebtFundPikRate?.(vals[0])}
+                    />
+                    <div className="hdc-result-label" style={{fontSize: '0.7rem', color: 'var(--hdc-cabbage-pont)', marginTop: '0.25rem'}}>
+                      {hdcDebtFundPikRate}% annual interest on {formatCurrency(effectiveProjectCost * (hdcDebtFundPct / 100))}
+                      {calculatedCashFlows && calculatedCashFlows[1] && (
+                        <>
+                          <br/>
+                          <span style={{fontWeight: 600}}>
+                            Year 2 Interest: {formatCurrency((calculatedCashFlows[1].hdcDebtFundCurrentPay || 0) + (calculatedCashFlows[1].hdcDebtFundPIKAccrued || 0))}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-2 p-2 rounded" style={{border: '1px solid var(--hdc-mercury)'}}>
+                    <div className="flex items-center justify-between">
+                      <label className="hdc-input-label" style={{color: 'var(--hdc-cabbage-pont)'}}>Current Pay</label>
+                      <HDCCheckbox
+                        checked={hdcDebtFundCurrentPayEnabled}
+                        onCheckedChange={(checked) => setHdcDebtFundCurrentPayEnabled?.(checked)}
+                        disabled={isReadOnly}
+                      />
+                    </div>
+                    {hdcDebtFundCurrentPayEnabled && (
+                      <div className="mt-2">
+                        <Slider
+                          disabled={isReadOnly}
+                          min={0}
+                          max={100}
+                          step={5}
+                          value={[hdcDebtFundCurrentPayPct]}
+                          onValueChange={(vals) => setHdcDebtFundCurrentPayPct?.(vals[0])}
+                        />
+                        <div className="hdc-result-label" style={{fontSize: '0.7rem', color: 'var(--hdc-cabbage-pont)', marginTop: '0.25rem'}}>
+                          {hdcDebtFundCurrentPayPct}% paid currently, {100 - hdcDebtFundCurrentPayPct}% compounds as PIK
+                          {calculatedCashFlows && calculatedCashFlows[1] && (
+                            <>
+                              <br/>
+                              <span style={{fontWeight: 600}}>Year 2 Current Pay: {formatCurrency(calculatedCashFlows[1].hdcDebtFundCurrentPay || 0)}</span>
+                              <br/>
+                              <span style={{fontWeight: 600}}>Year 2 PIK Accrual: {formatCurrency(calculatedCashFlows[1].hdcDebtFundPIKAccrued || 0)}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* HDC Sub-Debt */}
           <div className="hdc-input-group">
-            <label className="hdc-input-label">HDC Sub-Debt (%) {hdcSubDebtPct > 0 && `(${formatCurrency(effectiveProjectCost * hdcSubDebtPct / 100)})`}</label>    
+            <label className="hdc-input-label">HDC Sub-Debt (%) {hdcSubDebtPct > 0 && `(${formatCurrency(effectiveProjectCost * hdcSubDebtPct / 100)})`}</label>
             <Input
               type="number"
               disabled={isReadOnly}
               step="0.5"
-              value={hdcSubDebtPct === 1 ? "1.0" : hdcSubDebtPct}    
+              value={hdcSubDebtPct === 1 ? "1.0" : hdcSubDebtPct}
               onChange={(e) => {
-                const val = Number(e.target.value) || 0;
+                const val = e.target.valueAsNumber;
+                if (isNaN(val)) return;
                 if (val === 1) {
                   console.log('HDC Sub-debt onChange: value is exactly 1');
                 }
                 handlePercentageChange(setHdcSubDebtPct, val);
-              }}    
-              className="hdc-input"    
+              }}
+              className="hdc-input"
             />
             {hdcSubDebtPct > 0 && (
               <div className="mt-2 p-2 rounded" style={{border: '1px solid var(--hdc-mercury)'}}>
@@ -760,7 +1009,10 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
               disabled={isReadOnly}
               step="0.5"
               value={investorSubDebtPct}
-              onChange={(e) => handlePercentageChange(setInvestorSubDebtPct, Number(e.target.value) || 0)}
+              onChange={(e) => {
+                const val = e.target.valueAsNumber;
+                if (!isNaN(val)) handlePercentageChange(setInvestorSubDebtPct, val);
+              }}
               className="hdc-input"
             />
             {investorSubDebtPct > 0 && (

@@ -32,6 +32,13 @@ export interface InterestReserveParams {
   seniorDebtAmortization: number;
   seniorDebtIOYears?: number; // Interest-only period (0-10 years)
 
+  // Private Activity Bonds (PABs) - ISS-041: Hard debt that requires coverage
+  pabEnabled?: boolean;
+  pabAmount?: number;  // Absolute amount (not percentage) - calculated from eligible basis
+  pabRate?: number;
+  pabAmortization?: number;
+  pabIOYears?: number;
+
   // Philanthropic debt (NEVER included in reserve)
   // philDebtPct: number;
   // philDebtRate: number;
@@ -82,6 +89,21 @@ export function calculateInterestReserve(params: InterestReserveParams): number 
     ? (seniorDebtAmount * seniorDebtRate) / 12  // Interest-only payment
     : calculateMonthlyPayment(seniorDebtAmount, seniorDebtRate, params.seniorDebtAmortization);  // P&I payment
 
+  // ISS-041: Private Activity Bonds (PABs) - Hard debt requiring coverage during lease-up
+  let monthlyPabDebtService = 0;
+  if (params.pabEnabled && params.pabAmount && params.pabAmount > 0) {
+    const pabRate = (params.pabRate || 4.5) / 100;
+    const pabAmortization = params.pabAmortization || 35;
+    const pabIOYears = params.pabIOYears || 0;
+
+    // During interest reserve period, if IO period is active, use IO payment
+    const usePabIOPayment = pabIOYears > 0 && interestReservePeriodYears <= pabIOYears;
+
+    monthlyPabDebtService = usePabIOPayment
+      ? (params.pabAmount * pabRate) / 12  // Interest-only payment
+      : calculateMonthlyPayment(params.pabAmount, pabRate, pabAmortization);  // P&I payment
+  }
+
   // Philanthropic debt: NEVER included in interest reserve
   // Phil debt doesn't require payments during lease-up regardless of current pay setting
   const monthlyPhilDebtService = 0;
@@ -114,14 +136,16 @@ export function calculateInterestReserve(params: InterestReserveParams): number 
   }
 
   // Total monthly debt service that needs to be covered
+  // ISS-041: Now includes PAB debt service when enabled
   const totalMonthlyService =
     monthlySeniorDebtService +
+    monthlyPabDebtService +  // ISS-041: PABs are hard debt
     monthlyPhilDebtService +
     monthlyOutsideInvestorDebtService +
     monthlyHdcCurrentPay +
     monthlyInvestorCurrentPay;
 
-  // Calculate stabilized NOI (Year 1 NOI = stabilized)
+  // Calculate stabilized NOI (yearOneNOI represents stabilized NOI at full occupancy)
   const stabilizedNOI = params.yearOneNOI;
   const monthlyStabilizedNOI = stabilizedNOI / 12;
 

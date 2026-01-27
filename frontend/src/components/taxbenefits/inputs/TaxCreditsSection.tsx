@@ -30,10 +30,24 @@ interface TaxCreditsSectionProps {
   predevelopmentCosts?: number;
   landValue?: number;
   interestReserve?: number;
-  leaseUpReserve?: number;
-  syndicationCosts?: number;
-  marketingCosts?: number;
+
+  // IMPL-083: Eligible Basis Exclusions (editable)
   commercialSpaceCosts?: number;
+  setCommercialSpaceCosts?: (value: number) => void;
+  syndicationCosts?: number;
+  setSyndicationCosts?: (value: number) => void;
+  marketingCosts?: number;
+  setMarketingCosts?: (value: number) => void;
+  financingFees?: number;
+  setFinancingFees?: (value: number) => void;
+  bondIssuanceCosts?: number;
+  setBondIssuanceCosts?: (value: number) => void;
+  operatingDeficitReserve?: number;
+  setOperatingDeficitReserve?: (value: number) => void;
+  replacementReserve?: number;
+  setReplacementReserve?: (value: number) => void;
+  otherExclusions?: number;
+  setOtherExclusions?: (value: number) => void;
 
   // State LIHTC
   stateLIHTCEnabled: boolean;
@@ -97,10 +111,23 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
   predevelopmentCosts = 0,
   landValue,
   interestReserve = 0,
-  leaseUpReserve = 0,
-  syndicationCosts = 0,
-  marketingCosts = 0,
+  // IMPL-083: Eligible Basis Exclusions
   commercialSpaceCosts = 0,
+  setCommercialSpaceCosts,
+  syndicationCosts = 0,
+  setSyndicationCosts,
+  marketingCosts = 0,
+  setMarketingCosts,
+  financingFees = 0,
+  setFinancingFees,
+  bondIssuanceCosts = 0,
+  setBondIssuanceCosts,
+  operatingDeficitReserve = 0,
+  setOperatingDeficitReserve,
+  replacementReserve = 0,
+  setReplacementReserve,
+  otherExclusions = 0,
+  setOtherExclusions,
   // State LIHTC props
   stateLIHTCEnabled,
   setStateLIHTCEnabled,
@@ -125,7 +152,11 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
 
   // ========== Federal LIHTC Logic ==========
 
+  // IMPL-083: State for collapsible exclusions section
+  const [exclusionsExpanded, setExclusionsExpanded] = useState(false);
+
   // Calculate breakdown if we have the required values
+  // IMPL-083: Include all exclusions
   const basisBreakdown = useMemo(() => {
     if (projectCost === undefined || landValue === undefined) return null;
 
@@ -134,12 +165,16 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
       predevelopmentCosts,
       landValue,
       interestReserve,
-      leaseUpReserve,
+      commercialSpaceCosts,
       syndicationCosts,
       marketingCosts,
-      commercialSpaceCosts,
+      financingFees,
+      bondIssuanceCosts,
+      operatingDeficitReserve,
+      replacementReserve,
+      otherExclusions,
     });
-  }, [projectCost, predevelopmentCosts, landValue, interestReserve, leaseUpReserve, syndicationCosts, marketingCosts, commercialSpaceCosts]);
+  }, [projectCost, predevelopmentCosts, landValue, interestReserve, commercialSpaceCosts, syndicationCosts, marketingCosts, financingFees, bondIssuanceCosts, operatingDeficitReserve, replacementReserve, otherExclusions]);
 
   // Calculate Federal LIHTC preview if enabled
   const federalPreview = useMemo(() => {
@@ -277,7 +312,7 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
                 <>
                   {/* Eligible Basis Display */}
                   <div className="hdc-input-group">
-                    <label className="hdc-input-label">LIHTC Eligible Basis (per IRC S42)</label>
+                    <label className="hdc-input-label">LIHTC Eligible Basis (per IRC §42)</label>
                     <div
                       className="hdc-input"
                       style={{
@@ -290,7 +325,7 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
                       {formatCurrency(lihtcEligibleBasis / 1000000)}
                     </div>
                     <span className="text-xs text-gray-500" style={{ marginTop: '0.25rem', display: 'block' }}>
-                      Project cost less land, reserves, syndication, marketing, commercial
+                      Project cost less land and all exclusions
                     </span>
 
                     {/* Collapsible Basis Breakdown */}
@@ -300,58 +335,235 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
                           View Basis Breakdown
                         </summary>
                         <div style={{ marginTop: '0.5rem', paddingLeft: '0.5rem', borderLeft: '2px solid var(--hdc-mercury)' }}>
+                          {/* ISS-027: Values already in $M, formatCurrency expects $M */}
                           <div className="hdc-result-row" style={{ fontSize: '0.8rem' }}>
                             <span className="hdc-result-label">Project Cost:</span>
-                            <span className="hdc-result-value">{formatCurrency(basisBreakdown.totalProjectCost / 1000000)}</span>
+                            <span className="hdc-result-value">{formatCurrency(basisBreakdown.totalProjectCost)}</span>
                           </div>
 
                           {basisBreakdown.landValue > 0 && (
                             <div className="hdc-result-row" style={{ fontSize: '0.8rem', color: 'var(--hdc-brown-rust)' }}>
                               <span className="hdc-result-label">Less: Land Value</span>
-                              <span className="hdc-result-value">({formatCurrency(basisBreakdown.landValue / 1000000)})</span>
+                              <span className="hdc-result-value">({formatCurrency(basisBreakdown.landValue)})</span>
                             </div>
                           )}
                           {basisBreakdown.interestReserve > 0 && (
                             <div className="hdc-result-row" style={{ fontSize: '0.8rem', color: 'var(--hdc-brown-rust)' }}>
                               <span className="hdc-result-label">Less: Interest Reserve</span>
-                              <span className="hdc-result-value">({formatCurrency(basisBreakdown.interestReserve / 1000000)})</span>
-                            </div>
-                          )}
-                          {basisBreakdown.leaseUpReserve > 0 && (
-                            <div className="hdc-result-row" style={{ fontSize: '0.8rem', color: 'var(--hdc-brown-rust)' }}>
-                              <span className="hdc-result-label">Less: Lease-up Reserve</span>
-                              <span className="hdc-result-value">({formatCurrency(basisBreakdown.leaseUpReserve / 1000000)})</span>
-                            </div>
-                          )}
-                          {basisBreakdown.syndicationCosts > 0 && (
-                            <div className="hdc-result-row" style={{ fontSize: '0.8rem', color: 'var(--hdc-brown-rust)' }}>
-                              <span className="hdc-result-label">Less: Syndication Costs</span>
-                              <span className="hdc-result-value">({formatCurrency(basisBreakdown.syndicationCosts / 1000000)})</span>
-                            </div>
-                          )}
-                          {basisBreakdown.marketingCosts > 0 && (
-                            <div className="hdc-result-row" style={{ fontSize: '0.8rem', color: 'var(--hdc-brown-rust)' }}>
-                              <span className="hdc-result-label">Less: Marketing Costs</span>
-                              <span className="hdc-result-value">({formatCurrency(basisBreakdown.marketingCosts / 1000000)})</span>
+                              <span className="hdc-result-value">({formatCurrency(basisBreakdown.interestReserve)})</span>
                             </div>
                           )}
                           {basisBreakdown.commercialSpaceCosts > 0 && (
                             <div className="hdc-result-row" style={{ fontSize: '0.8rem', color: 'var(--hdc-brown-rust)' }}>
                               <span className="hdc-result-label">Less: Commercial Space</span>
-                              <span className="hdc-result-value">({formatCurrency(basisBreakdown.commercialSpaceCosts / 1000000)})</span>
+                              <span className="hdc-result-value">({formatCurrency(basisBreakdown.commercialSpaceCosts)})</span>
+                            </div>
+                          )}
+                          {basisBreakdown.syndicationCosts > 0 && (
+                            <div className="hdc-result-row" style={{ fontSize: '0.8rem', color: 'var(--hdc-brown-rust)' }}>
+                              <span className="hdc-result-label">Less: Syndication Costs</span>
+                              <span className="hdc-result-value">({formatCurrency(basisBreakdown.syndicationCosts)})</span>
+                            </div>
+                          )}
+                          {basisBreakdown.marketingCosts > 0 && (
+                            <div className="hdc-result-row" style={{ fontSize: '0.8rem', color: 'var(--hdc-brown-rust)' }}>
+                              <span className="hdc-result-label">Less: Marketing/Org Costs</span>
+                              <span className="hdc-result-value">({formatCurrency(basisBreakdown.marketingCosts)})</span>
+                            </div>
+                          )}
+                          {basisBreakdown.financingFees > 0 && (
+                            <div className="hdc-result-row" style={{ fontSize: '0.8rem', color: 'var(--hdc-brown-rust)' }}>
+                              <span className="hdc-result-label">Less: Financing Fees</span>
+                              <span className="hdc-result-value">({formatCurrency(basisBreakdown.financingFees)})</span>
+                            </div>
+                          )}
+                          {basisBreakdown.bondIssuanceCosts > 0 && (
+                            <div className="hdc-result-row" style={{ fontSize: '0.8rem', color: 'var(--hdc-brown-rust)' }}>
+                              <span className="hdc-result-label">Less: Bond Issuance Costs</span>
+                              <span className="hdc-result-value">({formatCurrency(basisBreakdown.bondIssuanceCosts)})</span>
+                            </div>
+                          )}
+                          {basisBreakdown.operatingDeficitReserve > 0 && (
+                            <div className="hdc-result-row" style={{ fontSize: '0.8rem', color: 'var(--hdc-brown-rust)' }}>
+                              <span className="hdc-result-label">Less: Operating Deficit Reserve</span>
+                              <span className="hdc-result-value">({formatCurrency(basisBreakdown.operatingDeficitReserve)})</span>
+                            </div>
+                          )}
+                          {basisBreakdown.replacementReserve > 0 && (
+                            <div className="hdc-result-row" style={{ fontSize: '0.8rem', color: 'var(--hdc-brown-rust)' }}>
+                              <span className="hdc-result-label">Less: Replacement Reserve</span>
+                              <span className="hdc-result-value">({formatCurrency(basisBreakdown.replacementReserve)})</span>
+                            </div>
+                          )}
+                          {basisBreakdown.otherExclusions > 0 && (
+                            <div className="hdc-result-row" style={{ fontSize: '0.8rem', color: 'var(--hdc-brown-rust)' }}>
+                              <span className="hdc-result-label">Less: Other Exclusions</span>
+                              <span className="hdc-result-value">({formatCurrency(basisBreakdown.otherExclusions)})</span>
                             </div>
                           )}
 
                           <div className="hdc-result-row summary" style={{ fontSize: '0.8rem', marginTop: '0.25rem', borderTop: '1px solid var(--hdc-mercury)', paddingTop: '0.25rem' }}>
                             <span className="hdc-result-label" style={{ fontWeight: 600 }}>= LIHTC Eligible Basis:</span>
                             <span className="hdc-result-value" style={{ fontWeight: 600, color: 'var(--hdc-cabbage-pont)' }}>
-                              {formatCurrency(basisBreakdown.eligibleBasis / 1000000)}
+                              {formatCurrency(basisBreakdown.eligibleBasis)}
                             </span>
                           </div>
                         </div>
                       </details>
                     )}
                   </div>
+
+                  {/* IMPL-083: Collapsible Eligible Basis Exclusions Input Section */}
+                  <details
+                    open={exclusionsExpanded}
+                    onToggle={(e) => setExclusionsExpanded((e.target as HTMLDetailsElement).open)}
+                    style={{ marginTop: '0.75rem', marginBottom: '0.75rem' }}
+                  >
+                    <summary style={{
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      fontSize: '0.8rem',
+                      color: 'var(--hdc-faded-jade)',
+                      padding: '0.5rem',
+                      backgroundColor: 'var(--hdc-alabaster)',
+                      borderRadius: '4px'
+                    }}>
+                      Eligible Basis Exclusions {basisBreakdown && basisBreakdown.totalExclusions > basisBreakdown.landValue + basisBreakdown.interestReserve ? `(${formatCurrency(basisBreakdown.totalExclusions - basisBreakdown.landValue - basisBreakdown.interestReserve)} additional)` : ''}
+                    </summary>
+                    <div style={{
+                      marginTop: '0.5rem',
+                      padding: '0.75rem',
+                      border: '1px solid var(--hdc-mercury)',
+                      borderRadius: '4px',
+                      backgroundColor: 'rgba(255,255,255,0.5)'
+                    }}>
+                      <p style={{ fontSize: '0.7rem', color: '#666', marginBottom: '0.75rem' }}>
+                        Enter costs to exclude from LIHTC eligible basis (IRC §42). Land and Interest Reserve are automatically excluded.
+                      </p>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                        {/* Commercial Space */}
+                        <div className="hdc-input-group" style={{ marginBottom: '0.25rem' }}>
+                          <label className="hdc-input-label" style={{ fontSize: '0.7rem' }}>Commercial Space ($M)</label>
+                          <input
+                            type="number"
+                            className="hdc-input"
+                            style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                            value={commercialSpaceCosts || ''}
+                            onChange={(e) => setCommercialSpaceCosts?.(Number(e.target.value) || 0)}
+                            placeholder="0"
+                            disabled={isReadOnly}
+                            step="0.1"
+                          />
+                        </div>
+
+                        {/* Syndication Costs */}
+                        <div className="hdc-input-group" style={{ marginBottom: '0.25rem' }}>
+                          <label className="hdc-input-label" style={{ fontSize: '0.7rem' }}>Syndication Costs ($M)</label>
+                          <input
+                            type="number"
+                            className="hdc-input"
+                            style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                            value={syndicationCosts || ''}
+                            onChange={(e) => setSyndicationCosts?.(Number(e.target.value) || 0)}
+                            placeholder="0"
+                            disabled={isReadOnly}
+                            step="0.1"
+                          />
+                        </div>
+
+                        {/* Marketing/Org Costs */}
+                        <div className="hdc-input-group" style={{ marginBottom: '0.25rem' }}>
+                          <label className="hdc-input-label" style={{ fontSize: '0.7rem' }}>Marketing/Org Costs ($M)</label>
+                          <input
+                            type="number"
+                            className="hdc-input"
+                            style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                            value={marketingCosts || ''}
+                            onChange={(e) => setMarketingCosts?.(Number(e.target.value) || 0)}
+                            placeholder="0"
+                            disabled={isReadOnly}
+                            step="0.1"
+                          />
+                        </div>
+
+                        {/* Financing Fees */}
+                        <div className="hdc-input-group" style={{ marginBottom: '0.25rem' }}>
+                          <label className="hdc-input-label" style={{ fontSize: '0.7rem' }}>Financing Fees ($M)</label>
+                          <input
+                            type="number"
+                            className="hdc-input"
+                            style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                            value={financingFees || ''}
+                            onChange={(e) => setFinancingFees?.(Number(e.target.value) || 0)}
+                            placeholder="0"
+                            disabled={isReadOnly}
+                            step="0.1"
+                          />
+                        </div>
+
+                        {/* Bond Issuance Costs */}
+                        <div className="hdc-input-group" style={{ marginBottom: '0.25rem' }}>
+                          <label className="hdc-input-label" style={{ fontSize: '0.7rem' }}>Bond Issuance Costs ($M)</label>
+                          <input
+                            type="number"
+                            className="hdc-input"
+                            style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                            value={bondIssuanceCosts || ''}
+                            onChange={(e) => setBondIssuanceCosts?.(Number(e.target.value) || 0)}
+                            placeholder="0"
+                            disabled={isReadOnly}
+                            step="0.1"
+                          />
+                        </div>
+
+                        {/* Operating Deficit Reserve */}
+                        <div className="hdc-input-group" style={{ marginBottom: '0.25rem' }}>
+                          <label className="hdc-input-label" style={{ fontSize: '0.7rem' }}>Operating Deficit Reserve ($M)</label>
+                          <input
+                            type="number"
+                            className="hdc-input"
+                            style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                            value={operatingDeficitReserve || ''}
+                            onChange={(e) => setOperatingDeficitReserve?.(Number(e.target.value) || 0)}
+                            placeholder="0"
+                            disabled={isReadOnly}
+                            step="0.1"
+                          />
+                        </div>
+
+                        {/* Replacement Reserve */}
+                        <div className="hdc-input-group" style={{ marginBottom: '0.25rem' }}>
+                          <label className="hdc-input-label" style={{ fontSize: '0.7rem' }}>Replacement Reserve ($M)</label>
+                          <input
+                            type="number"
+                            className="hdc-input"
+                            style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                            value={replacementReserve || ''}
+                            onChange={(e) => setReplacementReserve?.(Number(e.target.value) || 0)}
+                            placeholder="0"
+                            disabled={isReadOnly}
+                            step="0.1"
+                          />
+                        </div>
+
+                        {/* Other Exclusions */}
+                        <div className="hdc-input-group" style={{ marginBottom: '0.25rem' }}>
+                          <label className="hdc-input-label" style={{ fontSize: '0.7rem' }}>Other Exclusions ($M)</label>
+                          <input
+                            type="number"
+                            className="hdc-input"
+                            style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                            value={otherExclusions || ''}
+                            onChange={(e) => setOtherExclusions?.(Number(e.target.value) || 0)}
+                            placeholder="0"
+                            disabled={isReadOnly}
+                            step="0.1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </details>
 
                   {/* Applicable Fraction */}
                   <div className="hdc-input-group">
@@ -509,6 +721,30 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
                         Type: {stateProgram.type ? stateProgram.type.charAt(0).toUpperCase() + stateProgram.type.slice(1) : 'N/A'} &bull;
                         Transferability: {stateProgram.transferability.charAt(0).toUpperCase() + stateProgram.transferability.slice(1)}
                       </div>
+                      {/* IMPL-079: Credit duration warning for non-standard periods */}
+                      {stateProgram.creditDurationYears && stateProgram.creditDurationYears !== 10 && (
+                        <div style={{
+                          fontSize: '0.75rem',
+                          color: 'var(--hdc-brown-rust)',
+                          marginTop: '0.25rem',
+                          fontWeight: 500
+                        }}>
+                          ⚠️ {stateProgram.creditDurationYears}-year credit period (not standard 10 years)
+                        </div>
+                      )}
+                      {/* IMPL-079: Structuring notes for deal teams */}
+                      {stateProgram.structuringNotes && (
+                        <div style={{
+                          marginTop: '0.5rem',
+                          fontSize: '0.75rem',
+                          color: '#555',
+                          fontStyle: 'italic',
+                          borderTop: '1px dashed var(--hdc-mercury)',
+                          paddingTop: '0.5rem'
+                        }}>
+                          <strong>Structuring:</strong> {stateProgram.structuringNotes}
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div style={{
@@ -672,18 +908,27 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
                         <span className="hdc-result-label">Year 1 Credit (Prorated):</span>
                         <span className="hdc-result-value">{formatCurrency(stateCalculatedResult.schedule.year1Credit)}</span>
                       </div>
-                      <div className="hdc-result-row" style={{ fontSize: '0.875rem' }}>
-                        <span className="hdc-result-label">Annual Credit (Years 2-10):</span>
-                        <span className="hdc-result-value">{formatCurrency(stateCalculatedResult.schedule.annualCredit)}</span>
-                      </div>
-                      <div className="hdc-result-row" style={{ fontSize: '0.875rem' }}>
-                        <span className="hdc-result-label">Year 11 Catch-Up:</span>
-                        <span className="hdc-result-value">{formatCurrency(stateCalculatedResult.schedule.year11Credit)}</span>
-                      </div>
-                      <div className="hdc-result-row summary" style={{ fontSize: '0.875rem' }}>
-                        <span className="hdc-result-label">Total 10-Year Gross Credits:</span>
-                        <span className="hdc-result-value">{formatCurrency(stateCalculatedResult.grossCredit)}</span>
-                      </div>
+                      {/* ISS-024: Dynamic labels based on creditDurationYears */}
+                      {(() => {
+                        const duration = stateProgram?.creditDurationYears ?? 10;
+                        const catchUpYear = duration + 1;
+                        return (
+                          <>
+                            <div className="hdc-result-row" style={{ fontSize: '0.875rem' }}>
+                              <span className="hdc-result-label">Annual Credit (Years 2-{duration}):</span>
+                              <span className="hdc-result-value">{formatCurrency(stateCalculatedResult.schedule.annualCredit)}</span>
+                            </div>
+                            <div className="hdc-result-row" style={{ fontSize: '0.875rem' }}>
+                              <span className="hdc-result-label">Year {catchUpYear} Catch-Up:</span>
+                              <span className="hdc-result-value">{formatCurrency(stateCalculatedResult.schedule.year11Credit)}</span>
+                            </div>
+                            <div className="hdc-result-row summary" style={{ fontSize: '0.875rem' }}>
+                              <span className="hdc-result-label">Total {duration}-Year Gross Credits:</span>
+                              <span className="hdc-result-value">{formatCurrency(stateCalculatedResult.grossCredit)}</span>
+                            </div>
+                          </>
+                        );
+                      })()}
                       <div className="hdc-result-row summary" style={{ fontSize: '0.875rem' }}>
                         <span className="hdc-result-label">Net Benefit (After Syndication):</span>
                         <span className="hdc-result-value" style={{ fontWeight: 600, color: 'var(--hdc-cabbage-pont)' }}>

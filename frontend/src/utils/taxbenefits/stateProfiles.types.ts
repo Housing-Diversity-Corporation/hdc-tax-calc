@@ -98,6 +98,36 @@ export interface StateLIHTCProgram {
 
   /** Legal authority citation */
   authority: string;
+
+  // ========== IMPL-079: Program Enhancement Fields ==========
+
+  /**
+   * Credit duration in years (default: 10)
+   * Most states mirror federal 10-year period, but some differ (e.g., NE is 6 years)
+   */
+  creditDurationYears?: number;
+
+  /**
+   * What the state credit calculates from
+   * - federal_credit: Percentage of federal annual credit (piggyback)
+   * - federal_eligible_basis: Percentage of federal eligible basis
+   * - independent: Standalone allocation, not derived from federal
+   */
+  matchBasis?: 'federal_credit' | 'federal_eligible_basis' | 'independent';
+
+  /**
+   * When syndication must be structured
+   * - before_allocation: Must structure before state allocates credits
+   * - anytime: Can structure/transfer at any time
+   * - at_pis: Must structure at placed-in-service
+   */
+  timingConstraint?: 'before_allocation' | 'anytime' | 'at_pis' | null;
+
+  /**
+   * Plain-language structuring guidance for deal teams
+   * Includes timing requirements, transfer restrictions, buyer pool notes
+   */
+  structuringNotes?: string | null;
 }
 
 /**

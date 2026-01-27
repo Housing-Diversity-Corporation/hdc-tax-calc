@@ -20,15 +20,21 @@ export function buildInputsSheet(params: CalculationParams): SheetResult {
     // === PROJECT DEFINITION === (starting row 5)
     { label: 'Project Cost ($M)', rangeName: 'ProjectCost', value: params.projectCost, units: '$M' },
     { label: 'Land Value ($M)', rangeName: 'LandValue', value: params.landValue, units: '$M' },
+    { label: 'Predevelopment Costs ($M)', rangeName: 'PredevelopmentCosts', value: params.predevelopmentCosts || 0, units: '$M' },
+    { label: 'Project Location', rangeName: 'ProjectLocation', value: params.projectLocation || '', units: '' },
     { label: 'Number of Units', rangeName: 'Units', value: 100, units: 'units' },
     { label: 'Closing Month (1-12)', rangeName: 'ClosingMonth', value: params.placedInServiceMonth || 7, units: 'month' },
     { label: 'Property State', rangeName: 'PropertyState', value: params.selectedState || 'CA', units: '' },
     { label: 'Hold Period (years)', rangeName: 'HoldPeriod', value: params.holdPeriod || 10, units: 'years' },
-    { label: 'Year 1 NOI ($M)', rangeName: 'YearOneNOI', value: params.yearOneNOI, units: '$M' },
-    { label: 'NOI Growth Rate (%)', rangeName: 'NOIGrowthRate', value: params.revenueGrowth, units: '%' },
+    { label: 'Stabilized NOI ($M)', rangeName: 'YearOneNOI', value: params.yearOneNOI, units: '$M' },
+    { label: 'Revenue Growth Rate (%)', rangeName: 'RevenueGrowthRate', value: params.revenueGrowth, units: '%' },
+    { label: 'Expense Growth Rate (%)', rangeName: 'ExpenseGrowthRate', value: params.expenseGrowth || params.revenueGrowth, units: '%' },
+    { label: 'OpEx Ratio (%)', rangeName: 'OpExRatio', value: params.opexRatio || 45, units: '%' },
     { label: 'Exit Cap Rate (%)', rangeName: 'ExitCapRate', value: params.exitCapRate, units: '%' },
     { label: 'Stabilized Occupancy (%)', rangeName: 'StabilizedOccupancy', value: 95, units: '%' },
     { label: 'Lease-Up Months', rangeName: 'LeaseUpMonths', value: 18, units: 'months' },
+    { label: 'Construction Delay (months)', rangeName: 'ConstructionDelayMonths', value: params.constructionDelayMonths || 0, units: 'months' },
+    { label: 'Tax Benefit Delay (months)', rangeName: 'TaxBenefitDelayMonths', value: params.taxBenefitDelayMonths || 0, units: 'months' },
 
     // Blank row separator
     { label: '', rangeName: '', value: '', units: '' },
@@ -46,6 +52,7 @@ export function buildInputsSheet(params: CalculationParams): SheetResult {
     // Phil Debt
     { label: 'Phil Debt (%)', rangeName: 'PhilDebtPct', value: params.philanthropicDebtPct || 0, units: '%' },
     { label: 'Phil Debt Rate (%)', rangeName: 'PhilDebtRate', value: params.philanthropicDebtRate || 0, units: '%' },
+    { label: 'Phil Debt Amortization (yrs)', rangeName: 'PhilDebtAmort', value: params.philDebtAmortization || 35, units: 'years' },
     { label: 'Phil Current Pay Enabled', rangeName: 'PhilCurrentPayEnabled', value: params.philCurrentPayEnabled ? 1 : 0, units: '0/1' },
     { label: 'Phil Current Pay (%)', rangeName: 'PhilCurrentPayPct', value: params.philCurrentPayPct || 0, units: '%' },
 
@@ -54,6 +61,9 @@ export function buildInputsSheet(params: CalculationParams): SheetResult {
 
     // Investor Equity
     { label: 'Investor Equity (%)', rangeName: 'InvestorEquityPct', value: params.investorEquityPct, units: '%' },
+    { label: 'Philanthropic Equity (%)', rangeName: 'PhilEquityPct', value: params.philanthropicEquityPct || 0, units: '%' },
+    { label: 'Investor Equity Ratio (%)', rangeName: 'InvestorEquityRatio', value: params.investorEquityRatio || 50, units: '%' },
+    { label: 'Auto-Balance Capital', rangeName: 'AutoBalanceCapital', value: params.autoBalanceCapital !== false ? 1 : 0, units: '0/1' },
 
     // Blank row
     { label: '', rangeName: '', value: '', units: '' },
@@ -79,8 +89,23 @@ export function buildInputsSheet(params: CalculationParams): SheetResult {
     // Outside Investor Sub-Debt
     { label: 'Outside Investor Sub-Debt (%)', rangeName: 'OutsideSubDebtPct', value: params.outsideInvestorSubDebtPct || 0, units: '%' },
     { label: 'Outside PIK Rate (%)', rangeName: 'OutsidePIKRate', value: params.outsideInvestorSubDebtPikRate || 8, units: '%' },
+    { label: 'Outside Amortization (yrs)', rangeName: 'OutsideSubDebtAmort', value: params.outsideInvestorSubDebtAmortization || 10, units: 'years' },
     { label: 'Outside Current Pay Enabled', rangeName: 'OutsideCurrentPayEnabled', value: params.outsideInvestorPikCurrentPayEnabled ? 1 : 0, units: '0/1' },
     { label: 'Outside Current Pay (%)', rangeName: 'OutsideCurrentPayPct', value: params.outsideInvestorPikCurrentPayPct || 0, units: '%' },
+
+    // Sub-debt payment priority (ISS-043)
+    { label: 'Sub-Debt Priority: Outside', rangeName: 'SubDebtPriorityOutside', value: params.subDebtPriority?.outsideInvestor ?? 1, units: 'rank' },
+    { label: 'Sub-Debt Priority: HDC', rangeName: 'SubDebtPriorityHDC', value: params.subDebtPriority?.hdc ?? 2, units: 'rank' },
+    { label: 'Sub-Debt Priority: Investor', rangeName: 'SubDebtPriorityInvestor', value: params.subDebtPriority?.investor ?? 3, units: 'rank' },
+
+    // Blank row
+    { label: '', rangeName: '', value: '', units: '' },
+
+    // HDC Debt Fund (IMPL-082)
+    { label: 'HDC Debt Fund (%)', rangeName: 'HDCDebtFundPct', value: params.hdcDebtFundPct || 0, units: '%' },
+    { label: 'HDC DF PIK Rate (%)', rangeName: 'HDCDFPIKRate', value: params.hdcDebtFundPikRate || 8, units: '%' },
+    { label: 'HDC DF Current Pay Enabled', rangeName: 'HDCDFCurrentPayEnabled', value: params.hdcDebtFundCurrentPayEnabled ? 1 : 0, units: '0/1' },
+    { label: 'HDC DF Current Pay (%)', rangeName: 'HDCDFCurrentPayPct', value: params.hdcDebtFundCurrentPayPct || 50, units: '%' },
 
     // Blank row
     { label: '', rangeName: '', value: '', units: '' },
@@ -89,11 +114,30 @@ export function buildInputsSheet(params: CalculationParams): SheetResult {
     { label: 'Federal Tax Rate (%)', rangeName: 'FederalTaxRate', value: params.federalTaxRate || 37, units: '%' },
     { label: 'NIIT Rate (%)', rangeName: 'NIITRate', value: params.niitRate || 3.8, units: '%' },
     { label: 'State Tax Rate (%)', rangeName: 'StateTaxRate', value: params.stateTaxRate || 0, units: '%' },
+    { label: 'LT Capital Gains Rate (%)', rangeName: 'LTCapitalGainsRate', value: params.ltCapitalGainsRate || 20, units: '%' },
+    { label: 'State Capital Gains Rate (%)', rangeName: 'StateCapitalGainsRate', value: params.stateCapitalGainsRate || 0, units: '%' },
+    { label: 'Depreciation Recapture Rate (%)', rangeName: 'DepreciationRecaptureRate', value: params.depreciationRecaptureRate || 25, units: '%' },
     { label: 'Cost Segregation (%)', rangeName: 'CostSegPct', value: params.yearOneDepreciationPct || 20, units: '%' },
     { label: 'Bonus Depreciation (%)', rangeName: 'BonusDepreciationPct', value: 100, units: '%' },
+    { label: 'Include Depreciation Schedule', rangeName: 'IncludeDepreciationSchedule', value: params.includeDepreciationSchedule !== false ? 1 : 0, units: '0/1' },
     { label: 'Investor State', rangeName: 'InvestorState', value: params.investorState || 'CA', units: '' },
     { label: 'State Conforms to Federal', rangeName: 'StateConforms', value: params.bonusConformityRate === 1 ? 1 : 0, units: '0/1' },
+    { label: 'Investor Track', rangeName: 'InvestorTrack', value: params.investorTrack || 'rep', units: '' },
     { label: 'Is REP', rangeName: 'IsREP', value: params.investorTrack === 'rep' ? 1 : 0, units: '0/1' },
+    { label: 'Passive Gain Type', rangeName: 'PassiveGainType', value: params.passiveGainType || 'short-term', units: '' },
+    { label: 'Investor Type', rangeName: 'InvestorType', value: params.investorType || 'ordinary', units: '' },
+
+    // Blank row
+    { label: '', rangeName: '', value: '', units: '' },
+
+    // === TAX PLANNING INPUTS ===
+    { label: 'W2 Income ($)', rangeName: 'W2Income', value: params.w2Income || 0, units: '$' },
+    { label: 'Business Income ($)', rangeName: 'BusinessIncome', value: params.businessIncome || 0, units: '$' },
+    { label: 'IRA Balance ($)', rangeName: 'IRABalance', value: params.iraBalance || 0, units: '$' },
+    { label: 'Passive Income ($)', rangeName: 'PassiveIncome', value: params.passiveIncome || 0, units: '$' },
+    { label: 'Asset Sale Gain ($)', rangeName: 'AssetSaleGain', value: params.assetGain || 0, units: '$' },
+    { label: 'Annual Income ($)', rangeName: 'AnnualIncome', value: params.annualIncome || 0, units: '$' },
+    { label: 'Filing Status', rangeName: 'FilingStatus', value: params.filingStatus || 'single', units: '' },
 
     // Blank row
     { label: '', rangeName: '', value: '', units: '' },
@@ -101,7 +145,9 @@ export function buildInputsSheet(params: CalculationParams): SheetResult {
     // === OZ PARAMETERS ===
     { label: 'OZ Enabled', rangeName: 'OZEnabled', value: params.ozEnabled ? 1 : 0, units: '0/1' },
     { label: 'OZ Version', rangeName: 'OZVersion', value: params.ozVersion === '2.0' ? 2 : 1, units: '1/2' },
+    { label: 'OZ Type', rangeName: 'OZType', value: params.ozType || 'standard', units: '' },
     { label: 'Deferred Gain ($M)', rangeName: 'DeferredGain', value: params.deferredCapitalGains || 0, units: '$M' },
+    { label: 'OZ Capital Gains Tax Rate (%)', rangeName: 'OZCapitalGainsTaxRate', value: params.ozCapitalGainsTaxRate || 23.8, units: '%' },
     { label: 'OZ Step-Up (%)', rangeName: 'OZStepUpPct', value: getOZStepUpPct(params), units: '%' },
 
     // Blank row
@@ -112,6 +158,27 @@ export function buildInputsSheet(params: CalculationParams): SheetResult {
     { label: 'Applicable Fraction (%)', rangeName: 'ApplicableFraction', value: params.applicableFraction || 100, units: '%' },
     { label: 'LIHTC Rate (%)', rangeName: 'LIHTCRate', value: params.creditRate || 4, units: '%' },
     { label: 'Qualified Basis Boost', rangeName: 'QualifiedBasisBoost', value: params.ddaQctBoost ? 1 : 0, units: '0/1' },
+
+    // Private Activity Bonds (IMPL-080)
+    { label: 'PAB Enabled', rangeName: 'PABEnabled', value: params.pabEnabled ? 1 : 0, units: '0/1' },
+    { label: 'PAB % of Eligible Basis', rangeName: 'PABPctOfEligibleBasis', value: params.pabPctOfEligibleBasis || 30, units: '%' },
+    { label: 'PAB Rate (%)', rangeName: 'PABRate', value: params.pabRate || 4.5, units: '%' },
+    { label: 'PAB Term (Yrs)', rangeName: 'PABTerm', value: params.pabTerm || 40, units: 'Years' },
+    { label: 'PAB Amortization (Yrs)', rangeName: 'PABAmortization', value: params.pabAmortization || 40, units: 'Years' },
+    { label: 'PAB IO Years', rangeName: 'PABIOYears', value: params.pabIOYears || 0, units: 'Years' },
+
+    // Blank row
+    { label: '', rangeName: '', value: '', units: '' },
+
+    // ISS-035: LIHTC Eligible Basis Exclusions (IMPL-083)
+    { label: 'Commercial Space Costs ($M)', rangeName: 'CommercialSpaceCosts', value: params.commercialSpaceCosts || 0, units: '$M' },
+    { label: 'Syndication Costs ($M)', rangeName: 'SyndicationCosts', value: params.syndicationCosts || 0, units: '$M' },
+    { label: 'Marketing/Org Costs ($M)', rangeName: 'MarketingCosts', value: params.marketingCosts || 0, units: '$M' },
+    { label: 'Financing Fees ($M)', rangeName: 'FinancingFees', value: params.financingFees || 0, units: '$M' },
+    { label: 'Bond Issuance Costs ($M)', rangeName: 'BondIssuanceCosts', value: params.bondIssuanceCosts || 0, units: '$M' },
+    { label: 'Operating Deficit Reserve ($M)', rangeName: 'OperatingDeficitReserve', value: params.operatingDeficitReserve || 0, units: '$M' },
+    { label: 'Replacement Reserve ($M)', rangeName: 'ReplacementReserve', value: params.replacementReserve || 0, units: '$M' },
+    { label: 'Other Exclusions ($M)', rangeName: 'OtherExclusions', value: params.otherExclusions || 0, units: '$M' },
 
     // Blank row
     { label: '', rangeName: '', value: '', units: '' },
@@ -126,15 +193,31 @@ export function buildInputsSheet(params: CalculationParams): SheetResult {
     { label: 'State LIHTC Path', rangeName: 'StateLIHTCPath', value: (params.syndicationRate === 100) ? 'direct' : 'syndicated', units: '' },
     // IMPL-076: Year syndication proceeds are received (0=close/default, 1, 2)
     { label: 'State LIHTC Syndication Year', rangeName: 'StateLIHTCSyndYear', value: params.stateLIHTCSyndicationYear ?? 0, units: 'year' },
+    // ISS-043: User override fields for State LIHTC
+    { label: 'Investor Has State Liability', rangeName: 'InvestorHasStateLiability', value: params.investorHasStateLiability !== false ? 1 : 0, units: '0/1' },
+    { label: 'State LIHTC User Percentage', rangeName: 'StateLIHTCUserPct', value: params.stateLIHTCUserPercentage || 0, units: '%' },
+    { label: 'State LIHTC User Amount ($M)', rangeName: 'StateLIHTCUserAmount', value: params.stateLIHTCUserAmount || 0, units: '$M' },
 
     // Blank row
     { label: '', rangeName: '', value: '', units: '' },
 
     // === FEE STRUCTURE ===
+    { label: 'HDC Fee Rate (%)', rangeName: 'HDCFeeRate', value: params.hdcFeeRate || 1, units: '%' },
+    { label: 'HDC Deferred Interest Rate (%)', rangeName: 'HDCDeferredInterestRate', value: params.hdcDeferredInterestRate || 8, units: '%' },
+    { label: 'AUM Fee Enabled', rangeName: 'AUMFeeEnabled', value: params.aumFeeEnabled ? 1 : 0, units: '0/1' },
     { label: 'AUM Fee (%)', rangeName: 'AUMFeePct', value: params.aumFeeRate || 1, units: '%' },
     { label: 'AUM Current Pay Enabled', rangeName: 'AUMCurrentPayEnabled', value: params.aumCurrentPayEnabled ? 1 : 0, units: '0/1' },
     { label: 'AUM Current Pay (%)', rangeName: 'AUMCurrentPayPct', value: params.aumCurrentPayPct || 0, units: '%' },
-    { label: 'AUM Deferred Interest Rate', rangeName: 'AUMDeferredRate', value: params.hdcDeferredInterestRate || 8, units: '%' },
+    { label: 'HDC Platform Mode', rangeName: 'HDCPlatformMode', value: params.hdcPlatformMode || 'traditional', units: '' },
+
+    // Blank row
+    { label: '', rangeName: '', value: '', units: '' },
+
+    // === HDC ADVANCE FINANCING ===
+    { label: 'HDC Advance Financing Enabled', rangeName: 'HDCAdvanceFinancing', value: params.hdcAdvanceFinancing ? 1 : 0, units: '0/1' },
+    { label: 'Tax Advance Discount Rate (%)', rangeName: 'TaxAdvanceDiscountRate', value: params.taxAdvanceDiscountRate || 8, units: '%' },
+    { label: 'Advance Financing Rate (%)', rangeName: 'AdvanceFinancingRate', value: params.advanceFinancingRate || 8, units: '%' },
+    { label: 'Tax Delivery Months', rangeName: 'TaxDeliveryMonths', value: params.taxDeliveryMonths || 18, units: 'months' },
 
     // Blank row
     { label: '', rangeName: '', value: '', units: '' },
@@ -146,6 +229,7 @@ export function buildInputsSheet(params: CalculationParams): SheetResult {
     { label: '', rangeName: '', value: '', units: '' },
 
     // === INTEREST RESERVE ===
+    { label: 'Interest Reserve Enabled', rangeName: 'InterestReserveEnabled', value: params.interestReserveEnabled ? 1 : 0, units: '0/1' },
     { label: 'Interest Reserve Months', rangeName: 'InterestReserveMonths', value: params.interestReserveMonths || 0, units: 'months' },
 
     // Blank row

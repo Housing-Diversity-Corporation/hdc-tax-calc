@@ -8,6 +8,11 @@ import {
  * CRITICAL: This file implements validated HDC business logic.
  * DO NOT MODIFY without reading HDC_CALCULATION_LOGIC.md
  * HDC has $0 initial investment by design - they are the sponsor.
+ *
+ * ISS-047: Fixed exit waterfall to use return-of-capital-first logic
+ * - HDC promote now applies only to profit (excess above investor equity basis)
+ * - Matches investor calculation in calculations.ts for consistency
+ * - Ensures HDC and investor exit proceeds respond inversely to promote split changes
  */
 
 /**
@@ -49,15 +54,12 @@ export const calculateHDCAnalysis = (params: HDCCalculationParams): HDCAnalysisR
 
   const hdcPromoteShare = 100 - paramInvestorPromoteShare;
   
-  // Track waterfall phases for HDC's promote share
+  // ISS-051: Simplified waterfall for HDC's promote share
   // HDC gets 0% until investor recovers equity (free investment achieved)
-  // Then HDC gets catch-up for deferred fees
   // Then normal promote split (e.g., 65% HDC, 35% investor)
+  // NO catch-up mechanism - promotes are NOT deferred, they simply don't exist during recovery
   // Note: Equity recovery tracked via investor's cumulativeReturns (single source of truth)
   let hurdleMet = false;
-  let hdcCatchUpOwed = 0;
-  let hdcDeferredPromote = 0;
-  let catchUpComplete = false;
   
   // Include predevelopment costs in base project cost
   const baseProjectCost = paramProjectCost + paramPredevelopmentCosts;
@@ -237,8 +239,10 @@ export const calculateHDCAnalysis = (params: HDCCalculationParams): HDCAnalysisR
       accumulatedAumFees += aumFeeAccrued;
     }
     
-    // Cash available after debt service and AUM fee payments
-    const cashAfterDebtAndAumFee = Math.max(0, cashAfterDebtService - aumFeeIncome);
+    // ISS-051 v2: Use investor's cashAfterDebtAndFees as promote base (single source of truth)
+    // This value already accounts for ALL deductions: hard debt, soft debt current pay, AUM fees
+    // Previous bug: Was computing independently, missing hdcSubDebtCurrentPay and other soft-pay items
+    const cashAfterDebtAndAumFee = investorCashFlowForYear?.cashAfterDebtAndFees || 0;
 
     // CRITICAL FIX (Jan 2025): Use investor's cumulative returns to determine equity recovery
     // Single source of truth from main calculation engine - NO duplicate calculations
@@ -251,44 +255,27 @@ export const calculateHDCAnalysis = (params: HDCCalculationParams): HDCAnalysisR
     // HDC gets their promote share based on waterfall phases
     let hdcPromoteShareOfCF = 0;
 
+    // ISS-051: Simplified two-phase waterfall (no catch-up)
+    // Phase 1: Investor recovery - HDC gets 0%
+    // Phase 2: Normal promote split - HDC gets their share
     if (!hurdleMet) {
       // PHASE 1: Investor Recovery - HDC gets 0% of operating cash
       // Investor gets 100% of tax benefits + operating cash until they recover their equity
       if (investorCumulativeReturns >= investorEquity) {
-        // Equity fully recovered - hurdle met
+        // Equity fully recovered - hurdle met this year
         hurdleMet = true;
-
         // HDC gets their promote share of operating cash flow ONLY
         // Tax benefits always go 100% to investor, even after recovery (free investment principle)
-        if (cashAfterDebtAndAumFee > 0) {
-          hdcPromoteShareOfCF = cashAfterDebtAndAumFee * (hdcPromoteShare / 100);
-        }
-
-        // Track any deferred promote for potential catch-up
-        if (hdcDeferredPromote > 0) {
-          hdcCatchUpOwed = hdcDeferredPromote;
-          catchUpComplete = false;
-        }
+        hdcPromoteShareOfCF = cashAfterDebtAndAumFee > 0
+          ? cashAfterDebtAndAumFee * (hdcPromoteShare / 100)
+          : 0;
       } else {
-        // Still recovering - HDC gets 0%
+        // Still recovering - HDC gets 0%, investor gets 100%
         hdcPromoteShareOfCF = 0;
-        // Track what HDC would have gotten for potential catch-up
-        hdcDeferredPromote += cashAfterDebtAndAumFee * (hdcPromoteShare / 100);
-      }
-    } else if (!catchUpComplete && hdcCatchUpOwed > 0) {
-      // PHASE 2: HDC Catch-up for deferred promote
-      if (cashAfterDebtAndAumFee >= hdcCatchUpOwed) {
-        // HDC gets their catch-up, then normal split on remainder
-        hdcPromoteShareOfCF = hdcCatchUpOwed + ((cashAfterDebtAndAumFee - hdcCatchUpOwed) * (hdcPromoteShare / 100));
-        hdcCatchUpOwed = 0;
-        catchUpComplete = true;
-      } else {
-        // All operating cash goes to HDC for catch-up
-        hdcPromoteShareOfCF = cashAfterDebtAndAumFee;
-        hdcCatchUpOwed -= cashAfterDebtAndAumFee;
       }
     } else {
-      // PHASE 3: Normal Promote Split - HDC gets their full promote share
+      // PHASE 2: Normal Promote Split - HDC gets their promote share
+      // Conservation of capital: HDC share + Investor share = cashAfterDebtAndAumFee
       hdcPromoteShareOfCF = cashAfterDebtAndAumFee * (hdcPromoteShare / 100);
     }
     
@@ -379,26 +366,32 @@ export const calculateHDCAnalysis = (params: HDCCalculationParams): HDCAnalysisR
   const investorSubDebtAtExit = params.investorSubDebtAtExit || 0;
 
   // Philanthropic equity is grant funding - never gets repaid
-  // Calculate gross exit proceeds after ALL debt (including Investor Sub-Debt and Outside Investor Sub-Debt)
-  const grossExitProceeds = Math.max(0, exitValue - remainingDebt - hdcSubDebtAtExit - investorSubDebtAtExit - outsideInvestorSubDebtAtExit);
+  // ISS-050: Use passed grossExitProceeds from investor calculation to ensure conservation of capital
+  // If not passed, fall back to computed value (but this may differ from investor calculation)
+  const computedGrossExitProceeds = Math.max(0, exitValue - remainingDebt - hdcSubDebtAtExit - investorSubDebtAtExit - outsideInvestorSubDebtAtExit);
+  const grossExitProceeds = params.grossExitProceeds ?? computedGrossExitProceeds;
 
-  // Apply waterfall at exit: HDC gets catch-up first, then normal split
-  let hdcPromoteProceeds = 0;
+  // ISS-047 + ISS-050: Return-of-capital-first waterfall with prior recovery tracking
+  // 1. Check how much capital investor already recovered during hold period
+  // 2. Only give ROC at exit for remaining unrecovered capital
+  // 3. All other exit proceeds are profit, split per promote percentage
+  const investorEquityBasis = investorEquity || 0;
 
-  if (hdcCatchUpOwed > 0 && grossExitProceeds > 0) {
-    // HDC has deferred promote to catch up on
-    if (grossExitProceeds <= hdcCatchUpOwed) {
-      // All exit proceeds go to HDC for catch-up
-      hdcPromoteProceeds = grossExitProceeds;
-    } else {
-      // HDC gets catch-up first, then normal split on remainder
-      const remainderAfterCatchUp = grossExitProceeds - hdcCatchUpOwed;
-      hdcPromoteProceeds = hdcCatchUpOwed + (remainderAfterCatchUp * (hdcPromoteShare / 100));
-    }
-  } else {
-    // No catch-up owed, normal promote split
-    hdcPromoteProceeds = grossExitProceeds * (hdcPromoteShare / 100);
-  }
+  // ISS-050 FIX: Account for investor's capital already recovered during hold period
+  // Get cumulative returns from the last year of investor cash flows
+  const investorCumulativeReturns = paramInvestorCashFlows.length > 0
+    ? paramInvestorCashFlows[paramInvestorCashFlows.length - 1].cumulativeReturns || 0
+    : 0;
+  const capitalAlreadyRecovered = Math.min(investorCumulativeReturns, investorEquityBasis);
+  const remainingCapitalToRecover = Math.max(0, investorEquityBasis - capitalAlreadyRecovered);
+
+  // Profit is everything after the remaining ROC - larger when capital was already recovered
+  const profit = Math.max(0, grossExitProceeds - remainingCapitalToRecover);
+
+  // ISS-050: Clean profit split at exit - no catch-up mechanism
+  // Catch-up for deferred promote happens during hold period operating cash, not at exit
+  // This ensures conservation of capital: Investor share + HDC share = grossExitProceeds
+  const hdcPromoteProceeds = profit * (hdcPromoteShare / 100);
   const philanthropicEquityRepayment = 0; // Philanthropic equity is grant funding, never repaid
   const hdcSubDebtRepayment = hdcSubDebtAtExit;
   

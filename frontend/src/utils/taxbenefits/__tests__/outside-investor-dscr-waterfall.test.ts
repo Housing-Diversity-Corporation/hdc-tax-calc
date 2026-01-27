@@ -93,7 +93,7 @@ describe('Outside Investor Sub-Debt Current Pay & DSCR Management', () => {
       const totalDebtService = annualSenior + annualPhil;
       const hardDSCR = baseParams.yearOneNOI / totalDebtService;
 
-      console.log(`- Year 1 NOI: $${baseParams.yearOneNOI}M`);
+      console.log(`- Stabilized NOI: $${baseParams.yearOneNOI}M`);
       console.log(`- Senior debt service: $${annualSenior.toFixed(3)}M`);
       console.log(`- Phil debt service: $${annualPhil.toFixed(3)}M`);
       console.log(`- Total hard debt service: $${totalDebtService.toFixed(3)}M`);
@@ -186,7 +186,7 @@ describe('Outside Investor Sub-Debt Current Pay & DSCR Management', () => {
       const hdcResult = calculateHDCAnalysis(stressParams as any);
 
       console.log('\\n=== DEFERRAL PRIORITY TEST (Stressed Cash Flow) ===');
-      console.log(`Year 1 NOI: $${stressParams.yearOneNOI}M (reduced for stress test)`);
+      console.log(`Stabilized NOI: $${stressParams.yearOneNOI}M (reduced for stress test)`);
 
       const baseCost = stressParams.projectCost + stressParams.predevelopmentCosts;
       const aumFee = baseCost * 0.01;
@@ -262,7 +262,7 @@ describe('Outside Investor Sub-Debt Current Pay & DSCR Management', () => {
         const result = calculateFullInvestorAnalysis(scenario.params as any);
 
         console.log(`\\n${scenario.name}:`);
-        console.log(`- Year 1 NOI: $${scenario.params.yearOneNOI}M`);
+        console.log(`- Stabilized NOI: $${scenario.params.yearOneNOI}M`);
 
         // Calculate hard debt service
         const baseCost = scenario.params.projectCost + scenario.params.predevelopmentCosts;

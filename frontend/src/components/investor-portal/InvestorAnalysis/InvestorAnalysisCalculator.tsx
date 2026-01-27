@@ -1049,7 +1049,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
                 <li>Construction Delay Months: {constructionDelayMonths}</li>
                 <li>Tax Benefit Delay Months: {taxBenefitDelayMonths}</li>
                 <li>Land Value: {formatCurrencyMillions(landValue)}</li>
-                <li>Year 1 NOI: {formatCurrencyMillions(yearOneNOI)}</li>
+                <li>Stabilized NOI: {formatCurrencyMillions(yearOneNOI)}</li>
                 <li>Hold Period: {holdPeriod} years</li>
                 <li>Revenue Growth: {revenueGrowth}%</li>
                 <li>Expense Growth: {expenseGrowth}%</li>

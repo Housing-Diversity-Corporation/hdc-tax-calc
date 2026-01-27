@@ -98,13 +98,72 @@ function calculateBreakEvenYear(cashFlows: CashFlowItem[], investorEquity: numbe
 }
 
 /**
- * Calculate minimum DSCR from cash flows (natural DSCR before cash management)
+ * ISS-054: Find the stabilized year (first year after lease-up period)
+ * Lenders underwrite to stabilized NOI, not lease-up performance.
+ * Lease-up shortfall is a timing issue covered by interest reserve, not a credit issue.
+ *
+ * Returns the first year where:
+ * 1. effectiveOccupancy is >= 0.99 (stabilized)
+ * 2. OR effectiveOccupancy is undefined (not in lease-up mode)
+ * 3. Falls back to Year 2 if no clear stabilized year found
  */
-function calculateMinDSCR(cashFlows: CashFlowItem[]): number {
-  const validDSCRs = cashFlows
-    .filter(cf => cf.operationalDSCR != null && cf.operationalDSCR > 0 && isFinite(cf.operationalDSCR))
-    .map(cf => cf.operationalDSCR!);
-  return validDSCRs.length > 0 ? Math.min(...validDSCRs) : 0;
+function findStabilizedYear(cashFlows: CashFlowItem[]): CashFlowItem | null {
+  // First, try to find a year where occupancy is stabilized (>= 99%)
+  const stabilizedYear = cashFlows.find(cf => {
+    // If effectiveOccupancy is undefined or >= 0.99, this year is stabilized
+    if (cf.effectiveOccupancy === undefined || cf.effectiveOccupancy >= 0.99) {
+      return true;
+    }
+    return false;
+  });
+
+  if (stabilizedYear) return stabilizedYear;
+
+  // Fall back to Year 2 (after any partial-year effects)
+  const year2 = cashFlows.find(cf => cf.year === 2);
+  if (year2) return year2;
+
+  // Last resort: return first year with valid DSCR
+  return cashFlows.find(cf =>
+    cf.operationalDSCR != null && cf.operationalDSCR > 0 && isFinite(cf.operationalDSCR)
+  ) || null;
+}
+
+/**
+ * ISS-054: Calculate stabilized DSCR from cash flows
+ * Uses the first year after interest reserve period (stabilized operations)
+ * per standard lender underwriting practice.
+ */
+function calculateStabilizedDSCR(cashFlows: CashFlowItem[]): number {
+  const stabilizedYear = findStabilizedYear(cashFlows);
+  if (!stabilizedYear) return 0;
+
+  const dscr = stabilizedYear.operationalDSCR;
+  return (dscr != null && dscr > 0 && isFinite(dscr)) ? dscr : 0;
+}
+
+/**
+ * ISS-054: Calculate stabilized Must-Pay DSCR (IMPL-081: Senior + PAB only - true hard floor)
+ * Uses stabilized year per lender underwriting standards.
+ */
+function calculateStabilizedMustPayDSCR(cashFlows: CashFlowItem[]): number {
+  const stabilizedYear = findStabilizedYear(cashFlows);
+  if (!stabilizedYear) return 0;
+
+  const dscr = stabilizedYear.mustPayDSCR;
+  return (dscr != null && dscr > 0 && isFinite(dscr)) ? dscr : 0;
+}
+
+/**
+ * ISS-054: Calculate stabilized Phil DSCR (IMPL-081: Senior + PAB + Phil current pay - Amazon 1.05x)
+ * Uses stabilized year per lender underwriting standards.
+ */
+function calculateStabilizedPhilDSCR(cashFlows: CashFlowItem[]): number {
+  const stabilizedYear = findStabilizedYear(cashFlows);
+  if (!stabilizedYear) return 0;
+
+  const dscr = stabilizedYear.philDSCR;
+  return (dscr != null && dscr > 0 && isFinite(dscr)) ? dscr : 0;
 }
 
 /**
@@ -237,8 +296,14 @@ const KPIStrip: React.FC<KPIStripProps> = ({
     const leverage = totalProjectCost > 0
       ? ((totalProjectCost - investorEquity) / totalProjectCost) * 100
       : 0;
-    const minDSCR = calculateMinDSCR(cashFlows);
-    const dscrPass = minDSCR >= DSCR_PASS_THRESHOLD;
+    // ISS-054: Use stabilized DSCR (first year after lease-up) per lender underwriting standards
+    // Lease-up shortfall is covered by interest reserve, not a credit issue
+    const stabilizedDSCR = calculateStabilizedDSCR(cashFlows);
+    const dscrPass = stabilizedDSCR >= DSCR_PASS_THRESHOLD;
+    // IMPL-081: DSCR Breakdown (also using stabilized values)
+    const stabilizedMustPayDSCR = calculateStabilizedMustPayDSCR(cashFlows);
+    const stabilizedPhilDSCR = calculateStabilizedPhilDSCR(cashFlows);
+    const philDscrPass = stabilizedPhilDSCR >= 1.05; // Amazon HEF requirement
 
     // Row 2 KPIs
     const totalMultiple = mainAnalysisResults.multiple || 0;
@@ -259,8 +324,12 @@ const KPIStrip: React.FC<KPIStripProps> = ({
       stateLIHTCProceeds,
       totalProjectCost,
       leverage,
-      minDSCR,
+      stabilizedDSCR,
       dscrPass,
+      // IMPL-081: DSCR Breakdown (ISS-054: using stabilized values)
+      stabilizedMustPayDSCR,
+      stabilizedPhilDSCR,
+      philDscrPass,
       // Row 2
       totalMultiple,
       irr,
@@ -332,7 +401,7 @@ const KPIStrip: React.FC<KPIStripProps> = ({
           </span>
         </div>
 
-        {/* DSCR */}
+        {/* DSCR Breakdown (IMPL-081) */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -342,11 +411,18 @@ const KPIStrip: React.FC<KPIStripProps> = ({
           <span className="kpi-label" style={{ fontSize: '0.75rem' }}>DSCR</span>
           <span style={{
             fontWeight: 600,
-            color: kpis.dscrPass ? 'var(--hdc-sushi)' : 'var(--hdc-brown-rust)'
+            color: kpis.stabilizedMustPayDSCR >= 1.25 ? 'var(--hdc-sushi)' : 'var(--hdc-brown-rust)'
           }}>
-            {formatMultiple(kpis.minDSCR)}
+            {formatMultiple(kpis.stabilizedMustPayDSCR)}
           </span>
-          {kpis.dscrPass && (
+          <span className="kpi-label" style={{ fontSize: '0.7rem' }}>/</span>
+          <span style={{
+            fontWeight: 600,
+            color: kpis.philDscrPass ? 'var(--hdc-sushi)' : 'var(--hdc-brown-rust)'
+          }}>
+            {formatMultiple(kpis.stabilizedPhilDSCR)}
+          </span>
+          {kpis.stabilizedMustPayDSCR >= 1.25 && kpis.philDscrPass && (
             <span style={{ color: 'var(--hdc-sushi)', fontSize: '0.85rem' }}>✓</span>
           )}
         </div>
@@ -391,10 +467,16 @@ const KPIStrip: React.FC<KPIStripProps> = ({
           value={formatPercent(kpis.leverage, 0)}
         />
         <KPIItem
-          label="DSCR"
-          value={formatMultiple(kpis.minDSCR)}
-          status={kpis.dscrPass ? 'pass' : 'neutral'}
-          valueColor={kpis.dscrPass ? 'var(--hdc-sushi)' : 'var(--hdc-brown-rust)'}
+          label="Must-Pay DSCR"
+          value={formatMultiple(kpis.stabilizedMustPayDSCR)}
+          status={kpis.stabilizedMustPayDSCR >= 1.25 ? 'pass' : 'neutral'}
+          valueColor={kpis.stabilizedMustPayDSCR >= 1.25 ? 'var(--hdc-sushi)' : 'var(--hdc-brown-rust)'}
+        />
+        <KPIItem
+          label="Phil DSCR"
+          value={formatMultiple(kpis.stabilizedPhilDSCR)}
+          status={kpis.philDscrPass ? 'pass' : 'neutral'}
+          valueColor={kpis.philDscrPass ? 'var(--hdc-sushi)' : 'var(--hdc-brown-rust)'}
         />
       </div>
 

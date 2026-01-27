@@ -201,6 +201,119 @@ public class CalculatorConfiguration {
     @Column(name = "oz_capital_gains_tax_rate")
     private Double ozCapitalGainsTaxRate;
 
+    // ISS-043: Additional fields for complete save/load support
+
+    // OZ Version (IMPL-017)
+    @Column(name = "oz_version")
+    private String ozVersion;
+
+    // Senior Debt IO Years
+    @Column(name = "senior_debt_io_years")
+    private Integer seniorDebtIOYears;
+
+    // HDC Platform Mode
+    @Column(name = "hdc_platform_mode")
+    private String hdcPlatformMode;
+
+    // Sub-debt payment priority (stored as JSON string)
+    @Column(name = "sub_debt_priority", columnDefinition = "TEXT")
+    private String subDebtPriority;
+
+    // Private Activity Bonds (PABs) - IMPL-080
+    @Column(name = "pab_enabled")
+    private Boolean pabEnabled;
+
+    @Column(name = "pab_pct_of_eligible_basis")
+    private Double pabPctOfEligibleBasis;
+
+    @Column(name = "pab_rate")
+    private Double pabRate;
+
+    @Column(name = "pab_term")
+    private Integer pabTerm;
+
+    @Column(name = "pab_amortization")
+    private Integer pabAmortization;
+
+    @Column(name = "pab_io_years")
+    private Integer pabIOYears;
+
+    // HDC Debt Fund (IMPL-082)
+    @Column(name = "hdc_debt_fund_pct")
+    private Double hdcDebtFundPct;
+
+    @Column(name = "hdc_debt_fund_pik_rate")
+    private Double hdcDebtFundPikRate;
+
+    @Column(name = "hdc_debt_fund_current_pay_enabled")
+    private Boolean hdcDebtFundCurrentPayEnabled;
+
+    @Column(name = "hdc_debt_fund_current_pay_pct")
+    private Double hdcDebtFundCurrentPayPct;
+
+    // Federal LIHTC (v7.0.11)
+    @Column(name = "lihtc_enabled")
+    private Boolean lihtcEnabled;
+
+    @Column(name = "applicable_fraction")
+    private Double applicableFraction;
+
+    @Column(name = "credit_rate")
+    private Double creditRate;
+
+    @Column(name = "placed_in_service_month")
+    private Integer placedInServiceMonth;
+
+    @Column(name = "dda_qct_boost")
+    private Boolean ddaQctBoost;
+
+    // State LIHTC (v7.0.10)
+    @Column(name = "state_lihtc_enabled")
+    private Boolean stateLIHTCEnabled;
+
+    @Column(name = "investor_state")
+    private String investorState;
+
+    @Column(name = "syndication_rate")
+    private Double syndicationRate;
+
+    @Column(name = "investor_has_state_liability")
+    private Boolean investorHasStateLiability;
+
+    @Column(name = "state_lihtc_user_percentage")
+    private Double stateLIHTCUserPercentage;
+
+    @Column(name = "state_lihtc_user_amount")
+    private Double stateLIHTCUserAmount;
+
+    @Column(name = "state_lihtc_syndication_year")
+    private Integer stateLIHTCSyndicationYear;
+
+    // Eligible Basis Exclusions (IMPL-083)
+    @Column(name = "commercial_space_costs")
+    private Double commercialSpaceCosts;
+
+    @Column(name = "syndication_costs")
+    private Double syndicationCosts;
+
+    @Column(name = "marketing_costs")
+    private Double marketingCosts;
+
+    @Column(name = "financing_fees")
+    private Double financingFees;
+
+    @Column(name = "bond_issuance_costs")
+    private Double bondIssuanceCosts;
+
+    @Column(name = "operating_deficit_reserve")
+    private Double operatingDeficitReserve;
+
+    @Column(name = "replacement_reserve")
+    private Double replacementReserve;
+
+    @Column(name = "other_exclusions")
+    private Double otherExclusions;
+
     // Investment Portal Settings
     @Column(name = "is_investor_facing")
     private Boolean isInvestorFacing = false;
@@ -967,6 +1080,285 @@ public class CalculatorConfiguration {
 
     public void setCalculatedOperatingCashFlows(Double calculatedOperatingCashFlows) {
         this.calculatedOperatingCashFlows = calculatedOperatingCashFlows;
+    }
+
+    // ISS-043: Getters and Setters for new fields
+
+    public String getOzVersion() {
+        return ozVersion;
+    }
+
+    public void setOzVersion(String ozVersion) {
+        this.ozVersion = ozVersion;
+    }
+
+    public Integer getSeniorDebtIOYears() {
+        return seniorDebtIOYears;
+    }
+
+    public void setSeniorDebtIOYears(Integer seniorDebtIOYears) {
+        this.seniorDebtIOYears = seniorDebtIOYears;
+    }
+
+    public String getHdcPlatformMode() {
+        return hdcPlatformMode;
+    }
+
+    public void setHdcPlatformMode(String hdcPlatformMode) {
+        this.hdcPlatformMode = hdcPlatformMode;
+    }
+
+    public String getSubDebtPriority() {
+        return subDebtPriority;
+    }
+
+    public void setSubDebtPriority(String subDebtPriority) {
+        this.subDebtPriority = subDebtPriority;
+    }
+
+    // PAB getters/setters
+    public Boolean getPabEnabled() {
+        return pabEnabled;
+    }
+
+    public void setPabEnabled(Boolean pabEnabled) {
+        this.pabEnabled = pabEnabled;
+    }
+
+    public Double getPabPctOfEligibleBasis() {
+        return pabPctOfEligibleBasis;
+    }
+
+    public void setPabPctOfEligibleBasis(Double pabPctOfEligibleBasis) {
+        this.pabPctOfEligibleBasis = pabPctOfEligibleBasis;
+    }
+
+    public Double getPabRate() {
+        return pabRate;
+    }
+
+    public void setPabRate(Double pabRate) {
+        this.pabRate = pabRate;
+    }
+
+    public Integer getPabTerm() {
+        return pabTerm;
+    }
+
+    public void setPabTerm(Integer pabTerm) {
+        this.pabTerm = pabTerm;
+    }
+
+    public Integer getPabAmortization() {
+        return pabAmortization;
+    }
+
+    public void setPabAmortization(Integer pabAmortization) {
+        this.pabAmortization = pabAmortization;
+    }
+
+    public Integer getPabIOYears() {
+        return pabIOYears;
+    }
+
+    public void setPabIOYears(Integer pabIOYears) {
+        this.pabIOYears = pabIOYears;
+    }
+
+    // HDC Debt Fund getters/setters
+    public Double getHdcDebtFundPct() {
+        return hdcDebtFundPct;
+    }
+
+    public void setHdcDebtFundPct(Double hdcDebtFundPct) {
+        this.hdcDebtFundPct = hdcDebtFundPct;
+    }
+
+    public Double getHdcDebtFundPikRate() {
+        return hdcDebtFundPikRate;
+    }
+
+    public void setHdcDebtFundPikRate(Double hdcDebtFundPikRate) {
+        this.hdcDebtFundPikRate = hdcDebtFundPikRate;
+    }
+
+    public Boolean getHdcDebtFundCurrentPayEnabled() {
+        return hdcDebtFundCurrentPayEnabled;
+    }
+
+    public void setHdcDebtFundCurrentPayEnabled(Boolean hdcDebtFundCurrentPayEnabled) {
+        this.hdcDebtFundCurrentPayEnabled = hdcDebtFundCurrentPayEnabled;
+    }
+
+    public Double getHdcDebtFundCurrentPayPct() {
+        return hdcDebtFundCurrentPayPct;
+    }
+
+    public void setHdcDebtFundCurrentPayPct(Double hdcDebtFundCurrentPayPct) {
+        this.hdcDebtFundCurrentPayPct = hdcDebtFundCurrentPayPct;
+    }
+
+    // Federal LIHTC getters/setters
+    public Boolean getLihtcEnabled() {
+        return lihtcEnabled;
+    }
+
+    public void setLihtcEnabled(Boolean lihtcEnabled) {
+        this.lihtcEnabled = lihtcEnabled;
+    }
+
+    public Double getApplicableFraction() {
+        return applicableFraction;
+    }
+
+    public void setApplicableFraction(Double applicableFraction) {
+        this.applicableFraction = applicableFraction;
+    }
+
+    public Double getCreditRate() {
+        return creditRate;
+    }
+
+    public void setCreditRate(Double creditRate) {
+        this.creditRate = creditRate;
+    }
+
+    public Integer getPlacedInServiceMonth() {
+        return placedInServiceMonth;
+    }
+
+    public void setPlacedInServiceMonth(Integer placedInServiceMonth) {
+        this.placedInServiceMonth = placedInServiceMonth;
+    }
+
+    public Boolean getDdaQctBoost() {
+        return ddaQctBoost;
+    }
+
+    public void setDdaQctBoost(Boolean ddaQctBoost) {
+        this.ddaQctBoost = ddaQctBoost;
+    }
+
+    // State LIHTC getters/setters
+    public Boolean getStateLIHTCEnabled() {
+        return stateLIHTCEnabled;
+    }
+
+    public void setStateLIHTCEnabled(Boolean stateLIHTCEnabled) {
+        this.stateLIHTCEnabled = stateLIHTCEnabled;
+    }
+
+    public String getInvestorState() {
+        return investorState;
+    }
+
+    public void setInvestorState(String investorState) {
+        this.investorState = investorState;
+    }
+
+    public Double getSyndicationRate() {
+        return syndicationRate;
+    }
+
+    public void setSyndicationRate(Double syndicationRate) {
+        this.syndicationRate = syndicationRate;
+    }
+
+    public Boolean getInvestorHasStateLiability() {
+        return investorHasStateLiability;
+    }
+
+    public void setInvestorHasStateLiability(Boolean investorHasStateLiability) {
+        this.investorHasStateLiability = investorHasStateLiability;
+    }
+
+    public Double getStateLIHTCUserPercentage() {
+        return stateLIHTCUserPercentage;
+    }
+
+    public void setStateLIHTCUserPercentage(Double stateLIHTCUserPercentage) {
+        this.stateLIHTCUserPercentage = stateLIHTCUserPercentage;
+    }
+
+    public Double getStateLIHTCUserAmount() {
+        return stateLIHTCUserAmount;
+    }
+
+    public void setStateLIHTCUserAmount(Double stateLIHTCUserAmount) {
+        this.stateLIHTCUserAmount = stateLIHTCUserAmount;
+    }
+
+    public Integer getStateLIHTCSyndicationYear() {
+        return stateLIHTCSyndicationYear;
+    }
+
+    public void setStateLIHTCSyndicationYear(Integer stateLIHTCSyndicationYear) {
+        this.stateLIHTCSyndicationYear = stateLIHTCSyndicationYear;
+    }
+
+    // Eligible Basis Exclusions getters/setters
+    public Double getCommercialSpaceCosts() {
+        return commercialSpaceCosts;
+    }
+
+    public void setCommercialSpaceCosts(Double commercialSpaceCosts) {
+        this.commercialSpaceCosts = commercialSpaceCosts;
+    }
+
+    public Double getSyndicationCosts() {
+        return syndicationCosts;
+    }
+
+    public void setSyndicationCosts(Double syndicationCosts) {
+        this.syndicationCosts = syndicationCosts;
+    }
+
+    public Double getMarketingCosts() {
+        return marketingCosts;
+    }
+
+    public void setMarketingCosts(Double marketingCosts) {
+        this.marketingCosts = marketingCosts;
+    }
+
+    public Double getFinancingFees() {
+        return financingFees;
+    }
+
+    public void setFinancingFees(Double financingFees) {
+        this.financingFees = financingFees;
+    }
+
+    public Double getBondIssuanceCosts() {
+        return bondIssuanceCosts;
+    }
+
+    public void setBondIssuanceCosts(Double bondIssuanceCosts) {
+        this.bondIssuanceCosts = bondIssuanceCosts;
+    }
+
+    public Double getOperatingDeficitReserve() {
+        return operatingDeficitReserve;
+    }
+
+    public void setOperatingDeficitReserve(Double operatingDeficitReserve) {
+        this.operatingDeficitReserve = operatingDeficitReserve;
+    }
+
+    public Double getReplacementReserve() {
+        return replacementReserve;
+    }
+
+    public void setReplacementReserve(Double replacementReserve) {
+        this.replacementReserve = replacementReserve;
+    }
+
+    public Double getOtherExclusions() {
+        return otherExclusions;
+    }
+
+    public void setOtherExclusions(Double otherExclusions) {
+        this.otherExclusions = otherExclusions;
     }
 
     public LocalDateTime getCreatedAt() {

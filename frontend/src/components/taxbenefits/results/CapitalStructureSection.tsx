@@ -14,6 +14,9 @@ interface CapitalStructureSectionProps {
   // IMPL-058: Dollar amounts for consolidated display
   investorEquity?: number;
   syndicatedEquityOffset?: number;
+  // ISS-031: PAB display (% of project + $ amount)
+  pabPctOfProject?: number;
+  pabFundingAmount?: number;
   // State LIHTC Integration (IMPL-018)
   stateLIHTCProceeds?: number;
   stateLIHTCEnabled?: boolean;
@@ -34,6 +37,9 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
   // IMPL-058: Dollar amounts for consolidated display
   investorEquity = 0,
   syndicatedEquityOffset = 0,
+  // ISS-031: PAB display
+  pabPctOfProject = 0,
+  pabFundingAmount = 0,
   // State LIHTC Integration (IMPL-018)
   stateLIHTCProceeds = 0,
   stateLIHTCEnabled = false,
@@ -98,6 +104,15 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
               <span className="hdc-result-label">Senior Debt:</span>
               <span className="hdc-result-value">
                 {seniorDebtPct.toFixed(1)}% <span style={{ color: 'var(--hdc-cabbage-pont)', marginLeft: '0.5rem' }}>({formatCurrency(seniorDebtAmount)})</span>
+              </span>
+            </div>
+          )}
+          {/* ISS-031: PAB shown after Senior Debt (pari passu) */}
+          {pabPctOfProject > 0.1 && (
+            <div className="hdc-result-row">
+              <span className="hdc-result-label">Private Activity Bonds:</span>
+              <span className="hdc-result-value">
+                {pabPctOfProject.toFixed(1)}% <span style={{ color: 'var(--hdc-cabbage-pont)', marginLeft: '0.5rem' }}>({formatCurrency(pabFundingAmount)})</span>
               </span>
             </div>
           )}

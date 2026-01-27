@@ -83,7 +83,7 @@ function buildInputsSheet(params: CalculationParams): {
     { name: 'Project Cost', rangeName: 'Input_ProjectCost', value: params.projectCost, units: '$M', description: 'Total development cost' },
     { name: 'Predevelopment Costs', rangeName: 'Input_PredevelopmentCosts', value: params.predevelopmentCosts || 0, units: '$M', description: 'Soft costs before construction' },
     { name: 'Land Value', rangeName: 'Input_LandValue', value: params.landValue, units: '$M', description: 'Value of land (non-depreciable)' },
-    { name: 'Year 1 NOI', rangeName: 'Input_YearOneNOI', value: params.yearOneNOI, units: '$M', description: 'Net Operating Income at stabilization' },
+    { name: 'Stabilized NOI', rangeName: 'Input_YearOneNOI', value: params.yearOneNOI, units: '$M', description: 'Net Operating Income at stabilization' },
     { name: 'OpEx Ratio', rangeName: 'Input_OpExRatio', value: params.opexRatio || 25, units: '%', description: 'Operating expenses as % of revenue' },
 
     // Tax Parameters

@@ -209,8 +209,8 @@ describe('State LIHTC Calculations', () => {
       });
     });
 
-    describe('NE - 100% Piggyback, Transferable', () => {
-      it('should calculate NE piggyback with 90% syndication', () => {
+    describe('NE - 100% Piggyback, Transferable, 6-Year Duration', () => {
+      it('should calculate NE piggyback with 90% syndication (IMPL-079: 6-year)', () => {
         const result = calculateStateLIHTC({
           federalAnnualCredit: federalCredit,
           propertyState: 'NE',
@@ -219,9 +219,11 @@ describe('State LIHTC Calculations', () => {
         });
 
         expect(result.programType).toBe('piggyback');
-        expect(result.grossCredit).toBe(19500000);
+        // IMPL-079: NE is 6-year program, so gross = 1,950,000 × 6 = 11,700,000
+        expect(result.grossCredit).toBe(11700000);
         expect(result.syndicationRate).toBe(0.9); // Highest for transferable
-        expect(result.netBenefit).toBe(17550000);
+        // Net benefit = 11,700,000 × 0.9 = 10,530,000
+        expect(result.netBenefit).toBe(10530000);
       });
     });
 
@@ -986,6 +988,144 @@ describe('State LIHTC Calculations', () => {
         });
         // Override only used when checkbox is false
         expect(result.syndicationRate).toBe(0.75);
+      });
+    });
+  });
+
+  // ============================================================================
+  // IMPL-079: Variable Credit Duration
+  // ============================================================================
+
+  describe('IMPL-079: Variable Credit Duration', () => {
+    describe('generateStateLIHTCSchedule with variable duration', () => {
+      it('should generate 7-year schedule for 6-year program (NE)', () => {
+        const schedule = generateStateLIHTCSchedule(1000000, 7, 6);
+        expect(schedule.yearlyBreakdown).toHaveLength(7); // 6 + 1 catch-up
+        expect(schedule.totalCredits).toBe(6000000); // 6 × annual
+      });
+
+      it('should default to 11-year schedule when not specified', () => {
+        const schedule = generateStateLIHTCSchedule(1000000, 7);
+        expect(schedule.yearlyBreakdown).toHaveLength(11);
+        expect(schedule.totalCredits).toBe(10000000);
+      });
+
+      it('should correctly prorate Year 1 for 6-year program', () => {
+        const schedule = generateStateLIHTCSchedule(1000000, 7, 6);
+        expect(schedule.year1Credit).toBe(500000); // 50% proration (July PIS)
+        // Final year (Year 7) catches up the other 50%
+        expect(schedule.yearlyBreakdown[6].creditAmount).toBe(500000);
+        expect(schedule.yearlyBreakdown[6].year).toBe(7);
+      });
+
+      it('should have full Year 1 credit for January PIS with 6-year program', () => {
+        const schedule = generateStateLIHTCSchedule(1000000, 1, 6);
+        expect(schedule.year1Credit).toBe(1000000); // 100% (January = full year)
+        expect(schedule.yearlyBreakdown[6].creditAmount).toBe(0); // No catch-up needed
+      });
+
+      it('should calculate correct totals for 6-year program', () => {
+        const schedule = generateStateLIHTCSchedule(1000000, 7, 6);
+        // Total should be: Year 1 (500K) + Years 2-6 (5 × 1M) + Year 7 catch-up (500K) = 6M
+        const sumFromBreakdown = schedule.yearlyBreakdown.reduce(
+          (sum, year) => sum + year.creditAmount,
+          0
+        );
+        expect(sumFromBreakdown).toBe(6000000);
+        expect(schedule.totalCredits).toBe(sumFromBreakdown);
+      });
+    });
+
+    describe('calculateStateLIHTC with Nebraska (6-year program)', () => {
+      it('should use 6-year duration for Nebraska', () => {
+        const result = calculateStateLIHTC({
+          federalAnnualCredit: 1000000,
+          propertyState: 'NE',
+          investorState: 'NE',
+          pisMonth: 1,
+        });
+
+        // Total should be 6 × annual, not 10 × annual
+        expect(result.grossCredit).toBe(6000000);
+        expect(result.schedule.yearlyBreakdown).toHaveLength(7);
+      });
+
+      it('should have correct net benefit for 6-year NE program', () => {
+        const result = calculateStateLIHTC({
+          federalAnnualCredit: 1000000,
+          propertyState: 'NE',
+          investorState: 'NE',
+          pisMonth: 1,
+        });
+
+        // NE: 100% syndication rate for in-state, 6-year duration
+        // Net benefit = annual credit × syndication rate × duration
+        expect(result.netBenefit).toBe(6000000); // 1M × 1.0 × 6
+      });
+
+      it('should have 7-year schedule breakdown for NE', () => {
+        const result = calculateStateLIHTC({
+          federalAnnualCredit: 1000000,
+          propertyState: 'NE',
+          investorState: 'CA',
+          pisMonth: 7,
+        });
+
+        // Schedule should be 7 years (6 + catch-up)
+        expect(result.schedule.yearlyBreakdown).toHaveLength(7);
+        // Year 1 should be prorated (50% for July PIS)
+        expect(result.schedule.year1Credit).toBe(500000);
+        // Year 7 should be catch-up
+        expect(result.schedule.yearlyBreakdown[6].year).toBe(7);
+        expect(result.schedule.yearlyBreakdown[6].creditAmount).toBe(500000);
+      });
+    });
+
+    describe('calculateStateLIHTC with Georgia (10-year program)', () => {
+      it('should use 10-year duration for Georgia (unchanged behavior)', () => {
+        const result = calculateStateLIHTC({
+          federalAnnualCredit: 1000000,
+          propertyState: 'GA',
+          investorState: 'GA',
+          pisMonth: 1,
+        });
+
+        // GA should still be 10-year program
+        expect(result.grossCredit).toBe(10000000);
+        expect(result.schedule.yearlyBreakdown).toHaveLength(11);
+      });
+
+      it('should maintain backward compatibility for existing GA tests', () => {
+        // Same test as existing GA tests but verify 10-year behavior preserved
+        const result = calculateStateLIHTC({
+          federalAnnualCredit: 1950000,
+          propertyState: 'GA',
+          investorState: 'NY',
+          pisMonth: 7,
+        });
+
+        expect(result.programType).toBe('piggyback');
+        expect(result.grossCredit).toBe(19500000); // 100% of federal over 10 years
+        expect(result.syndicationRate).toBe(0.85);
+        expect(result.netBenefit).toBe(16575000); // 85% of gross
+        expect(result.schedule.annualCredit).toBe(1950000);
+      });
+    });
+
+    describe('States without creditDurationYears (default to 10)', () => {
+      it('should default to 10-year schedule for states without explicit duration', () => {
+        // AR has no creditDurationYears set, should default to 10
+        const result = calculateStateLIHTC({
+          federalAnnualCredit: 1000000,
+          propertyState: 'AR',
+          investorState: 'AR',
+          pisMonth: 1,
+        });
+
+        // Should use default 10-year duration
+        expect(result.schedule.yearlyBreakdown).toHaveLength(11);
+        // AR is 20% piggyback, so gross = 20% × 10 years × 1M = 2M
+        expect(result.grossCredit).toBe(2000000);
       });
     });
   });
