@@ -835,12 +835,12 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
       }
     }
 
-    // IMPL-030: Total AUM amount to attempt paying this year
-    // When current pay is enabled: current pay portion + catch-up on deferred
-    // When current pay is disabled: try to pay full fee (PIK only if cash unavailable)
+    // ISS-056: AUM Fee Current Pay Toggle Fix
+    // When current pay is ENABLED: current pay portion + catch-up on deferred goes to payment queue
+    // When current pay is DISABLED: entire fee is PIK (deferred to exit), nothing in payment queue
     const aumFeeAmount = paramAumCurrentPayEnabled
       ? aumFeeCurrentPayDue + accumulatedAumCurrentPayDeferred
-      : aumFeeBase + accumulatedAumPIK; // Include current year fee + any accumulated PIK for catch-up
+      : 0; // ISS-056: When current pay disabled, no cash payment - all PIK
 
     // Debug logging for AUM fee
     if (paramAumFeeEnabled && (year === 1 || year === 2 || year === 3)) {
@@ -863,7 +863,7 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
     // Priority order when paying (normal operations):
     // 1. Outside Investor Current Interest
     // 2. Other Sub-Debt Current Interest (Investor, HDC)
-    // 3. HDC AUM Fee
+    // 3. HDC AUM Fee (only if current pay enabled)
     // 4. Catch-up on deferrals (in reverse order)
     // 5. Distributions to equity
 
@@ -871,9 +871,13 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
     let aumFeePaid = 0;
     let aumFeeAccrued = 0;
 
-
-    // IMPL-030: Removed immediate PIK accumulation - all AUM fees now go through payment queue
-    // This allows the fee to be paid when cash is available, only deferring as PIK when necessary
+    // ISS-056: When current pay is DISABLED, immediately accumulate entire fee as PIK
+    // This ensures toggle OFF = all fees deferred to exit (no cash impact during operations)
+    if (!paramAumCurrentPayEnabled && aumFeeBase > 0) {
+      accumulatedAumPIK += aumFeeBase;
+      aumFeeAccrued = aumFeeBase;
+      accumulatedAumFees = accumulatedAumPIK;
+    }
 
     // Unified Payment Priority Waterfall
     const paymentQueue = [
@@ -949,22 +953,10 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
               aumFeeAccrued = aumFeePIKDue;
             }
           } else {
-            // IMPL-030: No current pay mode - try to pay fee from available cash
-            // aumFeeAmount = aumFeeBase + accumulatedAumPIK (current year + catch-up)
-            // paid = actual payment from available cash
-
-            if (paid >= aumFeeBase) {
-              // Paid full current year fee
-              // Any excess payment goes toward accumulated PIK catch-up
-              const catchUpPayment = paid - aumFeeBase;
-              accumulatedAumPIK = Math.max(0, accumulatedAumPIK - catchUpPayment);
-              aumFeeAccrued = 0; // Nothing new accrued this year
-            } else {
-              // Couldn't pay full current year fee
-              const unpaidCurrentYear = aumFeeBase - paid;
-              accumulatedAumPIK += unpaidCurrentYear;
-              aumFeeAccrued = unpaidCurrentYear;
-            }
+            // ISS-056: When current pay is DISABLED, aumFeeAmount = 0, so handler won't be
+            // called with any payment. PIK accumulation is handled before the payment queue.
+            // This branch only executes if aumFeeAmount somehow > 0 with current pay disabled.
+            // (Defensive code - should not occur after ISS-056 fix)
           }
 
           // Total accumulated for exit calculation
