@@ -147,6 +147,7 @@ export function buildInputsSheet(params: CalculationParams): SheetResult {
     { label: 'OZ Version', rangeName: 'OZVersion', value: params.ozVersion === '2.0' ? 2 : 1, units: '1/2' },
     { label: 'OZ Type', rangeName: 'OZType', value: params.ozType || 'standard', units: '' },
     { label: 'Deferred Gain ($M)', rangeName: 'DeferredGain', value: params.deferredCapitalGains || 0, units: '$M' },
+    { label: 'Capital Gains Tax Rate (%)', rangeName: 'CapitalGainsTaxRate', value: params.capitalGainsTaxRate || 23.8, units: '%' },
     { label: 'OZ Capital Gains Tax Rate (%)', rangeName: 'OZCapitalGainsTaxRate', value: params.ozCapitalGainsTaxRate || 23.8, units: '%' },
     { label: 'OZ Step-Up (%)', rangeName: 'OZStepUpPct', value: getOZStepUpPct(params), units: '%' },
 
@@ -155,6 +156,7 @@ export function buildInputsSheet(params: CalculationParams): SheetResult {
 
     // === LIHTC PARAMETERS ===
     { label: 'Federal LIHTC Enabled', rangeName: 'FedLIHTCEnabled', value: params.lihtcEnabled ? 1 : 0, units: '0/1' },
+    { label: 'LIHTC Eligible Basis ($M)', rangeName: 'LIHTCEligibleBasis', value: params.lihtcEligibleBasis || 0, units: '$M' },
     { label: 'Applicable Fraction (%)', rangeName: 'ApplicableFraction', value: params.applicableFraction || 100, units: '%' },
     { label: 'LIHTC Rate (%)', rangeName: 'LIHTCRate', value: params.creditRate || 4, units: '%' },
     { label: 'Qualified Basis Boost', rangeName: 'QualifiedBasisBoost', value: params.ddaQctBoost ? 1 : 0, units: '0/1' },
@@ -240,6 +242,16 @@ export function buildInputsSheet(params: CalculationParams): SheetResult {
     { label: 'Pref Equity (%)', rangeName: 'PrefEquityPct', value: params.prefEquityPct || 0, units: '%' },
     { label: 'Pref Equity Target MOIC', rangeName: 'PrefEquityTargetMOIC', value: params.prefEquityTargetMOIC || 1.7, units: 'x' },
     { label: 'Pref Equity Accrual Rate', rangeName: 'PrefEquityAccrualRate', value: params.prefEquityAccrualRate || 12, units: '%' },
+    // ISS-062: Add missing pref equity OZ eligibility
+    { label: 'Pref Equity OZ Eligible', rangeName: 'PrefEquityOZEligible', value: params.prefEquityOzEligible ? 1 : 0, units: '0/1' },
+
+    // Blank row
+    { label: '', rangeName: '', value: '', units: '' },
+
+    // === BASIS ADJUSTMENTS (ISS-062) ===
+    { label: 'Loan Fees (%)', rangeName: 'LoanFeesPct', value: params.loanFeesPercent || 0, units: '%' },
+    { label: 'Legal/Structuring Costs ($M)', rangeName: 'LegalStructuringCosts', value: params.legalStructuringCosts || 0, units: '$M' },
+    { label: 'Organization Costs ($M)', rangeName: 'OrganizationCosts', value: params.organizationCosts || 0, units: '$M' },
   ];
 
   // Build sheet data

@@ -311,17 +311,23 @@ export const HDCComprehensiveReportButton: React.FC<HDCComprehensiveReportProps>
       doc.text('Capital Structure', margin + 130, yPosition);
       yPosition += lineHeight;
 
+      // ISS-062: Complete capital structure with all parameters
       const capitalInputs = [
         ['Source', 'Percentage', 'Rate', 'Terms'],
-        ['Investor Equity', formatPercent(params.investorEquityPct || 35), '-', '-'],
+        ['Investor Equity', formatPercent(params.investorEquityPct || 35), '-', params.autoBalanceCapital ? `Auto-balanced (${params.investorEquityRatio || 50}% ratio)` : '-'],
         ['Philanthropic Equity', formatPercent(params.philanthropicEquityPct || 0), '-', '-'],
         ['Senior Debt', formatPercent(params.seniorDebtPct || 50), formatPercent(params.seniorDebtRate || 7), `${params.seniorDebtAmortization || 30}yr amort, ${params.seniorDebtIOYears || 0}yr IO`],
-        ['Philanthropic Debt', formatPercent(params.philanthropicDebtPct || 0), formatPercent(params.philanthropicDebtRate || 4), `${params.philDebtAmortization || 35}yr amort`],
+        ['Philanthropic Debt', formatPercent(params.philanthropicDebtPct || 0), formatPercent(params.philanthropicDebtRate || 4), `${params.philDebtAmortization || 35}yr amort${params.philCurrentPayEnabled ? `, ${params.philCurrentPayPct || 50}% Current` : ''}`],
         ['HDC Sub-Debt', formatPercent(params.hdcSubDebtPct || 0), formatPercent(params.hdcSubDebtPikRate || 12), params.pikCurrentPayEnabled ? `${params.pikCurrentPayPct || 50}% Current` : 'Full PIK'],
         ['Investor Sub-Debt', formatPercent(params.investorSubDebtPct || 0), formatPercent(params.investorSubDebtPikRate || 12), params.investorPikCurrentPayEnabled ? `${params.investorPikCurrentPayPct || 50}% Current` : 'Full PIK'],
-        ['Outside Investor Sub-Debt', formatPercent(params.outsideInvestorSubDebtPct || 0), formatPercent(params.outsideInvestorSubDebtPikRate || 12), params.outsideInvestorPikCurrentPayEnabled ? `${params.outsideInvestorPikCurrentPayPct || 50}% Current` : 'Full PIK'],
+        ['Outside Investor Sub-Debt', formatPercent(params.outsideInvestorSubDebtPct || 0), formatPercent(params.outsideInvestorSubDebtPikRate || 12), `${params.outsideInvestorPikCurrentPayEnabled ? `${params.outsideInvestorPikCurrentPayPct || 50}% Current` : 'Full PIK'}${params.outsideInvestorSubDebtAmortization ? `, ${params.outsideInvestorSubDebtAmortization}yr amort` : ''}`],
         ['HDC Debt Fund', formatPercent(params.hdcDebtFundPct || 0), formatPercent(params.hdcDebtFundPikRate || 8), params.hdcDebtFundCurrentPayEnabled ? `${params.hdcDebtFundCurrentPayPct || 50}% Current` : 'Full PIK']
       ];
+
+      // ISS-062: Add Preferred Equity if enabled
+      if (params.prefEquityEnabled) {
+        capitalInputs.push(['Preferred Equity', formatPercent(params.prefEquityPct || 0), `${params.prefEquityAccrualRate || 12}% accrual`, `Target ${params.prefEquityTargetMOIC || 1.7}x MOIC`]);
+      }
 
       autoTable(doc, {
         startY: yPosition,
@@ -376,6 +382,17 @@ export const HDCComprehensiveReportButton: React.FC<HDCComprehensiveReportProps>
         taxInputs.push(['OZ Version', params.ozVersion || '2.0']);
         taxInputs.push(['OZ Type', params.ozType === 'rural' ? 'Rural' : 'Standard']);
         taxInputs.push(['Deferred Capital Gains', formatMoney((params.deferredCapitalGains || 0) * 1000000)]);
+      }
+
+      // ISS-062: Basis Adjustments (if any are set)
+      const hasBasisAdjustments = (params.loanFeesPercent || 0) > 0 ||
+                                   (params.legalStructuringCosts || 0) > 0 ||
+                                   (params.organizationCosts || 0) > 0;
+      if (hasBasisAdjustments) {
+        taxInputs.push(['--- Basis Adjustments ---', '']);
+        if (params.loanFeesPercent) taxInputs.push(['Loan Fees %', formatPercent(params.loanFeesPercent)]);
+        if (params.legalStructuringCosts) taxInputs.push(['Legal/Structuring Costs', formatMoney((params.legalStructuringCosts || 0) * 1000000)]);
+        if (params.organizationCosts) taxInputs.push(['Organization Costs', formatMoney((params.organizationCosts || 0) * 1000000)]);
       }
 
       autoTable(doc, {
@@ -444,6 +461,7 @@ export const HDCComprehensiveReportButton: React.FC<HDCComprehensiveReportProps>
       if (params.pabEnabled) {
         lihtcInputs.push(['PAB % of Eligible Basis', formatPercent(params.pabPctOfEligibleBasis || 30)]);
         lihtcInputs.push(['PAB Rate', formatPercent(params.pabRate || 4.5)]);
+        lihtcInputs.push(['PAB Term', `${params.pabTerm || 40} years`]);
         lihtcInputs.push(['PAB Amortization', `${params.pabAmortization || 40} years`]);
         lihtcInputs.push(['PAB IO Years', String(params.pabIOYears || 0)]);
       }

@@ -234,6 +234,7 @@ export const HDCTaxReportJsPDFButton: React.FC<HDCTaxReportJsPDFProps> = ({
       // Investor Profile Section
       addSectionTitle('INVESTOR PROFILE');
 
+      // ISS-062: Complete tax parameter coverage in Tax Report
       const profileTableData = [
         ['Parameter', 'Value'],
         ['Tax Status', investorTrack === 'rep' ? 'Real Estate Professional' : 'Passive Investor'],
@@ -244,6 +245,7 @@ export const HDCTaxReportJsPDFButton: React.FC<HDCTaxReportJsPDFProps> = ({
         ['Federal Tax Rate', formatPercent(params.federalTaxRate || 37)],
         ['State Tax Rate', formatPercent(params.stateTaxRate || 0)],
         ['LT Capital Gains Rate', formatPercent(params.ltCapitalGainsRate || 20)],
+        ['State Capital Gains Rate', formatPercent(params.stateCapitalGainsRate || 0)],
         ['NIIT Rate', formatPercent(params.niitRate || 3.8)],
         ['Depreciation Recapture Rate', formatPercent(params.depreciationRecaptureRate || 25)],
       ];
@@ -625,7 +627,10 @@ export const HDCTaxReportJsPDFButton: React.FC<HDCTaxReportJsPDFProps> = ({
         doc.setFontSize(11);
         doc.setTextColor(...darkText);
 
+        // ISS-062: Add OZ version/type for complete tax parameter coverage
         const ozMetrics = [
+          ['OZ Version:', params.ozVersion === '2.0' ? 'OZ 2.0 (OBBBA)' : 'OZ 1.0 (TCJA)'],
+          ['OZ Type:', params.ozType === 'rural' ? 'Rural (30% step-up)' : 'Standard (10% step-up)'],
           ['Deferred Gain (OZ Basis):', formatMoney(ozBasis)],
           ['Year 5 Tax Payment:', formatMoney(ozBasis * 0.85 * 0.238)], // 15% reduction, 23.8% cap gains
           ['10-Year Hold Benefit:', '100% OZ gain elimination'],

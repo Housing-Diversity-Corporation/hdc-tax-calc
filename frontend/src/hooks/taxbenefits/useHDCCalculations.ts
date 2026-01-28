@@ -578,6 +578,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       seniorDebtRate: props.seniorDebtRate,
       philanthropicDebtRate: props.philDebtRate,
       seniorDebtAmortization: props.seniorDebtAmortization,
+      seniorDebtIOYears: props.seniorDebtIOYears,  // ISS-060: Pass IO years to main calculation
       philDebtAmortization: props.philDebtAmortization,
       hdcSubDebtPct: props.hdcSubDebtPct,
       hdcSubDebtPikRate: props.hdcSubDebtPikRate,
@@ -732,6 +733,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       seniorDebtRate: props.seniorDebtRate,
       philanthropicDebtRate: props.philDebtRate,
       seniorDebtAmortization: props.seniorDebtAmortization,
+      seniorDebtIOYears: props.seniorDebtIOYears,  // ISS-060: Pass IO years to HDC calculation
       philDebtAmortization: props.philDebtAmortization,
       hdcSubDebtPct: props.hdcSubDebtPct,
       hdcSubDebtPikRate: props.hdcSubDebtPikRate,
