@@ -442,6 +442,9 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
             props.setStateTaxRate?.(config.stateTaxRate ?? 0);
             props.setInvestorTrack?.(config.investorTrack ?? 'rep');
             props.setPassiveGainType?.(config.passiveGainType ?? 'short-term');
+            // ISS-057: Investor Information
+            props.setAnnualIncome?.(config.annualIncome ?? 0);
+            props.setFilingStatus?.(config.filingStatus ?? 'single');
           }
 
           // Tax Planning Analysis - ALWAYS ENABLED (core feature)
@@ -671,6 +674,9 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
         investorEquityRatio: props.investorEquityRatio,
         investorTrack: props.investorTrack,
         passiveGainType: props.passiveGainType,
+        // ISS-057: Investor Information
+        annualIncome: props.annualIncome,
+        filingStatus: props.filingStatus,
         includeDepreciationSchedule: props.includeDepreciationSchedule,
         w2Income: props.w2Income,
         businessIncome: props.businessIncome,

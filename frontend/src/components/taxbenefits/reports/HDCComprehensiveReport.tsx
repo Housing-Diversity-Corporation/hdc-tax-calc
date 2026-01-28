@@ -347,6 +347,9 @@ export const HDCComprehensiveReportButton: React.FC<HDCComprehensiveReportProps>
       const taxInputs = [
         ['Tax Parameter', 'Value'],
         ['Investor Track', params.investorTrack === 'rep' ? 'Real Estate Professional' : 'Non-REP'],
+        // ISS-059: Add Investor Profile fields
+        ['Annual Income', formatMoney(params.annualIncome || 0)],
+        ['Filing Status', params.filingStatus === 'married' ? 'Married Filing Jointly' : 'Single'],
         ['State', params.selectedState || 'CA'],
         ['Federal Tax Rate', formatPercent(params.federalTaxRate || 37)],
         ['State Tax Rate', formatPercent(params.stateTaxRate || 0)],
@@ -357,6 +360,16 @@ export const HDCComprehensiveReportButton: React.FC<HDCComprehensiveReportProps>
         ['Depreciation Recapture', formatPercent(params.depreciationRecaptureRate || 25)],
         ['Year 1 Depreciation %', formatPercent(params.yearOneDepreciationPct || 20)],
       ];
+
+      // ISS-059: Add Tax Planning fields based on investor track
+      if (params.investorTrack === 'rep') {
+        taxInputs.push(['W-2 Income', formatMoney(params.w2Income || 0)]);
+        taxInputs.push(['Business Income', formatMoney(params.businessIncome || 0)]);
+        taxInputs.push(['IRA Balance', formatMoney(params.iraBalance || 0)]);
+      } else {
+        taxInputs.push(['Passive Income', formatMoney(params.passiveIncome || 0)]);
+        taxInputs.push(['Asset Sale Gain', formatMoney(params.assetGain || 0)]);
+      }
 
       if (params.ozEnabled) {
         taxInputs.push(['OZ Investment', 'Yes']);
@@ -395,6 +408,21 @@ export const HDCComprehensiveReportButton: React.FC<HDCComprehensiveReportProps>
         lihtcInputs.push(['Applicable Fraction', formatPercent(params.applicableFraction || 100)]);
         lihtcInputs.push(['DDA/QCT Boost', params.ddaQctBoost ? 'Yes (130%)' : 'No']);
         lihtcInputs.push(['Placed in Service Month', String(params.placedInServiceMonth || 7)]);
+        // ISS-059: Add LIHTC Eligible Basis Exclusions
+        const hasExclusions = (params.commercialSpaceCosts || 0) + (params.syndicationCosts || 0) +
+          (params.marketingCosts || 0) + (params.financingFees || 0) + (params.bondIssuanceCosts || 0) +
+          (params.operatingDeficitReserve || 0) + (params.replacementReserve || 0) + (params.otherExclusions || 0) > 0;
+        if (hasExclusions) {
+          lihtcInputs.push(['--- Eligible Basis Exclusions ---', '']);
+          if (params.commercialSpaceCosts) lihtcInputs.push(['Commercial Space Costs', formatMoney((params.commercialSpaceCosts || 0) * 1000000)]);
+          if (params.syndicationCosts) lihtcInputs.push(['Syndication Costs', formatMoney((params.syndicationCosts || 0) * 1000000)]);
+          if (params.marketingCosts) lihtcInputs.push(['Marketing Costs', formatMoney((params.marketingCosts || 0) * 1000000)]);
+          if (params.financingFees) lihtcInputs.push(['Financing Fees', formatMoney((params.financingFees || 0) * 1000000)]);
+          if (params.bondIssuanceCosts) lihtcInputs.push(['Bond Issuance Costs', formatMoney((params.bondIssuanceCosts || 0) * 1000000)]);
+          if (params.operatingDeficitReserve) lihtcInputs.push(['Operating Deficit Reserve', formatMoney((params.operatingDeficitReserve || 0) * 1000000)]);
+          if (params.replacementReserve) lihtcInputs.push(['Replacement Reserve', formatMoney((params.replacementReserve || 0) * 1000000)]);
+          if (params.otherExclusions) lihtcInputs.push(['Other Exclusions', formatMoney((params.otherExclusions || 0) * 1000000)]);
+        }
       }
 
       lihtcInputs.push(['State LIHTC Enabled', params.stateLIHTCEnabled ? 'Yes' : 'No']);
@@ -402,6 +430,14 @@ export const HDCComprehensiveReportButton: React.FC<HDCComprehensiveReportProps>
         lihtcInputs.push(['Investor State', params.investorState || 'N/A']);
         lihtcInputs.push(['Syndication Rate', formatPercent(params.syndicationRate || 85)]);
         lihtcInputs.push(['Syndication Year', String(params.stateLIHTCSyndicationYear ?? 0)]);
+        // ISS-059: Add State LIHTC override fields
+        lihtcInputs.push(['Investor Has State Liability', params.investorHasStateLiability !== false ? 'Yes' : 'No']);
+        if (params.stateLIHTCUserPercentage) {
+          lihtcInputs.push(['User Override %', formatPercent(params.stateLIHTCUserPercentage)]);
+        }
+        if (params.stateLIHTCUserAmount) {
+          lihtcInputs.push(['User Override Amount', formatMoney((params.stateLIHTCUserAmount || 0) * 1000000)]);
+        }
       }
 
       lihtcInputs.push(['PAB Enabled', params.pabEnabled ? 'Yes' : 'No']);

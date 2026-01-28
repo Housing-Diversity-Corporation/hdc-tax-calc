@@ -122,6 +122,9 @@ export interface CalculatorConfiguration {
   // Investor Tax Strategy
   investorTrack?: 'rep' | 'non-rep';
   passiveGainType?: 'short-term' | 'long-term';
+  // ISS-057: Investor Information
+  annualIncome?: number;
+  filingStatus?: 'single' | 'married';
   // Tax Planning Analysis
   includeDepreciationSchedule?: boolean;
   w2Income?: number;

@@ -237,6 +237,9 @@ export const HDCTaxReportJsPDFButton: React.FC<HDCTaxReportJsPDFProps> = ({
       const profileTableData = [
         ['Parameter', 'Value'],
         ['Tax Status', investorTrack === 'rep' ? 'Real Estate Professional' : 'Passive Investor'],
+        // ISS-059: Add Investor Profile fields
+        ['Annual Income', formatMoney(params.annualIncome || 0)],
+        ['Filing Status', params.filingStatus === 'married' ? 'Married Filing Jointly' : 'Single'],
         ['State', selectedState],
         ['Federal Tax Rate', formatPercent(params.federalTaxRate || 37)],
         ['State Tax Rate', formatPercent(params.stateTaxRate || 0)],
