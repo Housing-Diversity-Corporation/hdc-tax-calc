@@ -339,7 +339,7 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
                 businessIncome: props.businessIncome || 0,
                 iraBalance: props.iraBalance || 0,
                 passiveIncome: props.passiveIncome || 0,
-                assetGain: props.assetSaleGain || 0,
+                assetSaleGain: props.assetSaleGain || 0,
                 ozEnabled: props.ozEnabled,
                 deferredCapitalGains: props.deferredCapitalGains || 0,
                 taxBenefitDelayMonths: props.taxBenefitDelayMonths || 0,

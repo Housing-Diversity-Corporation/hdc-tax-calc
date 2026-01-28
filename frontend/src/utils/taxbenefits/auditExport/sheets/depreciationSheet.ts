@@ -76,7 +76,7 @@ export function buildDepreciationSheet(params: CalculationParams): SheetResult {
     let macrsFormula = '0';
     if (year === 1) {
       macrs = year1MACRS;
-      macrsFormula = 'StraightLinePortion/27.5*(12.5-ClosingMonth)/12';
+      macrsFormula = 'StraightLinePortion/27.5*(12.5-PlacedInServiceMonth)/12';
     } else if (year <= 27) { // Continue for 27.5 years
       macrs = annualMACRS;
       macrsFormula = 'StraightLinePortion/27.5';

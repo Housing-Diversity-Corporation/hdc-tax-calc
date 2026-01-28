@@ -43,7 +43,7 @@ describe('Complete 10-Year Integration Test', () => {
       philanthropicCurrentPay: false, // PIK mode
       hdcSubDebtRate: 8,
       investorSubDebtRate: 8,
-      outsideInvestorSubDebtRate: 9,
+      outsideInvestorSubDebtPikRate: 9,
       outsideInvestorCurrentPayPct: 40, // 40% current, 60% PIK
 
       // HDC terms

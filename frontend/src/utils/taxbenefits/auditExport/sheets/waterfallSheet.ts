@@ -107,12 +107,12 @@ export function buildWaterfallSheet(
 
     // Investor Operating Cash (after promote split)
     const invOpCash = afterAUM * investorPct;
-    ws[`O${row}`] = { t: 'n', v: invOpCash, f: `N${row}*(1-PromotePct/100)` } as FormulaCell;
+    ws[`O${row}`] = { t: 'n', v: invOpCash, f: `N${row}*InvestorPromoteShare/100` } as FormulaCell;
     namedRanges.push({ name: `InvOpCash_Y${year}`, ref: `Waterfall!$O$${row}` });
 
     // HDC Operating Promote
     const hdcPromote = afterAUM * promotePct;
-    ws[`P${row}`] = { t: 'n', v: hdcPromote, f: `N${row}*PromotePct/100` } as FormulaCell;
+    ws[`P${row}`] = { t: 'n', v: hdcPromote, f: `N${row}*(100-InvestorPromoteShare)/100` } as FormulaCell;
     namedRanges.push({ name: `HDCOpPromote_Y${year}`, ref: `Waterfall!$P$${row}` });
   }
 

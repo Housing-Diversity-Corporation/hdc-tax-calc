@@ -140,7 +140,7 @@ describe('HIGH PRIORITY Gaps - Previously Untested', () => {
     it('should pay off debts in the correct priority order', () => {
       const params = createBaseParams({
         outsideInvestorSubDebtPct: 5, // Add outside investor sub-debt
-        outsideInvestorSubDebtRate: 9,
+        outsideInvestorSubDebtPikRate: 9,
         outsideInvestorCurrentPayPct: 50
       });
 
@@ -319,7 +319,7 @@ describe('HIGH PRIORITY Gaps - Previously Untested', () => {
       const params = createBaseParams({
         philanthropicCurrentPay: true,
         outsideInvestorSubDebtPct: 5,
-        outsideInvestorSubDebtRate: 9,
+        outsideInvestorSubDebtPikRate: 9,
         outsideInvestorCurrentPayPct: 60 // 60% current, 40% PIK
       });
 
@@ -351,7 +351,7 @@ describe('HIGH PRIORITY Gaps - Previously Untested', () => {
       const paramsAllPIK = createBaseParams({
         philanthropicCurrentPay: false, // PIK
         outsideInvestorSubDebtPct: 5,
-        outsideInvestorSubDebtRate: 9,
+        outsideInvestorSubDebtPikRate: 9,
         outsideInvestorCurrentPayPct: 0 // 100% PIK
       });
 

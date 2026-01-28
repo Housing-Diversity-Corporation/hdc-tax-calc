@@ -95,7 +95,7 @@ const HDCCalculatorMain = () => {
     ozEnabled, setOzEnabled,
     ozType, setOzType,
     ozVersion, setOzVersion,
-    ozDeferredCapitalGains, setOzDeferredCapitalGains,
+    deferredCapitalGains, setDeferredCapitalGains,
     ozCapitalGainsTaxRate, setOzCapitalGainsTaxRate,
 
     // Investor Track and Passive Gains
@@ -208,7 +208,7 @@ const HDCCalculatorMain = () => {
     stateCapitalGainsRate,
     ltCapitalGainsRate,
     niitRate,
-    deferredGains: ozDeferredCapitalGains,
+    deferredGains: deferredCapitalGains,
 
     // Fee parameters
     hdcFeeRate,
@@ -264,7 +264,7 @@ const HDCCalculatorMain = () => {
     ozEnabled,
     ozType,
     ozVersion,
-    deferredCapitalGains: ozDeferredCapitalGains,
+    deferredCapitalGains: deferredCapitalGains,
     capitalGainsTaxRate: ozCapitalGainsTaxRate,
 
     // Investor Track and Passive Gains
@@ -514,8 +514,8 @@ const HDCCalculatorMain = () => {
           setOzType={setOzType}
           ozVersion={ozVersion}
           setOzVersion={setOzVersion}
-          deferredCapitalGains={ozDeferredCapitalGains}
-          setDeferredCapitalGains={setOzDeferredCapitalGains}
+          deferredCapitalGains={deferredCapitalGains}
+          setDeferredCapitalGains={setDeferredCapitalGains}
           capitalGainsTaxRate={ozCapitalGainsTaxRate}
           setCapitalGainsTaxRate={setOzCapitalGainsTaxRate}
           totalDepreciation={calculations.totalDepreciation}
@@ -646,10 +646,11 @@ const HDCCalculatorMain = () => {
           freeInvestmentHurdle={calculations.freeInvestmentHurdle}
           totalNetTaxBenefits={calculations.totalNetTaxBenefits}
           totalCapitalGainsRate={calculations.totalCapitalGainsRate}
-          deferredGains={ozDeferredCapitalGains}
+          deferredGains={deferredCapitalGains}
           deferredGainsTaxDue={calculations.deferredGainsTaxDue}
           investmentRecovered={calculations.investmentRecovered}
           ozType={ozType}
+          ozVersion={ozVersion}
           ozCapitalGainsTaxRate={ozCapitalGainsTaxRate}
           totalNetTaxBenefitsAfterCG={calculations.totalNetTaxBenefitsAfterCG}
           mainAnalysisResults={calculations.mainAnalysisResults}
@@ -701,7 +702,9 @@ const HDCCalculatorMain = () => {
           projectLocation={projectLocation}
           seniorDebtRate={seniorDebtRate}
           seniorDebtAmortization={seniorDebtAmortization}
+          seniorDebtIOYears={seniorDebtIOYears}
           philDebtRate={philDebtRate}
+          philDebtAmortization={philDebtAmortization}
           philCurrentPayEnabled={philCurrentPayEnabled}
           philCurrentPayPct={philCurrentPayPct}
           hdcDeferredInterestRate={hdcDeferredInterestRate}
@@ -724,9 +727,10 @@ const HDCCalculatorMain = () => {
           yearOneDepreciationPct={yearOneDepreciationPct}
           constructionDelayMonths={constructionDelayMonths}
           taxBenefitDelayMonths={taxBenefitDelayMonths}
+          placedInServiceMonth={placedInServiceMonth}
           investorTrack={investorTrack}
           stateTaxRate={stateTaxRate}
-          deferredCapitalGains={ozDeferredCapitalGains}
+          deferredCapitalGains={deferredCapitalGains}
           hdcFeeRate={hdcFeeRate}
           taxCalculationExpanded={taxCalculationExpanded}
           setTaxCalculationExpanded={setTaxCalculationExpanded}

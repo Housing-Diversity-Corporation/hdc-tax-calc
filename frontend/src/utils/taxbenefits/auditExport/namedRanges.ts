@@ -77,7 +77,7 @@ export const INPUT_RANGES = {
   ProjectCost: { col: 1, row: 5 },
   LandValue: { col: 1, row: 6 },
   Units: { col: 1, row: 7 },
-  ClosingMonth: { col: 1, row: 8 },
+  PlacedInServiceMonth: { col: 1, row: 8 },
   PropertyState: { col: 1, row: 9 },
   HoldPeriod: { col: 1, row: 10 },
   YearOneNOI: { col: 1, row: 11 },
@@ -147,7 +147,7 @@ export const INPUT_RANGES = {
   AUMCurrentPayEnabled: { col: 1, row: 75 },
   AUMCurrentPayPct: { col: 1, row: 76 },
   AUMDeferredRate: { col: 1, row: 77 },
-  PromotePct: { col: 1, row: 79 },
+  InvestorPromoteShare: { col: 1, row: 79 },
   PromoteHurdleRate: { col: 1, row: 80 },
 
   // Interest Reserve (row 83)

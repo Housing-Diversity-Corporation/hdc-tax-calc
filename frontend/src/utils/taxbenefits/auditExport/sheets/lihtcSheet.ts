@@ -97,10 +97,10 @@ export function buildLIHTCSheet(params: CalculationParams): SheetResult {
 
   // Proration Section
   ws['A11'] = { t: 's', v: 'PIS Month' };
-  ws['B11'] = { t: 'n', v: pisMonth, f: 'ClosingMonth' } as FormulaCell;
+  ws['B11'] = { t: 'n', v: pisMonth, f: 'PlacedInServiceMonth' } as FormulaCell;
 
   ws['A12'] = { t: 's', v: 'Year 1 Proration Factor' };
-  ws['B12'] = { t: 'n', v: year1Factor, f: '(13-ClosingMonth)/12' } as FormulaCell;
+  ws['B12'] = { t: 'n', v: year1Factor, f: '(13-PlacedInServiceMonth)/12' } as FormulaCell;
   namedRanges.push({ name: 'LIHTCYear1Factor', ref: 'LIHTC!$B$12' });
 
   ws['A13'] = { t: 's', v: '' };

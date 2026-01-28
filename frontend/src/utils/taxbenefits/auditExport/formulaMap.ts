@@ -327,7 +327,7 @@ const calculationsFormulas: FormulaEntry[] = [
     tsLogic: `
       operatingCashFlow = cashAfterDebtAndFees * (investorPromoteShare / 100);
     `,
-    excelFormula: '=CashAfterDebtAndFees * (InvestorPromotePct/100)',
+    excelFormula: '=CashAfterDebtAndFees * (InvestorPromoteShare/100)',
     dependencies: ['cashAfterDebtAndFees', 'investorPromoteShare'],
     output: 'operatingCashFlow',
     category: 'calculations',

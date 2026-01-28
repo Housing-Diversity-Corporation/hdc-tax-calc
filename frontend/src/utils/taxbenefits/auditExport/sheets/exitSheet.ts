@@ -181,13 +181,13 @@ export function buildExitSheet(
   currentRow++;
 
   ws[`A${currentRow}`] = { t: 's', v: `Investor Share (${(investorPromoteShare * 100).toFixed(0)}%)` };
-  ws[`B${currentRow}`] = { t: 'n', v: exitProfitShare, f: `B${profitRow}*InvestorPromotePct/100` } as FormulaCell;
+  ws[`B${currentRow}`] = { t: 'n', v: exitProfitShare, f: `B${profitRow}*InvestorPromoteShare/100` } as FormulaCell;
   namedRanges.push({ name: 'InvestorProfitShare', ref: `Exit!$B$${currentRow}` });
   const invProfitRow = currentRow;
   currentRow++;
 
   ws[`A${currentRow}`] = { t: 's', v: `HDC Share (${(hdcPromoteShare * 100).toFixed(0)}%)` };
-  ws[`B${currentRow}`] = { t: 'n', v: hdcProfitShare, f: `B${profitRow}*(1-InvestorPromotePct/100)` } as FormulaCell;
+  ws[`B${currentRow}`] = { t: 'n', v: hdcProfitShare, f: `B${profitRow}*(1-InvestorPromoteShare/100)` } as FormulaCell;
   namedRanges.push({ name: 'HDCProfitShare', ref: `Exit!$B$${currentRow}` });
   const hdcProfitRow = currentRow;
   currentRow += 2;

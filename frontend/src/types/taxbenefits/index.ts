@@ -388,7 +388,7 @@ export interface CalculationParams {
   businessIncome?: number;              // Business/rental income
   passiveIncome?: number;               // Passive income for Non-REPs
   iraBalance?: number;                  // Traditional IRA balance for conversion planning
-  assetGain?: number;                   // Capital gain for sale timing analysis
+  assetSaleGain?: number;               // Capital gain for sale timing analysis
   includeDepreciationSchedule?: boolean; // Flag to generate detailed schedule
   investorTrack?: 'rep' | 'non-rep';    // Investor track for tax planning
   federalTaxRate?: number;              // Federal tax rate

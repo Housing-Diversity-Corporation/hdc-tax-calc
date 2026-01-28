@@ -374,7 +374,7 @@ export const HDCComprehensiveReportButton: React.FC<HDCComprehensiveReportProps>
         taxInputs.push(['IRA Balance', formatMoney(params.iraBalance || 0)]);
       } else {
         taxInputs.push(['Passive Income', formatMoney(params.passiveIncome || 0)]);
-        taxInputs.push(['Asset Sale Gain', formatMoney(params.assetGain || 0)]);
+        taxInputs.push(['Asset Sale Gain', formatMoney(params.assetSaleGain || 0)]);
       }
 
       if (params.ozEnabled) {

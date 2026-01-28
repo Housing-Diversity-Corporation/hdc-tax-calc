@@ -84,7 +84,7 @@ export function buildTaxBenefitsSheet(
       ? (cf?.year1MacrsTaxBenefit || 0)
       : depreciation * effectiveForMACRS / 100;
     const macrsFormula = year === 1
-      ? 'StraightLinePortion/27.5*(12.5-ClosingMonth)/12*EffectiveTaxRateMACRS/100'
+      ? 'StraightLinePortion/27.5*(12.5-PlacedInServiceMonth)/12*EffectiveTaxRateMACRS/100'
       : `StraightLinePortion/27.5*EffectiveTaxRateMACRS/100`;
     ws[`D${row}`] = { t: 'n', v: macrsBenefit, f: macrsFormula } as FormulaCell;
 

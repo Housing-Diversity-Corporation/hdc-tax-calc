@@ -23,7 +23,7 @@ export function buildInputsSheet(params: CalculationParams): SheetResult {
     { label: 'Predevelopment Costs ($M)', rangeName: 'PredevelopmentCosts', value: params.predevelopmentCosts || 0, units: '$M' },
     { label: 'Project Location', rangeName: 'ProjectLocation', value: params.projectLocation || '', units: '' },
     { label: 'Number of Units', rangeName: 'Units', value: 100, units: 'units' },
-    { label: 'Closing Month (1-12)', rangeName: 'ClosingMonth', value: params.placedInServiceMonth || 7, units: 'month' },
+    { label: 'Placed in Service Month (1-12)', rangeName: 'PlacedInServiceMonth', value: params.placedInServiceMonth || 7, units: 'month' },
     { label: 'Property State', rangeName: 'PropertyState', value: params.selectedState || 'CA', units: '' },
     { label: 'Hold Period (years)', rangeName: 'HoldPeriod', value: params.holdPeriod || 10, units: 'years' },
     { label: 'Stabilized NOI ($M)', rangeName: 'YearOneNOI', value: params.yearOneNOI, units: '$M' },
@@ -135,7 +135,7 @@ export function buildInputsSheet(params: CalculationParams): SheetResult {
     { label: 'Business Income ($)', rangeName: 'BusinessIncome', value: params.businessIncome || 0, units: '$' },
     { label: 'IRA Balance ($)', rangeName: 'IRABalance', value: params.iraBalance || 0, units: '$' },
     { label: 'Passive Income ($)', rangeName: 'PassiveIncome', value: params.passiveIncome || 0, units: '$' },
-    { label: 'Asset Sale Gain ($)', rangeName: 'AssetSaleGain', value: params.assetGain || 0, units: '$' },
+    { label: 'Asset Sale Gain ($)', rangeName: 'AssetSaleGain', value: params.assetSaleGain || 0, units: '$' },
     { label: 'Annual Income ($)', rangeName: 'AnnualIncome', value: params.annualIncome || 0, units: '$' },
     { label: 'Filing Status', rangeName: 'FilingStatus', value: params.filingStatus || 'single', units: '' },
 
@@ -224,7 +224,7 @@ export function buildInputsSheet(params: CalculationParams): SheetResult {
     // Blank row
     { label: '', rangeName: '', value: '', units: '' },
 
-    { label: 'Promote (%)', rangeName: 'PromotePct', value: 100 - params.investorPromoteShare, units: '%' },
+    { label: 'Investor Promote Share (%)', rangeName: 'InvestorPromoteShare', value: params.investorPromoteShare, units: '%' },
     { label: 'Promote Hurdle Rate (%)', rangeName: 'PromoteHurdleRate', value: 8, units: '%' },
 
     // Blank row

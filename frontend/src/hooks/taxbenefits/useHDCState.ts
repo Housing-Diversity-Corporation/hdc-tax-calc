@@ -40,7 +40,6 @@ export const useHDCState = () => {
   const [hdcDeferredInterestRate, setHdcDeferredInterestRate] = useState(8); // Default 8% interest on deferred fees
   const [federalTaxRate, setFederalTaxRate] = useState(DEFAULT_VALUES.FEDERAL_TAX_RATE);
   const [stateTaxRate, setStateTaxRate] = useState(0); // Default to WA rate (no state income tax)
-  const [deferredGains, setDeferredGains] = useState(DEFAULT_VALUES.DEFERRED_GAINS);
   const [hdcAdvanceFinancing, setHdcAdvanceFinancing] = useState(false);
   const [taxAdvanceDiscountRate, setTaxAdvanceDiscountRate] = useState(DEFAULT_VALUES.TAX_ADVANCE_DISCOUNT_RATE);
   const [advanceFinancingRate, setAdvanceFinancingRate] = useState(DEFAULT_VALUES.ADVANCE_FINANCING_RATE);
@@ -77,7 +76,7 @@ export const useHDCState = () => {
   const [investorSubDebtPct, setInvestorSubDebtPct] = useState(DEFAULT_VALUES.INVESTOR_SUB_DEBT_PCT);
   const [investorSubDebtPikRate, setInvestorSubDebtPikRate] = useState(DEFAULT_VALUES.INVESTOR_SUB_DEBT_PIK_RATE);
   const [outsideInvestorSubDebtPct, setOutsideInvestorSubDebtPct] = useState(0);
-  const [outsideInvestorSubDebtRate, setOutsideInvestorSubDebtRate] = useState(8);
+  const [outsideInvestorSubDebtPikRate, setOutsideInvestorSubDebtPikRate] = useState(8);
   const [outsideInvestorSubDebtAmortization, setOutsideInvestorSubDebtAmortization] = useState(10);
   const [outsideInvestorPikCurrentPayEnabled, setOutsideInvestorPikCurrentPayEnabled] = useState(false);
   const [outsideInvestorPikCurrentPayPct, setOutsideInvestorPikCurrentPayPct] = useState(0);
@@ -122,7 +121,7 @@ export const useHDCState = () => {
   const [ozEnabled, setOzEnabled] = useState(true);
   const [ozType, setOzType] = useState<'standard' | 'rural'>('standard');
   const [ozVersion, setOzVersion] = useState<'1.0' | '2.0'>('2.0'); // IMPL-017: OZ legislation version
-  const [ozDeferredCapitalGains, setOzDeferredCapitalGains] = useState(0);
+  const [deferredCapitalGains, setDeferredCapitalGains] = useState(0);
   const [ozCapitalGainsTaxRate, setOzCapitalGainsTaxRate] = useState(23.8); // Default to federal LTCG + NIIT
 
   // Investor Type
@@ -443,7 +442,6 @@ export const useHDCState = () => {
     hdcDeferredInterestRate, setHdcDeferredInterestRate,
     federalTaxRate, setFederalTaxRate,
     stateTaxRate, setStateTaxRate,
-    deferredGains, setDeferredGains,
     hdcAdvanceFinancing, setHdcAdvanceFinancing,
     taxAdvanceDiscountRate, setTaxAdvanceDiscountRate,
     advanceFinancingRate, setAdvanceFinancingRate,
@@ -479,8 +477,7 @@ export const useHDCState = () => {
     investorSubDebtPct, setInvestorSubDebtPct,
     investorSubDebtPikRate, setInvestorSubDebtPikRate,
     outsideInvestorSubDebtPct, setOutsideInvestorSubDebtPct,
-    outsideInvestorSubDebtRate, setOutsideInvestorSubDebtRate,
-    outsideInvestorSubDebtPikRate: outsideInvestorSubDebtRate, setOutsideInvestorSubDebtPikRate: setOutsideInvestorSubDebtRate,
+    outsideInvestorSubDebtPikRate, setOutsideInvestorSubDebtPikRate,
     outsideInvestorSubDebtAmortization, setOutsideInvestorSubDebtAmortization,
     outsideInvestorPikCurrentPayEnabled, setOutsideInvestorPikCurrentPayEnabled,
     outsideInvestorPikCurrentPayPct, setOutsideInvestorPikCurrentPayPct,
@@ -517,7 +514,7 @@ export const useHDCState = () => {
     ozEnabled, setOzEnabled,
     ozType, setOzType,
     ozVersion, setOzVersion,
-    ozDeferredCapitalGains, setOzDeferredCapitalGains,
+    deferredCapitalGains, setDeferredCapitalGains,
     ozCapitalGainsTaxRate, setOzCapitalGainsTaxRate,
 
     // Investor Type

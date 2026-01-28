@@ -68,7 +68,7 @@ export const HDCTaxReportJsPDFButton: React.FC<HDCTaxReportJsPDFProps> = ({
       const businessIncome = params.businessIncome || 0;
       const iraBalance = params.iraBalance || 0;
       const passiveIncome = params.passiveIncome || 0;
-      const assetSaleGain = params.assetGain || 0;
+      const assetSaleGain = params.assetSaleGain || 0;
       // Calculate outside investor debt from params
       const outsideInvestorDebt = projectCost * 1000000 * ((params.outsideInvestorSubDebtPct || 0) / 100);
       const outsideInvestorRate = params.outsideInvestorSubDebtPikRate || 0;

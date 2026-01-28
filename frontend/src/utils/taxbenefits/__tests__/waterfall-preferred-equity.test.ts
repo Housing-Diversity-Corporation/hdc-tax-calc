@@ -70,7 +70,7 @@ function createBaselineParams(overrides?: Partial<CalculationParams>): Calculati
 
     // Outside investor sub-debt
     outsideInvestorSubDebtPct: 0,
-    outsideInvestorSubDebtRate: 8,
+    outsideInvestorSubDebtPikRate: 8,
     outsideInvestorPikCurrentPayEnabled: false,
     outsideInvestorPikCurrentPayPct: 0,
 

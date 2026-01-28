@@ -108,7 +108,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
     ozEnabled, setOzEnabled,
     ozType, setOzType,
     ozVersion, setOzVersion,
-    ozDeferredCapitalGains, setOzDeferredCapitalGains,
+    deferredCapitalGains, setDeferredCapitalGains,
     ozCapitalGainsTaxRate, setOzCapitalGainsTaxRate,
 
     // Investor Track and Passive Gains
@@ -215,7 +215,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
       // Apply OZ settings
       setOzEnabled(true); // Always enabled for investor portal
       setOzType((taxProfile.ozType || 'standard') as 'standard' | 'rural');
-      setOzDeferredCapitalGains(taxProfile.deferredCapitalGains || 0);
+      setDeferredCapitalGains(taxProfile.deferredCapitalGains || 0);
 
       // Capital gains tax rate for OZ calculations (already in percentage format)
       const ozCapitalGainsRate = taxProfile.capitalGainsTaxRate || federalCapitalGainsRate;
@@ -387,7 +387,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
     stateCapitalGainsRate,
     ltCapitalGainsRate,
     niitRate,
-    deferredGains: ozDeferredCapitalGains,
+    deferredGains: deferredCapitalGains,
 
     // Fee parameters
     hdcFeeRate,
@@ -442,7 +442,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
     // Opportunity Zone
     ozEnabled,
     ozType,
-    deferredCapitalGains: ozDeferredCapitalGains,
+    deferredCapitalGains: deferredCapitalGains,
     capitalGainsTaxRate: ozCapitalGainsTaxRate,
 
     // Investor Track and Passive Gains
@@ -537,7 +537,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
     // Opportunity Zone
     ozEnabled,
     ozType,
-    deferredCapitalGains: ozDeferredCapitalGains,
+    deferredCapitalGains: deferredCapitalGains,
     capitalGainsTaxRate: ozCapitalGainsTaxRate,
 
     // Tax planning
@@ -547,7 +547,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
     businessIncome,
     iraBalance,
     passiveIncome,
-    assetGain: assetSaleGain,
+    assetSaleGain,
 
     // Calculated values needed for PDF
     investorUpfrontCash: calculations.investorEquity,
@@ -634,7 +634,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
         hdcExitProceeds={calculations.hdcExitProceeds}
 
         // OZ
-        deferredGains={ozDeferredCapitalGains}
+        deferredGains={deferredCapitalGains}
         deferredGainsTaxDue={calculations.deferredGainsTaxDue}
         ozEnabled={ozEnabled}
         year5OZTaxDue={calculations.investorCashFlows?.[4]?.ozYear5TaxPayment || 0}
@@ -838,8 +838,8 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
           setOzType={setOzType}
           ozVersion={ozVersion}
           setOzVersion={setOzVersion}
-          deferredCapitalGains={ozDeferredCapitalGains}
-          setDeferredCapitalGains={setOzDeferredCapitalGains}
+          deferredCapitalGains={deferredCapitalGains}
+          setDeferredCapitalGains={setDeferredCapitalGains}
           capitalGainsTaxRate={ozCapitalGainsTaxRate}
           setCapitalGainsTaxRate={setOzCapitalGainsTaxRate}
           investorTrack={investorTrack}
@@ -925,7 +925,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
           freeInvestmentHurdle={calculations.freeInvestmentHurdle}
           totalNetTaxBenefits={calculations.totalNetTaxBenefits}
           totalCapitalGainsRate={calculations.totalCapitalGainsRate}
-          deferredGains={ozDeferredCapitalGains}
+          deferredGains={deferredCapitalGains}
           deferredGainsTaxDue={calculations.deferredGainsTaxDue}
           investmentRecovered={calculations.investmentRecovered}
           ozType={ozType}
@@ -1001,7 +1001,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
           taxBenefitDelayMonths={taxBenefitDelayMonths}
           investorTrack={investorTrack}
           stateTaxRate={stateTaxRate}
-          deferredCapitalGains={ozDeferredCapitalGains}
+          deferredCapitalGains={deferredCapitalGains}
           hdcFeeRate={hdcFeeRate}
           taxCalculationExpanded={taxCalculationExpanded}
           setTaxCalculationExpanded={setTaxCalculationExpanded}
@@ -1099,7 +1099,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
                 <li>Project Location: {projectLocation}</li>
 
                 <li>OZ Type: {ozType}</li>
-                <li>Deferred Capital Gains: {ozDeferredCapitalGains}</li>
+                <li>Deferred Capital Gains: {deferredCapitalGains}</li>
                 <li>Capital Gains Tax Rate: {ozCapitalGainsTaxRate}</li>
                 <li>Investor Track: {investorTrack}</li>
                 <li>Passive Gain Type: {passiveGainType}</li>
