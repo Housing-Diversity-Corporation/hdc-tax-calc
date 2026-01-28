@@ -13,7 +13,7 @@ import { Slider } from '@/components/ui/slider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Camera, Trash2, CloudUpload, Edit, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { tokenService } from '../../services/api';
+import { tokenService, API_BASE_URL } from '../../services/api';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface ProfileImageUploadProps {
@@ -151,7 +151,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('http://localhost:8080/api/user/profile-image/upload', {
+      const response = await fetch(`${API_BASE_URL}/user/profile-image/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -184,7 +184,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
 
     try {
       const token = tokenService.getToken();
-      const response = await fetch('http://localhost:8080/api/user/profile-image/delete', {
+      const response = await fetch(`${API_BASE_URL}/user/profile-image/delete`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

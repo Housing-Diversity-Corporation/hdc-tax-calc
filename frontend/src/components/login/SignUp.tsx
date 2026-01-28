@@ -22,7 +22,7 @@ import {
   FormDescription,
 } from '@/components/ui/form';
 import { Loader2, AlertCircle, ArrowLeft, ArrowRight } from 'lucide-react';
-import { authService, tokenService } from '../../services/api';
+import { authService, tokenService, API_BASE_URL } from '../../services/api';
 import { GoogleLogin } from '@react-oauth/google';
 import { useTheme } from '../../contexts/ThemeContext';
 import ThemeToggle from '../ThemeToggle';
@@ -104,7 +104,7 @@ export default function SignUp(props: { onNavigateToSignIn?: () => void; onAuthS
       setIsGoogleAuth(true);
 
       // Fetch user data to populate email and name
-      fetch('http://localhost:8080/api/account/me', {
+      fetch(`${API_BASE_URL}/account/me`, {
         headers: {
           'Authorization': `Bearer ${existingToken}`,
         },
@@ -148,7 +148,7 @@ export default function SignUp(props: { onNavigateToSignIn?: () => void; onAuthS
 
       // Fetch user data to populate form fields
       try {
-        const userResponse = await fetch('http://localhost:8080/api/account/me', {
+        const userResponse = await fetch(`${API_BASE_URL}/account/me`, {
           headers: {
             'Authorization': `Bearer ${response.jwt}`,
           },
@@ -219,7 +219,7 @@ export default function SignUp(props: { onNavigateToSignIn?: () => void; onAuthS
       // Update profile with additional information (always for Google auth users on step 3)
       if (isGoogleAuth || values.jobTitle || values.industry || values.organization || values.bio || values.emailNotify || values.email) {
         try {
-          await fetch('http://localhost:8080/api/account/update', {
+          await fetch(`${API_BASE_URL}/account/update`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',

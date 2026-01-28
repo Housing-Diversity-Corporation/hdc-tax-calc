@@ -12,7 +12,7 @@ import {
 import { Slider } from '@/components/ui/slider';
 import { Camera, Trash2, CloudUpload, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { tokenService } from '../../services/api';
+import { tokenService, API_BASE_URL } from '../../services/api';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface BannerImageUploadProps {
@@ -151,7 +151,7 @@ const BannerImageUpload: React.FC<BannerImageUploadProps> = ({
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('http://localhost:8080/api/user/banner-image/upload', {
+      const response = await fetch(`${API_BASE_URL}/user/banner-image/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -188,7 +188,7 @@ const BannerImageUpload: React.FC<BannerImageUploadProps> = ({
 
     try {
       const token = tokenService.getToken();
-      const response = await fetch('http://localhost:8080/api/user/banner-image/delete', {
+      const response = await fetch(`${API_BASE_URL}/user/banner-image/delete`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

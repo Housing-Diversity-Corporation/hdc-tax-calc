@@ -38,7 +38,7 @@ import {
 import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useTheme } from '../../contexts/ThemeContext';
-import { tokenService } from '../../services/api';
+import { tokenService, API_BASE_URL } from '../../services/api';
 import { cn } from '../../lib/utils';
 import './NavbarShadcn.css';
 
@@ -86,7 +86,7 @@ const Navbar: React.FC<NavbarProps> = ({
         }
 
         // Fetch profile image
-        const imageResponse = await fetch('http://localhost:8080/api/user/profile-image/url', {
+        const imageResponse = await fetch(`${API_BASE_URL}/user/profile-image/url`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -98,7 +98,7 @@ const Navbar: React.FC<NavbarProps> = ({
         }
 
         // Fetch user info for initial
-        const userResponse = await fetch('http://localhost:8080/api/account/me', {
+        const userResponse = await fetch(`${API_BASE_URL}/account/me`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

@@ -17,7 +17,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Loader2, AlertCircle } from 'lucide-react';
-import { authService, tokenService } from '../../services/api';
+import { authService, tokenService, API_BASE_URL } from '../../services/api';
 import { GoogleLogin } from '@react-oauth/google';
 import ForgotPassword from './ForgotPassword';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -49,7 +49,7 @@ export default function SignIn(props: { onNavigateToSignUp?: () => void; onAuthS
 
   const checkProfileCompletion = async (token: string): Promise<boolean> => {
     try {
-      const response = await fetch('http://localhost:8080/api/account/me', {
+      const response = await fetch(`${API_BASE_URL}/account/me`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

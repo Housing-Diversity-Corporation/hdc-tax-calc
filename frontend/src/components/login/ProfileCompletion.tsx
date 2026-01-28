@@ -19,7 +19,7 @@ import {
   FormDescription,
 } from '@/components/ui/form';
 import { Loader2, AlertCircle } from 'lucide-react';
-import { tokenService } from '../../services/api';
+import { tokenService, API_BASE_URL } from '../../services/api';
 import { useTheme } from '../../contexts/ThemeContext';
 import ThemeToggle from '../ThemeToggle';
 
@@ -94,7 +94,7 @@ export default function ProfileCompletion({
       }
 
       // Update profile with additional information
-      const response = await fetch('http://localhost:8080/api/account/update', {
+      const response = await fetch(`${API_BASE_URL}/account/update`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

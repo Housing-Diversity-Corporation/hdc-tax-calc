@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { tokenService } from '../services/api';
+import { tokenService, API_BASE_URL } from '../services/api';
 
 interface UserProfile {
   profileImageUrl: string;
@@ -27,7 +27,7 @@ export const useUserProfile = () => {
         }
 
         // Fetch profile image
-        const imageResponse = await fetch('http://localhost:8080/api/user/profile-image/url', {
+        const imageResponse = await fetch(`${API_BASE_URL}/user/profile-image/url`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -40,7 +40,7 @@ export const useUserProfile = () => {
         }
 
         // Fetch user info for initial
-        const userResponse = await fetch('http://localhost:8080/api/account/me', {
+        const userResponse = await fetch(`${API_BASE_URL}/account/me`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
