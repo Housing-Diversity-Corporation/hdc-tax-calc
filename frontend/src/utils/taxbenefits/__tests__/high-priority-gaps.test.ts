@@ -167,9 +167,10 @@ describe('HIGH PRIORITY Gaps - Previously Untested', () => {
       // Gross proceeds should equal exit value minus all debt
       const calculatedGrossProceeds = exitValue - totalDebt;
 
-      // The actual exit proceeds should be based on this calculation
+      // ISS-063: Test should check totalExitProceeds (gross proceeds before waterfall)
+      // not exitProceeds (investor's net share after waterfall split and fees)
       // IMPL-034: Use toBeCloseTo() to handle floating-point precision
-      expect(result.exitProceeds).toBeCloseTo(calculatedGrossProceeds, 10);
+      expect(result.totalExitProceeds).toBeCloseTo(calculatedGrossProceeds, 10);
     });
 
     it('should handle insufficient exit value for debt payoff', () => {

@@ -354,17 +354,19 @@ describe('IMPL-056: Live Calculation Excel Model', () => {
 
       expect(lihtcSheet).toBeDefined();
 
-      // ISS-021: Year 1 now at row 14 (shifted +2 for DDA/QCT Boost row)
+      // ISS-063: Row 14 contains headers ("Year", "Federal Credit", etc.)
+      // Year 1 data is at row 15 (scheduleStartRow = 15 in lihtcSheet.ts)
       // Year 1 formula should include proration factor
-      const year1Cell = lihtcSheet['B14'];
+      const year1Cell = lihtcSheet['B15'];
       expect(year1Cell).toBeDefined();
       expect(year1Cell.f).toContain('LIHTCYear1Factor');
 
-      // Year 11 (row 24) should have catch-up formula
-      const year11Cell = lihtcSheet['B24'];
+      // Year 11 (row 25) should have catch-up formula
+      // row = year + scheduleStartRow - 1 = 11 + 15 - 1 = 25
+      const year11Cell = lihtcSheet['B25'];
       expect(year11Cell).toBeDefined();
-      // Catch-up = Annual - Year 1
-      expect(year11Cell.f).toContain('B14');
+      // Catch-up = Annual - Year 1 (B15)
+      expect(year11Cell.f).toContain('B15');
     });
   });
 

@@ -72,12 +72,16 @@ describe('Tax Planning Calculations', () => {
       // IMPL-7.0-012: Year 1 tax benefit (based on 19M depreciation)
       const expectedFederalBenefit = 19_000_000 * 0.37;
       const expectedGrossStateBenefit = 19_000_000 * 0.109; // Before conformity
-      const expectedNetStateBenefit = 19_000_000 * 0.109 * 0.5; // NY 50% conformity
+      // ISS-063: NY has 0% bonus depreciation conformity per stateProfiles.data.json
+      // (bonusDepreciation: 0, decoupled from federal since 2021)
+      // Full state benefit is adjusted away, so netStateBenefit = 0
+      const expectedNetStateBenefit = 0; // NY 0% conformity
       const expectedTotalBenefit = expectedFederalBenefit + expectedNetStateBenefit;
 
       expect(year1.federalBenefit).toBeCloseTo(expectedFederalBenefit, 0);
       expect(year1.stateBenefit).toBeCloseTo(expectedGrossStateBenefit, 0);
-      expect(year1.stateConformityAdjustment).toBeCloseTo(expectedGrossStateBenefit * 0.5, 0);
+      // conformityAdjustment = grossBenefit - netBenefit = full grossBenefit for 0% states
+      expect(year1.stateConformityAdjustment).toBeCloseTo(expectedGrossStateBenefit, 0);
       expect(year1.totalTaxBenefit).toBeCloseTo(expectedTotalBenefit, 0);
     });
 
