@@ -386,10 +386,15 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
   let interestReserveBalance = interestReserveAmount;
   const interestReservePeriodYears = Math.ceil(interestReserveMonths / 12);
 
+  // ISS-064: Calculate placed-in-service year outside the loop (constant for entire calculation)
+  const constructionDelayYears = Math.floor(paramConstructionDelayMonths / 12);
+  const placedInServiceYear = constructionDelayYears + 1; // Building placed in service after construction
+
+  // ISS-064: Anchor lease-up period to placed-in-service year, not Year 1
+  // Lease-up runs from placedInServiceYear through (placedInServiceYear + interestReservePeriodYears - 1)
+  const leaseUpEndYear = placedInServiceYear + interestReservePeriodYears - 1;
+
   for (let year = 1; year <= paramHoldPeriod; year++) {
-    // Calculate when building is placed in service (based on construction delay)
-    const constructionDelayYears = Math.floor(paramConstructionDelayMonths / 12);
-    const placedInServiceYear = constructionDelayYears + 1; // Building placed in service after construction
 
     // Determine NOI for this year based on placement in service
     let effectiveNOI = 0;
@@ -410,15 +415,22 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
       currentNOI = 0;
       effectiveOccupancy = 0;
     } else if (year === placedInServiceYear) {
+      // ISS-064: Reset NOI to initial value after construction ends
+      // currentNOI was set to 0 during construction years and must be restored
+      currentNOI = paramYearOneNOI;
+
       // First year of operations (might be partial)
       const monthsInService = 12 - (paramConstructionDelayMonths % 12);
 
       // ISS-053: Apply S-curve lease-up in the placed-in-service year too
       // The S-curve models gradual occupancy ramp-up during lease-up period
-      if (interestReserveEnabled && year <= interestReservePeriodYears) {
+      // ISS-064: Lease-up is now anchored to placed-in-service year, not Year 1
+      if (interestReserveEnabled && year <= leaseUpEndYear) {
         // Calculate average occupancy over the year using S-curve
-        const startMonth = (year - 1) * 12;
-        const endMonth = Math.min(year * 12, interestReserveMonths);
+        // ISS-064: Month calculations are relative to placed-in-service year
+        const yearsIntoLeaseUp = year - placedInServiceYear;
+        const startMonth = yearsIntoLeaseUp * 12;
+        const endMonth = Math.min((yearsIntoLeaseUp + 1) * 12, interestReserveMonths);
         let totalOccupancy = 0;
         let monthCount = 0;
 
@@ -457,11 +469,14 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
       }
 
       // Apply S-curve lease-up if within interest reserve period
-      if (interestReserveEnabled && year <= interestReservePeriodYears) {
+      // ISS-064: Lease-up is now anchored to placed-in-service year, not Year 1
+      if (interestReserveEnabled && year <= leaseUpEndYear) {
         // Calculate average occupancy over the year using S-curve
         // Integrate monthly occupancy values for more accurate yearly average
-        const startMonth = (year - 1) * 12;
-        const endMonth = Math.min(year * 12, interestReserveMonths);
+        // ISS-064: Month calculations are relative to placed-in-service year
+        const yearsIntoLeaseUp = year - placedInServiceYear;
+        const startMonth = yearsIntoLeaseUp * 12;
+        const endMonth = Math.min((yearsIntoLeaseUp + 1) * 12, interestReserveMonths);
         let totalOccupancy = 0;
         let monthCount = 0;
 
@@ -477,7 +492,7 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
         // ISS-053: REMOVED override that set effectiveOccupancy = 1.0
         // The S-curve naturally produces correct average occupancy (~50% for 12-month reserve)
         // This allows the interest reserve to be consumed during the lease-up shortfall
-        // Post-stabilization (year > interestReservePeriodYears) uses 100% occupancy below
+        // Post-stabilization (year > leaseUpEndYear) uses 100% occupancy below
       } else {
         effectiveOccupancy = 1.0;
       }
@@ -759,7 +774,8 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
     let availableCashForSoftPay = 0;
 
     // Interest Reserve Draw Logic
-    if (interestReserveEnabled && interestReserveBalance > 0 && year <= interestReservePeriodYears) {
+    // ISS-064: Lease-up is now anchored to placed-in-service year, not Year 1
+    if (interestReserveEnabled && interestReserveBalance > 0 && year >= placedInServiceYear && year <= leaseUpEndYear) {
       // Calculate total debt service needs (hard + soft current pay obligations)
       // During lease-up, we need to cover all debt service
       const totalDebtServiceNeeds = hardDebtService;
@@ -1505,7 +1521,7 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
   // Calculate remaining senior debt accounting for IO period
   // During IO period: no principal payments, balance remains at seniorDebtAmount
   // After IO period: calculate remaining balance based on P&I payments made
-  const placedInServiceYear = Math.floor(paramConstructionDelayMonths / 12) + 1;
+  // Note: placedInServiceYear is already calculated at the start of the function
   const ioEndYear = placedInServiceYear + seniorDebtIOYears;
   const yearsOfPIPayments = Math.max(0, paramHoldPeriod - (ioEndYear - 1));
   const monthsOfPIPayments = yearsOfPIPayments * 12;
