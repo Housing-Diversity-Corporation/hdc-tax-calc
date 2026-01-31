@@ -327,11 +327,12 @@ const DistributableCashFlowChart: React.FC<DistributableCashFlowChartProps> = ({
   };
 
   // Format Y-axis
+  // ISS-067: Standardized to 2 decimals for consistency with formatAbbreviatedCurrency
   const formatYAxis = (value: number) => {
     const valueInDollars = value * 1000000;
     const absValue = Math.abs(valueInDollars);
     if (absValue >= 1000000) {
-      return `$${(valueInDollars / 1000000).toFixed(1)}M`;
+      return `$${(valueInDollars / 1000000).toFixed(2)}M`;
     } else if (absValue >= 1000) {
       return `$${(valueInDollars / 1000).toFixed(0)}K`;
     } else {

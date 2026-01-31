@@ -188,7 +188,7 @@ const InvestmentPortalSection: React.FC<InvestmentPortalSectionProps> = ({
 
             <div className="hdc-input-group">
               <label className="hdc-input-label">
-                Minimum Investment
+                Minimum Investment ($)
               </label>
               <input disabled={isReadOnly}
                 type="number"

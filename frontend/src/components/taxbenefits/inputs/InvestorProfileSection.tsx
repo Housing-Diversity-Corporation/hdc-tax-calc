@@ -189,7 +189,7 @@ const InvestorProfileSection: React.FC<InvestorProfileSectionProps> = ({
             {/* Investor Information */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '1rem' }}>
               <div className="hdc-input-group">
-                <label className="hdc-input-label">Gross Annual Income</label>
+                <label className="hdc-input-label">Gross Annual Income ($)</label>
                 <input
                   type="number"
                   min="0"

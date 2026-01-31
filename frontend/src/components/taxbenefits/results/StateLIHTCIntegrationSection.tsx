@@ -2,6 +2,7 @@ import React from 'react';
 import '../../../styles/taxbenefits/hdcCalculator.css';
 import CollapsibleSection from './CollapsibleSection';
 import { StateLIHTCIntegrationResult } from '../../../types/taxbenefits';
+import { formatAbbreviatedCurrency } from '../../../utils/taxbenefits/formatters';
 
 interface StateLIHTCIntegrationSectionProps {
   stateLIHTCIntegration: StateLIHTCIntegrationResult | null;
@@ -15,7 +16,8 @@ interface StateLIHTCIntegrationSectionProps {
  */
 const StateLIHTCIntegrationSection: React.FC<StateLIHTCIntegrationSectionProps> = ({
   stateLIHTCIntegration,
-  formatCurrency = (v) => `$${v.toFixed(2)}M`
+  // ISS-067: Use global formatter instead of local duplicate
+  formatCurrency = (v: number) => formatAbbreviatedCurrency(v * 1000000)
 }) => {
   if (!stateLIHTCIntegration) {
     return null;

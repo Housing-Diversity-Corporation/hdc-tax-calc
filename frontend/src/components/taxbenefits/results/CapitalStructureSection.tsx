@@ -1,6 +1,7 @@
 import React from 'react';
 import '../../../styles/taxbenefits/hdcCalculator.css';
 import CollapsibleSection from './CollapsibleSection';
+import { formatAbbreviatedCurrency } from '../../../utils/taxbenefits/formatters';
 
 interface CapitalStructureSectionProps {
   investorEquityPct: number;
@@ -45,7 +46,8 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
   stateLIHTCEnabled = false,
   syndicationRate = 0,
   projectCost = 0,
-  formatCurrency = (v) => `$${v.toFixed(2)}M`
+  // ISS-067: Use global formatter instead of local duplicate
+  formatCurrency = (v: number) => formatAbbreviatedCurrency(v * 1000000)
 }) => {
   const isBalanced = Math.abs(totalCapitalStructure - 100) <= 0.1;
 

@@ -55,11 +55,12 @@ const InvestorCashFlowChart: React.FC<InvestorCashFlowChartProps> = ({
   };
 
   // Custom formatter for Y-axis - auto-scale based on magnitude
+  // ISS-067: Standardized to 2 decimals for consistency with formatAbbreviatedCurrency
   const formatYAxis = (value: number) => {
     if (value === 0) return '$0';
     const absValue = Math.abs(value);
     if (absValue >= 1000000) {
-      return `$${(value / 1000000).toFixed(1)}M`;
+      return `$${(value / 1000000).toFixed(2)}M`;
     } else if (absValue >= 1000) {
       return `$${(value / 1000).toFixed(0)}K`;
     } else {

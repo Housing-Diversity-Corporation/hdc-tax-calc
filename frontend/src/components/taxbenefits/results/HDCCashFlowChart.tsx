@@ -102,13 +102,14 @@ const HDCCashFlowChart: React.FC<HDCCashFlowChartProps> = ({
   };
 
   // Custom formatter for Y-axis - data is in millions, so convert to display format
+  // ISS-067: Standardized to 2 decimals for consistency with formatAbbreviatedCurrency
   const formatYAxis = (value: number) => {
     if (value === 0) return '$0';
     // Value is in millions (e.g., 1.5 means $1.5M)
     const valueInDollars = value * 1000000;
     const absValue = Math.abs(valueInDollars);
     if (absValue >= 1000000) {
-      return `$${(valueInDollars / 1000000).toFixed(1)}M`;
+      return `$${(valueInDollars / 1000000).toFixed(2)}M`;
     } else if (absValue >= 1000) {
       return `$${(valueInDollars / 1000).toFixed(0)}K`;
     } else {
