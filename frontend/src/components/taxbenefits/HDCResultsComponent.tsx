@@ -34,13 +34,11 @@ interface HDCResultsComponentProps {
   totalCapitalStructure: number;
   year1TaxBenefit: number;
   year1NetBenefit: number;
-  freeInvestmentHurdle: number;
+  // ISS-065: Removed freeInvestmentHurdle, investmentRecovered, totalNetTaxBenefitsAfterCG
   totalNetTaxBenefits: number;
   totalCapitalGainsRate: number;
   deferredGains: number;
   deferredGainsTaxDue: number;
-  investmentRecovered: number;
-  totalNetTaxBenefitsAfterCG: number;
   mainAnalysisResults: InvestorAnalysisResults;
   totalInvestment: number;
   totalReturns: number;
@@ -194,9 +192,9 @@ interface HDCResultsComponentProps {
   ozEnabled?: boolean;
 
   // IMPL-020a: Pre-calculated benefits from engine (single source of truth)
+  // ISS-065: Removed excessBenefits (Excess Capacity section removed)
   total10YearBenefits?: number;
   benefitMultiple?: number;
-  excessBenefits?: number;
 
   // State LIHTC Integration (IMPL-018)
   stateLIHTCIntegration?: StateLIHTCIntegrationResult | null;
@@ -581,17 +579,13 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
 
         {/* IMPL-078: Merged Investment Recovery & Tax Planning Section */}
         {/* ISS-023: totalInvestment is MOIC basis (net for Y0 syndication, gross otherwise) */}
+        {/* ISS-065: Removed excessBenefits, investorEquity, tax rate props (Excess Capacity section removed) */}
         <InvestmentRecoverySection
-          investorEquity={props.investorEquity}
           totalInvestment={props.totalInvestment}
           year1TaxBenefit={props.investorCashFlows?.[0]?.taxBenefit || 0}
           total10YearBenefits={props.total10YearBenefits || 0}
           benefitMultiple={props.benefitMultiple || 0}
-          excessBenefits={props.excessBenefits || 0}
           investorCashFlows={props.investorCashFlows}
-          totalCapitalGainsRate={props.totalCapitalGainsRate}
-          effectiveTaxRateForDepreciation={props.effectiveTaxRateForDepreciation}
-          depreciationRecaptureRate={props.depreciationRecaptureRate}
           formatCurrency={props.formatCurrency}
         />
 

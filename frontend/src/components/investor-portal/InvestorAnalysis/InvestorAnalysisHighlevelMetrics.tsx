@@ -28,9 +28,9 @@ interface InvestorAnalysisHighlevelMetricsProps {
   hdcFee: number;
 
   // Free Investment Analysis props
+  // ISS-065: Removed freeInvestmentHurdle, investmentRecovered (Excess Capacity section removed)
   year1TaxBenefit?: number;
   year1NetBenefit?: number;
-  freeInvestmentHurdle?: number;
   yearOneDepreciation?: number;
   effectiveTaxRateForDepreciation?: number;
   hdcFeeRate?: number;
@@ -38,7 +38,6 @@ interface InvestorAnalysisHighlevelMetricsProps {
   // Tax Planning Capacity props
   totalNetTaxBenefits?: number;
   totalCapitalGainsRate?: number;
-  investmentRecovered?: number;
   depreciationRecaptureRate?: number;
   yearOneDepreciationPct?: number;
   years2to10Depreciation?: number;
@@ -112,9 +111,9 @@ const InvestorAnalysisHighlevelMetrics: React.FC<InvestorAnalysisHighlevelMetric
   hdcFee,
 
   // Free Investment Analysis
+  // ISS-065: Removed freeInvestmentHurdle, investmentRecovered
   year1TaxBenefit = 0,
   year1NetBenefit = 0,
-  freeInvestmentHurdle = 0,
   yearOneDepreciation = 0,
   effectiveTaxRateForDepreciation = 0,
   hdcFeeRate = 0,
@@ -122,7 +121,6 @@ const InvestorAnalysisHighlevelMetrics: React.FC<InvestorAnalysisHighlevelMetric
   // Tax Planning Capacity
   totalNetTaxBenefits = 0,
   totalCapitalGainsRate = 0,
-  investmentRecovered = 0,
   depreciationRecaptureRate = 25,
   yearOneDepreciationPct = 0,
   years2to10Depreciation = 0,

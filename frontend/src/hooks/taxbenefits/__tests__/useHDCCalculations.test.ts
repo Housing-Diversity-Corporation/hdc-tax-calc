@@ -399,21 +399,8 @@ describe('useHDCCalculations Hook - Integration Tests', () => {
       expect(result.current.year1NetBenefit).toBeCloseTo(expectedNetBenefit, 2);
     });
 
-    it('should calculate free investment hurdle', () => {
-      const { result } = renderHook(() => useHDCCalculations(defaultProps));
-      
-      expect(result.current.freeInvestmentHurdle).toBe(result.current.investorEquity);
-    });
-
-    it('should calculate investment recovery correctly', () => {
-      const { result } = renderHook(() => useHDCCalculations(defaultProps));
-      
-      const expectedRecovery = Math.min(
-        result.current.freeInvestmentHurdle,
-        result.current.year1NetBenefit
-      );
-      expect(result.current.investmentRecovered).toBeCloseTo(expectedRecovery, 0);
-    });
+    // ISS-065: Removed freeInvestmentHurdle and investmentRecovered tests
+    // (Excess Capacity section removed from UI)
   });
 
   describe('Main Analysis Results', () => {

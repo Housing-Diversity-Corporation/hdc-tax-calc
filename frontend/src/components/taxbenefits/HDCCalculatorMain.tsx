@@ -643,16 +643,14 @@ const HDCCalculatorMain = () => {
           totalCapitalStructure={totalCapitalStructure}
           year1TaxBenefit={calculations.year1TaxBenefit}
           year1NetBenefit={calculations.year1NetBenefit}
-          freeInvestmentHurdle={calculations.freeInvestmentHurdle}
+          // ISS-065: Removed freeInvestmentHurdle, investmentRecovered, totalNetTaxBenefitsAfterCG
           totalNetTaxBenefits={calculations.totalNetTaxBenefits}
           totalCapitalGainsRate={calculations.totalCapitalGainsRate}
           deferredGains={deferredCapitalGains}
           deferredGainsTaxDue={calculations.deferredGainsTaxDue}
-          investmentRecovered={calculations.investmentRecovered}
           ozType={ozType}
           ozVersion={ozVersion}
           ozCapitalGainsTaxRate={ozCapitalGainsTaxRate}
-          totalNetTaxBenefitsAfterCG={calculations.totalNetTaxBenefitsAfterCG}
           mainAnalysisResults={calculations.mainAnalysisResults}
           totalInvestment={calculations.totalInvestment}
           totalReturns={calculations.totalReturns}
@@ -779,9 +777,9 @@ const HDCCalculatorMain = () => {
           replacementReserve={replacementReserve}
           otherExclusions={otherExclusions}
           // IMPL-020a: Pre-calculated benefits from engine (single source of truth)
+          // ISS-065: Removed excessBenefits (Excess Capacity section removed)
           total10YearBenefits={calculations.unifiedBenefitsSummary?.total10YearBenefits}
           benefitMultiple={calculations.unifiedBenefitsSummary?.benefitMultiple}
-          excessBenefits={calculations.unifiedBenefitsSummary?.excessBenefits}
           />
         </div>
       </div>

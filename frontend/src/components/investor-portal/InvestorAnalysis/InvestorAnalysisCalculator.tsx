@@ -586,9 +586,9 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
         hdcFee={calculations.hdcFee}
 
         // Free Investment Analysis
+        // ISS-065: Removed freeInvestmentHurdle, investmentRecovered (Excess Capacity section removed)
         year1TaxBenefit={calculations.year1TaxBenefit}
         year1NetBenefit={calculations.year1NetBenefit}
-        freeInvestmentHurdle={calculations.freeInvestmentHurdle}
         yearOneDepreciation={calculations.yearOneDepreciation}
         effectiveTaxRateForDepreciation={calculations.effectiveTaxRateForDepreciation}
         hdcFeeRate={hdcFeeRate}
@@ -596,7 +596,6 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
         // Tax Planning Capacity
         totalNetTaxBenefits={calculations.totalNetTaxBenefits}
         totalCapitalGainsRate={calculations.totalCapitalGainsRate}
-        investmentRecovered={calculations.investmentRecovered}
         depreciationRecaptureRate={depreciationRecaptureRate}
         yearOneDepreciationPct={yearOneDepreciationPct}
         years2to10Depreciation={calculations.years2to10Depreciation}
@@ -922,15 +921,13 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
           totalCapitalStructure={totalCapitalStructure}
           year1TaxBenefit={calculations.year1TaxBenefit}
           year1NetBenefit={calculations.year1NetBenefit}
-          freeInvestmentHurdle={calculations.freeInvestmentHurdle}
+          // ISS-065: Removed freeInvestmentHurdle, investmentRecovered, totalNetTaxBenefitsAfterCG
           totalNetTaxBenefits={calculations.totalNetTaxBenefits}
           totalCapitalGainsRate={calculations.totalCapitalGainsRate}
           deferredGains={deferredCapitalGains}
           deferredGainsTaxDue={calculations.deferredGainsTaxDue}
-          investmentRecovered={calculations.investmentRecovered}
           ozType={ozType}
           ozCapitalGainsTaxRate={ozCapitalGainsTaxRate}
-          totalNetTaxBenefitsAfterCG={calculations.totalNetTaxBenefitsAfterCG}
           mainAnalysisResults={calculations.mainAnalysisResults}
           totalInvestment={calculations.totalInvestment}
           totalReturns={calculations.totalReturns}
@@ -1194,7 +1191,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
               <li>Year 1 Tax Benefit: {calculations.year1TaxBenefit}</li>
               <li>HDC Fee: {calculations.year1HdcFee}</li>
               <li>Year 1 Net Benefit: {calculations.year1NetBenefit}</li>
-              <li>Free Investment Hurdle: {calculations.freeInvestmentHurdle}</li>
+              {/* ISS-065: Removed freeInvestmentHurdle */}
               <li>Year One Depreciation: {calculations.yearOneDepreciation}</li>
               <li>Effective Tax Rate for Depreciation: {calculations.effectiveTaxRateForDepreciation}</li>
               <li>HDC Fee Rate: {hdcFeeRate}</li>
@@ -1204,7 +1201,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
               <p><strong>Tax Planning Capacity</strong></p>
               <li>totalNetTaxBenefits: {calculations.totalNetTaxBenefits}</li>
               <li>totalCapitalGainsRate: {calculations.totalCapitalGainsRate}</li>
-              <li>investmentRecovered: {calculations.investmentRecovered}</li>
+              {/* ISS-065: Removed investmentRecovered */}
               <li>effectiveTaxRateForDepreciation: {calculations.effectiveTaxRateForDepreciation}</li>
               <li>depreciationRecaptureRate: {depreciationRecaptureRate}</li>
               {/* <li>year5OZTaxDue: {calculations.year5OZTaxDue}</li> */}
@@ -1292,7 +1289,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
               <li>hdcResults={JSON.stringify(calculations.mainAnalysisResults)}</li>
               <li>investorTrack={investorTrack}</li>
               <li>year1NetBenefit={calculations.year1NetBenefit}</li>
-              <li>freeInvestmentHurdle={calculations.freeInvestmentHurdle}</li>
+              {/* ISS-065: Removed freeInvestmentHurdle */}
             </ol>
           </div>
         </div>

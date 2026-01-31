@@ -665,16 +665,15 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
   ]);
 
   // Investment calculations using investor equity from main analysis (single source of truth)
+  // ISS-065: Removed freeInvestmentHurdle, investmentRecovered, totalNetTaxBenefitsAfterCG
+  // (these were only used for the removed Excess Capacity section)
   const investmentCalculations = useMemo(() => {
     const investorEquity = mainAnalysisResults.investorEquity;
-    const freeInvestmentHurdle = investorEquity;
 
     // IMPL-057: Use engine value (single source of truth) instead of hook calculation
     const totalNetTaxBenefits = mainAnalysisResults.investorTaxBenefits;
     // IMPL-057: Use year 1 tax benefit from engine cash flows
     const year1TaxBenefitFromEngine = mainAnalysisResults.investorCashFlows[0]?.taxBenefit || 0;
-    const investmentRecovered = Math.min(freeInvestmentHurdle, year1TaxBenefitFromEngine);
-    const totalNetTaxBenefitsAfterCG = totalNetTaxBenefits - taxCalculations.deferredGainsTaxDue - investmentRecovered;
 
     // IMPL-057: Use engine values for year 1 tax benefit (single source of truth)
     // Note: year1TaxBenefit and year1NetBenefit now come from engine for consistency
@@ -687,10 +686,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       year1TaxBenefit: year1TaxBenefitForReturn,
       year1HdcFee: 0, // Fee removed per IMPL-7.0-014
       year1NetBenefit: year1NetBenefitForReturn,
-      freeInvestmentHurdle,
       totalNetTaxBenefits,
-      investmentRecovered,
-      totalNetTaxBenefitsAfterCG,
       // Get these from main engine (single source of truth), not from hook's local calculation
       interestReserveAmount: mainAnalysisResults.interestReserveAmount || interestReserveAmount,
       effectiveProjectCost: (props.projectCost + (props.predevelopmentCosts || 0) + (mainAnalysisResults.interestReserveAmount || interestReserveAmount))
@@ -811,21 +807,14 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     const investorEquity = mainAnalysisResults?.investorEquity || 0;
     const benefitMultiple = investorEquity > 0 ? total10YearBenefits / investorEquity : 0;
 
-    const year5TaxPayment = mainAnalysisResults?.investorCashFlows?.find(cf => cf.year === 5)?.ozYear5TaxPayment || 0;
-    const investmentRecovered = investmentCalculations?.investmentRecovered || 0;
-    // ISS-022: Use engine's investorTaxBenefits for excessBenefits calculation
-    const excessBenefits = Math.max(0,
-      engineTaxBenefits - investmentRecovered - year5TaxPayment
-    );
-
-    return { total10YearBenefits, benefitMultiple, excessBenefits };
+    // ISS-065: Removed excessBenefits calculation (Excess Capacity section removed from UI)
+    return { total10YearBenefits, benefitMultiple };
   }, [
     lihtcResult,
     stateLIHTCResult,
     props.stateLIHTCEnabled,
     props.ozEnabled,
-    mainAnalysisResults,
-    investmentCalculations
+    mainAnalysisResults
   ]);
 
   console.log('📊 Returning Investor Metrics:', {

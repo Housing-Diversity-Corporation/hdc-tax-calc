@@ -1,55 +1,40 @@
-import React, { useState } from 'react';
+import React from 'react';
 import '../../../styles/taxbenefits/hdcCalculator.css';
 import CollapsibleSection from './CollapsibleSection';
 import type { CashFlowItem } from '../../../types/taxbenefits';
 
 /**
- * IMPL-078: Merged Investment Recovery & Tax Planning Section
+ * IMPL-078: Investment Recovery Section
  *
- * Combines FreeInvestmentAnalysisSection and TaxPlanningCapacitySection into
- * a single coherent display using engine values as single source of truth.
+ * Displays investment summary, recovery timeline, and benefit metrics.
+ * Uses engine values as single source of truth.
  *
- * Replaces:
- * - FreeInvestmentAnalysisSection.tsx
- * - TaxPlanningCapacitySection.tsx
+ * ISS-065: Removed "Excess Capacity for Tax Planning" section and
+ * "Free Investment Status" indicator per product direction.
  */
 
 interface InvestmentRecoverySectionProps {
-  // From engine - single source of truth
-  investorEquity: number;
   // ISS-023: totalInvestment is the MOIC basis (net for Y0 syndication, gross for Y1+)
   totalInvestment: number;
   year1TaxBenefit: number;
   total10YearBenefits: number;
   benefitMultiple: number;
-  excessBenefits: number;
 
   // For recovery timeline calculation - uses all benefit sources
   investorCashFlows: CashFlowItem[];
-
-  // Tax rates for capacity calculations
-  totalCapitalGainsRate: number;
-  effectiveTaxRateForDepreciation: number;
-  depreciationRecaptureRate: number;
 
   // Formatter
   formatCurrency: (value: number) => string;
 }
 
 const InvestmentRecoverySection: React.FC<InvestmentRecoverySectionProps> = ({
-  investorEquity,
   totalInvestment,
   year1TaxBenefit,
   total10YearBenefits,
   benefitMultiple,
-  excessBenefits,
   investorCashFlows,
-  totalCapitalGainsRate,
-  effectiveTaxRateForDepreciation,
-  depreciationRecaptureRate,
   formatCurrency
 }) => {
-  const [showTaxRates, setShowTaxRates] = useState(false);
 
   // ─────────────────────────────────────────────────────────────────────────────
   // CALCULATIONS (all derived from engine values)
@@ -62,11 +47,6 @@ const InvestmentRecoverySection: React.FC<InvestmentRecoverySectionProps> = ({
   const year1Coverage = totalInvestment > 0
     ? (year1TaxBenefit / totalInvestment) * 100
     : 0;
-
-  // Free Investment Status
-  const freeInvestmentStatus =
-    year1TaxBenefit >= totalInvestment ? 'YES' :
-    year1TaxBenefit >= totalInvestment * 0.75 ? 'PARTIAL' : 'NO';
 
   // Time to Recovery - using ALL cumulative benefits from investorCashFlows
   // Includes: taxBenefit (depreciation) + federalLIHTCCredit + stateLIHTCCredit + syndicationProceeds
@@ -100,29 +80,9 @@ const InvestmentRecoverySection: React.FC<InvestmentRecoverySectionProps> = ({
 
   const timeToRecovery = calculateTimeToRecovery();
 
-  // Planning capacities (only calculated if excessBenefits > 0)
-  const showExcessCapacity = excessBenefits > 0;
-  const exchange1031Capacity = showExcessCapacity && totalCapitalGainsRate > 0
-    ? excessBenefits / (totalCapitalGainsRate / 100)
-    : 0;
-  const rothConversionCapacity = showExcessCapacity && effectiveTaxRateForDepreciation > 0
-    ? excessBenefits / (effectiveTaxRateForDepreciation / 100)
-    : 0;
-  const depreciationOffsetCapacity = showExcessCapacity && depreciationRecaptureRate > 0
-    ? excessBenefits / (depreciationRecaptureRate / 100)
-    : 0;
-
   // ─────────────────────────────────────────────────────────────────────────────
   // STYLING HELPERS
   // ─────────────────────────────────────────────────────────────────────────────
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'YES': return 'var(--hdc-brown-rust)';
-      case 'PARTIAL': return 'var(--hdc-cabbage-pont)';
-      default: return 'var(--hdc-strikemaster)';
-    }
-  };
 
   const getRecoveryColor = (years: number | null) => {
     if (years === null) return 'var(--hdc-strikemaster)';
@@ -216,100 +176,7 @@ const InvestmentRecoverySection: React.FC<InvestmentRecoverySectionProps> = ({
               </span>
             </div>
           </div>
-
-          <div className="hdc-result-row">
-            <span className="hdc-result-label">Free Investment Status:</span>
-            <span className="hdc-result-value" style={{
-              fontWeight: 600,
-              color: getStatusColor(freeInvestmentStatus)
-            }}>
-              {freeInvestmentStatus}
-            </span>
-          </div>
         </div>
-
-        {/* ═══════════════════════════════════════════════════════════════════════
-            EXCESS CAPACITY FOR TAX PLANNING (only shown if excessBenefits > 0)
-        ═══════════════════════════════════════════════════════════════════════ */}
-        {showExcessCapacity && (
-          <div style={{ marginBottom: '1rem' }}>
-            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--hdc-faded-jade)', marginBottom: '0.75rem' }}>
-              Excess Capacity for Tax Planning
-            </div>
-
-            <div className="hdc-result-row" style={{ marginBottom: '0.75rem' }}>
-              <span className="hdc-result-label">Net Excess Benefits:</span>
-              <span className="hdc-result-value hdc-value-positive" style={{ fontWeight: 600 }}>
-                {formatCurrency(excessBenefits)}
-              </span>
-            </div>
-
-            <div style={{
-              fontSize: '0.75rem',
-              color: 'var(--hdc-cabbage-pont)',
-              marginBottom: '0.5rem',
-              fontWeight: 500
-            }}>
-              Potential Uses:
-            </div>
-
-            <div style={{ paddingLeft: '0.75rem' }}>
-              <div className="hdc-result-row">
-                <span className="hdc-result-label">• 1031 Exchange Capacity:</span>
-                <span className="hdc-result-value">{formatCurrency(exchange1031Capacity)}</span>
-              </div>
-              <div className="hdc-result-row">
-                <span className="hdc-result-label">• Roth Conversion Capacity:</span>
-                <span className="hdc-result-value">{formatCurrency(rothConversionCapacity)}</span>
-              </div>
-              <div className="hdc-result-row">
-                <span className="hdc-result-label">• Depreciation Offset:</span>
-                <span className="hdc-result-value">{formatCurrency(depreciationOffsetCapacity)}</span>
-              </div>
-            </div>
-
-            {/* Collapsible Tax Rates Reference */}
-            <div style={{ marginTop: '1rem' }}>
-              <div
-                style={{
-                  fontSize: '0.75rem',
-                  fontWeight: 500,
-                  color: 'var(--hdc-cabbage-pont)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.25rem'
-                }}
-                onClick={() => setShowTaxRates(!showTaxRates)}
-              >
-                <span>{showTaxRates ? '▼' : '▶'}</span>
-                <span>Tax Rates Reference</span>
-              </div>
-
-              {showTaxRates && (
-                <div style={{
-                  padding: '0.5rem 0.75rem',
-                  marginTop: '0.5rem',
-                  borderLeft: '2px solid var(--hdc-faded-jade)',
-                  fontSize: '0.7rem'
-                }}>
-                  <div className="hdc-result-row">
-                    <span className="hdc-result-label">Capital Gains Rate:</span>
-                    <span className="hdc-result-value">{totalCapitalGainsRate.toFixed(1)}%</span>
-                  </div>
-                  <div className="hdc-result-row">
-                    <span className="hdc-result-label">Ordinary Income Rate:</span>
-                    <span className="hdc-result-value">{effectiveTaxRateForDepreciation.toFixed(1)}%</span>
-                  </div>
-                  <div className="hdc-result-row">
-                    <span className="hdc-result-label">Depreciation Recapture:</span>
-                    <span className="hdc-result-value">{depreciationRecaptureRate}%</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     </CollapsibleSection>
   );
