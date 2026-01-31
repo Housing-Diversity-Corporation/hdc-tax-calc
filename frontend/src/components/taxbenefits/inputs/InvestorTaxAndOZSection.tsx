@@ -10,6 +10,7 @@ import '../../../styles/taxbenefits/hdcCalculator.css';
 import { CONFORMING_STATES, FEDERAL_TAX_BRACKETS_2024, FEDERAL_CAPITAL_GAINS_BRACKETS_2024 } from '../../../utils/taxbenefits/constants';
 import { doesNIITApply } from '../../../utils/taxbenefits/stateData';
 import { HDC_OZ_STRATEGY } from '../../../utils/taxbenefits/hdcOzStrategy';
+import { roundForDisplay } from '../../../utils/taxbenefits/formatters';
 import StrategicOzSelector from './StrategicOzSelector';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 
@@ -181,9 +182,10 @@ const InvestorTaxAndOZSection: React.FC<InvestorTaxAndOZSectionProps> = ({
   }, []); // Only run on mount
 
   // Auto-populate deferred capital gains to match investor equity
+  // ISS-066: Round to prevent floating-point display artifacts
   React.useEffect(() => {
     if (investorEquityAmount > 0) {
-      setDeferredCapitalGains(investorEquityAmount);
+      setDeferredCapitalGains(roundForDisplay(investorEquityAmount));
     }
   }, [investorEquityAmount, setDeferredCapitalGains]);
 

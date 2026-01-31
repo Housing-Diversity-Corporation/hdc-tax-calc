@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Input } from '../../ui/input';
 import { Switch } from '../../ui/switch';
 import { getOzStepUpPercent } from '../../../utils/taxbenefits/constants';
+import { roundForDisplay } from '../../../utils/taxbenefits/formatters';
 
 interface OpportunityZoneSectionProps {
   // IMPL-071: OZ enabled toggle
@@ -51,11 +52,12 @@ const OpportunityZoneSection: React.FC<OpportunityZoneSectionProps> = ({
   const [isExpanded, setIsExpanded] = useState(true);
 
   // Auto-populate deferred capital gains to match investor equity
+  // ISS-066: Round to prevent floating-point display artifacts (e.g., 29.099999999999998 → 29.1)
   React.useEffect(() => {
     if (investorEquityAmount > 0) {
       // Set deferred gains to match investor equity (in millions)
       // This assumes 100% of investor equity comes from qualified capital gains
-      setDeferredCapitalGains(investorEquityAmount);
+      setDeferredCapitalGains(roundForDisplay(investorEquityAmount));
     }
   }, [investorEquityAmount, setDeferredCapitalGains]);
 

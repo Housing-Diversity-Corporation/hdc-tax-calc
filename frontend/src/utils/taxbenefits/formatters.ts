@@ -164,3 +164,20 @@ export const formatAbbreviatedCurrency = (value: number, decimals = 2): string =
 
   return `${sign}$${Math.round(absValue)}`;
 };
+
+/**
+ * ISS-066: Round a number to eliminate floating-point display artifacts
+ *
+ * JavaScript floating-point arithmetic can produce values like 29.099999999999998
+ * instead of 29.1. This utility rounds to a specified precision (default 6 decimals)
+ * which is more than sufficient for financial calculations in $M.
+ *
+ * @param value - The numeric value to round
+ * @param decimals - Number of decimal places to preserve (default: 6)
+ * @returns Rounded number without floating-point artifacts
+ */
+export const roundForDisplay = (value: number, decimals = 6): number => {
+  if (isNaN(value) || !isFinite(value)) return 0;
+  const factor = Math.pow(10, decimals);
+  return Math.round(value * factor) / factor;
+};

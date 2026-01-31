@@ -15,6 +15,7 @@ import { calculatorService, CalculatorConfiguration } from '../../services/taxbe
 import { tokenService } from '../../services/api';
 import '../../styles/taxbenefits/hdcCalculator.css';
 import { InvestorAnalysisResults, CashFlowItem } from '../../types/taxbenefits';
+import { roundForDisplay } from '../../utils/taxbenefits/formatters';
 
 interface HDCInputsComponentProps {
   // Calculated values
@@ -775,7 +776,10 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
   };
 
   // Calculate investor equity amount for OZ section
-  const investorEquityAmount = (props.projectCost + props.interestReserveAmount) * (props.investorEquityPct / 100);
+  // ISS-066: Round to prevent floating-point display artifacts (e.g., 29.099999999999998 → 29.1)
+  const investorEquityAmount = roundForDisplay(
+    (props.projectCost + props.interestReserveAmount) * (props.investorEquityPct / 100)
+  );
 
   return (
     <div className="p-4 md:p-6 rounded-lg shadow h-full hdc-inputs-container"
