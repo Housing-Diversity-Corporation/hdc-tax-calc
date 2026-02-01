@@ -27,15 +27,14 @@ export const calculateHDCAnalysis = (params: HDCCalculationParams): HDCAnalysisR
     projectCost: paramProjectCost,
     predevelopmentCosts: paramPredevelopmentCosts = 0,
     yearOneNOI: paramYearOneNOI,
-    revenueGrowth: paramRevenueGrowth,
-    expenseGrowth: paramExpenseGrowth,
+    // ISS-068c: Single NOI growth rate
+    noiGrowthRate: paramNoiGrowthRate = 3,
     exitCapRate: paramExitCapRate,
     investorPromoteShare: paramInvestorPromoteShare,
     hdcSubDebtPct: paramHdcSubDebtPct = 0,
     hdcSubDebtPikRate: paramHdcSubDebtPikRate = 8,
     pikCurrentPayEnabled: paramPikCurrentPayEnabled = false,
     pikCurrentPayPct: paramPikCurrentPayPct = 50,
-    opexRatio: paramOpexRatio = 30,
     holdPeriod: paramHoldPeriod = 10,
     aumFeeEnabled: _paramAumFeeEnabled = false, // Now obtained from investor cash flows
     aumFeeRate: _paramAumFeeRate = 1.5, // Now obtained from investor cash flows
@@ -144,8 +143,7 @@ export const calculateHDCAnalysis = (params: HDCCalculationParams): HDCAnalysisR
   // When current pay is enabled, a portion of interest is paid currently, rest accrues as PIK
 
   const hdcCashFlows: HDCCashFlowItem[] = [];
-  let currentRevenue = paramYearOneNOI / (1 - paramOpexRatio / 100);
-  let currentExpenses = currentRevenue * (paramOpexRatio / 100);
+  // ISS-068c: Direct NOI growth - no longer tracking revenue/expenses separately
   let currentNOI = paramYearOneNOI;
   let cumulativeReturns = 0;
   let hdcPikAccumulatedInterest = 0;
@@ -186,10 +184,8 @@ export const calculateHDCAnalysis = (params: HDCCalculationParams): HDCAnalysisR
 
   // Years 2 through hold period
   for (let year = 2; year <= paramHoldPeriod; year++) {
-    // Apply growth before calculating year's NOI
-    currentRevenue *= (1 + paramRevenueGrowth / 100);
-    currentExpenses *= (1 + paramExpenseGrowth / 100);
-    currentNOI = currentRevenue - currentExpenses;
+    // ISS-068c: Direct NOI growth
+    currentNOI *= (1 + paramNoiGrowthRate / 100);
 
     // Handle philanthropic debt service calculation (always interest-only)
     let hdcPhilDebtServiceThisYear = 0;

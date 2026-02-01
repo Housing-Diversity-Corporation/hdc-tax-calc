@@ -58,9 +58,8 @@ const HDCCalculatorMain = () => {
 
     // Projections
     holdPeriod, setHoldPeriod,
-    revenueGrowth, setRevenueGrowth,
-    expenseGrowth, setExpenseGrowth,
-    opexRatio, setOpexRatio,
+    // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
+    noiGrowthRate, setNoiGrowthRate,
     exitCapRate, setExitCapRate,
     investorPromoteShare, setInvestorPromoteShare,
     
@@ -196,10 +195,9 @@ const HDCCalculatorMain = () => {
     yearOneNOI,
     yearOneDepreciationPct,
     holdPeriod,
-    revenueGrowth,
-    expenseGrowth,
+    // ISS-068c: Single NOI growth rate
+    noiGrowthRate,
     exitCapRate,
-    opexRatio,
 
     // Tax parameters
     federalTaxRate,
@@ -458,12 +456,8 @@ const HDCCalculatorMain = () => {
           setYearOneNOI={setYearOneNOI}
           holdPeriod={holdPeriod}
           setHoldPeriod={setHoldPeriod}
-          revenueGrowth={revenueGrowth}
-          setRevenueGrowth={setRevenueGrowth}
-          opexRatio={opexRatio}
-          setOpexRatio={setOpexRatio}
-          expenseGrowth={expenseGrowth}
-          setExpenseGrowth={setExpenseGrowth}
+          noiGrowthRate={noiGrowthRate}
+          setNoiGrowthRate={setNoiGrowthRate}
           exitCapRate={exitCapRate}
           setExitCapRate={setExitCapRate}
           investorPromoteShare={investorPromoteShare}
@@ -692,10 +686,8 @@ const HDCCalculatorMain = () => {
           landValue={landValue}
           predevelopmentCosts={predevelopmentCosts}
           yearOneNOI={yearOneNOI}
-          revenueGrowth={revenueGrowth}
-          expenseGrowth={expenseGrowth}
+          noiGrowthRate={noiGrowthRate}
           exitCapRate={exitCapRate}
-          opexRatio={opexRatio}
           projectName={undefined}
           projectLocation={projectLocation}
           seniorDebtRate={seniorDebtRate}

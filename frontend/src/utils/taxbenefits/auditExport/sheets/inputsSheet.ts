@@ -27,9 +27,8 @@ export function buildInputsSheet(params: CalculationParams): SheetResult {
     { label: 'Property State', rangeName: 'PropertyState', value: params.selectedState || 'CA', units: '' },
     { label: 'Hold Period (years)', rangeName: 'HoldPeriod', value: params.holdPeriod || 10, units: 'years' },
     { label: 'Stabilized NOI ($M)', rangeName: 'YearOneNOI', value: params.yearOneNOI, units: '$M' },
-    { label: 'Revenue Growth Rate (%)', rangeName: 'RevenueGrowthRate', value: params.revenueGrowth, units: '%' },
-    { label: 'Expense Growth Rate (%)', rangeName: 'ExpenseGrowthRate', value: params.expenseGrowth || params.revenueGrowth, units: '%' },
-    { label: 'OpEx Ratio (%)', rangeName: 'OpExRatio', value: params.opexRatio || 45, units: '%' },
+    // ISS-068c: Single NOI growth rate replaces Revenue Growth, Expense Growth, OpEx Ratio
+    { label: 'NOI Growth Rate (%)', rangeName: 'NoiGrowthRate', value: params.noiGrowthRate || 3, units: '%' },
     { label: 'Exit Cap Rate (%)', rangeName: 'ExitCapRate', value: params.exitCapRate, units: '%' },
     { label: 'Stabilized Occupancy (%)', rangeName: 'StabilizedOccupancy', value: 95, units: '%' },
     { label: 'Lease-Up Months', rangeName: 'LeaseUpMonths', value: 18, units: 'months' },

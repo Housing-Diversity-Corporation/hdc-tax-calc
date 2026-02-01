@@ -147,8 +147,8 @@ describe('HDC Calculator - Core Financial Calculations', () => {
       projectCost: 86000000,
       landValue: 8600000,
       yearOneNOI: 5113000,
-      revenueGrowth: 3,
-      expenseGrowth: 3,
+      // ISS-068c: Single NOI growth rate
+      noiGrowthRate: 3,
       exitCapRate: 6,
       investorEquityPct: 14,
       hdcFeeRate: 0,
@@ -158,7 +158,6 @@ describe('HDC Calculator - Core Financial Calculations', () => {
       netTaxBenefit: 6300000,
       hdcFee: 700000,
       investorPromoteShare: 35,
-      opexRatio: 25,
       seniorDebtPct: 66,
       philanthropicDebtPct: 20,
       seniorDebtRate: 5,
@@ -262,13 +261,13 @@ describe('HDC Calculator - Core Financial Calculations', () => {
       expect(results.exitProceeds).toBeGreaterThan(0);
     });
 
+    // ISS-068c: Updated to use direct NOI growth rate
     it('should handle negative NOI growth', () => {
       const negativeGrowthParams = {
         ...baseParams,
-        revenueGrowth: -2,
-        expenseGrowth: 5
+        noiGrowthRate: -3 // Negative NOI growth
       };
-      
+
       const results = calculateFullInvestorAnalysis(negativeGrowthParams);
       expect(results).toBeDefined();
       expect(results.investorCashFlows[9].noi).toBeLessThan(results.investorCashFlows[0].noi);
@@ -410,8 +409,8 @@ describe('HDC Calculator - Core Financial Calculations', () => {
       projectCost: 86000000,
       landValue: 8600000,
       yearOneNOI: 5113000,
-      revenueGrowth: 3,
-      expenseGrowth: 3,
+      // ISS-068c: Single NOI growth rate
+      noiGrowthRate: 3,
       exitCapRate: 6,
       investorEquityPct: 14,
       hdcFeeRate: 0,
@@ -421,7 +420,6 @@ describe('HDC Calculator - Core Financial Calculations', () => {
       netTaxBenefit: 6300000,
       hdcFee: 700000,
       investorPromoteShare: 35,
-      opexRatio: 25,
       seniorDebtPct: 66,
       philanthropicDebtPct: 20,
       seniorDebtRate: 5,
@@ -466,15 +464,16 @@ describe('HDC Calculator - Core Financial Calculations', () => {
       expect(results.totalInvestment).toBe(0); // No equity, no HDC fee
     });
 
+    // ISS-068c: Updated to use direct NOI growth rate
     it('should handle extreme growth rates', () => {
       const extremeGrowthParams = {
         ...baseParams,
-        revenueGrowth: 50,
-        expenseGrowth: -10
+        noiGrowthRate: 30 // 30% annual NOI growth
       };
-      
+
       const results = calculateFullInvestorAnalysis(extremeGrowthParams);
       expect(results).toBeDefined();
+      // With 30% growth for 9 years: 1.30^9 ≈ 10.6x
       expect(results.investorCashFlows[9].noi).toBeGreaterThan(results.investorCashFlows[0].noi * 10);
     });
 

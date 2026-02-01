@@ -10,10 +10,9 @@ describe('Waterfall Distribution Fix - Free Investment Analysis', () => {
     landValue: 500000,            // $0.5M land (more depreciable basis)
     yearOneNOI: 600000,           // $600K NOI
     yearOneDepreciationPct: 80,   // Very high depreciation to create large tax benefit
-    revenueGrowth: 3,
-    expenseGrowth: 3,
+    // ISS-068c: Single NOI growth rate
+    noiGrowthRate: 3,
     exitCapRate: 6,
-    opexRatio: 25,
     holdPeriod: 10,
     
     // Tax parameters - very high rates to create large benefits

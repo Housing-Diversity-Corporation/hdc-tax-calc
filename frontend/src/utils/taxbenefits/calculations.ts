@@ -137,8 +137,8 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
     yearOneNOI: paramYearOneNOI,
     yearOneDepreciationPct: paramYearOneDepreciationPct = 0,
     placedInServiceMonth: paramPlacedInServiceMonth = 7,
-    revenueGrowth: paramRevenueGrowth = 0,
-    expenseGrowth: paramExpenseGrowth = 0,
+    // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
+    noiGrowthRate: paramNoiGrowthRate = 3,
     exitCapRate: paramExitCapRate,
     investorEquityPct: paramInvestorEquityPct,
     hdcAdvanceFinancing: paramHdcAdvanceFinancing,
@@ -175,7 +175,6 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
     aumFeeRate: paramAumFeeRate = 0,
     aumCurrentPayEnabled: paramAumCurrentPayEnabled = false,
     aumCurrentPayPct: paramAumCurrentPayPct = 50,
-    opexRatio: paramOpexRatio = 25,
     philCurrentPayEnabled: paramPhilCurrentPayEnabled = false,
     philCurrentPayPct: paramPhilCurrentPayPct = 50,
     holdPeriod: paramHoldPeriod = 10,
@@ -194,7 +193,7 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
     // Federal LIHTC Credits (IMPL-021b)
     federalLIHTCCredits: paramFederalLIHTCCredits = []
   } = params;
-  const yearOneRevenue = paramYearOneNOI / (1 - paramOpexRatio / 100);
+  // ISS-068c: yearOneRevenue calculation removed - now using direct NOI growth
 
   // AUTO-CALCULATE annualStraightLineDepreciation if not provided
   // This ensures consistency between HDC Calculator and Investment Portal
@@ -342,8 +341,7 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
   // When current pay is enabled, a portion of interest is paid currently, rest accrues as PIK
 
   const investorCashFlows: CashFlowItem[] = [];
-  let currentRevenue = yearOneRevenue;
-  let currentExpenses = yearOneRevenue * (paramOpexRatio / 100);
+  // ISS-068c: Simplified to direct NOI growth (removed revenue/expense tracking)
   let currentNOI = paramYearOneNOI;
   let cumulativeReturns = 0;
   let investorCumulativePikBalance = 0;
@@ -461,11 +459,10 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
       }
     } else {
       // Full operations - apply growth for years after placement
+      // ISS-068c: Direct NOI growth replaces separate revenue/expense growth
       const yearsOfOperation = year - placedInServiceYear;
       if (yearsOfOperation > 0) {
-        currentRevenue *= (1 + paramRevenueGrowth / 100);
-        currentExpenses *= (1 + paramExpenseGrowth / 100);
-        currentNOI = currentRevenue - currentExpenses;
+        currentNOI *= (1 + paramNoiGrowthRate / 100);
       }
 
       // Apply S-curve lease-up if within interest reserve period
@@ -1502,8 +1499,9 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
       mustPayDSCR,         // NOI / (Senior + PAB)
       philDSCR,            // NOI / (Senior + PAB + Phil current pay)
       // IMPL-020a: Waterfall display fields (pre-calculated for UI)
-      revenue: currentRevenue,
-      opex: currentExpenses,
+      // ISS-068c: Revenue/opex removed - now using direct NOI growth model
+      revenue: 0,
+      opex: 0,
       freeCash,
       hardDscr,
       totalSubDebtInterestNet,

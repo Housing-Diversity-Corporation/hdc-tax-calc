@@ -255,8 +255,8 @@ export interface CalculationParams {
   /** Year 1 Net Operating Income in millions (e.g., 5.5 = $5.5M) */
   yearOneNOI: number;
   yearOneDepreciationPct?: number;
-  revenueGrowth: number;
-  expenseGrowth: number;
+  // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
+  noiGrowthRate: number;
   exitCapRate: number;
   investorEquityPct: number;
   hdcFeeRate: number;
@@ -298,7 +298,6 @@ export interface CalculationParams {
     hdc: number;
     investor: number;
   };
-  opexRatio?: number;
   aumFeeEnabled?: boolean;
   aumFeeRate?: number;
   aumCurrentPayEnabled?: boolean;
@@ -434,8 +433,8 @@ export interface HDCCalculationParams {
   predevelopmentCosts?: number;
   /** Stabilized NOI in millions (actual Year 1 NOI is reduced by S-curve during lease-up) */
   yearOneNOI: number;
-  revenueGrowth: number;
-  expenseGrowth: number;
+  // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
+  noiGrowthRate: number;
   exitCapRate: number;
   philanthropicEquityPct: number;
   hdcFeeRate: number;
@@ -455,7 +454,6 @@ export interface HDCCalculationParams {
   investorSubDebtPikRate?: number;
   investorPikCurrentPayEnabled?: boolean;
   investorPikCurrentPayPct?: number;
-  opexRatio?: number;
   holdPeriod?: number;
   aumFeeEnabled?: boolean;
   aumFeeRate?: number;
@@ -536,10 +534,9 @@ export interface HDCInputsProps {
   setYearOneDepreciationPct: (value: number) => void;
   yearOneNOI: number;
   setYearOneNOI: (value: number) => void;
-  revenueGrowth: number;
-  setRevenueGrowth: (value: number) => void;
-  opexRatio: number;
-  setOpexRatio: (value: number) => void;
+  // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
+  noiGrowthRate: number;
+  setNoiGrowthRate: (value: number) => void;
   exitCapRate: number;
   setExitCapRate: (value: number) => void;
   investorPromoteShare: number;

@@ -7,10 +7,9 @@ interface ProjectionsSectionProps {
   // Existing projections
   holdPeriod: number;
   setHoldPeriod: (value: number) => void;
-  revenueGrowth: number;
-  setRevenueGrowth: (value: number) => void;
-  expenseGrowth: number;
-  setExpenseGrowth: (value: number) => void;
+  // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
+  noiGrowthRate: number;
+  setNoiGrowthRate: (value: number) => void;
   exitCapRate: number;
   setExitCapRate: (value: number) => void;
 
@@ -22,9 +21,6 @@ interface ProjectionsSectionProps {
   taxBenefitDelayMonths: number;
   setTaxBenefitDelayMonths: (value: number) => void;
 
-  // Current OpEx ratio for display
-  opexRatio?: number;
-
   // Read-only mode
   isReadOnly?: boolean;
 }
@@ -32,10 +28,9 @@ interface ProjectionsSectionProps {
 const ProjectionsSection: React.FC<ProjectionsSectionProps> = ({
   holdPeriod,
   setHoldPeriod,
-  revenueGrowth,
-  setRevenueGrowth,
-  expenseGrowth,
-  setExpenseGrowth,
+  // ISS-068c: Single NOI growth rate
+  noiGrowthRate,
+  setNoiGrowthRate,
   exitCapRate,
   setExitCapRate,
   yearOneDepreciationPct,
@@ -44,7 +39,6 @@ const ProjectionsSection: React.FC<ProjectionsSectionProps> = ({
   setConstructionDelayMonths,
   taxBenefitDelayMonths,
   setTaxBenefitDelayMonths,
-  opexRatio = 25,
   isReadOnly = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -86,35 +80,19 @@ const ProjectionsSection: React.FC<ProjectionsSectionProps> = ({
               </div>
             </div>
 
-            {/* Revenue Growth */}
+            {/* ISS-068c: Single NOI Growth Rate */}
             <div className="hdc-input-group">
-              <label className="hdc-input-label">Revenue Growth (%)</label>
+              <label className="hdc-input-label">NOI Growth (%)</label>
               <Slider
                 disabled={isReadOnly}
-                min={1}
-                max={6}
+                min={0}
+                max={8}
                 step={0.5}
-                value={[revenueGrowth]}
-                onValueChange={(vals) => setRevenueGrowth(vals[0])}
+                value={[noiGrowthRate]}
+                onValueChange={(vals) => setNoiGrowthRate(vals[0])}
               />
               <div style={{ fontSize: '0.7rem', color: 'var(--hdc-cabbage-pont)', marginTop: '0.25rem' }}>
-                {revenueGrowth}% annually
-              </div>
-            </div>
-
-            {/* Expense Growth */}
-            <div className="hdc-input-group">
-              <label className="hdc-input-label">Expense Growth (%)</label>
-              <Slider
-                disabled={isReadOnly}
-                min={1}
-                max={6}
-                step={0.5}
-                value={[expenseGrowth]}
-                onValueChange={(vals) => setExpenseGrowth(vals[0])}
-              />
-              <div style={{ fontSize: '0.7rem', color: 'var(--hdc-cabbage-pont)', marginTop: '0.25rem' }}>
-                {expenseGrowth}% annually (initial OpEx ratio: {opexRatio}%)
+                {noiGrowthRate}% annual NOI growth
               </div>
             </div>
 

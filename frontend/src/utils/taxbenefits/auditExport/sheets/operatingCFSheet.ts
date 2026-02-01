@@ -21,7 +21,8 @@ export function buildOperatingCFSheet(
 
   const holdPeriod = params.holdPeriod || 10;
   const yearOneNOI = params.yearOneNOI;
-  const noiGrowth = params.revenueGrowth / 100;
+  // ISS-068c: Use direct NOI growth rate
+  const noiGrowth = (params.noiGrowthRate || 3) / 100;
 
   // Header
   ws['A1'] = { t: 's', v: 'OPERATING CASH FLOW' };

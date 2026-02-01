@@ -71,9 +71,8 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
 
     // Projections
     holdPeriod, setHoldPeriod,
-    revenueGrowth, setRevenueGrowth,
-    expenseGrowth, setExpenseGrowth,
-    opexRatio, setOpexRatio,
+    // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
+    noiGrowthRate, setNoiGrowthRate,
     exitCapRate, setExitCapRate,
     investorPromoteShare, setInvestorPromoteShare,
     
@@ -267,10 +266,9 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
             setYearOneNOI(config.yearOneNOI || 0);
             setYearOneDepreciationPct(config.yearOneDepreciationPct || 0);
             setHoldPeriod(config.holdPeriod || 10);
-            setRevenueGrowth(config.revenueGrowth || 0);
-            setExpenseGrowth(config.expenseGrowth || 0);
+            // ISS-068c: Single NOI growth rate
+            setNoiGrowthRate(config.noiGrowthRate || 3);
             setExitCapRate(config.exitCapRate || 0);
-            setOpexRatio(config.opexRatio || 0);
 
             // Capital structure
             setInvestorEquityPct(config.investorEquityPct || 0);
@@ -375,10 +373,9 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
     yearOneNOI,
     yearOneDepreciationPct,
     holdPeriod,
-    revenueGrowth,
-    expenseGrowth,
+    // ISS-068c: Single NOI growth rate
+    noiGrowthRate,
     exitCapRate,
-    opexRatio,
 
     // Tax parameters
     federalTaxRate,
@@ -470,10 +467,9 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
     landValue,
     yearOneNOI,
     yearOneDepreciationPct,
-    revenueGrowth,
-    expenseGrowth,
+    // ISS-068c: Single NOI growth rate
+    noiGrowthRate,
     exitCapRate,
-    opexRatio,
     holdPeriod,
 
     // Capital structure
@@ -783,12 +779,8 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
           setYearOneNOI={setYearOneNOI}
           holdPeriod={holdPeriod}
           setHoldPeriod={setHoldPeriod}
-          revenueGrowth={revenueGrowth}
-          setRevenueGrowth={setRevenueGrowth}
-          opexRatio={opexRatio}
-          setOpexRatio={setOpexRatio}
-          expenseGrowth={expenseGrowth}
-          setExpenseGrowth={setExpenseGrowth}
+          noiGrowthRate={noiGrowthRate}
+          setNoiGrowthRate={setNoiGrowthRate}
           exitCapRate={exitCapRate}
           setExitCapRate={setExitCapRate}
           investorPromoteShare={investorPromoteShare}
@@ -966,10 +958,8 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
           landValue={landValue}
           predevelopmentCosts={predevelopmentCosts}
           yearOneNOI={yearOneNOI}
-          revenueGrowth={revenueGrowth}
-          expenseGrowth={expenseGrowth}
+          noiGrowthRate={noiGrowthRate}
           exitCapRate={exitCapRate}
-          opexRatio={opexRatio}
           projectName={undefined}
           projectLocation={projectLocation}
           seniorDebtRate={seniorDebtRate}
@@ -1048,10 +1038,8 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
                 <li>Land Value: {formatCurrencyMillions(landValue)}</li>
                 <li>Stabilized NOI: {formatCurrencyMillions(yearOneNOI)}</li>
                 <li>Hold Period: {holdPeriod} years</li>
-                <li>Revenue Growth: {revenueGrowth}%</li>
-                <li>Expense Growth: {expenseGrowth}%</li>
+                <li>NOI Growth: {noiGrowthRate}%</li>
                 <li>Exit Cap Rate: {exitCapRate}%</li>
-                <li>Opex Ratio: {opexRatio}%</li>
                 <li>Year 1 Depreciation %: {yearOneDepreciationPct}%</li>
 
 
@@ -1113,8 +1101,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
 
                 <p><strong>Projections</strong></p>
                 <li>Hold Period: {holdPeriod}</li>
-                <li>Revenue Growth: {revenueGrowth}%</li>
-                <li>Expense Growth: {expenseGrowth}%</li>
+                <li>NOI Growth: {noiGrowthRate}%</li>
                 <li>Exit Cap Rate: {exitCapRate}%</li>
                 
                 <p><strong>HDC Income</strong></p>

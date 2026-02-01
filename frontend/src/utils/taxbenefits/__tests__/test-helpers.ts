@@ -133,8 +133,8 @@ export function getDefaultTestParams(overrides: Partial<CalculationParams> = {})
     yearOneNOI: 5,    // $5M NOI
 
     // Growth rates
-    revenueGrowth: 2.0,
-    expenseGrowth: 2.5,
+    // ISS-068c: Single NOI growth rate
+    noiGrowthRate: 2.0,
     exitCapRate: 5.0,
 
     // Investor structure

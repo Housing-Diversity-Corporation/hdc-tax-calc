@@ -15,8 +15,8 @@ describe('HDC Waterfall Comprehensive Tests', () => {
     yearOneNOI: 600000,
     holdPeriod: 10,
     exitCapRate: 7.0,
-    revenueGrowth: 3.0,
-    opexRatio: 45,
+    // ISS-068c: Single NOI growth rate
+    noiGrowthRate: 3.0,
 
     // Capital Structure
     investorEquityPct: 20,
@@ -71,7 +71,7 @@ describe('HDC Waterfall Comprehensive Tests', () => {
     capitalGainsTaxRate: 0,
 
     // Required additional properties
-    expenseGrowth: 3.0,
+    // ISS-068c: expenseGrowth replaced by noiGrowthRate above
     hdcAdvanceFinancing: false,
     investorUpfrontCash: 0,
     totalTaxBenefit: 0,
@@ -484,10 +484,11 @@ describe('HDC Waterfall Comprehensive Tests', () => {
       });
     });
 
+    // ISS-068c: Updated to use direct NOI growth rate
     test('Negative growth rates', () => {
       const params = {
         ...baseParams,
-        revenueGrowth: -2.0 // Declining revenue
+        noiGrowthRate: -3.0 // Declining NOI
       };
 
       const results = calculateFullInvestorAnalysis(params);

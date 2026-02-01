@@ -403,18 +403,17 @@ describe('useHDCState Hook - State Management Tests', () => {
       expect(result.current.seniorDebtPct).toBe(0);
     });
 
+    // ISS-068c: Updated to use noiGrowthRate instead of revenueGrowth/expenseGrowth
     it('should handle negative values appropriately', () => {
       const { result } = renderHook(() => useHDCState());
-      
+
       act(() => {
         result.current.setYearOneNOI(-1000000);
-        result.current.setRevenueGrowth(-5);
-        result.current.setExpenseGrowth(-3);
+        result.current.setNoiGrowthRate(-5);
       });
-      
+
       expect(result.current.yearOneNOI).toBe(-1000000);
-      expect(result.current.revenueGrowth).toBe(-5);
-      expect(result.current.expenseGrowth).toBe(-3);
+      expect(result.current.noiGrowthRate).toBe(-5);
     });
 
     it('should handle very large values', () => {

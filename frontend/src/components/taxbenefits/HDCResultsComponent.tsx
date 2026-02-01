@@ -94,10 +94,9 @@ interface HDCResultsComponentProps {
   // Additional props needed for comprehensive report
   landValue: number;
   yearOneNOI: number;
-  revenueGrowth: number;
-  expenseGrowth: number;
+  // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
+  noiGrowthRate: number;
   exitCapRate: number;
-  opexRatio: number;
   seniorDebtRate: number;
   seniorDebtAmortization: number;
   seniorDebtIOYears?: number;
@@ -223,9 +222,8 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
                 predevelopmentCosts: props.predevelopmentCosts || 0,
                 landValue: props.landValue,
                 yearOneNOI: props.yearOneNOI,
-                opexRatio: props.opexRatio,
-                revenueGrowth: props.revenueGrowth,
-                expenseGrowth: props.expenseGrowth,
+                // ISS-068c: Single NOI growth rate
+                noiGrowthRate: props.noiGrowthRate,
                 exitCapRate: props.exitCapRate,
                 holdPeriod: props.holdPeriod,
                 constructionDelayMonths: props.constructionDelayMonths,
@@ -297,9 +295,8 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
                 predevelopmentCosts: props.predevelopmentCosts || 0,
                 landValue: props.landValue,
                 yearOneNOI: props.yearOneNOI,
-                opexRatio: props.opexRatio,
-                revenueGrowth: props.revenueGrowth,
-                expenseGrowth: props.expenseGrowth,
+                // ISS-068c: Single NOI growth rate
+                noiGrowthRate: props.noiGrowthRate,
                 exitCapRate: props.exitCapRate,
                 holdPeriod: props.holdPeriod,
                 investorEquityPct: props.investorEquityPct,
@@ -361,7 +358,6 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
                 predevelopmentCosts: props.predevelopmentCosts || 0,
                 landValue: props.landValue,
                 yearOneNOI: props.yearOneNOI,
-                opexRatio: props.opexRatio,
 
                 // Tax Parameters
                 yearOneDepreciationPct: props.yearOneDepreciationPct,
@@ -422,8 +418,8 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
 
                 // Operating Projections
                 holdPeriod: props.holdPeriod,
-                revenueGrowth: props.revenueGrowth,
-                expenseGrowth: props.expenseGrowth,
+                // ISS-068c: Single NOI growth rate
+                noiGrowthRate: props.noiGrowthRate,
                 exitCapRate: props.exitCapRate,
                 investorPromoteShare: props.investorPromoteShare,
                 constructionDelayMonths: props.constructionDelayMonths,

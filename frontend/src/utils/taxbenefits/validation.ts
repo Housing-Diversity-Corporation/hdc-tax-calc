@@ -60,13 +60,9 @@ export const validateCalculationParams = (params: CalculationParams): Validation
     warnings.push('Hold periods over 30 years may reduce calculation accuracy');
   }
 
-  // Growth rate validation
-  if (Math.abs(params.revenueGrowth) > 25) {
-    warnings.push(`Revenue growth of ${params.revenueGrowth}% is unusually high`);
-  }
-
-  if (Math.abs(params.expenseGrowth) > 25) {
-    warnings.push(`Expense growth of ${params.expenseGrowth}% is unusually high`);
+  // ISS-068c: NOI growth rate validation
+  if (params.noiGrowthRate && Math.abs(params.noiGrowthRate) > 25) {
+    warnings.push(`NOI growth of ${params.noiGrowthRate}% is unusually high`);
   }
 
   // Interest rate validation

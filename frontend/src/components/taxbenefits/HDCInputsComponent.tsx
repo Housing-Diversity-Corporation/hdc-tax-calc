@@ -147,12 +147,9 @@ interface HDCInputsComponentProps {
   // Projections
   holdPeriod: number;
   setHoldPeriod: (value: number) => void;
-  revenueGrowth: number;
-  setRevenueGrowth: (value: number) => void;
-  opexRatio: number;
-  setOpexRatio: (value: number) => void;
-  expenseGrowth: number;
-  setExpenseGrowth: (value: number) => void;
+  // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
+  noiGrowthRate: number;
+  setNoiGrowthRate: (value: number) => void;
   exitCapRate: number;
   setExitCapRate: (value: number) => void;
   investorPromoteShare: number;
@@ -356,9 +353,8 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           props.setLandValue(config.landValue ?? 0);
           props.setYearOneNOI(config.yearOneNOI ?? 0.5);
           props.setYearOneDepreciationPct(config.yearOneDepreciationPct ?? 25);
-          props.setRevenueGrowth(config.revenueGrowth ?? 3);
-          props.setOpexRatio(config.opexRatio ?? 25);
-          props.setExpenseGrowth(config.expenseGrowth ?? 3);
+          // ISS-068c: Single NOI growth rate
+          props.setNoiGrowthRate(config.noiGrowthRate ?? 3);
           props.setExitCapRate(config.exitCapRate ?? 6);
           props.setHoldPeriod?.(config.holdPeriod ?? 10);
 
@@ -536,9 +532,8 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
     props.setLandValue(values.landValue);
     props.setYearOneNOI(values.yearOneNOI);
     props.setYearOneDepreciationPct(values.yearOneDepreciationPct);
-    props.setRevenueGrowth(values.revenueGrowth);
-    props.setOpexRatio(values.opexRatio);
-    props.setExpenseGrowth(3);
+    // ISS-068c: Single NOI growth rate
+    props.setNoiGrowthRate(values.noiGrowthRate ?? 3);
     props.setExitCapRate(values.exitCapRate);
 
     // Capital structure
@@ -606,9 +601,8 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
         landValue: props.landValue,
         yearOneNOI: props.yearOneNOI,
         yearOneDepreciationPct: props.yearOneDepreciationPct,
-        revenueGrowth: props.revenueGrowth,
-        opexRatio: props.opexRatio,
-        expenseGrowth: props.expenseGrowth,
+        // ISS-068c: Single NOI growth rate
+        noiGrowthRate: props.noiGrowthRate,
         exitCapRate: props.exitCapRate,
         holdPeriod: props.holdPeriod,
         investorEquityPct: props.investorEquityPct,
@@ -810,8 +804,6 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           setLandValue={props.setLandValue}
           yearOneNOI={props.yearOneNOI}
           setYearOneNOI={props.setYearOneNOI}
-          opexRatio={props.opexRatio}
-          setOpexRatio={props.setOpexRatio}
           selectedState={props.selectedState}
           setSelectedState={props.handleStateChange}
           formatCurrency={props.formatCurrency}
@@ -1024,10 +1016,8 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
         <ProjectionsSection
           holdPeriod={props.holdPeriod}
           setHoldPeriod={props.setHoldPeriod}
-          revenueGrowth={props.revenueGrowth}
-          setRevenueGrowth={props.setRevenueGrowth}
-          expenseGrowth={props.expenseGrowth}
-          setExpenseGrowth={props.setExpenseGrowth}
+          noiGrowthRate={props.noiGrowthRate}
+          setNoiGrowthRate={props.setNoiGrowthRate}
           exitCapRate={props.exitCapRate}
           setExitCapRate={props.setExitCapRate}
           yearOneDepreciationPct={props.yearOneDepreciationPct}
@@ -1036,7 +1026,6 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           setConstructionDelayMonths={props.setConstructionDelayMonths}
           taxBenefitDelayMonths={props.taxBenefitDelayMonths}
           setTaxBenefitDelayMonths={props.setTaxBenefitDelayMonths}
-          opexRatio={props.opexRatio}
           isReadOnly={props.isReadOnly}
         />
 

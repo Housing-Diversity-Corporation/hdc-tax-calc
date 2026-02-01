@@ -16,8 +16,8 @@ export const transformPresetFromBackend = (backendPreset: PropertyPresetBackend)
       landValue: backendPreset.landValue,
       yearOneNOI: backendPreset.yearOneNoi,
       yearOneDepreciationPct: backendPreset.yearOneDepreciationPct,
-      revenueGrowth: backendPreset.revenueGrowth,
-      opexRatio: backendPreset.opexRatio,
+      // ISS-068c: Map backend revenueGrowth to new noiGrowthRate
+      noiGrowthRate: backendPreset.revenueGrowth,
       exitCapRate: backendPreset.exitCapRate,
 
       // Capital Structure

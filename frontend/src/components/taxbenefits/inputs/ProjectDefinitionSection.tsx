@@ -17,8 +17,7 @@ interface ProjectDefinitionSectionProps {
   // Operating Parameters
   yearOneNOI: number;
   setYearOneNOI: (value: number) => void;
-  opexRatio: number;
-  setOpexRatio: (value: number) => void;
+  // ISS-068c: opexRatio removed - now using direct NOI growth model
 
   // Property State (IMPL-035: where project is physically located)
   selectedState: string;
@@ -41,8 +40,7 @@ const ProjectDefinitionSection: React.FC<ProjectDefinitionSectionProps> = ({
   setLandValue,
   yearOneNOI,
   setYearOneNOI,
-  opexRatio,
-  setOpexRatio,
+  // ISS-068c: opexRatio removed
   selectedState,
   setSelectedState,
   formatCurrency,
@@ -149,23 +147,7 @@ const ProjectDefinitionSection: React.FC<ProjectDefinitionSectionProps> = ({
             </div>
 
             {/* Operating Expense Ratio */}
-            <div className="hdc-input-group">
-              <label className="hdc-input-label">Operating Expense Ratio (%)</label>
-              <Slider
-                disabled={isReadOnly}
-                min={10}
-                max={80}
-                step={5}
-                value={[opexRatio]}
-                onValueChange={(vals) => setOpexRatio(vals[0])}
-              />
-              <div style={{ fontSize: '0.75rem', color: 'var(--hdc-cabbage-pont)', marginTop: '0.25rem' }}>
-                {opexRatio}% of Year 1 Revenue
-              </div>
-              <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem' }}>
-                Sets initial operating expenses relative to revenue
-              </div>
-            </div>
+            {/* ISS-068c: Operating Expense Ratio removed - now using direct NOI growth model */}
           </>
         )}
       </div>

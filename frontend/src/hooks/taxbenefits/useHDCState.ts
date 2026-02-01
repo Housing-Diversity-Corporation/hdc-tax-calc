@@ -58,9 +58,8 @@ export const useHDCState = () => {
 
   // Projections
   const [holdPeriod, setHoldPeriod] = useState(10); // Default 10 years, range 10-30
-  const [revenueGrowth, setRevenueGrowth] = useState(DEFAULT_VALUES.REVENUE_GROWTH);
-  const [expenseGrowth, setExpenseGrowth] = useState(DEFAULT_VALUES.EXPENSE_GROWTH);
-  const [opexRatio, setOpexRatio] = useState(DEFAULT_VALUES.OPEX_RATIO);
+  // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
+  const [noiGrowthRate, setNoiGrowthRate] = useState(DEFAULT_VALUES.NOI_GROWTH_RATE);
   const [exitCapRate, setExitCapRate] = useState(DEFAULT_VALUES.EXIT_CAP_RATE);
 
   // Capital structure
@@ -460,9 +459,8 @@ export const useHDCState = () => {
 
     // Projections
     holdPeriod, setHoldPeriod,
-    revenueGrowth, setRevenueGrowth,
-    expenseGrowth, setExpenseGrowth,
-    opexRatio, setOpexRatio,
+    // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
+    noiGrowthRate, setNoiGrowthRate,
     exitCapRate, setExitCapRate,
 
     // Capital structure

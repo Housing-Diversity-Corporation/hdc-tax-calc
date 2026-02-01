@@ -22,10 +22,9 @@ interface UseHDCCalculationsProps {
   yearOneNOI: number;
   yearOneDepreciationPct: number;
   holdPeriod: number;
-  revenueGrowth: number;
-  expenseGrowth: number;
+  // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
+  noiGrowthRate: number;
   exitCapRate: number;
-  opexRatio: number;
 
   // Tax parameters
   federalTaxRate: number;
@@ -555,8 +554,8 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       predevelopmentCosts: props.predevelopmentCosts,
       landValue: props.landValue,
       yearOneNOI: props.yearOneNOI,
-      revenueGrowth: props.revenueGrowth,
-      expenseGrowth: props.expenseGrowth,
+      // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
+      noiGrowthRate: props.noiGrowthRate,
       exitCapRate: props.exitCapRate,
       investorEquityPct: props.investorEquityPct,
       hdcFeeRate: props.hdcFeeRate,
@@ -568,7 +567,6 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       hdcFee: taxCalculations.hdcFee,
       year1NetBenefit: year1NetBenefit,
       investorPromoteShare: props.investorPromoteShare,
-      opexRatio: props.opexRatio,
       aumFeeEnabled: props.aumFeeEnabled,
       aumFeeRate: props.aumFeeRate,
       aumCurrentPayEnabled: props.aumCurrentPayEnabled,
@@ -712,14 +710,13 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       projectCost: props.projectCost,
       predevelopmentCosts: props.predevelopmentCosts,
       yearOneNOI: props.yearOneNOI,
-      revenueGrowth: props.revenueGrowth,
-      expenseGrowth: props.expenseGrowth,
+      // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
+      noiGrowthRate: props.noiGrowthRate,
       exitCapRate: props.exitCapRate,
       philanthropicEquityPct: props.philanthropicEquityPct,
       hdcFeeRate: props.hdcFeeRate,
       hdcFee: taxCalculations.hdcFee,
       investorPromoteShare: props.investorPromoteShare,
-      opexRatio: props.opexRatio,
       aumFeeEnabled: props.aumFeeEnabled,
       aumFeeRate: props.aumFeeRate,
       aumCurrentPayEnabled: props.aumCurrentPayEnabled,

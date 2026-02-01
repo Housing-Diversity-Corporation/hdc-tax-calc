@@ -10,10 +10,9 @@ describe('useHDCCalculations Hook - Integration Tests', () => {
     landValue: 10000000,
     yearOneNOI: 5113000,
     yearOneDepreciationPct: 25,
-    revenueGrowth: 3,
-    expenseGrowth: 3,
+    // ISS-068c: Single NOI growth rate
+    noiGrowthRate: 3,
     exitCapRate: 6,
-    opexRatio: 25,
 
     // Tax parameters
     federalTaxRate: 37,
@@ -509,27 +508,27 @@ describe('useHDCCalculations Hook - Integration Tests', () => {
       expect(totalCapital).toBe(100);
     });
 
+    // ISS-068c: Updated to use direct NOI growth rate
     it('should handle high growth scenarios', () => {
       const highGrowthProps = {
         ...defaultProps,
-        revenueGrowth: 10,
-        expenseGrowth: 2
+        noiGrowthRate: 10 // High NOI growth rate
       };
       const { result } = renderHook(() => useHDCCalculations(highGrowthProps));
-      
+
       const lastYearNOI = result.current.investorCashFlows[9].noi;
       const firstYearNOI = result.current.investorCashFlows[0].noi;
       expect(lastYearNOI).toBeGreaterThan(firstYearNOI * 2);
     });
 
+    // ISS-068c: Updated to use direct NOI growth rate
     it('should handle negative growth scenarios', () => {
       const negativeGrowthProps = {
         ...defaultProps,
-        revenueGrowth: -2,
-        expenseGrowth: 5
+        noiGrowthRate: -3 // Negative NOI growth rate
       };
       const { result } = renderHook(() => useHDCCalculations(negativeGrowthProps));
-      
+
       const lastYearNOI = result.current.investorCashFlows[9].noi;
       const firstYearNOI = result.current.investorCashFlows[0].noi;
       expect(lastYearNOI).toBeLessThan(firstYearNOI);

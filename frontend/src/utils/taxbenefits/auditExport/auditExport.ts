@@ -84,7 +84,8 @@ function buildInputsSheet(params: CalculationParams): {
     { name: 'Predevelopment Costs', rangeName: 'Input_PredevelopmentCosts', value: params.predevelopmentCosts || 0, units: '$M', description: 'Soft costs before construction' },
     { name: 'Land Value', rangeName: 'Input_LandValue', value: params.landValue, units: '$M', description: 'Value of land (non-depreciable)' },
     { name: 'Stabilized NOI', rangeName: 'Input_YearOneNOI', value: params.yearOneNOI, units: '$M', description: 'Net Operating Income at stabilization' },
-    { name: 'OpEx Ratio', rangeName: 'Input_OpExRatio', value: params.opexRatio || 25, units: '%', description: 'Operating expenses as % of revenue' },
+    // ISS-068c: NOI Growth Rate replaces OpEx Ratio, Revenue Growth, Expense Growth
+    { name: 'NOI Growth Rate', rangeName: 'Input_NoiGrowthRate', value: params.noiGrowthRate || 3, units: '%', description: 'Annual NOI growth rate' },
 
     // Tax Parameters
     { name: 'Cost Segregation %', rangeName: 'Input_CostSegPct', value: params.yearOneDepreciationPct || 20, units: '%', description: 'Year 1 bonus depreciation percentage' },
@@ -134,8 +135,7 @@ function buildInputsSheet(params: CalculationParams): {
 
     // Operating Parameters
     { name: 'Hold Period', rangeName: 'Input_HoldPeriod', value: params.holdPeriod || 10, units: 'years', description: 'Investment holding period' },
-    { name: 'Revenue Growth', rangeName: 'Input_RevenueGrowth', value: params.revenueGrowth, units: '%', description: 'Annual revenue growth rate' },
-    { name: 'Expense Growth', rangeName: 'Input_ExpenseGrowth', value: params.expenseGrowth, units: '%', description: 'Annual expense growth rate' },
+    // ISS-068c: Revenue/Expense Growth replaced by NOI Growth Rate (defined above)
     { name: 'Exit Cap Rate', rangeName: 'Input_ExitCapRate', value: params.exitCapRate, units: '%', description: 'Capitalization rate at exit' },
     { name: 'Investor Promote Share', rangeName: 'Input_InvestorPromote', value: params.investorPromoteShare, units: '%', description: 'Investor share of operating cash flow' },
     { name: 'Construction Delay Months', rangeName: 'Input_ConstructionDelay', value: params.constructionDelayMonths || 0, units: 'months', description: 'Months before NOI starts' },

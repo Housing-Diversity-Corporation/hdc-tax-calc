@@ -8,9 +8,8 @@ export interface CalculatorConfiguration {
   landValue?: number;
   yearOneNOI: number;
   yearOneDepreciationPct: number;
-  revenueGrowth: number;
-  expenseGrowth?: number;
-  opexRatio: number;
+  // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
+  noiGrowthRate?: number;
   exitCapRate: number;
   holdPeriod?: number;
   investorEquityPct: number;

@@ -283,11 +283,9 @@ export const HDCComprehensiveReportButton: React.FC<HDCComprehensiveReportProps>
         ['Land Value', formatMoney(landValue)],
         ['Predevelopment Costs', formatMoney(predevelopmentCosts)],
         ['Stabilized NOI', formatMoney(yearOneNOI)],
-        ['Revenue Growth', formatPercent(params.revenueGrowth || 0)],
-        ['Expense Growth', formatPercent(params.expenseGrowth || 0)],
+        ['NOI Growth', formatPercent(params.noiGrowthRate || 3)],
         ['Exit Cap Rate', formatPercent(params.exitCapRate || 5)],
         ['Hold Period', `${holdPeriod} years`],
-        ['OpEx Ratio', formatPercent(params.opexRatio || 25)],
         ['Construction Delay', `${params.constructionDelayMonths || 0} months`],
         ['Tax Benefit Delay', `${params.taxBenefitDelayMonths || 0} months`]
       ];
