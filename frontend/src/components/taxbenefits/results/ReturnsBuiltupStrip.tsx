@@ -8,6 +8,7 @@
  * IMPL-060: OZ Benefits collapsible dropdown with component breakdown
  * IMPL-061: Depreciation Benefits collapsible dropdown with 3-line breakdown
  * IMPL-073: State LIHTC Syndication as Capital Return (separate line from direct credits)
+ * ISS-018: Federal/State LIHTC catch-up allocation display (Years 1-10 vs Year 11)
  *
  * Shows component-by-component contribution to investor multiple.
  * Modeled after Atrium Court HDC Model v3.0 (Page 2).
@@ -24,6 +25,7 @@
  * - IMPL-057: OZ Benefits now includes step-up savings (varies with OZ version)
  * - IMPL-060: OZ Benefits row expands to show individual component breakdown
  * - IMPL-061: Depreciation Benefits row expands to show Year 1 Bonus, Year 1 MACRS, Years 2-Exit
+ * - ISS-018: Federal/State LIHTC rows expand to show Years 1-10 vs Year 11 catch-up breakdown
  *
  * Component Order (IMPL-036):
  * 1. Tax Benefits: Federal LIHTC, State LIHTC, Depreciation Benefits, OZ Benefits
@@ -34,9 +36,9 @@
  * IMPORTANT: All monetary values in this component are in MILLIONS.
  * We convert to dollars (multiply by 1,000,000) before formatting.
  *
- * @version 1.7.0
- * @date 2026-01-16
- * @task IMPL-028, IMPL-031, IMPL-036, IMPL-026a, IMPL-048b, IMPL-057, IMPL-060, IMPL-061
+ * @version 1.8.0
+ * @date 2026-02-01
+ * @task IMPL-028, IMPL-031, IMPL-036, IMPL-026a, IMPL-048b, IMPL-057, IMPL-060, IMPL-061, ISS-018
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -214,24 +216,60 @@ function deriveReturnComponents(
   // ─────────────────────────────────────────────────────────────────────────
   // 1. TAX BENEFITS (first)
   // ─────────────────────────────────────────────────────────────────────────
+  // ISS-018: Federal LIHTC with sub-components for Years 1-10 vs Year 11 catch-up
   if (federalLIHTCTotal > 0) {
+    const federalLIHTCSubComponents: SubComponent[] = [];
+
+    // Only show breakdown if there's a catch-up (otherwise just one value)
+    if (remainingFederalLIHTCCredits > 0 && federalLIHTCFromCashFlows > 0) {
+      federalLIHTCSubComponents.push({
+        label: 'Years 1-10 Credits',
+        value: federalLIHTCFromCashFlows,
+        multiple: federalLIHTCFromCashFlows / totalInvestment,
+      });
+      federalLIHTCSubComponents.push({
+        label: 'Year 11 Catch-Up',
+        value: remainingFederalLIHTCCredits,
+        multiple: remainingFederalLIHTCCredits / totalInvestment,
+      });
+    }
+
     components.push({
       label: 'Federal LIHTC',
       value: federalLIHTCTotal,
       multiple: federalLIHTCTotal / totalInvestment,
       color: COMPONENT_COLORS.federalLIHTC,
       category: 'tax',
+      subComponents: federalLIHTCSubComponents.length > 0 ? federalLIHTCSubComponents : undefined,
     });
   }
 
   // IMPL-045: State LIHTC Credits (direct use path only)
+  // ISS-018: Add sub-components for Years 1-10 vs Year 11 catch-up
   if (stateLIHTCTotal > 0) {
+    const stateLIHTCSubComponents: SubComponent[] = [];
+
+    // Only show breakdown if there's a catch-up (otherwise just one value)
+    if (remainingStateLIHTCCredits > 0 && stateLIHTCFromCashFlows > 0) {
+      stateLIHTCSubComponents.push({
+        label: 'Years 1-10 Credits',
+        value: stateLIHTCFromCashFlows,
+        multiple: stateLIHTCFromCashFlows / totalInvestment,
+      });
+      stateLIHTCSubComponents.push({
+        label: 'Year 11 Catch-Up',
+        value: remainingStateLIHTCCredits,
+        multiple: remainingStateLIHTCCredits / totalInvestment,
+      });
+    }
+
     components.push({
       label: 'State LIHTC Credits',
       value: stateLIHTCTotal,
       multiple: stateLIHTCTotal / totalInvestment,
       color: COMPONENT_COLORS.stateLIHTC,
       category: 'tax',
+      subComponents: stateLIHTCSubComponents.length > 0 ? stateLIHTCSubComponents : undefined,
     });
   }
 
