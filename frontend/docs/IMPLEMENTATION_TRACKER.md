@@ -1,9 +1,9 @@
 # TaxBenefits Calculator — Implementation Tracker
 
-**Document Version:** 8.5
-**Last Updated:** 2026-01-22
+**Document Version:** 9.0
+**Last Updated:** 2026-02-01
 **Branch:** main
-**Current Test Count:** 1,195 passing (1 pre-existing failure: ISS-014)
+**Current Test Count:** 1,237 passing
 **Validation Status:** 13/15 Three Sigma scenarios complete (Production Certification ✅)
 
 ---
@@ -12,6 +12,7 @@
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v9.0 | 2026-02-01 | Jan 23-31 sessions: IMPL-079-083 (Capital Stack Enhancement), ISS-024-068c (~45 bug fixes), test count 1,195→1,237, ISS-014 fixed |
 | v8.5 | 2026-01-22 | ISS-023: Fixed Time to Recovery using gross equity instead of net for Y0 syndication |
 | v8.4 | 2026-01-22 | IMPL-078: Merged Free Investment Analysis + Tax Planning Capacity into single InvestmentRecoverySection |
 | v8.3 | 2026-01-21 | ISS-022: Fixed Tax Planning Capacity double-counting bug (was showing ~$117M instead of ~$56M) |
@@ -312,13 +313,73 @@ This caused impossible 275% IRR. Fix: Year 0 syndication proceeds are netted in 
 - Time to Recovery: Now uses ALL benefit sources (depreciation + LIHTC + syndication)
 - Code reduction: ~150 lines vs ~455 combined
 
+### Phase 16: Capital Stack Enhancement (Jan 24-25, 2026)
+
+| IMPL | Description | Status | Date |
+|------|-------------|--------|------|
+| IMPL-079 | Variable State LIHTC credit duration (6, 10 years) | ✅ Complete | 2026-01-24 |
+| IMPL-080 | PAB Integration (Private Activity Bonds in capital stack) | ✅ Complete | 2026-01-24 |
+| IMPL-081 | DSCR Breakdown (Must-Pay vs Phil DSCR separation) | ✅ Complete | 2026-01-24 |
+| IMPL-082 | HDC Debt Fund Separation from Outside Investor Sub-Debt | ✅ Complete | 2026-01-24 |
+| IMPL-083 | Eligible Basis Exclusions (8 categories) | ✅ Complete | 2026-01-24 |
+
+### Bug Fixes: Capital Stack (Jan 24-25, 2026)
+
+| ISS | Description | Root Cause | Fix | Date |
+|-----|-------------|------------|-----|------|
+| ISS-024 | creditDurationYears not passed to export | Object not drilled through props | HDCResultsComponent.tsx | 2026-01-24 |
+| ISS-025 | Outside Sub-Debt label bug | Truthy check instead of === 'leverage' | CapitalStructureSection.tsx | 2026-01-24 |
+| ISS-027 | Unit consistency (exclusions / 1M bug) | Incorrect division in UI | TaxCreditsSection.tsx | 2026-01-24 |
+| ISS-028 | Eligible Basis = $0 | Same root cause as ISS-027 | TaxCreditsSection.tsx | 2026-01-24 |
+| ISS-029 | PAB not in Capital Stack | Missing state and calculation | useHDCState.ts | 2026-01-24 |
+| ISS-030 | PAB enabled not reaching export | Props not drilled | HDCResultsComponent.tsx | 2026-01-24 |
+| ISS-031 | Capital Stack total missing PAB | pabPctOfProject not in total | capitalStackSheet.ts | 2026-01-24 |
+| ISS-032 | PAB should reduce Senior Debt | No coordination logic | useHDCState.ts (mustPayDebtTarget) | 2026-01-24 |
+| ISS-034 | HDC Debt Fund not reaching export | Same prop drilling issue | HDCResultsComponent.tsx | 2026-01-24 |
+| ISS-035 | Exclusions not exported | 8 exclusion props missing | inputsSheet.ts | 2026-01-24 |
+| ISS-036 | Capital Stack tolerance too tight | Floating point (0.001→0.01) | capitalStackSheet.ts | 2026-01-24 |
+| ISS-037 | DSCR breakdown columns missing | Must-Pay DS/DSCR, Phil DSCR not exported | operatingCFSheet.ts | 2026-01-24 |
+| ISS-038b | DSCR breakdown in Summary sheet | Conditional rows missing | summarySheet.ts | 2026-01-24 |
+| ISS-039 | Interest Reserve circular dependency | Reserve depends on debt depends on reserve | Iterative convergence algorithm | 2026-01-25 |
+| ISS-041 | PABs missing from Interest Reserve | Only Senior Debt in DS calculation | interestReserveCalculation.ts | 2026-01-25 |
+
+### Bug Fixes: Waterfall (Jan 25-26, 2026)
+
+| ISS | Description | Root Cause | Fix | Date |
+|-----|-------------|------------|-----|------|
+| ISS-050 | Exit waterfall double-counted ROC | Capital already recovered during hold not tracked | calculations.ts, exitSheet.ts | 2026-01-26 |
+| ISS-051 | Operating promote catch-up violated conservation | Catch-up on "deferred" promote that shouldn't exist | hdcAnalysis.ts | 2026-01-26 |
+
+### Bug Fixes: S-Curve (Jan 27, 2026)
+
+| ISS | Description | Root Cause | Fix | Date |
+|-----|-------------|------------|-----|------|
+| ISS-052a | Excel waterfall used PIK accrued vs cash paid | Wrong field in formula | waterfallSheet.ts | 2026-01-27 |
+| ISS-052b | Operating Cash included Excess Reserve | Should be separate components | ReturnsBuiltupStrip.tsx | 2026-01-27 |
+| ISS-053 | S-curve forced 100% occupancy in Year 1 | Logic didn't apply in placedInServiceYear block | calculations.ts | 2026-01-27 |
+
+### Bug Fixes: Parameter Cleanup (Jan 30-31, 2026)
+
+| ISS | Description | Root Cause | Fix | Date |
+|-----|-------------|------------|-----|------|
+| ISS-060 | Senior Debt IO toggle not affecting returns | seniorDebtIOYears not passed to calculation functions | useHDCCalculations.ts | 2026-01-30 |
+| ISS-061 | seniorDebtIOYears not exported | Prop not passed to HDCResultsComponent | Multiple files | 2026-01-30 |
+| ISS-061d | Parameter naming inconsistency (18 files) | Mixed naming conventions | 18 files consolidated | 2026-01-30 |
+| ISS-061e | investorPromoteShare inverted in export | Data inversion bug | Export files | 2026-01-30 |
+| ISS-062 | Missing params in all 3 export types | Various params not passed | All export sheets | 2026-01-30 |
+| ISS-063 | 3 pre-existing test failures (including ISS-014) | Test expectations outdated | Test files | 2026-01-30 |
+| ISS-064 | Construction delay causes DSCR = 0 | currentNOI not reset at PIS year | calculations.ts | 2026-01-31 |
+| ISS-065 | Excess Capacity section values misleading | Formula used depreciation-only | Removed section | 2026-01-31 |
+| ISS-066 | Floating-point display (29.099999...) | JS precision | roundForDisplay() utility | 2026-01-31 |
+| ISS-067 | Currency display inconsistency | Local formatters, varying decimals | Standardized formatters | 2026-01-31 |
+| ISS-068c | Three redundant inputs (Rev/Exp/OpEx) | Model complexity without value | Single noiGrowthRate | 2026-01-31 |
+
 ---
 
 ## Open Issues
 
 | ISS | Description | Priority | Notes |
 |-----|-------------|----------|-------|
-| ISS-014 | stateConformityAdjustment test failure | Low | Pre-existing, non-blocking |
 | ISS-018 | Returns Buildup LIHTC catch-up allocation display | Low | Cosmetic - catch-up shows in Federal row instead of split |
 
 ---
@@ -360,7 +421,8 @@ This caused impossible 275% IRR. Fix: Year 0 syndication proceeds are netted in 
 | Feature: State LIHTC Capital Return | 073 | 1/1 | ✅ 100% |
 | Feature: Syndication Year Timing | 074-077 | 4/4 | ✅ 100% |
 | Phase 15: UI Consolidation | 078 | 1/1 | ✅ 100% |
-| **Total** | **80 IMPLs** | **80/80** | **✅ 100%** |
+| Phase 16: Capital Stack Enhancement | 079-083 | 5/5 | ✅ 100% |
+| **Total** | **85 IMPLs** | **85/85** | **✅ 100%** |
 
 ---
 
@@ -368,6 +430,12 @@ This caused impossible 275% IRR. Fix: Year 0 syndication proceeds are netted in 
 
 | Date | Test Count | Notes |
 |------|------------|-------|
+| 2026-01-31 | 1,237 | Post ISS-064-068c (Construction delay, NOI Growth Rate simplification) |
+| 2026-01-30 | 1,223 | Post ISS-060-063 (Senior Debt IO, export params, test fixes) |
+| 2026-01-27 | 1,220 | Post ISS-052-055 (S-curve, DSCR fixes) |
+| 2026-01-26 | 1,205 | Post ISS-050/051 (Exit waterfall conservation) |
+| 2026-01-25 | 1,200 | Post ISS-039/041 (Interest Reserve convergence, PABs) |
+| 2026-01-24 | 1,194 | Post IMPL-079-083 (Capital Stack Enhancement) |
 | 2026-01-22 | 1,176 | Post IMPL-078 (UI Consolidation: merged Investment Recovery sections) |
 | 2026-01-21 | 1,195 | Post IMPL-074-077 (Syndication Year timing logic, ISS-019/020 fixes) |
 | 2026-01-20 | 1,182 | Post Phase 14 (Three Sigma Validation: ISS-015/016/017 fixes, 9/15 scenarios validated) |
