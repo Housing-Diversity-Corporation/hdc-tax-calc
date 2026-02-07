@@ -95,11 +95,12 @@ export function buildHDCReturnsSheet(
   currentRow++;
 
   // Exit Promote (final year only)
+  // ISS-069b: Use HDCProfitShare directly (catch-up mechanism removed in ISS-051)
   ws[`A${currentRow}`] = { t: 's', v: 'Exit Promote' };
   for (let year = 1; year <= holdPeriod; year++) {
     const col = String.fromCharCode(65 + year);
     const isExitYear = year === holdPeriod;
-    ws[`${col}${currentRow}`] = { t: 'n', v: isExitYear ? hdcResults.hdcPromoteProceeds : 0, f: isExitYear ? 'HDCCatchUpPaid+HDCPromoteShare' : '0' } as FormulaCell;
+    ws[`${col}${currentRow}`] = { t: 'n', v: isExitYear ? hdcResults.hdcPromoteProceeds : 0, f: isExitYear ? 'HDCProfitShare' : '0' } as FormulaCell;
   }
   const exitPromoteRow = currentRow;
   currentRow += 2;

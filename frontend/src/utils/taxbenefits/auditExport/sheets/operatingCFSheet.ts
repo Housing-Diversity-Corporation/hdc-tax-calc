@@ -94,8 +94,9 @@ export function buildOperatingCFSheet(
     // ISS-037: DSCR breakdown columns
     if (showDSCRBreakdown) {
       // Must-Pay Debt Service (Senior + PAB only)
+      // ISS-069: Use HardDS from Debt_Schedule instead of circular self-reference
       const mustPayDS = cf?.mustPayDebtService || 0;
-      ws[`I${row}`] = { t: 'n', v: mustPayDS, f: `MustPayDS_Y${year}` } as FormulaCell;
+      ws[`I${row}`] = { t: 'n', v: mustPayDS, f: `HardDS_Y${year}` } as FormulaCell;
       namedRanges.push({ name: `MustPayDS_Y${year}`, ref: `Operating_CF!$I$${row}` });
 
       // Must-Pay DSCR = NOI / (Senior + PAB)

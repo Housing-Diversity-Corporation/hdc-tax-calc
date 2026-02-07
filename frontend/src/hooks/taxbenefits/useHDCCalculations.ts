@@ -645,6 +645,24 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     });
   }, [
     props,
+    // ISS-070d: Explicit dependencies for key inputs that affect MOIC/Exit Value
+    // React's useMemo compares objects by reference, so we need explicit deps for value changes
+    props.projectCost,
+    props.predevelopmentCosts,
+    props.landValue,
+    props.yearOneNOI,
+    props.noiGrowthRate,
+    props.exitCapRate,
+    props.investorEquityPct,
+    props.holdPeriod,
+    // Capital structure
+    props.seniorDebtPct,
+    props.seniorDebtRate,
+    props.philDebtPct,
+    props.philDebtRate,
+    props.hdcSubDebtPct,
+    props.investorSubDebtPct,
+    // Existing explicit dependencies
     props.hdcDeferredInterestRate,
     props.aumFeeEnabled,
     props.aumFeeRate,

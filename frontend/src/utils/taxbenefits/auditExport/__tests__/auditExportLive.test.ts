@@ -446,7 +446,7 @@ describe('IMPL-056: Live Calculation Excel Model', () => {
     });
   });
 
-  describe('Validation Sheet (IMPL-062: Tier 2 - 48 Checks)', () => {
+  describe('Validation Sheet (IMPL-062: Tier 2 - 47 Checks)', () => {
     it('should compare Excel formulas to platform values', () => {
       const params: LiveExcelParams = {
         params: TEST_PARAMS,
@@ -462,7 +462,8 @@ describe('IMPL-056: Live Calculation Excel Model', () => {
       expect(validationSheet).toBeDefined();
 
       // Should have header indicating Tier 2
-      expect(validationSheet['A1'].v).toContain('48 Checks');
+      // ISS-069b: Reduced from 48 to 47 (removed Preferred Return Paid check)
+      expect(validationSheet['A1'].v).toContain('47 Checks');
 
       // Should have tolerance note
       expect(validationSheet['A2'].v).toContain('Tolerance');
@@ -500,7 +501,8 @@ describe('IMPL-056: Live Calculation Excel Model', () => {
       expect(cellValues.some(v => v.includes('INVESTOR RETURNS'))).toBe(true);
     });
 
-    it('should have 48 numbered checks', () => {
+    // ISS-069b: Reduced from 48 to 47 (removed Preferred Return Paid check)
+    it('should have 47 numbered checks', () => {
       const params: LiveExcelParams = {
         params: TEST_PARAMS,
         investorResults: TEST_INVESTOR_RESULTS,
@@ -519,7 +521,7 @@ describe('IMPL-056: Live Calculation Excel Model', () => {
         .map(([_, cell]) => (cell as any).v)
         .filter(v => typeof v === 'string' && checkPattern.test(v));
 
-      expect(numberedChecks.length).toBe(48);
+      expect(numberedChecks.length).toBe(47);
     });
   });
 

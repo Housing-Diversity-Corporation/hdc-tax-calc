@@ -129,7 +129,30 @@ export const calculateRemainingBalance = (principal: number, annualRate: number,
  * @param params - Complete set of calculation parameters
  * @returns Full investor analysis including cash flows and return metrics
  */
-export const calculateFullInvestorAnalysis = (params: CalculationParams): InvestorAnalysisResults => {
+export const calculateFullInvestorAnalysis = (
+  params: CalculationParams,
+  options?: { isExport?: boolean }
+): InvestorAnalysisResults => {
+  // ISS-070Q: Only log debt tracing when called from export (not UI calculations)
+  if (options?.isExport) {
+    console.log('[EXPORT-ONLY DEBT] 1. Params received:', {
+      projectCost: params.projectCost,
+      seniorDebtPct: params.seniorDebtPct,
+      seniorDebtRate: params.seniorDebtRate,
+      seniorDebtAmortization: params.seniorDebtAmortization,
+      predevelopmentCosts: params.predevelopmentCosts,
+    });
+    // ISS-070R: Trace PAB params to diagnose unwanted PAB debt service
+    console.log('[EXPORT-ONLY DEBT] PAB params:', {
+      pabEnabled: params.pabEnabled,
+      lihtcEnabled: params.lihtcEnabled,
+      lihtcEligibleBasis: params.lihtcEligibleBasis,
+      pabPctOfEligibleBasis: params.pabPctOfEligibleBasis,
+      pabRate: params.pabRate,
+      pabAmortization: params.pabAmortization,
+    });
+  }
+
   const {
     projectCost: paramProjectCost,
     predevelopmentCosts: paramPredevelopmentCosts = 0,
@@ -231,6 +254,21 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
   const philDebtAmortYears = params.philDebtAmortization || 30;
   const seniorDebtRate = (params.seniorDebtRate || 6) / 100;
   const philDebtRate = (params.philanthropicDebtRate || 0) / 100;
+
+  // ISS-070Q: Trace debt calculation step 2 (export-only)
+  if (options?.isExport) {
+    console.log('[EXPORT-ONLY DEBT] 2. baseSeniorDebtAmount calculation:', {
+      formula: 'baseProjectCost * seniorDebtPct / 100',
+      paramProjectCost,
+      paramPredevelopmentCosts,
+      baseProjectCost,
+      'params.seniorDebtPct': params.seniorDebtPct,
+      baseSeniorDebtAmount,
+      expected: params.projectCost * (params.seniorDebtPct || 0) / 100,
+      seniorDebtRate,
+      seniorDebtAmortYears,
+    });
+  }
   
   // ISS-039: Calculate interest reserve using iterative convergence
   // The reserve depends on debt service, which depends on (projectCost + reserve),
@@ -294,6 +332,16 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
   // Final effective project cost with converged reserve
   effectiveProjectCost = baseProjectCost + interestReserveAmount;
 
+  // ISS-070Q: Trace debt calculation step 3 (export-only)
+  if (options?.isExport) {
+    console.log('[EXPORT-ONLY DEBT] 3. effectiveProjectCost:', {
+      baseProjectCost,
+      interestReserveAmount,
+      effectiveProjectCost,
+      interestReserveEnabled,
+    });
+  }
+
   // Calculate all capital components based on effective project cost
   const subDebtPrincipal = effectiveProjectCost * (paramHdcSubDebtPct / 100);
   const investorSubDebtPrincipal = effectiveProjectCost * (paramInvestorSubDebtPct / 100);
@@ -302,9 +350,20 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
   // Calculate debt amounts based on effective project cost
   const seniorDebtAmount = effectiveProjectCost * ((params.seniorDebtPct || 0) / 100);
   const philDebtAmount = effectiveProjectCost * ((params.philanthropicDebtPct || 0) / 100);
-  
+
   // Calculate investor equity based on effective project cost
   const investorEquity = effectiveProjectCost * (paramInvestorEquityPct / 100);
+
+  // ISS-070Q: Trace debt calculation step 4 (export-only)
+  if (options?.isExport) {
+    console.log('[EXPORT-ONLY DEBT] 4. seniorDebtAmount:', {
+      effectiveProjectCost,
+      'params.seniorDebtPct': params.seniorDebtPct,
+      seniorDebtAmount,
+      investorEquity,
+      'paramInvestorEquityPct': paramInvestorEquityPct,
+    });
+  }
 
   // IMPL-073: State LIHTC syndication as capital return (shown in Returns Buildup)
   // IMPL-074: MOIC/IRR denominator uses NET equity (after syndication offset) for investor marketing
@@ -326,6 +385,18 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
   // Calculate annual interest-only payment for IO period
   const annualSeniorDebtIOPayment = seniorDebtAmount * seniorDebtRate;
 
+  // ISS-070Q: Trace debt calculation step 5 (export-only)
+  if (options?.isExport) {
+    console.log('[EXPORT-ONLY DEBT] 5. Debt service calculation:', {
+      seniorDebtAmount,
+      seniorDebtRate,
+      seniorDebtAmortYears,
+      monthlySeniorDebtPIPayment,
+      annualSeniorDebtPIPayment,
+      annualSeniorDebtIOPayment,
+    });
+  }
+
   // Private Activity Bonds (IMPL-080)
   // PAB Amount = LIHTC Eligible Basis × PAB % (not project cost - avoids circular dependency)
   const pabAmount = paramPabEnabled && paramLihtcEnabled && paramLihtcEligibleBasis > 0
@@ -335,6 +406,19 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
   const monthlyPabPIPayment = calculateMonthlyPayment(pabAmount, pabRate, paramPabAmortization);
   const annualPabPIPayment = monthlyPabPIPayment * 12;
   const annualPabIOPayment = pabAmount * pabRate;
+
+  // ISS-070R: Trace PAB calculation result
+  if (options?.isExport) {
+    console.log('[EXPORT-ONLY DEBT] PAB calculation:', {
+      paramPabEnabled,
+      paramLihtcEnabled,
+      paramLihtcEligibleBasis,
+      pabAmount,
+      annualPabPIPayment,
+      annualPabIOPayment,
+      pabShouldBeZero: !paramPabEnabled || !paramLihtcEnabled || paramLihtcEligibleBasis <= 0,
+    });
+  }
 
   // Philanthropic debt is always interest-only (no principal amortization)
   // When current pay is disabled, all interest accrues as PIK (no payments)
@@ -392,7 +476,33 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
   // Lease-up runs from placedInServiceYear through (placedInServiceYear + interestReservePeriodYears - 1)
   const leaseUpEndYear = placedInServiceYear + interestReservePeriodYears - 1;
 
+  // ISS-070k: Logging before cash flow loop to verify values being used
+  console.log('[ISS-070k] About to generate cash flows with:', {
+    paramYearOneNOI,
+    'params.seniorDebtPct': params.seniorDebtPct,
+    paramHoldPeriod,
+    currentNOI,
+    baseSeniorDebtAmount,
+    basePhilDebtAmount,
+    seniorDebtRate,
+    philDebtRate,
+    placedInServiceYear,
+    constructionDelayYears,
+    paramConstructionDelayMonths,
+  });
+
   for (let year = 1; year <= paramHoldPeriod; year++) {
+    // ISS-070L: Trace inside loop to find where NOI becomes zero
+    if (year === 1) {
+      console.log('[ISS-070L] Year 1 loop entry:', {
+        year,
+        placedInServiceYear,
+        'year < placedInServiceYear': year < placedInServiceYear,
+        'year === placedInServiceYear': year === placedInServiceYear,
+        currentNOI,
+        paramYearOneNOI,
+      });
+    }
 
     // Determine NOI for this year based on placement in service
     let effectiveNOI = 0;
@@ -496,7 +606,16 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
 
       effectiveNOI = currentNOI * effectiveOccupancy;
     }
-    
+
+    // ISS-070L: Log effectiveNOI after all branch logic
+    if (year === 1) {
+      console.log('[ISS-070L] Year 1 after NOI calculation:', {
+        effectiveNOI,
+        currentNOI,
+        effectiveOccupancy,
+      });
+    }
+
     // First calculate the depreciation-based tax benefit for this year
     // Depreciation can only be claimed after building is placed in service
     let grossDepreciationTaxBenefit = 0; // Benefit before any adjustments
@@ -522,6 +641,22 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
           interestReserve: interestReserveAmount
         });
 
+        // ISS-070T: Export-only logging for depreciable basis
+        if (options?.isExport) {
+          const excelBasis = paramProjectCost - paramLandValue;
+          console.log('[EXPORT-ONLY] Depreciable basis calculation:', {
+            paramProjectCost,
+            paramPredevelopmentCosts,
+            paramLandValue,
+            paramInvestorEquityPct,
+            interestReserveAmount,
+            'Excel formula (ProjectCost-LandValue)': excelBasis,
+            'Platform depreciableBasis': depreciableBasis,
+            'Difference': depreciableBasis - excelBasis,
+            'Match': Math.abs(depreciableBasis - excelBasis) < 0.01,
+          });
+        }
+
         // Year 1 includes BOTH bonus depreciation AND partial straight-line (IRS Pub 946)
         const bonusDepreciation = depreciableBasis * (paramYearOneDepreciationPct / 100);
         const remainingBasis = depreciableBasis - bonusDepreciation;
@@ -536,14 +671,40 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
         // IMPL-041: Apply split rates for state conformity
         // Bonus depreciation: Uses conformity-adjusted rate (e.g., NJ 30% conformity)
         // MACRS depreciation: Uses full state rate (all states accept straight-line)
-        const effectiveRateForBonus = paramEffectiveTaxRateForBonus ?? paramEffectiveTaxRate;
-        const effectiveRateForMACRS = paramEffectiveTaxRateForStraightLine ?? paramEffectiveTaxRate;
+        // ISS-070T: Compute default effective rate including NIIT (matches Excel formula)
+        const federalRate = params.federalTaxRate || 37;
+        const niitRate = params.niitRate || 3.8;
+        const stateRate = params.stateTaxRate || 0;
+        const conformityRate = params.bonusConformityRate ?? 1;
+        const defaultEffectiveRateBonus = federalRate + niitRate + (stateRate * conformityRate);
+        const defaultEffectiveRateMACRS = federalRate + niitRate + stateRate;
+        const effectiveRateForBonus = paramEffectiveTaxRateForBonus ?? (paramEffectiveTaxRate > 0 ? paramEffectiveTaxRate : defaultEffectiveRateBonus);
+        const effectiveRateForMACRS = paramEffectiveTaxRateForStraightLine ?? (paramEffectiveTaxRate > 0 ? paramEffectiveTaxRate : defaultEffectiveRateMACRS);
 
         // IMPL-061: Assign to outer-scope variables for cash flow storage
         bonusTaxBenefit = bonusDepreciation * (effectiveRateForBonus / 100);
         year1MacrsTaxBenefit = year1MACRS * (effectiveRateForMACRS / 100);
         grossDepreciationTaxBenefit = bonusTaxBenefit + year1MacrsTaxBenefit;
         depreciationTaxBenefit = grossDepreciationTaxBenefit; // Full benefit to investor
+
+        // ISS-070T: Export-only logging for tax benefit calculation
+        if (options?.isExport) {
+          console.log('[EXPORT-ONLY] Tax benefit Y1 calculation:', {
+            depreciableBasis,
+            paramYearOneDepreciationPct,
+            bonusDepreciation,
+            remainingBasis,
+            annualMACRS,
+            paramPlacedInServiceMonth,
+            monthsInYear1,
+            year1MACRS,
+            effectiveRateForBonus,
+            effectiveRateForMACRS,
+            bonusTaxBenefit,
+            year1MacrsTaxBenefit,
+            'Total Y1 Tax Benefit': grossDepreciationTaxBenefit,
+          });
+        }
 
         // IMPL-048: Track raw depreciation amount for OZ recapture avoided calculation
         yearlyDepreciationAmount = bonusDepreciation + year1MACRS;
@@ -552,7 +713,12 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
         // Subsequent years: Annual straight-line depreciation tax benefit
         // IMPL-041: Use straight-line rate (all states accept MACRS straight-line)
         const annualDepreciation = annualStraightLineDepreciation || 0;
-        const effectiveTaxRate = paramEffectiveTaxRateForStraightLine ?? paramEffectiveTaxRate ?? 0;
+        // ISS-070T: Compute default effective rate including NIIT (matches Excel formula)
+        const federalRate = params.federalTaxRate || 37;
+        const niitRate = params.niitRate || 3.8;
+        const stateRate = params.stateTaxRate || 0;
+        const defaultEffectiveRateMACRS = federalRate + niitRate + stateRate;
+        const effectiveTaxRate = paramEffectiveTaxRateForStraightLine ?? (paramEffectiveTaxRate > 0 ? paramEffectiveTaxRate : defaultEffectiveRateMACRS);
 
         if (annualDepreciation > 0 && effectiveTaxRate > 0) {
           grossDepreciationTaxBenefit = annualDepreciation * (effectiveTaxRate / 100);
@@ -629,8 +795,15 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
         const year1MACRS = (monthsInYear1 / 12) * annualMACRS;
 
         // IMPL-041: Apply split rates for state conformity in advance financing
-        const effectiveRateForBonus = paramEffectiveTaxRateForBonus ?? paramEffectiveTaxRate;
-        const effectiveRateForMACRS = paramEffectiveTaxRateForStraightLine ?? paramEffectiveTaxRate;
+        // ISS-070T: Compute default effective rate including NIIT (matches Excel formula)
+        const federalRate = params.federalTaxRate || 37;
+        const niitRate = params.niitRate || 3.8;
+        const stateRate = params.stateTaxRate || 0;
+        const conformityRate = params.bonusConformityRate ?? 1;
+        const defaultEffectiveRateBonus = federalRate + niitRate + (stateRate * conformityRate);
+        const defaultEffectiveRateMACRS = federalRate + niitRate + stateRate;
+        const effectiveRateForBonus = paramEffectiveTaxRateForBonus ?? (paramEffectiveTaxRate > 0 ? paramEffectiveTaxRate : defaultEffectiveRateBonus);
+        const effectiveRateForMACRS = paramEffectiveTaxRateForStraightLine ?? (paramEffectiveTaxRate > 0 ? paramEffectiveTaxRate : defaultEffectiveRateMACRS);
         const bonusTaxBenefit = bonusDepreciation * (effectiveRateForBonus / 100);
         const macrsTaxBenefit = year1MACRS * (effectiveRateForMACRS / 100);
         const year1GrossBenefit = bonusTaxBenefit + macrsTaxBenefit;
@@ -753,6 +926,19 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
     // Step 2: Calculate HARD DEBT service (for DSCR - Senior + PAB + Phil current pay)
     // This is used for cash management and targets 1.05x
     const hardDebtService = annualSeniorDebtService + annualPabDebtService + philDebtServiceThisYear;
+
+    // ISS-070Q: Trace debt calculation step 6 (export-only, first year only)
+    if (options?.isExport && year === 1) {
+      console.log('[EXPORT-ONLY DEBT] 6. Cash flow Y1 hardDebtService:', {
+        year,
+        annualSeniorDebtService,
+        annualPabDebtService,
+        philDebtServiceThisYear,
+        hardDebtService,
+        effectiveNOI,
+        dscr: hardDebtService > 0 ? effectiveNOI / hardDebtService : 0,
+      });
+    }
 
     // DSCR Breakdown (IMPL-081) - Display metrics only
     // Must-Pay DSCR: Senior + PAB only (true hard floor - no PIK option)
@@ -1207,8 +1393,15 @@ export const calculateFullInvestorAnalysis = (params: CalculationParams): Invest
         const year1MACRS = (monthsInYear1 / 12) * annualMACRS;
 
         // IMPL-041: Apply split rates for state conformity in advance financing override
-        const effectiveRateForBonus = paramEffectiveTaxRateForBonus ?? paramEffectiveTaxRate;
-        const effectiveRateForMACRS = paramEffectiveTaxRateForStraightLine ?? paramEffectiveTaxRate;
+        // ISS-070T: Compute default effective rate including NIIT (matches Excel formula)
+        const federalRate = params.federalTaxRate || 37;
+        const niitRate = params.niitRate || 3.8;
+        const stateRate = params.stateTaxRate || 0;
+        const conformityRate = params.bonusConformityRate ?? 1;
+        const defaultEffectiveRateBonus = federalRate + niitRate + (stateRate * conformityRate);
+        const defaultEffectiveRateMACRS = federalRate + niitRate + stateRate;
+        const effectiveRateForBonus = paramEffectiveTaxRateForBonus ?? (paramEffectiveTaxRate > 0 ? paramEffectiveTaxRate : defaultEffectiveRateBonus);
+        const effectiveRateForMACRS = paramEffectiveTaxRateForStraightLine ?? (paramEffectiveTaxRate > 0 ? paramEffectiveTaxRate : defaultEffectiveRateMACRS);
         const bonusTaxBenefit = bonusDepreciation * (effectiveRateForBonus / 100);
         const macrsTaxBenefit = year1MACRS * (effectiveRateForMACRS / 100);
         const year1GrossBenefit = bonusTaxBenefit + macrsTaxBenefit;

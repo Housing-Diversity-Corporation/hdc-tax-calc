@@ -215,7 +215,7 @@ export function buildPIKTrackingSheet(
 
     // Interest on prior deferred
     const interestOnDeferred = year === 1 ? 0 : aumDeferredBalance * aumDeferredRate / 100;
-    const interestFormula = year === 1 ? '0' : `F${row - 1}*AUMDeferredRate/100`;
+    const interestFormula = year === 1 ? '0' : `F${row - 1}*HDCDeferredInterestRate/100`;
     ws[`E${row}`] = { t: 'n', v: interestOnDeferred, f: interestFormula } as FormulaCell;
 
     // Deferred Balance

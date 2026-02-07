@@ -146,7 +146,7 @@ export const INPUT_RANGES = {
   AUMFeePct: { col: 1, row: 74 },
   AUMCurrentPayEnabled: { col: 1, row: 75 },
   AUMCurrentPayPct: { col: 1, row: 76 },
-  AUMDeferredRate: { col: 1, row: 77 },
+  HDCDeferredInterestRate: { col: 1, row: 77 },
   InvestorPromoteShare: { col: 1, row: 79 },
   PromoteHurdleRate: { col: 1, row: 80 },
 

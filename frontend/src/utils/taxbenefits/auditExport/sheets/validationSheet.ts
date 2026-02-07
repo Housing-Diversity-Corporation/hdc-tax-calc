@@ -1,7 +1,8 @@
 /**
  * IMPL-056: Live Calculation Excel Model - Validation Sheet
- * IMPL-062: Tier 2 Expansion - 48 validation checks
+ * IMPL-062: Tier 2 Expansion - 47 validation checks
  * IMPL-065: Architecture fix - Use engine values directly (no recalculation)
+ * ISS-069b: Removed Preferred Return Paid check (concept obsolete after ISS-050)
  *
  * Sheet 14: Compare Excel formulas to platform values.
  * Tolerance: $1,000 for dollar amounts, 0.05% for percentages.
@@ -12,7 +13,7 @@
  * - Tax Benefits (6 checks)
  * - LIHTC (8 checks)
  * - Operating CF (6 checks)
- * - Exit Waterfall (6 checks)
+ * - Exit Waterfall (5 checks)
  * - Debt at Exit (4 checks)
  * - Investor Returns (6 checks)
  */
@@ -28,7 +29,7 @@ const RATIO_TOLERANCE = 0.01; // 0.01x for MOIC
 
 /**
  * Build the Validation sheet comparing Excel to platform values
- * IMPL-062: Expanded to 48 checks across 8 categories
+ * IMPL-062: Expanded to 47 checks across 8 categories
  * IMPL-065: Uses engine values directly (single source of truth)
  */
 export function buildValidationSheet(
@@ -49,7 +50,7 @@ export function buildValidationSheet(
   let currentRow = 1;
 
   // Header
-  ws['A1'] = { t: 's', v: 'VALIDATION (Tier 2 - 48 Checks)' };
+  ws['A1'] = { t: 's', v: 'VALIDATION (Tier 2 - 47 Checks)' };
   ws['A2'] = { t: 's', v: `Tolerance: $${DOLLAR_TOLERANCE * 1000}K | ${PERCENT_TOLERANCE * 100}% | ${RATIO_TOLERANCE}x` };
   ws['A3'] = { t: 's', v: '' };
   currentRow = 4;
@@ -113,31 +114,31 @@ export function buildValidationSheet(
   currentRow = addCheck(ws, currentRow, 31, 'Year 1 Hard Debt Service', 'HardDS_Y1', platform.year1HardDS);
   currentRow = addCheck(ws, currentRow, 32, 'Total Avail for Soft Pay', `SUM(AvailForSoftPay_Y1:AvailForSoftPay_Y${holdPeriod})`, platform.totalAvailForSoftPay);
 
-  // === CATEGORY 6: EXIT WATERFALL (6 checks) ===
-  currentRow = addCategory(ws, currentRow, 'EXIT WATERFALL (6)');
+  // === CATEGORY 6: EXIT WATERFALL (5 checks) ===
+  // ISS-069b: Removed "Preferred Return Paid" check - concept obsolete after ISS-050 waterfall simplification
+  currentRow = addCategory(ws, currentRow, 'EXIT WATERFALL (5)');
   currentRow = addCheck(ws, currentRow, 33, 'Exit Value', 'ExitValue', platform.exitValue);
   currentRow = addCheck(ws, currentRow, 34, 'Investor Exit Proceeds', 'TotalToInvestor', platform.investorExitProceeds);
   currentRow = addCheck(ws, currentRow, 35, 'HDC Exit Proceeds', 'TotalToHDC', platform.hdcExitProceeds);
   currentRow = addCheck(ws, currentRow, 36, 'Return of Capital', 'InvestorROC', platform.investorROC);
-  currentRow = addCheck(ws, currentRow, 37, 'Preferred Return Paid', 'InvestorPrefPaid', platform.investorPrefPaid);
   // Invariant: Investor + HDC = Net Exit Proceeds
-  currentRow = addInvariantCheck(ws, currentRow, 38, 'Inv + HDC = Net Proceeds', 'TotalToInvestor+TotalToHDC-(ExitValue-SeniorBalanceAtExit-PhilBalanceAtExit)', 0);
+  currentRow = addInvariantCheck(ws, currentRow, 37, 'Inv + HDC = Net Proceeds', 'TotalToInvestor+TotalToHDC-(ExitValue-SeniorBalanceAtExit-PhilBalanceAtExit)', 0);
 
   // === CATEGORY 7: DEBT AT EXIT (4 checks) ===
   currentRow = addCategory(ws, currentRow, 'DEBT AT EXIT (4)');
-  currentRow = addCheck(ws, currentRow, 39, 'Senior Debt at Exit', 'SeniorBalanceAtExit', platform.seniorDebtAtExit);
-  currentRow = addCheck(ws, currentRow, 40, 'Investor Sub-Debt at Exit', 'InvestorSubDebtAtExit', platform.investorSubDebtAtExit);
-  currentRow = addCheck(ws, currentRow, 41, 'Phil Debt at Exit', 'PhilBalanceAtExit', platform.philDebtAtExit);
-  currentRow = addCheck(ws, currentRow, 42, 'Total Debt at Exit', 'SeniorBalanceAtExit+PhilBalanceAtExit+InvestorSubDebtAtExit', platform.totalDebtAtExit);
+  currentRow = addCheck(ws, currentRow, 38, 'Senior Debt at Exit', 'SeniorBalanceAtExit', platform.seniorDebtAtExit);
+  currentRow = addCheck(ws, currentRow, 39, 'Investor Sub-Debt at Exit', 'InvestorSubDebtAtExit', platform.investorSubDebtAtExit);
+  currentRow = addCheck(ws, currentRow, 40, 'Phil Debt at Exit', 'PhilBalanceAtExit', platform.philDebtAtExit);
+  currentRow = addCheck(ws, currentRow, 41, 'Total Debt at Exit', 'SeniorBalanceAtExit+PhilBalanceAtExit+InvestorSubDebtAtExit', platform.totalDebtAtExit);
 
   // === CATEGORY 8: INVESTOR RETURNS (6 checks) ===
   currentRow = addCategory(ws, currentRow, 'INVESTOR RETURNS (6)');
-  currentRow = addCheck(ws, currentRow, 43, 'Total Investment', 'InvTotalInvestment', platform.totalInvestment);
-  currentRow = addCheck(ws, currentRow, 44, 'Total Returns', 'InvTotalReturns', platform.totalReturns);
-  currentRow = addRatioCheck(ws, currentRow, 45, 'Investor MOIC', 'InvestorMOIC', platform.investorMOIC);
-  currentRow = addPercentCheck(ws, currentRow, 46, 'Investor IRR', 'InvestorIRR', platform.investorIRR);
-  currentRow = addCheck(ws, currentRow, 47, 'OZ Step-Up Savings (Y5)', 'OZStepUpSavings', platform.ozStepUpSavings);
-  currentRow = addCheck(ws, currentRow, 48, 'OZ Appreciation Exclusion', 'OZAppreciationExclusion', platform.ozAppreciationExclusion);
+  currentRow = addCheck(ws, currentRow, 42, 'Total Investment', 'InvTotalInvestment', platform.totalInvestment);
+  currentRow = addCheck(ws, currentRow, 43, 'Total Returns', 'InvTotalReturns', platform.totalReturns);
+  currentRow = addRatioCheck(ws, currentRow, 44, 'Investor MOIC', 'InvestorMOIC', platform.investorMOIC);
+  currentRow = addPercentCheck(ws, currentRow, 45, 'Investor IRR', 'InvestorIRR', platform.investorIRR);
+  currentRow = addCheck(ws, currentRow, 46, 'OZ Step-Up Savings (Y5)', 'OZStepUpSavings', platform.ozStepUpSavings);
+  currentRow = addCheck(ws, currentRow, 47, 'OZ Appreciation Exclusion', 'OZAppreciationExclusion', platform.ozAppreciationExclusion);
 
   // === VALIDATION SUMMARY ===
   currentRow++;
@@ -150,7 +151,7 @@ export function buildValidationSheet(
   currentRow++;
 
   ws[`A${currentRow}`] = { t: 's', v: 'Total Checks' };
-  ws[`B${currentRow}`] = { t: 'n', v: 48 };
+  ws[`B${currentRow}`] = { t: 'n', v: 47 };
   currentRow++;
 
   ws[`A${currentRow}`] = { t: 's', v: 'Pass Rate' };
@@ -159,7 +160,7 @@ export function buildValidationSheet(
   currentRow++;
 
   ws[`A${currentRow}`] = { t: 's', v: 'Overall Status' };
-  ws[`B${currentRow}`] = { t: 's', v: '✓ ALL PASS', f: `IF(B${currentRow - 3}>=48,"✓ ALL PASS",CONCATENATE("✗ ",48-B${currentRow - 3}," ERRORS"))` };
+  ws[`B${currentRow}`] = { t: 's', v: '✓ ALL PASS', f: `IF(B${currentRow - 3}>=47,"✓ ALL PASS",CONCATENATE("✗ ",47-B${currentRow - 3}," ERRORS"))` };
 
   // Set sheet range
   ws['!ref'] = `A1:E${currentRow}`;
@@ -178,23 +179,45 @@ export function buildValidationSheet(
 
 /**
  * IMPL-065: Extract platform values from engine results (single source of truth)
+ * ISS-070b: Fixed to use investorResults.investorCashFlows directly (same source as Summary sheet)
  *
  * This function replaces the previous calculatePlatformValues() which reimplemented
  * the calculation engine. Now we use engine results directly where available.
  *
  * Values come from:
- * 1. investorResults - Primary source for investor metrics
+ * 1. investorResults - Primary source for investor metrics (including investorCashFlows)
  * 2. hdcResults - HDC-specific metrics
- * 3. cashFlows - Year-by-year data extracted from engine
- * 4. params - Input parameters (not calculations)
+ * 3. params - Input parameters (not calculations)
+ *
+ * NOTE: cashFlows parameter is kept for backwards compatibility but is NOT used.
+ * We always use investorResults.investorCashFlows to match Summary sheet behavior.
  */
 function extractPlatformValues(
   params: CalculationParams,
   investorResults: InvestorAnalysisResults,
   hdcResults: HDCAnalysisResults,
-  cashFlows: CashFlowItem[],
+  _cashFlows: CashFlowItem[], // ISS-070b: Unused - use investorResults.investorCashFlows instead
   holdPeriod: number
 ) {
+  // ISS-070b: Use investorCashFlows from investorResults (same source as Summary sheet)
+  // This ensures validation sheet platform values match other sheets
+  const cashFlows = investorResults.investorCashFlows || [];
+
+  // ISS-070O: Diagnostic logging to trace property values
+  console.log('[EXPORT ISS-070O] extractPlatformValues input:', {
+    'params.projectCost': params.projectCost,
+    'params.yearOneNOI': params.yearOneNOI,
+    'params.seniorDebtPct': params.seniorDebtPct,
+    hasInvestorCashFlows: !!investorResults?.investorCashFlows,
+    cashFlowsLength: cashFlows.length,
+    'cf[0].noi': cashFlows[0]?.noi,
+    'cf[0].dscr': cashFlows[0]?.dscr,
+    'cf[0].hardDebtService': cashFlows[0]?.hardDebtService,
+    'investorResults.exitValue': investorResults.exitValue,
+    'investorResults.investorEquity': investorResults.investorEquity,
+    'investorResults.exitProceeds': investorResults.exitProceeds,
+  });
+
   const projectCost = params.projectCost;
   const landValue = params.landValue;
 
@@ -227,32 +250,51 @@ function extractPlatformValues(
   const totalDepreciation = costSegPortion + year1MACRS + annualMACRS * (holdPeriod - 1);
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // TAX BENEFITS - From engine results and params
+  // TAX BENEFITS - Match Tax_Benefits sheet formulas (taxBenefitsSheet.ts)
+  // ISS-070: Calculate the same way as Excel formulas for validation consistency
   // ═══════════════════════════════════════════════════════════════════════════
-  // IMPL-068: Effective tax rates from params (calculated by hook, passed through)
-  // REP investors: Federal + State (no NIIT)
-  // Non-REP investors: Federal + NIIT + State
-  // Fallback to federal rate only (never hardcode 40.8% which assumes non-REP with NIIT)
-  const fallbackRate = params.federalTaxRate || 37;
-  const effectiveRateBonus = (params.effectiveTaxRateForBonus || params.effectiveTaxRate || fallbackRate) / 100;
-  const effectiveRateMACRS = (params.effectiveTaxRateForStraightLine || params.effectiveTaxRate || fallbackRate) / 100;
+  // ISS-070T: Use track-aware effective tax rates from params
+  // REP investors: NO NIIT (passive income deduction against W-2 income)
+  // Non-REP investors: WITH NIIT (3.8% Net Investment Income Tax)
+  // These rates are computed by useHDCCalculations based on investor track
+  const federalRate = params.federalTaxRate || 37;
+  const niitRate = params.niitRate || 3.8;
+  const stateRate = params.stateTaxRate || 0;
+  const conformity = params.bonusConformityRate ?? 1;
+  // Use track-aware rate from params if available, otherwise compute default (with NIIT for backward compat)
+  const defaultRateBonus = federalRate + niitRate + (stateRate * conformity);
+  const defaultRateMACRS = federalRate + niitRate + stateRate;
+  const effectiveRateBonus = (params.effectiveTaxRateForBonus ?? defaultRateBonus) / 100;
+  const effectiveRateMACRS = (params.effectiveTaxRateForStraightLine ?? defaultRateMACRS) / 100;
 
-  // Tax benefits from engine cash flows (single source of truth)
-  const year1TaxBenefit = cashFlows[0]?.taxBenefit || 0;
-  const totalTaxBenefits = investorResults.investorTaxBenefits || 0;
-  const years2to10TaxBenefits = cashFlows
-    .slice(1, holdPeriod)
-    .reduce((sum, cf) => sum + (cf?.taxBenefit || 0), 0);
+  // ISS-070: If cashFlows is empty/missing taxBenefit, calculate using same formula as Excel
+  const bonusBenefit = costSegPortion * effectiveRateBonus;
+  const year1MacrsBenefit = year1MACRS * effectiveRateMACRS;
+  const calculatedYear1TaxBenefit = bonusBenefit + year1MacrsBenefit;
+  const year1TaxBenefit = cashFlows[0]?.taxBenefit || calculatedYear1TaxBenefit;
+
+  // Total tax benefits: Year 1 + (Years 2-N MACRS benefits)
+  const years2toNMacrsBenefit = annualMACRS * effectiveRateMACRS * (holdPeriod - 1);
+  const calculatedTotalTaxBenefits = calculatedYear1TaxBenefit + years2toNMacrsBenefit;
+  const totalTaxBenefits = investorResults.investorTaxBenefits || calculatedTotalTaxBenefits;
+
+  const years2to10TaxBenefits = cashFlows.length > 1
+    ? cashFlows.slice(1, holdPeriod).reduce((sum, cf) => sum + (cf?.taxBenefit || 0), 0)
+    : years2toNMacrsBenefit;
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // LIHTC - Derive from params (IRC §42 standardized calculation)
+  // LIHTC - Match LIHTC sheet calculation (lihtcSheet.ts)
+  // ISS-070: Use params.lihtcEligibleBasis for consistency with LIHTC sheet
   // ═══════════════════════════════════════════════════════════════════════════
   const lihtcEnabled = params.lihtcEnabled ?? false;
   const applicableFraction = (params.applicableFraction || 100) / 100;
   const creditRate = (params.creditRate || 4) / 100;
   const ddaBoost = params.ddaQctBoost ? 1.3 : 1.0;
-  const lihtcEligibleBasis = lihtcEnabled ? depreciableBasis * ddaBoost : 0;
-  const lihtcQualifiedBasis = lihtcEligibleBasis * applicableFraction;
+  // ISS-070: Eligible basis = params.lihtcEligibleBasis (pre-boost, includes exclusions)
+  // Fallback to (projectCost - landValue) matching LIHTC sheet line 36
+  const lihtcEligibleBasis = lihtcEnabled ? (params.lihtcEligibleBasis ?? depreciableBasis) : 0;
+  // Qualified basis = Eligible × (1 + boost) × applicable fraction
+  const lihtcQualifiedBasis = lihtcEligibleBasis * ddaBoost * applicableFraction;
   const lihtcAnnualFedCredit = lihtcEnabled ? lihtcQualifiedBasis * creditRate : 0;
   const lihtcYear1Factor = (13 - pisMonth) / 12;
   const lihtcYear1Credit = lihtcAnnualFedCredit * lihtcYear1Factor;
@@ -265,11 +307,27 @@ function extractPlatformValues(
   const year1NOI = cashFlows[0]?.noi || params.yearOneNOI;
   const year10NOI = cashFlows[holdPeriod - 1]?.noi || params.yearOneNOI;
 
-  // DSCR values from engine cash flows
-  const dscrValues = cashFlows.map(cf => cf.dscr || 0).filter(d => d > 0);
+  // ISS-070O: DSCR values - compute using same formula as Excel (NOI / HardDebtService)
+  // The cf.dscr property uses total debt service, but Excel uses only hard debt service
+  const dscrValues = cashFlows.map(cf => {
+    const hardDS = cf.hardDebtService || 0;
+    const noi = cf.noi || 0;
+    return hardDS > 0 ? noi / hardDS : 0;
+  }).filter(d => d > 0);
   const minDSCR = dscrValues.length > 0 ? Math.min(...dscrValues) : 0;
   const avgDSCR = dscrValues.length > 0 ? dscrValues.reduce((a, b) => a + b, 0) / dscrValues.length : 0;
   const year1HardDS = cashFlows[0]?.hardDebtService || 0;
+
+  // ISS-070O: Log computed DSCR and operating values
+  console.log('[EXPORT ISS-070O] Operating CF computed:', {
+    year1NOI,
+    year10NOI,
+    dscrValuesLength: dscrValues.length,
+    dscrValues: dscrValues.slice(0, 3), // First 3 for brevity
+    minDSCR,
+    avgDSCR,
+    year1HardDS,
+  });
 
   // Available for soft pay from engine cash flows
   const totalAvailForSoftPay = cashFlows.reduce((sum, cf) => {
@@ -282,26 +340,58 @@ function extractPlatformValues(
   // ═══════════════════════════════════════════════════════════════════════════
   const exitValue = investorResults.exitValue || 0;
   const investorExitProceeds = investorResults.exitProceeds || 0;
-  const hdcExitProceeds = hdcResults.hdcExitProceeds || 0;
 
-  // Return of capital - derived from engine values (capped at equity)
-  const investorROC = Math.min(investorExitProceeds, investorEquity);
-  // Preferred return paid - derived from engine values
-  const prefReturnTarget = investorEquity * 0.08 * holdPeriod;
-  const investorPrefPaid = Math.min(prefReturnTarget, Math.max(0, investorExitProceeds - investorROC));
+  // ISS-070W: Calculate exit-only HDC share from investor's gross proceeds
+  // Excel formula: TotalToHDC = Profit × HDCPromoteShare%
+  // where Profit = GrossExitProceeds - RemainingCapitalToRecover
+  // CRITICAL: Use investorResults.grossExitProceeds (same as Excel), NOT hdcResults.grossExitProceeds
+  // The HDC engine uses a different gross proceeds calculation that doesn't account for all sub-debts
+  const hdcPromoteSharePct = 100 - (params.investorPromoteShare || 65);
+  const grossAfterDebt = investorResults.grossExitProceeds || 0;
+  const remainingROC = investorResults.remainingCapitalToRecover ?? 0;
+  const profit = Math.max(0, grossAfterDebt - remainingROC);
+  const hdcExitProceeds = profit * (hdcPromoteSharePct / 100);
+
+  // ISS-070O: Return of capital - use same formula as Exit sheet (exitSheet.ts line 127)
+  // The Exit sheet uses exitReturnOfCapital from results, or calculates it from gross proceeds
+  const grossExitProceeds = investorResults.grossExitProceeds || investorResults.totalExitProceeds || 0;
+  const remainingCapitalToRecover = investorResults.remainingCapitalToRecover ?? investorEquity;
+  const investorROC = investorResults.exitReturnOfCapital || Math.min(grossExitProceeds, remainingCapitalToRecover);
+
+  // ISS-070O: Log exit waterfall values
+  console.log('[EXPORT ISS-070O] Exit waterfall computed:', {
+    exitValue,
+    investorExitProceeds,
+    investorEquity,
+    grossExitProceeds,
+    remainingCapitalToRecover,
+    'investorResults.exitReturnOfCapital': investorResults.exitReturnOfCapital,
+    investorROC,
+  });
+  // ISS-069b: Removed investorPrefPaid - concept obsolete after ISS-050 waterfall simplification
 
   // ═══════════════════════════════════════════════════════════════════════════
   // DEBT AT EXIT - From engine results
+  // ISS-070X: Use separate senior and phil debt properties (not combined remainingDebtAtExit)
   // ═══════════════════════════════════════════════════════════════════════════
-  const seniorDebtAtExit = investorResults.remainingDebtAtExit || 0;
+  const seniorDebtAtExit = investorResults.remainingSeniorDebtAtExit || 0;
   const investorSubDebtAtExit = investorResults.investorSubDebtAtExit || 0;
-  const philDebtAtExit = philDebt; // Phil debt doesn't amortize
+  // Phil debt at exit includes accumulated PIK if current pay is disabled
+  const philDebtAtExit = investorResults.remainingPhilDebtAtExit || philDebt;
   const totalDebtAtExit = seniorDebtAtExit + philDebtAtExit + investorSubDebtAtExit;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // INVESTOR RETURNS - From engine results (single source of truth)
+  // ISS-070c: Match Excel formula logic for totalInvestment (accounts for syndication timing)
   // ═══════════════════════════════════════════════════════════════════════════
-  const totalInvestment = investorResults.totalInvestment || (investorEquity + investorSubDebt);
+  // Syndication offset and year affect MOIC denominator
+  const syndicationOffset = investorResults.syndicatedEquityOffset || 0;
+  const syndicationYear = investorResults.stateLIHTCSyndicationYear ?? params.stateLIHTCSyndicationYear ?? 0;
+  // Match Excel: Year 0 syndication = net equity, Year 1+ = gross equity
+  const calculatedTotalInvestment = syndicationYear === 0
+    ? (investorEquity - syndicationOffset) + investorSubDebt  // Year 0: net equity
+    : investorEquity + investorSubDebt;                        // Year 1+: gross equity
+  const totalInvestment = investorResults.totalInvestment || calculatedTotalInvestment;
   const totalReturns = investorResults.totalReturns || 0;
   const investorMOIC = investorResults.multiple || 0;
   const investorIRR = (investorResults.irr || 0) / 100; // Engine returns as percentage
@@ -350,7 +440,6 @@ function extractPlatformValues(
     investorExitProceeds,
     hdcExitProceeds,
     investorROC,
-    investorPrefPaid,
     // Debt at Exit
     seniorDebtAtExit,
     investorSubDebtAtExit,

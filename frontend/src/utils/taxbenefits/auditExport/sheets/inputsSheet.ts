@@ -13,6 +13,14 @@ import { SheetResult, NamedRangeDefinition, InputRow } from '../types';
  * Build the Inputs sheet with all parameters and named ranges
  */
 export function buildInputsSheet(params: CalculationParams): SheetResult {
+  // ISS-070N: Log what params inputsSheet actually receives (EXPORT prefix to distinguish from UI logs)
+  console.log('[EXPORT ISS-070N] inputsSheet received params:', {
+    projectCost: params.projectCost,
+    yearOneNOI: params.yearOneNOI,
+    seniorDebtPct: params.seniorDebtPct,
+    noiGrowthRate: params.noiGrowthRate,
+  });
+
   const namedRanges: NamedRangeDefinition[] = [];
 
   // Define all input rows organized by section

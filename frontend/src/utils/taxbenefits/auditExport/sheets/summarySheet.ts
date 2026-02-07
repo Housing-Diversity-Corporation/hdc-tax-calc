@@ -178,8 +178,18 @@ export function buildSummarySheet(
   ws[`B${currentRow}`] = { t: 'n', v: investorResults.exitProceeds, f: 'TotalToInvestor' } as FormulaCell;
   currentRow++;
 
+  // ISS-070W: Calculate HDC exit proceeds to match Excel TotalToHDC formula
+  // Excel: TotalToHDC = Profit × HDCPromoteShare%
+  // where Profit = GrossExitProceeds - RemainingCapitalToRecover
+  // CRITICAL: Use investorResults.grossExitProceeds (same as Excel), NOT hdcResults values
+  const hdcPromoteSharePct = 100 - params.investorPromoteShare;
+  const grossAfterDebt = investorResults.grossExitProceeds || 0;
+  const remainingROC = investorResults.remainingCapitalToRecover ?? 0;
+  const profit = Math.max(0, grossAfterDebt - remainingROC);
+  const hdcExitProceedsCalc = profit * (hdcPromoteSharePct / 100);
+
   ws[`A${currentRow}`] = { t: 's', v: 'HDC Exit Proceeds' };
-  ws[`B${currentRow}`] = { t: 'n', v: hdcResults.hdcExitProceeds, f: 'TotalToHDC' } as FormulaCell;
+  ws[`B${currentRow}`] = { t: 'n', v: hdcExitProceedsCalc, f: 'TotalToHDC' } as FormulaCell;
   currentRow += 2;
 
   // === HDC ===

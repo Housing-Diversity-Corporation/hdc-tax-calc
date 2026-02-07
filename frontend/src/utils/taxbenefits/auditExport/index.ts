@@ -34,6 +34,10 @@ import {
   HDCCashFlowItem,
 } from '../../../types/taxbenefits';
 
+// ISS-070f: Import calculation functions to recalculate fresh results at export time
+import { calculateFullInvestorAnalysis } from '../calculations';
+import { calculateHDCAnalysis } from '../hdcAnalysis';
+
 import { LiveExcelParams, AuditExportParams, NamedRangeDefinition, SHEET_NAMES } from './types';
 import { applyNamedRanges } from './namedRanges';
 
@@ -61,7 +65,167 @@ import { buildValidationSheet } from './sheets/validationSheet';
  * Generate a live Excel model with working formulas
  */
 export function generateLiveExcelModel(data: LiveExcelParams): XLSX.WorkBook {
-  const { params, investorResults, hdcResults, cashFlows, hdcCashFlows } = data;
+  const { params: rawParams } = data;
+
+  // ISS-070g: Normalize params to ensure consistent defaults between Inputs sheet and calculation
+  // The Inputs sheet uses `|| default` which treats 0, null, undefined, "" as falsy
+  // The calculation engine uses default parameters which only apply for undefined
+  // This normalization ensures both use the same effective values
+  const params: CalculationParams = {
+    ...rawParams,
+    // Apply the same defaults that inputsSheet.ts uses (see lines 28-35)
+    noiGrowthRate: rawParams.noiGrowthRate || 3,
+    holdPeriod: rawParams.holdPeriod || 10,
+    // ISS-070L: Force immediate stabilization for export to match Excel formulas
+    // The Excel model represents investor's 10-year hold period starting from stabilized operations
+    // Construction delay is a pre-stabilization development consideration not modeled in Excel
+    placedInServiceMonth: 1,
+    constructionDelayMonths: 0,
+    // Ensure other critical params have consistent defaults
+    predevelopmentCosts: rawParams.predevelopmentCosts || 0,
+    seniorDebtAmortization: rawParams.seniorDebtAmortization || 35,
+    philDebtAmortization: rawParams.philDebtAmortization || 35,
+  };
+
+  // ISS-070g/i: Diagnostic logging to trace params discrepancy
+  const rawParamKeys = Object.keys(rawParams).filter(k => rawParams[k as keyof typeof rawParams] !== undefined);
+  console.log('[ISS-070i] params object summary:', {
+    totalKeys: rawParamKeys.length,
+    definedKeys: rawParamKeys.length,
+    // Core params that must be present for calculation
+    hasProjectCost: rawParams.projectCost !== undefined,
+    hasLandValue: rawParams.landValue !== undefined,
+    hasSeniorDebtPct: rawParams.seniorDebtPct !== undefined,
+    hasInvestorEquityPct: rawParams.investorEquityPct !== undefined,
+  });
+  // ISS-070k: Log FULL params objects to see all properties
+  console.log('[ISS-070k] rawParams FULL object:', rawParams);
+  console.log('[ISS-070k] rawParams key count:', Object.keys(rawParams).length);
+  console.log('[ISS-070k] normalized params FULL object:', params);
+  console.log('[ISS-070k] normalized params key count:', Object.keys(params).length);
+  // Critical params check
+  console.log('[ISS-070k] Critical params for cash flow:', {
+    yearOneNOI: params.yearOneNOI,
+    seniorDebtPct: params.seniorDebtPct,
+    seniorDebtRate: params.seniorDebtRate,
+    seniorDebtAmortization: params.seniorDebtAmortization,
+    investorEquityPct: params.investorEquityPct,
+    projectCost: params.projectCost,
+    holdPeriod: params.holdPeriod,
+  });
+
+  // ISS-070f: Recalculate fresh results from params to avoid stale React state
+  // This ensures Column B (Excel formulas) and Column C (Platform values) match
+  // ISS-070N: Log params immediately before calculation to compare with inputsSheet
+  console.log('[EXPORT ISS-070N] Params going to calculateFullInvestorAnalysis:', {
+    projectCost: params.projectCost,
+    yearOneNOI: params.yearOneNOI,
+    seniorDebtPct: params.seniorDebtPct,
+    noiGrowthRate: params.noiGrowthRate,
+  });
+  // ISS-070Q: Pass isExport flag to enable export-only logging
+  const investorResults = calculateFullInvestorAnalysis(params, { isExport: true });
+  const cashFlows = investorResults.investorCashFlows || [];
+  // ISS-070N: Log what we got back from calculation
+  // ISS-070P: Verify calculation used correct params by checking results
+  const expectedSeniorDebt = params.projectCost * (params.seniorDebtPct || 0) / 100;
+  const expectedInvestorEquity = params.projectCost * (params.investorEquityPct || 0) / 100;
+  console.log('[EXPORT ISS-070P] Verification - params vs results:', {
+    // What we passed in
+    'params.projectCost': params.projectCost,
+    'params.seniorDebtPct': params.seniorDebtPct,
+    'params.investorEquityPct': params.investorEquityPct,
+    'params.yearOneNOI': params.yearOneNOI,
+    // What we expect based on params
+    expectedSeniorDebt,
+    expectedInvestorEquity,
+    // What the calculation returned
+    'results.investorEquity': investorResults.investorEquity,
+    'cashFlows[0].noi': cashFlows[0]?.noi,
+    'cashFlows[0].hardDebtService': cashFlows[0]?.hardDebtService,
+    // Mismatch detection
+    equityMatches: Math.abs((investorResults.investorEquity || 0) - expectedInvestorEquity) < 0.01,
+    noiMatches: Math.abs((cashFlows[0]?.noi || 0) - params.yearOneNOI) < 0.01,
+  });
+
+  // ISS-070i: Comprehensive structure logging to investigate property names
+  console.log('[ISS-070i] investorResults top-level keys:', Object.keys(investorResults).sort());
+  console.log('[ISS-070i] cashFlows array length:', cashFlows.length);
+
+  const cf0 = cashFlows[0];
+  if (cf0) {
+    console.log('[ISS-070i] cashFlows[0] keys:', Object.keys(cf0).sort());
+    console.log('[ISS-070i] cashFlows[0] FULL object:', cf0);
+  } else {
+    console.log('[ISS-070i] WARNING: cashFlows[0] is undefined!');
+  }
+
+  // ISS-070g/h: Log calculation results for comparison
+  const holdPeriod = params.holdPeriod;
+  const y10NOI = cashFlows[holdPeriod - 1]?.noi || 0;
+  console.log('[ISS-070g] Calculation results:', {
+    exitValue: investorResults.exitValue,
+    y10NOI,
+    y1NOI: cashFlows[0]?.noi,
+    impliedGrowth: cashFlows[0]?.noi ? ((y10NOI / cashFlows[0].noi) ** (1 / (holdPeriod - 1)) - 1) * 100 : 'N/A',
+  });
+
+  // ISS-070h: Log cash flow properties that extractPlatformValues reads
+  console.log('[ISS-070h] Cash flow Y1 properties:', {
+    dscr: cashFlows[0]?.dscr,
+    hardDebtService: cashFlows[0]?.hardDebtService,
+    noi: cashFlows[0]?.noi,
+    taxBenefit: cashFlows[0]?.taxBenefit,
+    totalCashFlow: cashFlows[0]?.totalCashFlow,
+  });
+  console.log('[ISS-070h] InvestorResults key properties:', {
+    investorEquity: investorResults.investorEquity,
+    exitValue: investorResults.exitValue,
+    exitProceeds: investorResults.exitProceeds,
+    remainingDebtAtExit: investorResults.remainingDebtAtExit,
+    totalInvestment: investorResults.totalInvestment,
+    totalReturns: investorResults.totalReturns,
+    multiple: investorResults.multiple,
+    irr: investorResults.irr,
+  });
+
+  // Build HDC results from fresh investor calculation
+  const hdcResults = calculateHDCAnalysis({
+    projectCost: params.projectCost,
+    predevelopmentCosts: params.predevelopmentCosts,
+    yearOneNOI: params.yearOneNOI,
+    noiGrowthRate: params.noiGrowthRate,
+    exitCapRate: params.exitCapRate,
+    investorPromoteShare: params.investorPromoteShare,
+    hdcSubDebtPct: params.hdcSubDebtPct,
+    hdcSubDebtPikRate: params.hdcSubDebtPikRate,
+    pikCurrentPayEnabled: params.pikCurrentPayEnabled,
+    pikCurrentPayPct: params.pikCurrentPayPct,
+    holdPeriod: params.holdPeriod,
+    aumFeeEnabled: params.aumFeeEnabled,
+    aumFeeRate: params.aumFeeRate,
+    philCurrentPayEnabled: params.philCurrentPayEnabled,
+    philCurrentPayPct: params.philCurrentPayPct,
+    outsideInvestorSubDebtPct: params.outsideInvestorSubDebtPct,
+    outsideInvestorSubDebtPikRate: params.outsideInvestorSubDebtPikRate,
+    outsideInvestorPikCurrentPayEnabled: params.outsideInvestorPikCurrentPayEnabled,
+    outsideInvestorPikCurrentPayPct: params.outsideInvestorPikCurrentPayPct,
+    investorSubDebtPct: params.investorSubDebtPct,
+    investorSubDebtPikRate: params.investorSubDebtPikRate,
+    investorPikCurrentPayEnabled: params.investorPikCurrentPayEnabled,
+    investorPikCurrentPayPct: params.investorPikCurrentPayPct,
+    seniorDebtPct: params.seniorDebtPct,
+    seniorDebtRate: params.seniorDebtRate,
+    seniorDebtAmortization: params.seniorDebtAmortization,
+    philanthropicDebtPct: params.philanthropicDebtPct,
+    philanthropicDebtRate: params.philanthropicDebtRate,
+    philDebtAmortization: params.philDebtAmortization,
+    interestReserveEnabled: params.interestReserveEnabled,
+    interestReserveMonths: params.interestReserveMonths,
+    investorEquity: investorResults.investorEquity,
+    investorCashFlows: cashFlows,
+  });
+  const hdcCashFlows = hdcResults.hdcCashFlows || [];
 
   // Create workbook
   const wb = XLSX.utils.book_new();
@@ -73,6 +237,12 @@ export function generateLiveExcelModel(data: LiveExcelParams): XLSX.WorkBook {
   // Each sheet may reference named ranges from previous sheets
 
   // 1. Inputs - Foundation (no dependencies)
+  // ISS-070M: Log params being passed to inputs sheet to verify same object
+  console.log('[ISS-070M] Params going to buildInputsSheet:', {
+    projectCost: params.projectCost,
+    yearOneNOI: params.yearOneNOI,
+    seniorDebtPct: params.seniorDebtPct,
+  });
   const inputsResult = buildInputsSheet(params);
   XLSX.utils.book_append_sheet(wb, inputsResult.sheet, 'Inputs');
   allNamedRanges.push(...inputsResult.namedRanges);

@@ -293,6 +293,8 @@ export function buildInvestorReturnsSheet(
     ws[`A${currentRow}`] = { t: 's', v: 'Net Investment (MOIC basis)' };
     ws[`B${currentRow}`] = { t: 'n', v: investorEquityNet, f: 'InvestorEquity-StateLIHTCSyndProceeds' } as FormulaCell;
     namedRanges.push({ name: 'InvNetInvestment', ref: `Investor_Returns!$B$${currentRow}` });
+    // ISS-070c: Also create InvTotalInvestment for validation/summary sheets (same as net for Year 0 syndication)
+    namedRanges.push({ name: 'InvTotalInvestment', ref: `Investor_Returns!$B$${currentRow}` });
     investmentDisplayRow = currentRow;
     currentRow++;
   } else if (syndicationOffset > 0 && syndicationYear > 0) {
