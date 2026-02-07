@@ -153,6 +153,7 @@ export interface InvestorAnalysisResults {
   interestReserveAmount: number;
   investorEquity: number;
   syndicatedEquityOffset?: number; // IMPL-074: State LIHTC syndication reduces net equity for MOIC/IRR
+  netEquity?: number;              // Phase 0: investorEquity - syndicatedEquityOffset (actual cash committed)
   stateLIHTCSyndicationProceeds?: number; // IMPL-073: State LIHTC syndication proceeds (capital return in Returns Buildup)
   // IMPL-075: Syndication year determines MOIC denominator (Year 0 = net, Year 1+ = gross)
   stateLIHTCSyndicationYear?: 0 | 1 | 2; // Year syndication proceeds are received
@@ -405,8 +406,18 @@ export interface CalculationParams {
   passiveGainType?: 'short-term' | 'long-term'; // Passive gain type
   investorType?: 'ordinary' | 'stcg' | 'ltcg' | 'custom'; // Investor type classification
   annualIncome?: number;                // Annual income for tax calculations
-  filingStatus?: 'single' | 'married';  // Tax filing status
+  filingStatus?: 'single' | 'married' | 'HoH';  // Tax filing status (Single, Married Filing Jointly, Head of Household)
   ozCapitalGainsTaxRate?: number;       // OZ-specific capital gains tax rate
+
+  // Income Composition (Phase 0 - Spec v2.1 Section 4.1)
+  annualPassiveIncome?: number;         // K-1 from funds, rental income, partnership business income
+  annualOrdinaryIncome?: number;        // W-2, active business, board fees
+  annualPortfolioIncome?: number;       // Stock/crypto gains, dividends, interest
+  groupingElection?: boolean;           // §469(c)(7)(A)(ii) election, REP only
+
+  // Fund/Pool Integration (Phase 0 - Spec v2.1 Section 6.1)
+  fundEntryYear?: number;               // Calendar year deal enters the fund (for pool staggering)
+  dealName?: string;                    // Human-readable deal name (for DBP identification)
   hdcPlatformMode?: 'traditional' | 'leverage'; // HDC platform mode
 
   // DSCR Cash Management parameters

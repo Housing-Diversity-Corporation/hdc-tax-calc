@@ -1996,6 +1996,7 @@ export const calculateFullInvestorAnalysis = (
     interestReserveAmount: interestReserveAmount,
     investorEquity: investorEquity, // CRITICAL: Single source of truth for investor equity (used by UI)
     syndicatedEquityOffset: syndicatedEquityOffset, // IMPL-074: Used to reduce net equity for MOIC/IRR
+    netEquity: investorEquityAfterOffset, // Phase 0: investorEquity - syndicatedEquityOffset (actual cash committed)
     stateLIHTCSyndicationProceeds, // IMPL-073: State LIHTC syndication as capital return
     // IMPL-075: Syndication year determines MOIC denominator
     stateLIHTCSyndicationYear: stateLIHTCSyndicationYear as 0 | 1 | 2,
