@@ -12,6 +12,7 @@
 
 import { buildDepreciationSchedule } from '../depreciationSchedule';
 import { calculateREPCapacity, calculateNonREPCapacity } from '../taxCapacity';
+import { calculateFullInvestorAnalysis } from '../calculations';
 import { CalculationParams, REPTaxCapacityModel, NonREPCapacityModel } from '../../../types/taxbenefits';
 
 describe('Tax Capacity Calculations', () => {
@@ -594,6 +595,37 @@ describe('Tax Capacity Calculations', () => {
 
       // Large project should generate significant NOL
       expect(capacity.totalCapacity.nolBank).toBeGreaterThan(100_000_000);
+    });
+
+    it('should compute adjustedBasis = investorEquity - cumulativeDepreciation', () => {
+      const params = createBaseParams({
+        projectCost: 86_000_000,
+        landValue: 10_000_000,
+        investorEquityPct: 14,
+        yearOneDepreciationPct: 25,
+        holdPeriod: 10,
+        includeDepreciationSchedule: true,
+      });
+
+      const results = calculateFullInvestorAnalysis(params);
+
+      // investorEquity = 86M * 14% = $12.04M
+      const expectedInvestorEquity = 86_000_000 * 0.14;
+
+      // Depreciation schedule: 25% of (86M - 10M land) = 19M Year 1
+      // Plus ~$2.07M/year MACRS for years 2-10 = ~18.6M
+      // Total ~ 37.6M over 10 years
+      const totalDepreciation = results.depreciationSchedule?.totalDepreciation || 0;
+
+      // adjustedBasis = investorEquity - totalDepreciation
+      const expectedAdjustedBasis = expectedInvestorEquity - totalDepreciation;
+
+      expect(results.adjustedBasis).toBeDefined();
+      expect(results.adjustedBasis).toBeCloseTo(expectedAdjustedBasis, 0);
+      expect(results.investorEquity).toBeCloseTo(expectedInvestorEquity, 0);
+
+      // adjustedBasis should be negative for this scenario (depreciation > equity)
+      expect(results.adjustedBasis!).toBeLessThan(0);
     });
   });
 });

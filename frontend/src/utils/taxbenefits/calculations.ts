@@ -16,6 +16,13 @@ import { buildDepreciationSchedule } from './depreciationSchedule';
 import { calculateREPCapacity, calculateNonREPCapacity } from './taxCapacity';
 import { optimizeIRAConversion } from './iraConversion';
 import { calculatePreferredEquity, PreferredEquityResult } from './preferredEquityCalculations';
+import {
+  calculateTaxUtilization,
+  mapFilingStatus,
+  BenefitStream,
+  InvestorProfile,
+  ExitEvent
+} from './investorTaxUtilization';
 
 /**
  * CRITICAL: This file implements validated business logic.
@@ -2028,9 +2035,13 @@ export const calculateFullInvestorAnalysis = (
   if (params.includeDepreciationSchedule) {
     const depreciationSchedule = buildDepreciationSchedule(params);
 
+    // Phase A1: Compute adjustedBasis = investorEquity - cumulativeDepreciation
+    const adjustedBasis = investorEquity - (depreciationSchedule?.totalDepreciation || 0);
+
     const results: InvestorAnalysisResults = {
       ...baseResults,
-      depreciationSchedule
+      depreciationSchedule,
+      adjustedBasis
     };
 
     // Add REP or Non-REP capacity based on investor type
@@ -2044,6 +2055,66 @@ export const calculateFullInvestorAnalysis = (
       }
     } else {
       results.nonRepCapacity = calculateNonREPCapacity(params, depreciationSchedule);
+    }
+
+    // Phase A1: Add tax utilization analysis if income composition is provided
+    const hasIncomeComposition =
+      (params.annualPassiveIncome !== undefined && params.annualPassiveIncome > 0) ||
+      (params.annualOrdinaryIncome !== undefined && params.annualOrdinaryIncome > 0) ||
+      (params.annualPortfolioIncome !== undefined && params.annualPortfolioIncome > 0);
+
+    if (hasIncomeComposition) {
+      // Build BenefitStream from depreciation schedule and cash flows
+      const annualDepreciation = depreciationSchedule.schedule.map(y => y.totalDepreciation);
+      const annualLIHTC = investorCashFlows.map(cf => cf.federalLIHTCCredit || 0);
+      const annualStateLIHTC = investorCashFlows.map(cf => cf.stateLIHTCCredit || 0);
+      const annualOperatingCF = investorCashFlows.map(cf => cf.operatingCashFlow);
+
+      // Build exit event
+      const cumulativeDepreciation = depreciationSchedule.totalDepreciation;
+      const recaptureExposure = cumulativeDepreciation * 0.25; // 25% recapture rate
+      const appreciationGain = Math.max(0, exitProceeds - investorEquity);
+
+      const exitEvent: ExitEvent = {
+        year: paramHoldPeriod,
+        exitProceeds,
+        cumulativeDepreciation,
+        recaptureExposure,
+        appreciationGain,
+        ozEnabled: params.ozEnabled || false
+      };
+
+      const benefitStream: BenefitStream = {
+        annualDepreciation,
+        annualLIHTC,
+        annualStateLIHTC,
+        annualOperatingCF,
+        exitEvents: [exitEvent],
+        grossEquity: investorEquity,
+        netEquity: investorEquityAfterOffset,
+        syndicationOffset: syndicatedEquityOffset
+      };
+
+      // Build InvestorProfile from params
+      const federalCapGainsRate = ((params.ltCapitalGainsRate || 20) + (params.niitRate || 3.8)) / 100;
+
+      const investorProfile: InvestorProfile = {
+        annualPassiveIncome: params.annualPassiveIncome || 0,
+        annualOrdinaryIncome: params.annualOrdinaryIncome || 0,
+        annualPortfolioIncome: params.annualPortfolioIncome || 0,
+        filingStatus: mapFilingStatus(params.filingStatus),
+        investorTrack: params.investorTrack || 'non-rep',
+        groupingElection: params.groupingElection || false,
+        federalOrdinaryRate: params.federalTaxRate || 37,
+        federalCapGainsRate,
+        investorState: params.selectedState || params.investorState || 'NY',
+        stateOrdinaryRate: (params.stateTaxRate || 10.9) / 100,
+        stateCapGainsRate: (params.stateCapitalGainsRate || params.stateTaxRate || 10.9) / 100,
+        investorEquity
+      };
+
+      // Calculate tax utilization
+      results.taxUtilization = calculateTaxUtilization(benefitStream, investorProfile);
     }
 
     return results;

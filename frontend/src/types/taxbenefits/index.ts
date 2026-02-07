@@ -1,6 +1,7 @@
 // HDC Calculator Types and Interfaces
 
 import { PreferredEquityResult } from '../../utils/taxbenefits/preferredEquityCalculations';
+import { TaxUtilizationResult } from '../../utils/taxbenefits/investorTaxUtilization';
 
 export interface ConformingState {
   name: string;
@@ -154,6 +155,7 @@ export interface InvestorAnalysisResults {
   investorEquity: number;
   syndicatedEquityOffset?: number; // IMPL-074: State LIHTC syndication reduces net equity for MOIC/IRR
   netEquity?: number;              // Phase 0: investorEquity - syndicatedEquityOffset (actual cash committed)
+  adjustedBasis?: number;          // Phase A1: investorEquity - cumulativeDepreciation (for exit/recapture analysis)
   stateLIHTCSyndicationProceeds?: number; // IMPL-073: State LIHTC syndication proceeds (capital return in Returns Buildup)
   // IMPL-075: Syndication year determines MOIC denominator (Year 0 = net, Year 1+ = gross)
   stateLIHTCSyndicationYear?: 0 | 1 | 2; // Year syndication proceeds are received
@@ -168,6 +170,7 @@ export interface InvestorAnalysisResults {
   nonRepCapacity?: NonREPCapacityModel;
   iraConversionPlan?: IRAConversionPlan;
   assetSaleAnalysis?: AssetSaleAnalysis;
+  taxUtilization?: TaxUtilizationResult;  // Phase A1: Tax utilization analysis (when income composition provided)
 
   // Investment Portal specific fields
   investorUpfrontCash?: number;
