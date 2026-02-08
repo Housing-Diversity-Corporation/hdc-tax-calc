@@ -188,6 +188,17 @@ interface HDCInputsComponentProps {
   filingStatus?: 'single' | 'married';
   setFilingStatus?: (value: 'single' | 'married') => void;
 
+  // Income Composition (Phase A2 - Tax Utilization)
+  annualOrdinaryIncome?: number;
+  setAnnualOrdinaryIncome?: (value: number) => void;
+  annualPassiveIncome?: number;
+  setAnnualPassiveIncome?: (value: number) => void;
+  annualPortfolioIncome?: number;
+  setAnnualPortfolioIncome?: (value: number) => void;
+  groupingElection?: boolean;
+  setGroupingElection?: (value: boolean) => void;
+  incomeFieldsEditable?: boolean;
+
   // Tax Planning Analysis
   includeDepreciationSchedule?: boolean;
   setIncludeDepreciationSchedule?: (value: boolean) => void;
@@ -1009,6 +1020,15 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           setAnnualIncome={props.setAnnualIncome || (() => {})}
           filingStatus={props.filingStatus || 'single'}
           setFilingStatus={props.setFilingStatus || (() => {})}
+          annualOrdinaryIncome={props.annualOrdinaryIncome ?? 750000}
+          setAnnualOrdinaryIncome={props.setAnnualOrdinaryIncome}
+          annualPassiveIncome={props.annualPassiveIncome ?? 0}
+          setAnnualPassiveIncome={props.setAnnualPassiveIncome}
+          annualPortfolioIncome={props.annualPortfolioIncome ?? 0}
+          setAnnualPortfolioIncome={props.setAnnualPortfolioIncome}
+          groupingElection={props.groupingElection ?? false}
+          setGroupingElection={props.setGroupingElection}
+          incomeFieldsEditable={props.incomeFieldsEditable}
           isReadOnly={props.taxSectionReadOnly || props.isReadOnly}
         />
 

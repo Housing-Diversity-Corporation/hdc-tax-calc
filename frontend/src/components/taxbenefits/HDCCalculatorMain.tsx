@@ -101,6 +101,16 @@ const HDCCalculatorMain = () => {
     investorTrack, setInvestorTrack,
     passiveGainType,
 
+    // Investor Information
+    annualIncome, setAnnualIncome,
+    filingStatus, setFilingStatus,
+
+    // Income Composition (Phase A2 - Tax Utilization)
+    annualOrdinaryIncome, setAnnualOrdinaryIncome,
+    annualPassiveIncome, setAnnualPassiveIncome,
+    annualPortfolioIncome, setAnnualPortfolioIncome,
+    groupingElection, setGroupingElection,
+
     // Tax Planning Analysis
     includeDepreciationSchedule, setIncludeDepreciationSchedule,
     w2Income, setW2Income,
@@ -268,6 +278,13 @@ const HDCCalculatorMain = () => {
     // Investor Track and Passive Gains
     investorTrack,
     passiveGainType,
+
+    // Income Composition (Phase A2 - Tax Utilization)
+    annualOrdinaryIncome,
+    annualPassiveIncome,
+    annualPortfolioIncome,
+    groupingElection,
+    filingStatus,
 
     // Tax Planning Analysis
     includeDepreciationSchedule,
@@ -515,6 +532,18 @@ const HDCCalculatorMain = () => {
           totalDepreciation={calculations.totalDepreciation}
           investorTrack={investorTrack}
           setInvestorTrack={setInvestorTrack}
+          annualIncome={annualIncome}
+          setAnnualIncome={setAnnualIncome}
+          filingStatus={filingStatus}
+          setFilingStatus={setFilingStatus}
+          annualOrdinaryIncome={annualOrdinaryIncome}
+          setAnnualOrdinaryIncome={setAnnualOrdinaryIncome}
+          annualPassiveIncome={annualPassiveIncome}
+          setAnnualPassiveIncome={setAnnualPassiveIncome}
+          annualPortfolioIncome={annualPortfolioIncome}
+          setAnnualPortfolioIncome={setAnnualPortfolioIncome}
+          groupingElection={groupingElection}
+          setGroupingElection={setGroupingElection}
           includeDepreciationSchedule={includeDepreciationSchedule}
           setIncludeDepreciationSchedule={setIncludeDepreciationSchedule}
           w2Income={w2Income}

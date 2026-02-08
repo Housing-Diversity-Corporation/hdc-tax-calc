@@ -94,6 +94,13 @@ interface UseHDCCalculationsProps {
   investorTrack?: 'rep' | 'non-rep';
   passiveGainType?: 'short-term' | 'long-term';
 
+  // Income Composition (Phase A2 - Tax Utilization)
+  annualOrdinaryIncome?: number;
+  annualPassiveIncome?: number;
+  annualPortfolioIncome?: number;
+  groupingElection?: boolean;
+  filingStatus?: 'single' | 'married';
+
   // Tax Planning Analysis
   includeDepreciationSchedule?: boolean;
   w2Income?: number;
@@ -630,6 +637,12 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       businessIncome: props.businessIncome,
       iraBalance: props.iraBalance,
       passiveIncome: props.passiveIncome,
+      // Income Composition (Phase A2 - Tax Utilization)
+      annualOrdinaryIncome: props.annualOrdinaryIncome,
+      annualPassiveIncome: props.annualPassiveIncome,
+      annualPortfolioIncome: props.annualPortfolioIncome,
+      groupingElection: props.groupingElection,
+      filingStatus: props.filingStatus,
       federalTaxRate: props.federalTaxRate,
       stateTaxRate: getEffectiveTaxRate(props.selectedState, false),
       ltCapitalGainsRate: props.ltCapitalGainsRate,
@@ -677,7 +690,13 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     depreciationCalculations.yearOneDepreciation,
     year1NetBenefit,
     stateLIHTCIntegration,
-    lihtcResult
+    lihtcResult,
+    // Income Composition (Phase A2 - Tax Utilization) - must be in deps for recalc on change
+    props.annualOrdinaryIncome,
+    props.annualPassiveIncome,
+    props.annualPortfolioIncome,
+    props.groupingElection,
+    props.filingStatus
   ]);
 
   // Investment calculations using investor equity from main analysis (single source of truth)

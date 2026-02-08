@@ -118,6 +118,12 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
     annualIncome, setAnnualIncome,
     filingStatus, setFilingStatus,
 
+    // Income Composition (Phase A2 - Tax Utilization)
+    annualOrdinaryIncome, setAnnualOrdinaryIncome,
+    annualPassiveIncome, setAnnualPassiveIncome,
+    annualPortfolioIncome, setAnnualPortfolioIncome,
+    groupingElection, setGroupingElection,
+
     // Tax Planning Analysis
     includeDepreciationSchedule, setIncludeDepreciationSchedule,
     w2Income, setW2Income,
@@ -445,6 +451,13 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
     // Investor Track and Passive Gains
     investorTrack,
     passiveGainType,
+
+    // Income Composition (Phase A2 - Tax Utilization)
+    annualOrdinaryIncome,
+    annualPassiveIncome,
+    annualPortfolioIncome,
+    groupingElection,
+    filingStatus,
 
     // Tax Planning Analysis
     includeDepreciationSchedule,
@@ -841,6 +854,15 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
           setAnnualIncome={setAnnualIncome}
           filingStatus={filingStatus}
           setFilingStatus={setFilingStatus}
+          annualOrdinaryIncome={annualOrdinaryIncome}
+          setAnnualOrdinaryIncome={setAnnualOrdinaryIncome}
+          annualPassiveIncome={annualPassiveIncome}
+          setAnnualPassiveIncome={setAnnualPassiveIncome}
+          annualPortfolioIncome={annualPortfolioIncome}
+          setAnnualPortfolioIncome={setAnnualPortfolioIncome}
+          groupingElection={groupingElection}
+          setGroupingElection={setGroupingElection}
+          incomeFieldsEditable={true}
           includeDepreciationSchedule={includeDepreciationSchedule}
           setIncludeDepreciationSchedule={setIncludeDepreciationSchedule}
           w2Income={w2Income}

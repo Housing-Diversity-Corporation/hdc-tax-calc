@@ -124,6 +124,11 @@ export interface CalculatorConfiguration {
   // ISS-057: Investor Information
   annualIncome?: number;
   filingStatus?: 'single' | 'married';
+  // Income Composition (Phase A2 - Tax Utilization)
+  annualOrdinaryIncome?: number;
+  annualPassiveIncome?: number;
+  annualPortfolioIncome?: number;
+  groupingElection?: boolean;
   // Tax Planning Analysis
   includeDepreciationSchedule?: boolean;
   w2Income?: number;

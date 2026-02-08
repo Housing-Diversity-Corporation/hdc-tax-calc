@@ -4,6 +4,8 @@ import CapitalStructureSection from './results/CapitalStructureSection';
 import DSCRAnalysisSection from './results/DSCRAnalysisSection';
 // IMPL-078: FreeInvestmentAnalysisSection and TaxPlanningCapacitySection merged into InvestmentRecoverySection
 import InvestmentRecoverySection from './results/InvestmentRecoverySection';
+// Phase A2: Tax Utilization Section (conditionally replaces InvestmentRecoverySection when income composition provided)
+import TaxUtilizationSection from './results/TaxUtilizationSection';
 import InvestorCashFlowSection from './results/InvestorCashFlowSection';
 import HDCCashFlowSection from './results/HDCCashFlowSection';
 import DistributableCashFlowTable from './results/DistributableCashFlowTable';
@@ -573,17 +575,27 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
           formatCurrency={props.formatCurrency}
         />
 
-        {/* IMPL-078: Merged Investment Recovery & Tax Planning Section */}
-        {/* ISS-023: totalInvestment is MOIC basis (net for Y0 syndication, gross otherwise) */}
-        {/* ISS-065: Removed excessBenefits, investorEquity, tax rate props (Excess Capacity section removed) */}
-        <InvestmentRecoverySection
-          totalInvestment={props.totalInvestment}
-          year1TaxBenefit={props.investorCashFlows?.[0]?.taxBenefit || 0}
-          total10YearBenefits={props.total10YearBenefits || 0}
-          benefitMultiple={props.benefitMultiple || 0}
-          investorCashFlows={props.investorCashFlows}
-          formatCurrency={props.formatCurrency}
-        />
+        {/* Phase A2: Conditional Tax Utilization / Investment Recovery Section */}
+        {/* When income composition is provided, taxUtilization is computed and we show the detailed analysis */}
+        {/* Otherwise, show the original Investment Recovery section */}
+        {props.mainAnalysisResults?.taxUtilization ? (
+          <TaxUtilizationSection
+            taxUtilization={props.mainAnalysisResults.taxUtilization}
+            totalInvestment={props.totalInvestment}
+            formatCurrency={props.formatCurrency}
+          />
+        ) : (
+          /* IMPL-078: Merged Investment Recovery & Tax Planning Section */
+          /* ISS-023: totalInvestment is MOIC basis (net for Y0 syndication, gross otherwise) */
+          <InvestmentRecoverySection
+            totalInvestment={props.totalInvestment}
+            year1TaxBenefit={props.investorCashFlows?.[0]?.taxBenefit || 0}
+            total10YearBenefits={props.total10YearBenefits || 0}
+            benefitMultiple={props.benefitMultiple || 0}
+            investorCashFlows={props.investorCashFlows}
+            formatCurrency={props.formatCurrency}
+          />
+        )}
 
         <InvestorCashFlowSection
           investorCashFlows={props.investorCashFlows}

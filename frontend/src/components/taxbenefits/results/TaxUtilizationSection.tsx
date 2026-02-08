@@ -1,0 +1,298 @@
+import React, { useState } from 'react';
+import '../../../styles/taxbenefits/hdcCalculator.css';
+import CollapsibleSection from './CollapsibleSection';
+import type { TaxUtilizationResult } from '../../../utils/taxbenefits/investorTaxUtilization';
+
+/**
+ * Phase A2: Tax Utilization Section
+ *
+ * Displays detailed tax utilization analysis when income composition is provided.
+ * Conditionally replaces InvestmentRecoverySection when taxUtilization is computed.
+ *
+ * Display sections:
+ * 1. Treatment Banner: treatmentLabel (e.g., "Non-REP — Passive Treatment")
+ * 2. Summary Strip: totalDepreciationSavings, totalLIHTCUsed, overallUtilizationRate, fitIndicator
+ * 3. Year-by-Year Table (collapsible, default collapsed): annualUtilization array
+ * 4. Recapture Coverage: recaptureCoverage array (exit tax, offsets, coverage ratio)
+ * 5. NOL Drawdown (nonpassive only): nolDrawdownSchedule if entries exist
+ */
+
+interface TaxUtilizationSectionProps {
+  taxUtilization: TaxUtilizationResult;
+  totalInvestment: number;
+  formatCurrency: (value: number) => string;
+}
+
+const TaxUtilizationSection: React.FC<TaxUtilizationSectionProps> = ({
+  taxUtilization,
+  totalInvestment,
+  formatCurrency
+}) => {
+  const [showYearlyDetail, setShowYearlyDetail] = useState(false);
+
+  // Helper to get fit indicator color
+  const getFitColor = (indicator: 'green' | 'yellow' | 'red') => {
+    switch (indicator) {
+      case 'green': return '#22c55e'; // Tailwind green-500
+      case 'yellow': return '#eab308'; // Tailwind yellow-500
+      case 'red': return '#ef4444'; // Tailwind red-500
+      default: return '#6b7280'; // Tailwind gray-500
+    }
+  };
+
+  // Helper to format percentage
+  const formatPercent = (value: number) => `${(value * 100).toFixed(1)}%`;
+
+  return (
+    <CollapsibleSection title="Tax Utilization Analysis">
+      <div>
+        {/* ═══════════════════════════════════════════════════════════════════════
+            TREATMENT BANNER
+        ═══════════════════════════════════════════════════════════════════════ */}
+        <div style={{
+          backgroundColor: taxUtilization.treatment === 'nonpassive' ? '#E8F5E9' : '#E3F2FD',
+          border: `1px solid ${taxUtilization.treatment === 'nonpassive' ? '#4CAF50' : '#2196F3'}`,
+          borderRadius: '0.375rem',
+          padding: '0.75rem',
+          marginBottom: '1rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <span style={{ fontSize: '0.75rem', color: '#666', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Tax Treatment
+              </span>
+              <div style={{ fontSize: '1rem', fontWeight: 600, color: '#333', marginTop: '0.25rem' }}>
+                {taxUtilization.treatmentLabel}
+              </div>
+            </div>
+            {/* Fit Indicator */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div
+                style={{
+                  width: '12px',
+                  height: '12px',
+                  borderRadius: '50%',
+                  backgroundColor: getFitColor(taxUtilization.fitIndicator)
+                }}
+                title={taxUtilization.fitExplanation}
+              />
+              <span style={{ fontSize: '0.8rem', color: '#666' }}>
+                {taxUtilization.fitIndicator === 'green' ? 'Excellent Fit' :
+                 taxUtilization.fitIndicator === 'yellow' ? 'Moderate Fit' : 'Limited Fit'}
+              </span>
+            </div>
+          </div>
+          {taxUtilization.fitExplanation && (
+            <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem' }}>
+              {taxUtilization.fitExplanation}
+            </div>
+          )}
+        </div>
+
+        {/* ═══════════════════════════════════════════════════════════════════════
+            SUMMARY METRICS
+        ═══════════════════════════════════════════════════════════════════════ */}
+        <div style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid rgba(146, 195, 194, 0.3)' }}>
+          <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--hdc-faded-jade)', marginBottom: '0.75rem' }}>
+            Utilization Summary
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div className="hdc-result-row">
+              <span className="hdc-result-label">Total Investment:</span>
+              <span className="hdc-result-value">{formatCurrency(totalInvestment)}</span>
+            </div>
+
+            <div className="hdc-result-row">
+              <span className="hdc-result-label">Overall Utilization:</span>
+              <span className="hdc-result-value" style={{ fontWeight: 600, color: 'var(--hdc-brown-rust)' }}>
+                {formatPercent(taxUtilization.overallUtilizationRate)}
+              </span>
+            </div>
+
+            <div className="hdc-result-row">
+              <span className="hdc-result-label">Depreciation Savings:</span>
+              <span className="hdc-result-value hdc-value-positive">
+                {formatCurrency(taxUtilization.totalDepreciationSavings)}
+              </span>
+            </div>
+
+            <div className="hdc-result-row">
+              <span className="hdc-result-label">LIHTC Used:</span>
+              <span className="hdc-result-value hdc-value-positive">
+                {formatCurrency(taxUtilization.totalLIHTCUsed)}
+              </span>
+            </div>
+
+            <div className="hdc-result-row">
+              <span className="hdc-result-label">Benefits Generated:</span>
+              <span className="hdc-result-value">{formatCurrency(taxUtilization.totalBenefitGenerated)}</span>
+            </div>
+
+            <div className="hdc-result-row">
+              <span className="hdc-result-label">Benefits Usable:</span>
+              <span className="hdc-result-value" style={{ fontWeight: 600 }}>
+                {formatCurrency(taxUtilization.totalBenefitUsable)}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* ═══════════════════════════════════════════════════════════════════════
+            YEAR-BY-YEAR TABLE (Collapsible)
+        ═══════════════════════════════════════════════════════════════════════ */}
+        <div style={{ marginBottom: '1.5rem' }}>
+          <div
+            style={{
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              color: 'var(--hdc-faded-jade)',
+              marginBottom: '0.5rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+            onClick={() => setShowYearlyDetail(!showYearlyDetail)}
+          >
+            <span>{showYearlyDetail ? '▼' : '▶'}</span>
+            Year-by-Year Detail
+          </div>
+
+          {showYearlyDetail && (
+            <div style={{ overflowX: 'auto', marginTop: '0.5rem' }}>
+              <table style={{ width: '100%', fontSize: '0.75rem', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ backgroundColor: 'rgba(146, 195, 194, 0.1)', textAlign: 'left' }}>
+                    <th style={{ padding: '0.5rem', borderBottom: '1px solid rgba(146, 195, 194, 0.3)' }}>Year</th>
+                    <th style={{ padding: '0.5rem', borderBottom: '1px solid rgba(146, 195, 194, 0.3)', textAlign: 'right' }}>Depr Generated</th>
+                    <th style={{ padding: '0.5rem', borderBottom: '1px solid rgba(146, 195, 194, 0.3)', textAlign: 'right' }}>Depr Allowed</th>
+                    <th style={{ padding: '0.5rem', borderBottom: '1px solid rgba(146, 195, 194, 0.3)', textAlign: 'right' }}>Tax Savings</th>
+                    <th style={{ padding: '0.5rem', borderBottom: '1px solid rgba(146, 195, 194, 0.3)', textAlign: 'right' }}>LIHTC</th>
+                    <th style={{ padding: '0.5rem', borderBottom: '1px solid rgba(146, 195, 194, 0.3)', textAlign: 'right' }}>Utilization</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {taxUtilization.annualUtilization.map((year) => (
+                    <tr key={year.year} style={{ borderBottom: '1px solid rgba(146, 195, 194, 0.15)' }}>
+                      <td style={{ padding: '0.5rem' }}>{year.year}</td>
+                      <td style={{ padding: '0.5rem', textAlign: 'right' }}>{formatCurrency(year.depreciationGenerated)}</td>
+                      <td style={{ padding: '0.5rem', textAlign: 'right' }}>{formatCurrency(year.depreciationAllowed)}</td>
+                      <td style={{ padding: '0.5rem', textAlign: 'right', color: 'var(--hdc-cabbage-pont)' }}>
+                        {formatCurrency(year.depreciationTaxSavings)}
+                      </td>
+                      <td style={{ padding: '0.5rem', textAlign: 'right' }}>{formatCurrency(year.lihtcUsable)}</td>
+                      <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 500 }}>
+                        {formatPercent(year.utilizationRate)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* ═══════════════════════════════════════════════════════════════════════
+            RECAPTURE COVERAGE
+        ═══════════════════════════════════════════════════════════════════════ */}
+        {taxUtilization.recaptureCoverage && taxUtilization.recaptureCoverage.length > 0 && (
+          <div style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid rgba(146, 195, 194, 0.3)' }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--hdc-faded-jade)', marginBottom: '0.75rem' }}>
+              Exit Recapture Coverage
+            </div>
+
+            {taxUtilization.recaptureCoverage.map((coverage, idx) => (
+              <div key={idx} style={{
+                backgroundColor: 'rgba(146, 195, 194, 0.1)',
+                border: '1px solid var(--hdc-faded-jade)',
+                borderRadius: '0.375rem',
+                padding: '0.75rem',
+                marginBottom: idx < taxUtilization.recaptureCoverage.length - 1 ? '0.5rem' : 0
+              }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+                  Year {coverage.exitYear} Exit
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.75rem' }}>
+                  <div className="hdc-result-row">
+                    <span className="hdc-result-label">Total Exit Tax:</span>
+                    <span className="hdc-result-value" style={{ color: '#ef4444' }}>
+                      {formatCurrency(coverage.totalExitTax)}
+                    </span>
+                  </div>
+
+                  <div className="hdc-result-row">
+                    <span className="hdc-result-label">Available Offsets:</span>
+                    <span className="hdc-result-value" style={{ color: 'var(--hdc-cabbage-pont)' }}>
+                      {formatCurrency(coverage.totalAvailableOffset)}
+                    </span>
+                  </div>
+
+                  <div className="hdc-result-row">
+                    <span className="hdc-result-label">Net Exposure:</span>
+                    <span className="hdc-result-value" style={{ fontWeight: 600 }}>
+                      {formatCurrency(coverage.netExitExposure)}
+                    </span>
+                  </div>
+
+                  <div className="hdc-result-row">
+                    <span className="hdc-result-label">Coverage Ratio:</span>
+                    <span className="hdc-result-value" style={{
+                      fontWeight: 600,
+                      color: coverage.coverageRatio >= 1 ? 'var(--hdc-cabbage-pont)' :
+                             coverage.coverageRatio >= 0.5 ? '#eab308' : '#ef4444'
+                    }}>
+                      {formatPercent(coverage.coverageRatio)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════════════
+            NOL DRAWDOWN (Nonpassive only)
+        ═══════════════════════════════════════════════════════════════════════ */}
+        {taxUtilization.treatment === 'nonpassive' &&
+         taxUtilization.nolDrawdownSchedule &&
+         taxUtilization.nolDrawdownSchedule.length > 0 && (
+          <div>
+            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--hdc-faded-jade)', marginBottom: '0.75rem' }}>
+              NOL Drawdown Schedule
+            </div>
+
+            <div style={{ fontSize: '0.75rem', marginBottom: '0.5rem' }}>
+              <span style={{ color: '#666' }}>Years to exhaust NOL: </span>
+              <span style={{ fontWeight: 600 }}>{taxUtilization.nolDrawdownYears}</span>
+            </div>
+
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', fontSize: '0.75rem', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ backgroundColor: 'rgba(146, 195, 194, 0.1)', textAlign: 'left' }}>
+                    <th style={{ padding: '0.5rem', borderBottom: '1px solid rgba(146, 195, 194, 0.3)' }}>Year Post-Exit</th>
+                    <th style={{ padding: '0.5rem', borderBottom: '1px solid rgba(146, 195, 194, 0.3)', textAlign: 'right' }}>NOL Used</th>
+                    <th style={{ padding: '0.5rem', borderBottom: '1px solid rgba(146, 195, 194, 0.3)', textAlign: 'right' }}>NOL Remaining</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {taxUtilization.nolDrawdownSchedule.map((entry) => (
+                    <tr key={entry.year} style={{ borderBottom: '1px solid rgba(146, 195, 194, 0.15)' }}>
+                      <td style={{ padding: '0.5rem' }}>{entry.year}</td>
+                      <td style={{ padding: '0.5rem', textAlign: 'right' }}>{formatCurrency(entry.nolUsed)}</td>
+                      <td style={{ padding: '0.5rem', textAlign: 'right' }}>{formatCurrency(entry.nolRemaining)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    </CollapsibleSection>
+  );
+};
+
+export default TaxUtilizationSection;

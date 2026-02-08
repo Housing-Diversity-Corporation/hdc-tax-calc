@@ -134,6 +134,12 @@ export const useHDCState = () => {
   const [annualIncome, setAnnualIncome] = useState<number>(0);
   const [filingStatus, setFilingStatus] = useState<'single' | 'married'>('single');
 
+  // Income Composition (Phase A2 - Tax Utilization)
+  const [annualOrdinaryIncome, setAnnualOrdinaryIncome] = useState<number>(750000);
+  const [annualPassiveIncome, setAnnualPassiveIncome] = useState<number>(0);
+  const [annualPortfolioIncome, setAnnualPortfolioIncome] = useState<number>(0);
+  const [groupingElection, setGroupingElection] = useState<boolean>(false);
+
   // Tax Planning Analysis fields - ALWAYS ENABLED (core feature of HDC calculator)
   const [includeDepreciationSchedule, setIncludeDepreciationSchedule] = useState(true);
 
@@ -525,6 +531,12 @@ export const useHDCState = () => {
     // Investor Information
     annualIncome, setAnnualIncome,
     filingStatus, setFilingStatus,
+
+    // Income Composition (Phase A2 - Tax Utilization)
+    annualOrdinaryIncome, setAnnualOrdinaryIncome,
+    annualPassiveIncome, setAnnualPassiveIncome,
+    annualPortfolioIncome, setAnnualPortfolioIncome,
+    groupingElection, setGroupingElection,
 
     // Tax Planning Analysis
     includeDepreciationSchedule, setIncludeDepreciationSchedule,

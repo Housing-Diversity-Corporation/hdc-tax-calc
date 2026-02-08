@@ -42,6 +42,17 @@ interface InvestorProfileSectionProps {
   filingStatus: 'single' | 'married';
   setFilingStatus: (value: 'single' | 'married') => void;
 
+  // Income Composition (Phase A2 - Tax Utilization)
+  annualOrdinaryIncome?: number;
+  setAnnualOrdinaryIncome?: (value: number) => void;
+  annualPassiveIncome?: number;
+  setAnnualPassiveIncome?: (value: number) => void;
+  annualPortfolioIncome?: number;
+  setAnnualPortfolioIncome?: (value: number) => void;
+  groupingElection?: boolean;
+  setGroupingElection?: (value: boolean) => void;
+  incomeFieldsEditable?: boolean;  // Allow editing even when taxSectionReadOnly
+
   // Read-only mode
   isReadOnly?: boolean;
 }
@@ -71,6 +82,15 @@ const InvestorProfileSection: React.FC<InvestorProfileSectionProps> = ({
   setAnnualIncome,
   filingStatus,
   setFilingStatus,
+  annualOrdinaryIncome = 750000,
+  setAnnualOrdinaryIncome,
+  annualPassiveIncome = 0,
+  setAnnualPassiveIncome,
+  annualPortfolioIncome = 0,
+  setAnnualPortfolioIncome,
+  groupingElection = false,
+  setGroupingElection,
+  incomeFieldsEditable = false,
   isReadOnly = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -219,6 +239,93 @@ const InvestorProfileSection: React.FC<InvestorProfileSectionProps> = ({
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* Income Composition (Phase A2 - Tax Utilization) */}
+            <div style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(146, 195, 194, 0.3)', paddingTop: '1rem' }}>
+              <h4 style={{
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                color: 'var(--hdc-faded-jade)',
+                marginBottom: '0.75rem',
+              }}>
+                Income Composition (Tax Utilization)
+              </h4>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+                <div className="hdc-input-group">
+                  <label className="hdc-input-label">Ordinary Income ($)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="10000"
+                    value={annualOrdinaryIncome}
+                    onChange={(e) => setAnnualOrdinaryIncome?.(Number(e.target.value))}
+                    className="hdc-input"
+                    placeholder="W-2, active business"
+                    disabled={isReadOnly && !incomeFieldsEditable}
+                    style={(isReadOnly && !incomeFieldsEditable) ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
+                  />
+                  <span style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem' }}>
+                    W-2, active business, board fees
+                  </span>
+                </div>
+
+                <div className="hdc-input-group">
+                  <label className="hdc-input-label">Passive Income ($)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="10000"
+                    value={annualPassiveIncome}
+                    onChange={(e) => setAnnualPassiveIncome?.(Number(e.target.value))}
+                    className="hdc-input"
+                    placeholder="K-1 from funds"
+                    disabled={isReadOnly && !incomeFieldsEditable}
+                    style={(isReadOnly && !incomeFieldsEditable) ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
+                  />
+                  <span style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem' }}>
+                    K-1 from funds, rental income
+                  </span>
+                </div>
+
+                <div className="hdc-input-group">
+                  <label className="hdc-input-label">Portfolio Income ($)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="10000"
+                    value={annualPortfolioIncome}
+                    onChange={(e) => setAnnualPortfolioIncome?.(Number(e.target.value))}
+                    className="hdc-input"
+                    placeholder="Stock/crypto gains"
+                    disabled={isReadOnly && !incomeFieldsEditable}
+                    style={(isReadOnly && !incomeFieldsEditable) ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
+                  />
+                  <span style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem' }}>
+                    Stock/crypto gains, dividends
+                  </span>
+                </div>
+              </div>
+
+              {/* Grouping Election - REP only */}
+              {localInvestorTrack === 'rep' && (
+                <div className="hdc-input-group" style={{ marginTop: '0.75rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (isReadOnly && !incomeFieldsEditable) ? 'not-allowed' : 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={groupingElection}
+                      onChange={(e) => setGroupingElection?.(e.target.checked)}
+                      disabled={isReadOnly && !incomeFieldsEditable}
+                      style={{ width: '16px', height: '16px' }}
+                    />
+                    <span className="hdc-input-label" style={{ marginBottom: 0 }}>§469(c)(7)(A)(ii) Grouping Election</span>
+                  </label>
+                  <span style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem', marginLeft: '24px' }}>
+                    Treat all rental activities as a single activity
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Investor Type */}
