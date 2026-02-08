@@ -780,4 +780,66 @@ describe('IMPL-056: Live Calculation Excel Model', () => {
       expect(stateAnnualCell.f).toContain('StateLIHTCAnnualCredit');
     });
   });
+
+  describe('Phase A2: Tax Utilization Sheet (conditional)', () => {
+    it('should NOT include Tax_Utilization sheet when taxUtilization is not present', () => {
+      const params: LiveExcelParams = {
+        params: TEST_PARAMS,
+        investorResults: TEST_INVESTOR_RESULTS, // No taxUtilization
+        hdcResults: TEST_HDC_RESULTS,
+        cashFlows: TEST_INVESTOR_RESULTS.investorCashFlows,
+        hdcCashFlows: TEST_HDC_RESULTS.hdcCashFlows,
+      };
+
+      const workbook = generateLiveExcelModel(params);
+
+      expect(workbook.SheetNames).not.toContain('Tax_Utilization');
+      expect(workbook.SheetNames).toHaveLength(14);
+    });
+
+    it('should include Tax_Utilization sheet when taxUtilization is present', () => {
+      // Create investorResults with taxUtilization data
+      const resultsWithTaxUtil: InvestorAnalysisResults = {
+        ...TEST_INVESTOR_RESULTS,
+        taxUtilization: {
+          treatment: 'passive' as const,
+          treatmentLabel: 'Non-REP — Passive Treatment',
+          annualUtilization: [
+            { year: 1, depreciationGenerated: 100000, depreciationAllowed: 50000, depreciationTaxSavings: 18500, lihtcUsable: 0, utilizationRate: 0.5 },
+            { year: 2, depreciationGenerated: 50000, depreciationAllowed: 50000, depreciationTaxSavings: 18500, lihtcUsable: 0, utilizationRate: 1.0 },
+          ],
+          recaptureCoverage: [
+            { exitYear: 10, totalExitTax: 50000, totalAvailableOffset: 40000, netExitExposure: 10000, coverageRatio: 0.8 },
+          ],
+          nolDrawdownYears: 0,
+          nolDrawdownSchedule: [],
+          totalDepreciationSavings: 37000,
+          totalLIHTCUsed: 0,
+          totalBenefitGenerated: 150000,
+          totalBenefitUsable: 100000,
+          overallUtilizationRate: 0.67,
+          fitIndicator: 'yellow' as const,
+          fitExplanation: 'Moderate passive income utilization',
+        },
+      };
+
+      const params: LiveExcelParams = {
+        params: TEST_PARAMS,
+        investorResults: resultsWithTaxUtil,
+        hdcResults: TEST_HDC_RESULTS,
+        cashFlows: resultsWithTaxUtil.investorCashFlows,
+        hdcCashFlows: TEST_HDC_RESULTS.hdcCashFlows,
+      };
+
+      const workbook = generateLiveExcelModel(params);
+
+      expect(workbook.SheetNames).toContain('Tax_Utilization');
+      expect(workbook.SheetNames).toHaveLength(15);
+
+      // Verify the sheet has content
+      const taxUtilSheet = workbook.Sheets['Tax_Utilization'];
+      expect(taxUtilSheet).toBeDefined();
+      expect(taxUtilSheet['A1']?.v).toBe('TAX UTILIZATION ANALYSIS');
+    });
+  });
 });

@@ -56,6 +56,7 @@ import { buildInvestorReturnsSheet } from './sheets/investorReturnsSheet';
 import { buildHDCReturnsSheet } from './sheets/hdcReturnsSheet';
 import { buildSummarySheet } from './sheets/summarySheet';
 import { buildValidationSheet } from './sheets/validationSheet';
+import { buildTaxUtilizationSheet } from './sheets/taxUtilizationSheet';
 
 // ============================================================================
 // MAIN EXPORT FUNCTIONS
@@ -124,7 +125,15 @@ export function generateLiveExcelModel(data: LiveExcelParams): XLSX.WorkBook {
     noiGrowthRate: params.noiGrowthRate,
   });
   // ISS-070Q: Pass isExport flag to enable export-only logging
-  const investorResults = calculateFullInvestorAnalysis(params, { isExport: true });
+  const recalculatedResults = calculateFullInvestorAnalysis(params, { isExport: true });
+
+  // Phase A2: Preserve taxUtilization from the original passed-in results
+  // The recalculation doesn't have income composition params, so taxUtilization is not computed.
+  // Use the pre-computed taxUtilization from the UI which has the correct income data.
+  const investorResults = {
+    ...recalculatedResults,
+    taxUtilization: data.investorResults?.taxUtilization || recalculatedResults.taxUtilization,
+  };
   const cashFlows = investorResults.investorCashFlows || [];
   // ISS-070N: Log what we got back from calculation
   // ISS-070P: Verify calculation used correct params by checking results
@@ -307,7 +316,26 @@ export function generateLiveExcelModel(data: LiveExcelParams): XLSX.WorkBook {
   XLSX.utils.book_append_sheet(wb, summaryResult.sheet, 'Summary');
   allNamedRanges.push(...summaryResult.namedRanges);
 
-  // 14. Validation (depends on: all sheets)
+  // 14. Tax Utilization (conditional - only when taxUtilization exists)
+  // Phase A2: Income-adjusted utilization analysis
+  console.log('[TAX_UTIL_EXPORT] taxUtilization exists:', !!investorResults.taxUtilization);
+  console.log('[TAX_UTIL_EXPORT] from original data:', !!data.investorResults?.taxUtilization);
+  console.log('[TAX_UTIL_EXPORT] from recalculated:', !!recalculatedResults.taxUtilization);
+  if (investorResults.taxUtilization) {
+    // Calculate totalInvestment same as Summary sheet
+    const syndicationOffset = investorResults.syndicatedEquityOffset || 0;
+    const syndicationYear = investorResults.stateLIHTCSyndicationYear ?? params.stateLIHTCSyndicationYear ?? 0;
+    const investorEquityGross = params.projectCost * params.investorEquityPct / 100;
+    const investorEquityNet = investorEquityGross - syndicationOffset;
+    const investorSubDebt = params.projectCost * (params.investorSubDebtPct || 0) / 100;
+    const totalInvestmentForUtil = (syndicationYear === 0 ? investorEquityNet : investorEquityGross) + investorSubDebt;
+
+    const taxUtilizationResult = buildTaxUtilizationSheet(investorResults, totalInvestmentForUtil);
+    XLSX.utils.book_append_sheet(wb, taxUtilizationResult.sheet, 'Tax_Utilization');
+    allNamedRanges.push(...taxUtilizationResult.namedRanges);
+  }
+
+  // 15. Validation (depends on: all sheets)
   const validationResult = buildValidationSheet(params, investorResults, hdcResults, cashFlows);
   XLSX.utils.book_append_sheet(wb, validationResult.sheet, 'Validation');
   allNamedRanges.push(...validationResult.namedRanges);

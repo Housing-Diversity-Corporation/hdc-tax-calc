@@ -612,7 +612,195 @@ export const HDCTaxReportJsPDFButton: React.FC<HDCTaxReportJsPDFProps> = ({
         });
       }
 
-      // Page 6: OZ Tax Benefits & Timing
+      // Page 6: Tax Utilization Analysis (Phase A2 - Conditional)
+      if (investorResults.taxUtilization) {
+        doc.addPage('a4', 'landscape');
+        currentPage++;
+        yPosition = margin;
+        addHeader();
+
+        addSectionTitle('Tax Utilization Analysis');
+
+        const taxUtil = investorResults.taxUtilization;
+
+        // Treatment Banner
+        doc.setFontSize(12);
+        doc.setTextColor(...primaryColor);
+        doc.text('Tax Treatment', margin, yPosition);
+        yPosition += lineHeight * 1.5;
+
+        doc.setFontSize(11);
+        doc.setTextColor(...darkText);
+        doc.text(taxUtil.treatmentLabel, margin, yPosition);
+        yPosition += lineHeight;
+
+        // Fit Indicator
+        const fitLabel = taxUtil.fitIndicator === 'green' ? 'Excellent Fit' :
+                        taxUtil.fitIndicator === 'yellow' ? 'Moderate Fit' : 'Limited Fit';
+        doc.text(`Fit Indicator: ${fitLabel}`, margin, yPosition);
+        yPosition += lineHeight;
+
+        if (taxUtil.fitExplanation) {
+          doc.setFontSize(9);
+          doc.setTextColor(...grayText);
+          const explanationLines = doc.splitTextToSize(taxUtil.fitExplanation, pageWidth - margin * 2);
+          explanationLines.forEach((line: string) => {
+            doc.text(line, margin, yPosition);
+            yPosition += 4;
+          });
+          yPosition += lineHeight * 0.5;
+        }
+
+        yPosition += lineHeight;
+
+        // Summary Metrics Table
+        const utilizationMetrics = [
+          ['Metric', 'Value'],
+          ['Total Benefits Generated', formatMoney(taxUtil.totalBenefitGenerated)],
+          ['Total Benefits Usable', formatMoney(taxUtil.totalBenefitUsable)],
+          ['Total Depreciation Savings', formatMoney(taxUtil.totalDepreciationSavings)],
+          ['Total LIHTC Used', formatMoney(taxUtil.totalLIHTCUsed)],
+          ['Overall Utilization Rate', formatPercent(taxUtil.overallUtilizationRate * 100)],
+        ];
+
+        autoTable(doc, {
+          startY: yPosition,
+          head: [utilizationMetrics[0]],
+          body: utilizationMetrics.slice(1),
+          theme: 'grid',
+          headStyles: { fillColor: [64, 127, 127], textColor: 255 },
+          columnStyles: {
+            0: { fontStyle: 'bold', cellWidth: 60 },
+            1: { halign: 'right', cellWidth: 50 }
+          },
+          margin: { left: margin },
+          tableWidth: 120
+        });
+
+        yPosition = (doc as any).lastAutoTable.finalY + lineHeight * 2;
+
+        // Full Year-by-Year Table
+        if (taxUtil.annualUtilization && taxUtil.annualUtilization.length > 0) {
+          checkPageBreak(100);
+
+          doc.setFontSize(11);
+          doc.setTextColor(...secondaryColor);
+          doc.text('Year-by-Year Utilization', margin, yPosition);
+          yPosition += lineHeight;
+
+          const yearHeaders = ['Year', 'Depr Generated', 'Depr Allowed', 'Tax Savings', 'LIHTC Usable', 'Utilization %'];
+          const yearData = taxUtil.annualUtilization.map(y => [
+            String(y.year),
+            formatMoney(y.depreciationGenerated),
+            formatMoney(y.depreciationAllowed),
+            formatMoney(y.depreciationTaxSavings),
+            formatMoney(y.lihtcUsable),
+            formatPercent(y.utilizationRate * 100)
+          ]);
+
+          autoTable(doc, {
+            startY: yPosition,
+            head: [yearHeaders],
+            body: yearData,
+            theme: 'striped',
+            headStyles: { fillColor: [127, 189, 69], textColor: 255, fontSize: 8 },
+            bodyStyles: { fontSize: 8 },
+            columnStyles: {
+              0: { halign: 'center', cellWidth: 15 },
+              1: { halign: 'right' },
+              2: { halign: 'right' },
+              3: { halign: 'right' },
+              4: { halign: 'right' },
+              5: { halign: 'right', fontStyle: 'bold' }
+            },
+            margin: { left: margin }
+          });
+
+          yPosition = (doc as any).lastAutoTable.finalY + lineHeight * 2;
+        }
+
+        // Recapture Coverage Table
+        if (taxUtil.recaptureCoverage && taxUtil.recaptureCoverage.length > 0) {
+          checkPageBreak(60);
+
+          doc.setFontSize(11);
+          doc.setTextColor(...secondaryColor);
+          doc.text('Exit Recapture Coverage', margin, yPosition);
+          yPosition += lineHeight;
+
+          const recaptureHeaders = ['Exit Year', 'Total Exit Tax', 'Available Offset', 'Net Exposure', 'Coverage Ratio'];
+          const recaptureData = taxUtil.recaptureCoverage.map(c => [
+            `Year ${c.exitYear}`,
+            formatMoney(c.totalExitTax),
+            formatMoney(c.totalAvailableOffset),
+            formatMoney(c.netExitExposure),
+            formatPercent(c.coverageRatio * 100)
+          ]);
+
+          autoTable(doc, {
+            startY: yPosition,
+            head: [recaptureHeaders],
+            body: recaptureData,
+            theme: 'striped',
+            headStyles: { fillColor: [64, 127, 127], textColor: 255, fontSize: 8 },
+            bodyStyles: { fontSize: 8 },
+            columnStyles: {
+              0: { halign: 'center' },
+              1: { halign: 'right' },
+              2: { halign: 'right' },
+              3: { halign: 'right' },
+              4: { halign: 'right', fontStyle: 'bold' }
+            },
+            margin: { left: margin }
+          });
+
+          yPosition = (doc as any).lastAutoTable.finalY + lineHeight * 2;
+        }
+
+        // NOL Drawdown Schedule (Nonpassive only)
+        if (taxUtil.treatment === 'nonpassive' &&
+            taxUtil.nolDrawdownSchedule &&
+            taxUtil.nolDrawdownSchedule.length > 0) {
+          checkPageBreak(80);
+
+          doc.setFontSize(11);
+          doc.setTextColor(...secondaryColor);
+          doc.text('NOL Drawdown Schedule', margin, yPosition);
+          yPosition += lineHeight;
+
+          doc.setFontSize(10);
+          doc.setTextColor(...darkText);
+          doc.text(`Years to exhaust NOL: ${taxUtil.nolDrawdownYears}`, margin, yPosition);
+          yPosition += lineHeight;
+
+          const nolHeaders = ['Year Post-Exit', 'NOL Used', 'NOL Remaining'];
+          const nolData = taxUtil.nolDrawdownSchedule.map(n => [
+            String(n.year),
+            formatMoney(n.nolUsed),
+            formatMoney(n.nolRemaining)
+          ]);
+
+          autoTable(doc, {
+            startY: yPosition,
+            head: [nolHeaders],
+            body: nolData,
+            theme: 'striped',
+            headStyles: { fillColor: [127, 189, 69], textColor: 255, fontSize: 8 },
+            bodyStyles: { fontSize: 8 },
+            columnStyles: {
+              0: { halign: 'center', cellWidth: 30 },
+              1: { halign: 'right' },
+              2: { halign: 'right' }
+            },
+            margin: { left: margin },
+            tableWidth: 120
+          });
+
+          yPosition = (doc as any).lastAutoTable.finalY + lineHeight * 2;
+        }
+      }
+
+      // Page 7: OZ Tax Benefits & Timing
       if (ozBasis > 0 || params.ozEnabled) {
         checkPageBreak(120);
         if (yPosition < 50) {
