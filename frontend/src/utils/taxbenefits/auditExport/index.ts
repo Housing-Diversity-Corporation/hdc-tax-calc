@@ -170,7 +170,7 @@ export function generateLiveExcelModel(data: LiveExcelParams): XLSX.WorkBook {
   }
 
   // ISS-070g/h: Log calculation results for comparison
-  const holdPeriod = params.holdPeriod;
+  const holdPeriod = params.holdPeriod || 10;
   const y10NOI = cashFlows[holdPeriod - 1]?.noi || 0;
   console.log('[ISS-070g] Calculation results:', {
     exitValue: investorResults.exitValue,
@@ -231,6 +231,9 @@ export function generateLiveExcelModel(data: LiveExcelParams): XLSX.WorkBook {
     philDebtAmortization: params.philDebtAmortization,
     interestReserveEnabled: params.interestReserveEnabled,
     interestReserveMonths: params.interestReserveMonths,
+    philanthropicEquityPct: params.philanthropicEquityPct || 0,
+    hdcFeeRate: params.hdcFeeRate,
+    hdcFee: params.hdcFee,
     investorEquity: investorResults.investorEquity,
     investorCashFlows: cashFlows,
   });
