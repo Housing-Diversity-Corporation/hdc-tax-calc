@@ -26,6 +26,18 @@ public class InvestorTaxInfo {
     @Column(name = "annual_income")
     private Double annualIncome;
 
+    @Column(name = "annual_ordinary_income")
+    private Double annualOrdinaryIncome;
+
+    @Column(name = "annual_passive_income")
+    private Double annualPassiveIncome;
+
+    @Column(name = "annual_portfolio_income")
+    private Double annualPortfolioIncome;
+
+    @Column(name = "grouping_election")
+    private Boolean groupingElection;
+
     @Column(name = "filing_status")
     private String filingStatus; // 'single' or 'married'
 
@@ -122,6 +134,18 @@ public class InvestorTaxInfo {
     public void setAnnualIncome(Double annualIncome) {
         this.annualIncome = annualIncome;
     }
+
+    public Double getAnnualOrdinaryIncome() { return annualOrdinaryIncome; }
+    public void setAnnualOrdinaryIncome(Double annualOrdinaryIncome) { this.annualOrdinaryIncome = annualOrdinaryIncome; }
+
+    public Double getAnnualPassiveIncome() { return annualPassiveIncome; }
+    public void setAnnualPassiveIncome(Double annualPassiveIncome) { this.annualPassiveIncome = annualPassiveIncome; }
+
+    public Double getAnnualPortfolioIncome() { return annualPortfolioIncome; }
+    public void setAnnualPortfolioIncome(Double annualPortfolioIncome) { this.annualPortfolioIncome = annualPortfolioIncome; }
+
+    public Boolean getGroupingElection() { return groupingElection; }
+    public void setGroupingElection(Boolean groupingElection) { this.groupingElection = groupingElection; }
 
     public String getFilingStatus() {
         return filingStatus;

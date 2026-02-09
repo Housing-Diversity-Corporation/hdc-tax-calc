@@ -48,6 +48,10 @@ public class InvestorTaxInfoService {
             // Update all fields
             taxInfo.setProfileName(updatedTaxInfo.getProfileName());
             taxInfo.setAnnualIncome(updatedTaxInfo.getAnnualIncome());
+            taxInfo.setAnnualOrdinaryIncome(updatedTaxInfo.getAnnualOrdinaryIncome());
+            taxInfo.setAnnualPassiveIncome(updatedTaxInfo.getAnnualPassiveIncome());
+            taxInfo.setAnnualPortfolioIncome(updatedTaxInfo.getAnnualPortfolioIncome());
+            taxInfo.setGroupingElection(updatedTaxInfo.getGroupingElection());
             taxInfo.setFilingStatus(updatedTaxInfo.getFilingStatus());
             taxInfo.setFederalOrdinaryRate(updatedTaxInfo.getFederalOrdinaryRate());
             taxInfo.setStateOrdinaryRate(updatedTaxInfo.getStateOrdinaryRate());
