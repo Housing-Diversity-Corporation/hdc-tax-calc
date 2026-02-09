@@ -82,6 +82,19 @@ const getTaxRateFromIncome = (income: number, filingStatus: 'single' | 'married'
   return applicableBrackets[applicableBrackets.length - 1].rate;
 };
 
+// Phase B1-5: Helper function to format income values compactly for profile cards
+const formatIncomeCompact = (value: number): string => {
+  if (value >= 1000000) {
+    const millions = value / 1000000;
+    return `$${millions % 1 === 0 ? millions.toFixed(0) : millions.toFixed(1)}M`;
+  }
+  if (value >= 1000) {
+    const thousands = value / 1000;
+    return `$${thousands % 1 === 0 ? thousands.toFixed(0) : thousands.toFixed(0)}K`;
+  }
+  return `$${value}`;
+};
+
 const InvestorTaxProfilePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -103,6 +116,12 @@ const InvestorTaxProfilePage: React.FC = () => {
     deferredCapitalGains: 0,
     capitalGainsTaxRate: 23.8,
     isDefault: false,
+    // Phase B1-3: Income Composition fields
+    annualOrdinaryIncome: 750000,
+    annualPassiveIncome: 0,
+    annualPortfolioIncome: 0,
+    // Phase B1-4: Grouping Election (REP only)
+    groupingElection: false,
   });
 
   const NIIT_RATE = 3.8;
@@ -157,12 +176,20 @@ const InvestorTaxProfilePage: React.FC = () => {
     }
   }, [currentProfile.selectedState]);
 
-  // Auto-update federal tax rates when annual income or filing status changes
-  useEffect(() => {
-    // Allow 0 as valid income, but skip if undefined
-    if (currentProfile.annualIncome === undefined || !currentProfile.filingStatus) return;
+  // Phase B1-3: Compute total annual income from income composition fields
+  // This is used for auto-rate calculation and saved for backward compatibility
+  const computedAnnualIncome = useMemo(() => {
+    return (currentProfile.annualOrdinaryIncome || 0) +
+           (currentProfile.annualPassiveIncome || 0) +
+           (currentProfile.annualPortfolioIncome || 0);
+  }, [currentProfile.annualOrdinaryIncome, currentProfile.annualPassiveIncome, currentProfile.annualPortfolioIncome]);
 
-    const income = currentProfile.annualIncome;
+  // Auto-update federal tax rates when income composition or filing status changes
+  useEffect(() => {
+    // Skip if no filing status
+    if (!currentProfile.filingStatus) return;
+
+    const income = computedAnnualIncome;
     const filingStatus = currentProfile.filingStatus as 'single' | 'married';
 
     // Calculate ordinary income rate
@@ -177,8 +204,10 @@ const InvestorTaxProfilePage: React.FC = () => {
       ...prev,
       federalOrdinaryRate: ordinaryRate,
       federalCapitalGainsRate: capitalGainsRate,
+      // Phase B1-3: Keep annualIncome in sync for backward compatibility
+      annualIncome: income,
     }));
-  }, [currentProfile.annualIncome, currentProfile.filingStatus]);
+  }, [computedAnnualIncome, currentProfile.filingStatus]);
 
   // Calculate effective rates
   useEffect(() => {
@@ -319,6 +348,12 @@ const InvestorTaxProfilePage: React.FC = () => {
       deferredCapitalGains: 0,
       capitalGainsTaxRate: 23.8,
       isDefault: false,
+      // Phase B1-3: Income Composition fields
+      annualOrdinaryIncome: 750000,
+      annualPassiveIncome: 0,
+      annualPortfolioIncome: 0,
+      // Phase B1-4: Grouping Election (REP only)
+      groupingElection: false,
     });
   };
 
@@ -450,7 +485,18 @@ const InvestorTaxProfilePage: React.FC = () => {
                             {profile.profileName || `${profile.selectedState} - ${profile.investorTrack === 'rep' ? 'REP' : 'Non-REP'}`}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {profile.selectedState} • {profile.investorTrack === 'rep' ? 'Real Estate Professional' : 'Non-REP Investor'}
+                            {/* Phase B1-5: Enhanced summary with income composition */}
+                            {profile.selectedState} • {profile.investorTrack === 'rep' ? 'REP' : 'Non-REP'}
+                            {/* Show income composition if any field has a value > 0 */}
+                            {((profile.annualOrdinaryIncome && profile.annualOrdinaryIncome > 0) ||
+                              (profile.annualPassiveIncome && profile.annualPassiveIncome > 0) ||
+                              (profile.annualPortfolioIncome && profile.annualPortfolioIncome > 0)) && (
+                              <span>
+                                {profile.annualOrdinaryIncome && profile.annualOrdinaryIncome > 0 && ` • ${formatIncomeCompact(profile.annualOrdinaryIncome)} ordinary`}
+                                {profile.annualPassiveIncome && profile.annualPassiveIncome > 0 && ` • ${formatIncomeCompact(profile.annualPassiveIncome)} passive`}
+                              </span>
+                            )}
+                            {` • ${profileEffectiveRate.toFixed(1)}%`}
                           </div>
                         </div>
 
@@ -554,19 +600,20 @@ const InvestorTaxProfilePage: React.FC = () => {
                 </h3>
               </div>
 
+              {/* Phase B1-3: Income Composition Fields */}
               <div className="space-y-2">
-                <Label htmlFor="annual-income">Gross Annual Income</Label>
+                <Label htmlFor="annual-ordinary-income">Annual Ordinary Income</Label>
                 <Input
-                  id="annual-income"
+                  id="annual-ordinary-income"
                   type="number"
-                  value={currentProfile.annualIncome ?? ''}
+                  value={currentProfile.annualOrdinaryIncome ?? ''}
                   onChange={(e) => {
                     const value = e.target.value;
                     const numValue = Number(value);
                     if (value !== '' && numValue < 0) return;
                     setCurrentProfile({
                       ...currentProfile,
-                      annualIncome: value === '' ? undefined : numValue
+                      annualOrdinaryIncome: value === '' ? 0 : numValue
                     });
                   }}
                   placeholder="e.g., 750000"
@@ -579,7 +626,76 @@ const InvestorTaxProfilePage: React.FC = () => {
                   }}
                 />
                 <p className="text-sm text-muted-foreground">
-                  Enter your total annual income to auto-calculate federal tax rates
+                  W-2 salary, active business income, board fees. HDC depreciation can offset this only for REP investors (subject to §461(l) cap).
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="annual-passive-income">Annual Passive Income</Label>
+                <Input
+                  id="annual-passive-income"
+                  type="number"
+                  value={currentProfile.annualPassiveIncome ?? ''}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const numValue = Number(value);
+                    if (value !== '' && numValue < 0) return;
+                    setCurrentProfile({
+                      ...currentProfile,
+                      annualPassiveIncome: value === '' ? 0 : numValue
+                    });
+                  }}
+                  placeholder="e.g., 500000"
+                  className="font-mono"
+                  min="0"
+                  onKeyDown={(e) => {
+                    if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                      e.preventDefault();
+                    }
+                  }}
+                />
+                <p className="text-sm text-muted-foreground">
+                  K-1 income from hedge funds, PE funds, rental properties you don't manage, partnership business income. This is income HDC depreciation can offset without limit.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="annual-portfolio-income">Annual Portfolio Income</Label>
+                <Input
+                  id="annual-portfolio-income"
+                  type="number"
+                  value={currentProfile.annualPortfolioIncome ?? ''}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const numValue = Number(value);
+                    if (value !== '' && numValue < 0) return;
+                    setCurrentProfile({
+                      ...currentProfile,
+                      annualPortfolioIncome: value === '' ? 0 : numValue
+                    });
+                  }}
+                  placeholder="e.g., 100000"
+                  className="font-mono"
+                  min="0"
+                  onKeyDown={(e) => {
+                    if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                      e.preventDefault();
+                    }
+                  }}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Personal stock sales, crypto gains, dividends, interest. HDC passive losses cannot offset this income regardless of investor type.
+                </p>
+              </div>
+
+              {/* Computed Total Display */}
+              <div className="p-3 bg-muted rounded-md">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Total Annual Income:</span>
+                  <span className="font-semibold font-mono">${computedAnnualIncome.toLocaleString()}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Federal tax rates are auto-calculated based on this total
                 </p>
               </div>
 
@@ -640,6 +756,30 @@ const InvestorTaxProfilePage: React.FC = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Phase B1-4: Grouping Election Toggle (REP only) */}
+              {currentProfile.investorTrack === 'rep' && (
+                <div className="space-y-2 p-3 border rounded-md bg-muted/30">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      id="grouping-election"
+                      checked={currentProfile.groupingElection || false}
+                      onChange={(e) => setCurrentProfile({
+                        ...currentProfile,
+                        groupingElection: e.target.checked
+                      })}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <Label htmlFor="grouping-election" className="text-sm font-medium cursor-pointer">
+                      §469(c)(7)(A)(ii) Grouping Election
+                    </Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground ml-7">
+                    If you've elected to treat all rental activities as a single activity under §469(c)(7)(A)(ii), toggle this on. This makes HDC losses nonpassive. If unsure, leave off and consult your tax advisor.
+                  </p>
+                </div>
+              )}
 
               {currentProfile.investorTrack === 'non-rep' && (
                 <div className="space-y-2">
