@@ -205,6 +205,21 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
         setAnnualIncome(taxProfile.annualIncome);
       }
 
+      // Phase B1-1: Apply income composition fields (Tax Utilization)
+      // Backward compatibility: Only set if field exists and is not null (old profiles have these as undefined/null)
+      if (taxProfile.annualOrdinaryIncome !== undefined && taxProfile.annualOrdinaryIncome !== null) {
+        setAnnualOrdinaryIncome(taxProfile.annualOrdinaryIncome);
+      }
+      if (taxProfile.annualPassiveIncome !== undefined && taxProfile.annualPassiveIncome !== null) {
+        setAnnualPassiveIncome(taxProfile.annualPassiveIncome);
+      }
+      if (taxProfile.annualPortfolioIncome !== undefined && taxProfile.annualPortfolioIncome !== null) {
+        setAnnualPortfolioIncome(taxProfile.annualPortfolioIncome);
+      }
+      if (taxProfile.groupingElection !== undefined && taxProfile.groupingElection !== null) {
+        setGroupingElection(taxProfile.groupingElection);
+      }
+
       if (taxProfile.filingStatus) {
         console.log('Setting filing status to:', taxProfile.filingStatus);
         setFilingStatus(taxProfile.filingStatus as 'single' | 'married');

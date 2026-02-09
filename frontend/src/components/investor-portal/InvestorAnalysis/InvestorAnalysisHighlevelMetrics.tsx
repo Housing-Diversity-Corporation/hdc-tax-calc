@@ -5,6 +5,8 @@ import type { InvestorAnalysisResults, CalculationParams, HDCAnalysisResults } f
 // IMPL-058: InvestmentSummarySection removed - duplicate info shown in SimplifiedFreeInvestmentSection
 import SimplifiedFreeInvestmentSection from './SimplifiedFreeInvestmentSection';
 import SimplifiedTaxPlanningSection from './SimplifiedTaxPlanningSection';
+// Phase B1-2: Tax Utilization Section (conditionally replaces SimplifiedTaxPlanningSection when income composition provided)
+import TaxUtilizationSection from '../../taxbenefits/results/TaxUtilizationSection';
 import InvestorCashFlowSection from '../../taxbenefits/results/InvestorCashFlowSection';
 import MetricsCharts from './MetricsCharts';
 import { HDCComprehensiveReportButton } from '../../taxbenefits/reports/HDCComprehensiveReport';
@@ -277,18 +279,29 @@ const InvestorAnalysisHighlevelMetrics: React.FC<InvestorAnalysisHighlevelMetric
           </div>
 
           {/* Right Column - Tax Planning Capacity Section */}
+          {/* Phase B1-2: Conditional Tax Utilization / Simplified Tax Planning Section */}
+          {/* When income composition is provided, taxUtilization is computed and we show the detailed analysis */}
+          {/* Otherwise, show the original Simplified Tax Planning section */}
           <div className="h-full w-full flex-1">
-            <SimplifiedTaxPlanningSection
-              totalNetTaxBenefits={totalNetTaxBenefits}
-              hdcFee={hdcFee}
-              hdcFeeRate={hdcFeeRate}
-              year1NetBenefit={year1NetBenefit}
-              year5OZTaxDue={year5OZTaxDue}
-              totalCapitalGainsRate={totalCapitalGainsRate}
-              effectiveTaxRateForDepreciation={effectiveTaxRateForDepreciation}
-              depreciationRecaptureRate={depreciationRecaptureRate}
-              formatCurrency={formatCurrencyMillions}
-            />
+            {mainAnalysisResults?.taxUtilization ? (
+              <TaxUtilizationSection
+                taxUtilization={mainAnalysisResults.taxUtilization}
+                totalInvestment={totalInvestment || 0}
+                formatCurrency={formatCurrencyMillions}
+              />
+            ) : (
+              <SimplifiedTaxPlanningSection
+                totalNetTaxBenefits={totalNetTaxBenefits}
+                hdcFee={hdcFee}
+                hdcFeeRate={hdcFeeRate}
+                year1NetBenefit={year1NetBenefit}
+                year5OZTaxDue={year5OZTaxDue}
+                totalCapitalGainsRate={totalCapitalGainsRate}
+                effectiveTaxRateForDepreciation={effectiveTaxRateForDepreciation}
+                depreciationRecaptureRate={depreciationRecaptureRate}
+                formatCurrency={formatCurrencyMillions}
+              />
+            )}
           </div>
         </div>
       </div>
