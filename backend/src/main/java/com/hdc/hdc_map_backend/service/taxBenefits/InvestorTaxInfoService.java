@@ -1,8 +1,9 @@
-package com.hdc.hdc_map_backend.service;
+package com.hdc.hdc_map_backend.service.taxBenefits;
 
-import com.hdc.hdc_map_backend.entity.InvestorTaxInfo;
+import com.hdc.hdc_map_backend.entity.taxBenefits.InvestorTaxInfo;
 import com.hdc.hdc_map_backend.entity.User;
-import com.hdc.hdc_map_backend.repository.user.InvestorTaxInfoRepository;
+import com.hdc.hdc_map_backend.repository.taxBenefits.InvestorTaxInfoRepository;
+import com.hdc.hdc_map_backend.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

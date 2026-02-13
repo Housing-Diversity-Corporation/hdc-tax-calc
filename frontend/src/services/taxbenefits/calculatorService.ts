@@ -2,6 +2,10 @@ import api from '../api';
 
 export interface CalculatorConfiguration {
   id?: number;
+  isPreset?: boolean;
+  dealName?: string;
+  category?: string;
+  isActive?: boolean;
   configurationName?: string;
   projectCost: number;
   predevelopmentCosts?: number;
@@ -44,7 +48,6 @@ export interface CalculatorConfiguration {
   stateCapitalGainsRate: number;
   ltCapitalGainsRate: number;
   niitRate: number;
-  depreciationRecaptureRate: number;
   deferredGains: number;
   hdcFeeRate: number;
   hdcDeferredInterestRate?: number;
@@ -147,49 +150,35 @@ export interface CalculatorConfiguration {
   dealLocation?: string;               // "Brooklyn, NY"
   dealLatitude?: number;               // Latitude for map
   dealLongitude?: number;              // Longitude for map
-  markerId?: number;                   // Map marker ID for location reference
   units?: number;                      // Number of housing units
   affordabilityMix?: string;           // "60% AMI" or "50-80% AMI"
   projectStatus?: 'available' | 'funded' | 'pipeline';
   minimumInvestment?: number;          // Minimum investment amount
   dealImageUrl?: string;               // URL to project rendering/photo
-
-  // Pre-calculated results from main HDC Calculator (stored to avoid recalculation in Investment Portal)
-  // Complete analysis stored as JSON (includes tax details, yearly breakdowns, etc.)
-  calculatedResultsJson?: string;      // Full InvestorAnalysisResults as JSON string
-
-  // Quick-access summary fields (for filtering/display without parsing JSON)
-  calculatedInvestorEquity?: number;   // Total investor equity in the deal (in dollars, not millions)
-  calculatedIRR?: number;              // Investor IRR (percentage, e.g., 15.5)
-  calculatedMultiple?: number;         // Equity multiple (e.g., 2.5x)
-  calculatedTotalReturns?: number;     // Total cash returned to investors (in dollars)
-  calculatedExitProceeds?: number;     // Exit proceeds (in dollars)
-  calculatedTaxBenefits?: number;      // Total tax benefits (in dollars)
-  calculatedOperatingCashFlows?: number; // Operating cash flows (in dollars)
 }
 
 export const calculatorService = {
   // Save a new configuration
   saveConfiguration: async (config: CalculatorConfiguration): Promise<CalculatorConfiguration> => {
-    const response = await api.post<CalculatorConfiguration>('/calculator/configurations', config);
+    const response = await api.post<CalculatorConfiguration>('/deal-conduits/configurations', config);
     return response.data;
   },
 
   // Get all saved configurations for the current user
   getConfigurations: async (): Promise<CalculatorConfiguration[]> => {
-    const response = await api.get<CalculatorConfiguration[]>('/calculator/configurations');
+    const response = await api.get<CalculatorConfiguration[]>('/deal-conduits/configurations');
     return response.data;
   },
 
   // Get all configurations from all users (for collaboration)
   getAllConfigurations: async (): Promise<CalculatorConfiguration[]> => {
-    const response = await api.get<CalculatorConfiguration[]>('/calculator/configurations/all');
+    const response = await api.get<CalculatorConfiguration[]>('/deal-conduits/configurations/all');
     return response.data;
   },
 
   // Get a specific configuration by ID
   getConfiguration: async (id: number): Promise<CalculatorConfiguration> => {
-    const response = await api.get<CalculatorConfiguration>(`/calculator/configurations/${id}`);
+    const response = await api.get<CalculatorConfiguration>(`/deal-conduits/configurations/${id}`);
     return response.data;
   },
 
@@ -200,19 +189,24 @@ export const calculatorService = {
 
   // Update an existing configuration
   updateConfiguration: async (id: number, config: CalculatorConfiguration): Promise<CalculatorConfiguration> => {
-    const response = await api.put<CalculatorConfiguration>(`/calculator/configurations/${id}`, config);
+    const response = await api.put<CalculatorConfiguration>(`/deal-conduits/configurations/${id}`, config);
     return response.data;
   },
 
   // Delete a configuration
   deleteConfiguration: async (id: number): Promise<void> => {
-    await api.delete(`/calculator/configurations/${id}`);
+    await api.delete(`/deal-conduits/configurations/${id}`);
+  },
+
+  // Delete a preset
+  deletePreset: async (id: number): Promise<void> => {
+    await api.delete(`/deal-conduits/presets/${id}`);
   },
 
   // Get the user's default configuration
   getDefaultConfiguration: async (): Promise<CalculatorConfiguration | null> => {
     try {
-      const response = await api.get<CalculatorConfiguration>('/calculator/configurations/default');
+      const response = await api.get<CalculatorConfiguration>('/deal-conduits/configurations/default');
       return response.data;
     } catch (error) {
       console.log('No default configuration set.', error);
@@ -222,6 +216,18 @@ export const calculatorService = {
 
   // Set a configuration as default
   setDefaultConfiguration: async (id: number): Promise<void> => {
-    await api.put(`/calculator/configurations/${id}/set-default`);
+    await api.put(`/deal-conduits/configurations/${id}/set-default`);
+  },
+
+  // Get active presets from the database
+  getPresets: async (): Promise<CalculatorConfiguration[]> => {
+    const response = await api.get<CalculatorConfiguration[]>('/deal-conduits/presets');
+    return response.data;
+  },
+
+  // Get any conduit by ID (preset or config)
+  getConduitById: async (id: number): Promise<CalculatorConfiguration> => {
+    const response = await api.get<CalculatorConfiguration>(`/deal-conduits/${id}`);
+    return response.data;
   }
 };

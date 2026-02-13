@@ -50,8 +50,8 @@ const InvestorCashFlowChart: React.FC<InvestorCashFlowChartProps> = ({
   });
 
   // Format tooltip values
-  const formatTooltip = (value: number) => {
-    return formatCurrency(value);
+  const formatTooltip = (value: number | undefined) => {
+    return formatCurrency(value ?? 0);
   };
 
   // Custom formatter for Y-axis - auto-scale based on magnitude

@@ -1,5 +1,6 @@
-package com.hdc.hdc_map_backend.entity;
+package com.hdc.hdc_map_backend.entity.taxBenefits;
 
+import com.hdc.hdc_map_backend.entity.User;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -8,7 +9,7 @@ import java.time.LocalDateTime;
  * Used by OZ Calculator and Investment Portal
  */
 @Entity
-@Table(name = "investor_tax_info", schema = "user_schema")
+@Table(name = "investor_tax_info", schema = "tax_benefits")
 public class InvestorTaxInfo {
 
     @Id

@@ -1,7 +1,7 @@
-package com.hdc.hdc_map_backend.controller;
+package com.hdc.hdc_map_backend.controller.taxBenefits;
 
-import com.hdc.hdc_map_backend.entity.InvestorTaxInfo;
-import com.hdc.hdc_map_backend.service.InvestorTaxInfoService;
+import com.hdc.hdc_map_backend.entity.taxBenefits.InvestorTaxInfo;
+import com.hdc.hdc_map_backend.service.taxBenefits.InvestorTaxInfoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

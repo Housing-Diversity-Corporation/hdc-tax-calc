@@ -1,5 +1,4 @@
 import React from 'react';
-import { Box, Card, Typography } from '@mui/material';
 import {
   BarChart,
   Bar,
@@ -184,71 +183,60 @@ const MetricsCharts: React.FC<MetricsChartsProps> = ({
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <Box
-          sx={{
-            backgroundColor: 'white',
-            border: '1px solid #ccc',
-            borderRadius: '4px',
-            padding: '8px',
-          }}
-        >
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>{label}</Typography>
+        <div className="rounded border border-gray-300 bg-white p-2">
+          <p className="text-sm font-semibold">{label}</p>
           {payload.map((entry: any, index: number) => (
-            <Typography
-              key={index}
-              variant="body2"
-              sx={{ color: entry.color }}
-            >
+            <p key={index} className="text-sm" style={{ color: entry.color }}>
               {entry.name}: {formatCurrencyMillions(entry.value)}
-            </Typography>
+            </p>
           ))}
-        </Box>
+        </div>
       );
     }
     return null;
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 3 }}>
+    <div className="mt-6 flex flex-col gap-6">
       {/* Key Metrics Summary - MOVED TO TOP */}
-      <Card sx={{ p: 2 }}>
-        <Typography variant="h6" sx={{ mb: 2, color: '#407F7F' }}>
+      <div className="rounded-xl bg-white p-4 shadow-md">
+        <h6 className="mb-4 text-base font-medium" style={{ color: '#407F7F' }}>
           Key Performance Indicators
-        </Typography>
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 2 }}>
-          <Box sx={{ textAlign: 'center', p: 2, borderRadius: 1, bgcolor: '#f5f5f5' }}>
-            <Typography variant="body2" color="textSecondary">Total Investment</Typography>
-            <Typography variant="h5" sx={{ color: '#BF7041', fontWeight: 600 }}>
+        </h6>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
+          <div className="rounded bg-gray-100 p-4 text-center">
+            <p className="text-sm text-gray-500">Total Investment</p>
+            <p className="text-xl font-semibold" style={{ color: '#BF7041' }}>
               {formatCurrencyMillions(investorEquity)}
-            </Typography>
-          </Box>
-          <Box sx={{ textAlign: 'center', p: 2, borderRadius: 1, bgcolor: '#f5f5f5' }}>
-            <Typography variant="body2" color="textSecondary">Total Returns</Typography>
-            <Typography variant="h5" sx={{ color: '#407F7F', fontWeight: 600 }}>
+            </p>
+          </div>
+          <div className="rounded bg-gray-100 p-4 text-center">
+            <p className="text-sm text-gray-500">Total Returns</p>
+            <p className="text-xl font-semibold" style={{ color: '#407F7F' }}>
               {formatCurrencyMillions(totalReturns)}
-            </Typography>
-          </Box>
-          <Box sx={{ textAlign: 'center', p: 2, borderRadius: 1, bgcolor: '#f5f5f5' }}>
-            <Typography variant="body2" color="textSecondary">Multiple on Investment</Typography>
-            <Typography variant="h5" sx={{ color: '#407F7F', fontWeight: 600 }}>
+            </p>
+          </div>
+          <div className="rounded bg-gray-100 p-4 text-center">
+            <p className="text-sm text-gray-500">Multiple on Investment</p>
+            <p className="text-xl font-semibold" style={{ color: '#407F7F' }}>
               {multipleOnInvested.toFixed(2)}x
-            </Typography>
-          </Box>
-          <Box sx={{ textAlign: 'center', p: 2, borderRadius: 1, bgcolor: '#f5f5f5' }}>
-            <Typography variant="body2" color="textSecondary">IRR</Typography>
-            <Typography variant="h5" sx={{ color: '#407F7F', fontWeight: 600 }}>
+            </p>
+          </div>
+          <div className="rounded bg-gray-100 p-4 text-center">
+            <p className="text-sm text-gray-500">IRR</p>
+            <p className="text-xl font-semibold" style={{ color: '#407F7F' }}>
               {investorIRR.toFixed(1)}%
-            </Typography>
-          </Box>
-        </Box>
-      </Card>
+            </p>
+          </div>
+        </div>
+      </div>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {/* Investment vs Returns Bar Chart */}
-        <Card sx={{ p: 2 }}>
-          <Typography variant="h6" sx={{ mb: 2, color: '#407F7F' }}>
+        <div className="rounded-xl bg-white p-4 shadow-md">
+          <h6 className="mb-4 text-base font-medium" style={{ color: '#407F7F' }}>
             Investment vs Total Returns
-          </Typography>
+          </h6>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={investmentReturnsData} margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -266,21 +254,21 @@ const MetricsCharts: React.FC<MetricsChartsProps> = ({
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', flexDirection: 'column', alignItems: 'center' }}>
-            <Typography variant="body2" sx={{ color: '#666' }}>
+          <div className="mt-4 flex flex-col items-center">
+            <p className="text-sm text-gray-500">
               Return Multiple: <strong>{multipleOnInvested.toFixed(2)}x</strong>
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#666' }}>
+            </p>
+            <p className="text-sm text-gray-500">
               Net Profit: <strong>{formatCurrencyMillions(totalReturns - investorEquity)}</strong>
-            </Typography>
-          </Box>
-        </Card>
+            </p>
+          </div>
+        </div>
 
         {/* Tax Benefit Allocation Chart - REDESIGNED */}
-        <Card sx={{ p: 2 }}>
-          <Typography variant="h6" sx={{ mb: 2, color: '#407F7F' }}>
+        <div className="rounded-xl bg-white p-4 shadow-md">
+          <h6 className="mb-4 text-base font-medium" style={{ color: '#407F7F' }}>
             Tax Benefit Allocation
-          </Typography>
+          </h6>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={taxAllocationData} margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -305,24 +293,24 @@ const MetricsCharts: React.FC<MetricsChartsProps> = ({
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-            <Typography variant="body2" sx={{ color: '#666', fontSize: '0.85rem' }}>
+          <div className="mt-4 flex flex-col items-center gap-1">
+            <p className="text-[0.85rem] text-gray-500">
               <strong>Available Capacity:</strong> {formatCurrencyMillions(afterRecovery)}
-            </Typography>
-            <Typography variant="caption" sx={{ color: '#999', textAlign: 'center', maxWidth: '90%' }}>
+            </p>
+            <p className="max-w-[90%] text-center text-xs text-gray-400">
               {afterRecovery >= 0
                 ? 'This capacity can be used for 1031 exchanges, Roth conversions, or depreciation offsets'
                 : 'Negative capacity indicates tax obligations exceed benefits in this scenario'}
-            </Typography>
-          </Box>
-        </Card>
-      </Box>
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* Cash Flow Timeline - Updated mapping with Dual Y-Axes */}
-      <Card sx={{ p: 2 }}>
-        <Typography variant="h6" sx={{ mb: 2, color: '#407F7F' }}>
+      <div className="rounded-xl bg-white p-4 shadow-md">
+        <h6 className="mb-4 text-base font-medium" style={{ color: '#407F7F' }}>
           Investor Cash Flow Timeline
-        </Typography>
+        </h6>
         <ResponsiveContainer width="100%" height={400}>
           <LineChart data={cashFlowData} margin={{ top: 5, right: 60, left: 40, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -402,20 +390,20 @@ const MetricsCharts: React.FC<MetricsChartsProps> = ({
             />
           </LineChart>
         </ResponsiveContainer>
-        <Box sx={{ mt: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-          <Typography variant="caption" sx={{ color: '#666' }}>
+        <div className="mt-4 rounded bg-gray-100 p-4">
+          <p className="text-xs text-gray-500">
             <strong>Note:</strong> Total Cash Flow includes operating cash flows, tax benefits, and sub-debt interest.
             Exit proceeds of {formatCurrencyMillions(exitProceeds)} are included in the final year.
-          </Typography>
-        </Box>
-      </Card>
+          </p>
+        </div>
+      </div>
 
       {/* HDC Cash Flow Timeline with Dual Y-Axes */}
       {hdcCashFlows.length > 0 && (
-        <Card sx={{ p: 2 }}>
-          <Typography variant="h6" sx={{ mb: 2, color: '#BF7041' }}>
+        <div className="rounded-xl bg-white p-4 shadow-md">
+          <h6 className="mb-4 text-base font-medium" style={{ color: '#BF7041' }}>
             HDC Cash Flow Timeline
-          </Typography>
+          </h6>
           <ResponsiveContainer width="100%" height={400}>
             <LineChart data={hdcCashFlowData} margin={{ top: 5, right: 60, left: 40, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -504,21 +492,21 @@ const MetricsCharts: React.FC<MetricsChartsProps> = ({
               />
             </LineChart>
           </ResponsiveContainer>
-          <Box sx={{ mt: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-            <Typography variant="caption" sx={{ color: '#666' }}>
+          <div className="mt-4 rounded bg-gray-100 p-4">
+            <p className="text-xs text-gray-500">
               <strong>Note:</strong> Total Cash Flow includes AUM fees, tax benefit fees, and promote share.
               Exit proceeds of {formatCurrencyMillions(hdcExitProceeds)} are included in the final year.
-            </Typography>
-          </Box>
-        </Card>
+            </p>
+          </div>
+        </div>
       )}
 
       {/* Depreciation Schedule */}
       {depreciationData.length > 0 && (
-        <Card sx={{ p: 2 }}>
-          <Typography variant="h6" sx={{ mb: 2, color: '#407F7F' }}>
+        <div className="rounded-xl bg-white p-4 shadow-md">
+          <h6 className="mb-4 text-base font-medium" style={{ color: '#407F7F' }}>
             Depreciation Schedule & Tax Benefits
-          </Typography>
+          </h6>
           <ResponsiveContainer width="100%" height={400}>
             <ComposedChart data={depreciationData} margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -551,21 +539,21 @@ const MetricsCharts: React.FC<MetricsChartsProps> = ({
               />
             </ComposedChart>
           </ResponsiveContainer>
-          <Box sx={{ mt: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-            <Typography variant="caption" sx={{ color: '#666' }}>
+          <div className="mt-4 rounded bg-gray-100 p-4">
+            <p className="text-xs text-gray-500">
               <strong>Note:</strong> Net benefit reflects tax benefits after HDC's 10% fee.
               Bonus depreciation typically occurs in Year 1, while straight-line depreciation continues over the property's useful life.
-            </Typography>
-          </Box>
-        </Card>
+            </p>
+          </div>
+        </div>
       )}
 
       {/* Investor vs HDC Returns Comparison */}
       {hdcTotalReturns > 0 && (
-        <Card sx={{ p: 2 }}>
-          <Typography variant="h6" sx={{ mb: 2, color: '#407F7F' }}>
+        <div className="rounded-xl bg-white p-4 shadow-md">
+          <h6 className="mb-4 text-base font-medium" style={{ color: '#407F7F' }}>
             Investor vs HDC Returns Comparison
-          </Typography>
+          </h6>
           <ResponsiveContainer width="100%" height={350}>
             <BarChart data={returnsComparisonData} margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -587,21 +575,21 @@ const MetricsCharts: React.FC<MetricsChartsProps> = ({
               <Bar dataKey="promoteShare" name="Promote Share" stackId="stack" fill="#7FBD45" />
             </BarChart>
           </ResponsiveContainer>
-          <Box sx={{ mt: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-            <Typography variant="caption" sx={{ color: '#666' }}>
+          <div className="mt-4 rounded bg-gray-100 p-4">
+            <p className="text-xs text-gray-500">
               <strong>Note:</strong> Stacked bars show the constituent parts of total returns for each party.
               Colors match the corresponding cash flow timeline charts.
-            </Typography>
-          </Box>
-        </Card>
+            </p>
+          </div>
+        </div>
       )}
 
       {/* DSCR Analysis with Optimized Scale */}
       {dscrData.length > 0 && dscrData[0].operationalDSCR > 0 && (
-        <Card sx={{ p: 2 }}>
-          <Typography variant="h6" sx={{ mb: 2, color: '#407F7F' }}>
+        <div className="rounded-xl bg-white p-4 shadow-md">
+          <h6 className="mb-4 text-base font-medium" style={{ color: '#407F7F' }}>
             Debt Service Coverage Ratio (DSCR) Analysis
-          </Typography>
+          </h6>
           <ResponsiveContainer width="100%" height={350}>
             <LineChart data={dscrData} margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -641,15 +629,15 @@ const MetricsCharts: React.FC<MetricsChartsProps> = ({
               />
             </LineChart>
           </ResponsiveContainer>
-          <Box sx={{ mt: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-            <Typography variant="caption" sx={{ color: '#666' }}>
+          <div className="mt-4 rounded bg-gray-100 p-4">
+            <p className="text-xs text-gray-500">
               <strong>Note:</strong> The cash management system targets exactly 1.05x DSCR coverage,
               distributing all excess cash above this level. Payment deferrals occur automatically when needed.
-            </Typography>
-          </Box>
-        </Card>
+            </p>
+          </div>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
 

@@ -88,7 +88,7 @@ const HDCCashFlowChart: React.FC<HDCCashFlowChartProps> = ({
   }
 
   // Format tooltip values (value is in millions)
-  const formatTooltip = (value: number) => {
+  const formatTooltip = (value: number | undefined) => {
     if (value === 0 || value === null || value === undefined) return '$0';
     const valueInDollars = value * 1000000; // Convert millions to dollars
     const absValue = Math.abs(valueInDollars);

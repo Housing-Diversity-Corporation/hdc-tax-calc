@@ -1,18 +1,16 @@
 package com.hdc.hdc_map_backend.entity;
 
+import java.time.LocalDateTime;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.Column;
 import jakarta.persistence.PrePersist;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.CascadeType;
-import java.time.LocalDateTime;
-import java.util.Set;
-import java.util.HashSet;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "users", schema = "user_schema")
@@ -63,10 +61,6 @@ public class User {
 
     @Column(name = "email_notify")
     private Boolean emailNotify;
-
-    @JsonIgnore
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<UserFavoriteLayer> favoriteLayers = new HashSet<>();
 
     public Long getId() {
         return id;
@@ -121,14 +115,6 @@ public class User {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
-    }
-
-    public Set<UserFavoriteLayer> getFavoriteLayers() {
-        return favoriteLayers;
-    }
-
-    public void setFavoriteLayers(Set<UserFavoriteLayer> favoriteLayers) {
-        this.favoriteLayers = favoriteLayers;
     }
 
     public String getProfileImageUrl() {

@@ -9,8 +9,7 @@ import ProjectionsSection from './inputs/ProjectionsSection';
 import HDCFeesSection from './inputs/HDCFeesSection';
 import InvestmentPortalSection from './inputs/InvestmentPortalSection';
 import SaveConfiguration from './inputs/SaveConfiguration';
-// Legacy imports (kept for preset/save functionality)
-import { PROPERTY_PRESETS } from '../../utils/taxbenefits/propertyPresets';
+// Legacy imports (kept for save functionality)
 import { calculatorService, CalculatorConfiguration } from '../../services/taxbenefits/calculatorService';
 import { tokenService } from '../../services/api';
 import '../../styles/taxbenefits/hdcCalculator.css';
@@ -348,254 +347,197 @@ interface HDCInputsComponentProps {
 
 const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
   const handlePresetSelect = async (presetId: string) => {
-    debugger; // BREAKPOINT 2: Preset handler entry - inspect presetId
-    // Check if it's a saved configuration
-    if (presetId.startsWith('saved-config-')) {
-      const configId = parseInt(presetId.replace('saved-config-', ''));
-      try {
-        const config = await calculatorService.getConfiguration(configId);
-        if (config) {
-          // IMPL-036: Suppress auto-balance during config loading to preserve loaded values
-          props.startConfigLoading?.();
-
-          // Apply saved configuration values
-          props.setProjectCost(config.projectCost ?? 10);
-          props.setPredevelopmentCosts(config.predevelopmentCosts ?? 0);
-          props.setLandValue(config.landValue ?? 0);
-          props.setYearOneNOI(config.yearOneNOI ?? 0.5);
-          props.setYearOneDepreciationPct(config.yearOneDepreciationPct ?? 25);
-          // ISS-068c: Single NOI growth rate
-          props.setNoiGrowthRate(config.noiGrowthRate ?? 3);
-          props.setExitCapRate(config.exitCapRate ?? 6);
-          props.setHoldPeriod?.(config.holdPeriod ?? 10);
-
-          // Capital structure
-          props.setInvestorEquityPct(config.investorEquityPct ?? 0);
-          props.setPhilanthropicEquityPct(config.philanthropicEquityPct ?? 0);
-          props.setSeniorDebtPct(config.seniorDebtPct ?? 0);
-          props.setSeniorDebtRate(config.seniorDebtRate ?? 0);
-          props.setSeniorDebtAmortization(config.seniorDebtAmortization ?? 30);
-          props.setSeniorDebtIOYears?.(config.seniorDebtIOYears ?? 0);  // ISS-043
-          props.setPhilDebtPct(config.philDebtPct ?? 0);
-          props.setPhilDebtRate(config.philDebtRate ?? 0);
-          props.setPhilDebtAmortization(config.philDebtAmortization ?? 30);
-          props.setPhilCurrentPayEnabled?.(config.philCurrentPayEnabled ?? false);
-          props.setPhilCurrentPayPct?.(config.philCurrentPayPct ?? 0);
-          props.setHdcSubDebtPct(config.hdcSubDebtPct ?? 0);
-          props.setHdcSubDebtPikRate(config.hdcSubDebtPikRate ?? 8);
-          props.setPikCurrentPayEnabled?.(config.pikCurrentPayEnabled ?? false);
-          props.setPikCurrentPayPct?.(config.pikCurrentPayPct ?? 0);
-          props.setInvestorSubDebtPct(config.investorSubDebtPct ?? 0);
-          props.setInvestorSubDebtPikRate(config.investorSubDebtPikRate ?? 8);
-          props.setInvestorPikCurrentPayEnabled?.(config.investorPikCurrentPayEnabled ?? false);
-          props.setInvestorPikCurrentPayPct?.(config.investorPikCurrentPayPct ?? 0);
-          props.setOutsideInvestorSubDebtPct(config.outsideInvestorSubDebtPct ?? 0);
-          props.setOutsideInvestorSubDebtPikRate(config.outsideInvestorSubDebtPikRate ?? 8);
-          props.setOutsideInvestorPikCurrentPayEnabled?.(config.outsideInvestorPikCurrentPayEnabled ?? false);
-          props.setOutsideInvestorPikCurrentPayPct?.(config.outsideInvestorPikCurrentPayPct ?? 0);
-          // ISS-043: HDC Debt Fund
-          props.setHdcDebtFundPct?.(config.hdcDebtFundPct ?? 0);
-          props.setHdcDebtFundPikRate?.(config.hdcDebtFundPikRate ?? 8);
-          props.setHdcDebtFundCurrentPayEnabled?.(config.hdcDebtFundCurrentPayEnabled ?? false);
-          props.setHdcDebtFundCurrentPayPct?.(config.hdcDebtFundCurrentPayPct ?? 50);
-          // ISS-043: Sub-debt priority
-          if (config.subDebtPriority) {
-            try {
-              const priority = JSON.parse(config.subDebtPriority);
-              props.setSubDebtPriority?.(priority);
-            } catch {
-              // Use default if parsing fails
-            }
-          }
-
-          // Interest Reserve
-          props.setInterestReserveEnabled?.(config.interestReserveEnabled ?? false);
-          props.setInterestReserveMonths?.(config.interestReserveMonths ?? 12);
-
-          // Tax parameters - only update if not in read-only mode (investor portal)
-          if (!props.taxSectionReadOnly) {
-            props.setFederalTaxRate(config.federalTaxRate ?? 37);
-            props.handleStateChange(config.selectedState ?? 'CA');
-            if (config.projectLocation) {
-              props.setProjectLocation?.(config.projectLocation);
-            }
-            props.setStateCapitalGainsRate?.(config.stateCapitalGainsRate ?? 0);
-            props.setLtCapitalGainsRate(config.ltCapitalGainsRate ?? 20);
-            props.setNiitRate(config.niitRate ?? 3.8);
-          }
-
-          // HDC fees
-          props.setHdcFeeRate(config.hdcFeeRate ?? 10);
-          props.setAumFeeEnabled(config.aumFeeEnabled ?? false);
-          props.setAumFeeRate(config.aumFeeRate ?? 1);
-
-          // Exit & Promote
-          props.setInvestorPromoteShare(config.investorPromoteShare ?? 80);
-
-          // Timing parameters
-          props.setConstructionDelayMonths?.(config.constructionDelayMonths ?? 0);
-          props.setTaxBenefitDelayMonths?.(config.taxBenefitDelayMonths ?? 0);
-
-          // Opportunity Zone parameters - only update if not in read-only mode
-          if (!props.taxSectionReadOnly) {
-            props.setOzEnabled?.(config.ozEnabled ?? true);  // ISS-043
-            props.setOzType?.(config.ozType ?? 'standard');
-            props.setOzVersion?.(config.ozVersion ?? '2.0');  // ISS-043
-            props.setDeferredCapitalGains?.(config.deferredCapitalGains ?? 0);
-            props.setCapitalGainsTaxRate?.(config.capitalGainsTaxRate ?? 23.8);
-          }
-
-          // Additional missing fields - only update if not in read-only mode
-          if (!props.taxSectionReadOnly) {
-            props.setStateTaxRate?.(config.stateTaxRate ?? 0);
-            props.setInvestorTrack?.(config.investorTrack ?? 'rep');
-            props.setPassiveGainType?.(config.passiveGainType ?? 'short-term');
-            // ISS-057: Investor Information
-            props.setAnnualIncome?.(config.annualIncome ?? 0);
-            props.setFilingStatus?.(config.filingStatus ?? 'single');
-          }
-
-          // Tax Planning Analysis - ALWAYS ENABLED (core feature)
-          props.setIncludeDepreciationSchedule?.(true);
-          props.setW2Income?.(config.w2Income ?? 0);
-          props.setBusinessIncome?.(config.businessIncome ?? 0);
-          props.setIraBalance?.(config.iraBalance ?? 0);
-          props.setPassiveIncome?.(config.passiveIncome ?? 0);
-          props.setAssetSaleGain?.(config.assetSaleGain ?? 0);
-          props.setHdcAdvanceFinancing?.(config.hdcAdvanceFinancing ?? false);
-          props.setTaxAdvanceDiscountRate?.(config.taxAdvanceDiscountRate ?? 0);
-          props.setAdvanceFinancingRate?.(config.advanceFinancingRate ?? 8);
-          props.setTaxDeliveryMonths?.(config.taxDeliveryMonths ?? 12);
-          props.setAutoBalanceCapital?.(config.autoBalanceCapital ?? false);
-          props.setInvestorEquityRatio?.(config.investorEquityRatio ?? 0.5);
-          // Investment Portal Settings
-          props.setIsInvestorFacing?.(config.isInvestorFacing ?? false);
-          props.setDealDescription?.(config.dealDescription ?? '');
-          props.setDealLocation?.(config.dealLocation ?? '');
-          props.setUnits?.(config.units ?? 0);
-          props.setAffordabilityMix?.(config.affordabilityMix ?? '');
-          props.setProjectStatus?.(config.projectStatus ?? 'available');
-          props.setMinimumInvestment?.(config.minimumInvestment ?? 0);
-          props.setDealImageUrl?.(config.dealImageUrl ?? '');
-          // ISS-043: HDC Platform Mode
-          props.setHdcPlatformMode?.(config.hdcPlatformMode ?? 'traditional');
-          // ISS-043: Private Activity Bonds (PABs)
-          props.setPabEnabled?.(config.pabEnabled ?? false);
-          props.setPabPctOfEligibleBasis?.(config.pabPctOfEligibleBasis ?? 30);
-          props.setPabRate?.(config.pabRate ?? 4.5);
-          props.setPabAmortization?.(config.pabAmortization ?? 40);
-          props.setPabIOYears?.(config.pabIOYears ?? 0);
-          // ISS-043: Federal LIHTC
-          props.setLihtcEnabled?.(config.lihtcEnabled ?? true);
-          props.setApplicableFraction?.(config.applicableFraction ?? 100);
-          props.setCreditRate?.(config.creditRate ?? 0.04);
-          props.setPlacedInServiceMonth?.(config.placedInServiceMonth ?? 7);
-          props.setDdaQctBoost?.(config.ddaQctBoost ?? false);
-          // ISS-043: State LIHTC
-          props.setStateLIHTCEnabled?.(config.stateLIHTCEnabled ?? false);
-          props.setInvestorState?.(config.investorState ?? 'WA');
-          props.setSyndicationRate?.(config.syndicationRate ?? 75);
-          props.setInvestorHasStateLiability?.(config.investorHasStateLiability ?? true);
-          if (config.stateLIHTCUserPercentage !== undefined) {
-            props.setStateLIHTCUserPercentage?.(config.stateLIHTCUserPercentage);
-          }
-          if (config.stateLIHTCUserAmount !== undefined) {
-            props.setStateLIHTCUserAmount?.(config.stateLIHTCUserAmount);
-          }
-          props.setStateLIHTCSyndicationYear?.((config.stateLIHTCSyndicationYear ?? 0) as 0 | 1 | 2);
-          // ISS-043: Eligible Basis Exclusions
-          props.setCommercialSpaceCosts?.(config.commercialSpaceCosts ?? 0);
-          props.setSyndicationCosts?.(config.syndicationCosts ?? 0);
-          props.setMarketingCosts?.(config.marketingCosts ?? 0);
-          props.setFinancingFees?.(config.financingFees ?? 0);
-          props.setBondIssuanceCosts?.(config.bondIssuanceCosts ?? 0);
-          props.setOperatingDeficitReserve?.(config.operatingDeficitReserve ?? 0);
-          props.setReplacementReserve?.(config.replacementReserve ?? 0);
-          props.setOtherExclusions?.(config.otherExclusions ?? 0);
-          // ISS-043: AUM Current Pay (was missing)
-          props.setAumCurrentPayEnabled?.(config.aumCurrentPayEnabled ?? false);
-          props.setAumCurrentPayPct?.(config.aumCurrentPayPct ?? 50);
-          // ISS-043: HDC Deferred Interest Rate (was missing)
-          props.setHdcDeferredInterestRate?.(config.hdcDeferredInterestRate ?? 8);
-
-          // IMPL-036: Re-enable auto-balance after config loading is complete
-          props.endConfigLoading?.();
-        }
-      } catch (error) {
-        console.error('Error loading saved configuration:', error);
-        // IMPL-036: Ensure we re-enable auto-balance even on error
-        props.endConfigLoading?.();
-      }
+    // Unified conduit loading: both presets (preset-{id}) and configs (config-{id})
+    // load via the same API since @JsonUnwrapped produces identical flat JSON
+    let conduitId: number;
+    if (presetId.startsWith('preset-')) {
+      conduitId = parseInt(presetId.replace('preset-', ''));
+    } else if (presetId.startsWith('config-')) {
+      conduitId = parseInt(presetId.replace('config-', ''));
+    } else {
       return;
     }
 
-    // Otherwise it's a preset
-    const preset = PROPERTY_PRESETS.find(p => p.id === presetId);
-    if (!preset) return;
+    try {
+      const config = await calculatorService.getConduitById(conduitId);
+      if (!config) return;
 
-    // IMPL-036: Suppress auto-balance during preset loading to preserve loaded values
-    props.startConfigLoading?.();
+      // IMPL-036: Suppress auto-balance during config loading to preserve loaded values
+      props.startConfigLoading?.();
 
-    const values = preset.values;
+      // Apply configuration values (same flat JSON for both presets and configs)
+      props.setProjectCost(config.projectCost ?? 10);
+      props.setPredevelopmentCosts(config.predevelopmentCosts ?? 0);
+      props.setLandValue(config.landValue ?? 0);
+      props.setYearOneNOI(config.yearOneNOI ?? 0.5);
+      props.setYearOneDepreciationPct(config.yearOneDepreciationPct ?? 25);
+      props.setNoiGrowthRate(config.noiGrowthRate ?? 3);
+      props.setExitCapRate(config.exitCapRate ?? 6);
+      props.setHoldPeriod?.(config.holdPeriod ?? 10);
 
-    // Update all the state values based on the preset
-    props.setProjectCost(values.projectCost);
-    props.setLandValue(values.landValue);
-    props.setYearOneNOI(values.yearOneNOI);
-    props.setYearOneDepreciationPct(values.yearOneDepreciationPct);
-    // ISS-068c: Single NOI growth rate
-    props.setNoiGrowthRate(values.noiGrowthRate ?? 3);
-    props.setExitCapRate(values.exitCapRate);
+      // Capital structure
+      props.setInvestorEquityPct(config.investorEquityPct ?? 0);
+      props.setPhilanthropicEquityPct(config.philanthropicEquityPct ?? 0);
+      props.setSeniorDebtPct(config.seniorDebtPct ?? 0);
+      props.setSeniorDebtRate(config.seniorDebtRate ?? 0);
+      props.setSeniorDebtAmortization(config.seniorDebtAmortization ?? 30);
+      props.setSeniorDebtIOYears?.(config.seniorDebtIOYears ?? 0);
+      props.setPhilDebtPct(config.philDebtPct ?? 0);
+      props.setPhilDebtRate(config.philDebtRate ?? 0);
+      props.setPhilDebtAmortization(config.philDebtAmortization ?? 30);
+      props.setPhilCurrentPayEnabled?.(config.philCurrentPayEnabled ?? false);
+      props.setPhilCurrentPayPct?.(config.philCurrentPayPct ?? 0);
+      props.setHdcSubDebtPct(config.hdcSubDebtPct ?? 0);
+      props.setHdcSubDebtPikRate(config.hdcSubDebtPikRate ?? 8);
+      props.setPikCurrentPayEnabled?.(config.pikCurrentPayEnabled ?? false);
+      props.setPikCurrentPayPct?.(config.pikCurrentPayPct ?? 0);
+      props.setInvestorSubDebtPct(config.investorSubDebtPct ?? 0);
+      props.setInvestorSubDebtPikRate(config.investorSubDebtPikRate ?? 8);
+      props.setInvestorPikCurrentPayEnabled?.(config.investorPikCurrentPayEnabled ?? false);
+      props.setInvestorPikCurrentPayPct?.(config.investorPikCurrentPayPct ?? 0);
+      props.setOutsideInvestorSubDebtPct(config.outsideInvestorSubDebtPct ?? 0);
+      props.setOutsideInvestorSubDebtPikRate(config.outsideInvestorSubDebtPikRate ?? 8);
+      props.setOutsideInvestorPikCurrentPayEnabled?.(config.outsideInvestorPikCurrentPayEnabled ?? false);
+      props.setOutsideInvestorPikCurrentPayPct?.(config.outsideInvestorPikCurrentPayPct ?? 0);
+      // HDC Debt Fund
+      props.setHdcDebtFundPct?.(config.hdcDebtFundPct ?? 0);
+      props.setHdcDebtFundPikRate?.(config.hdcDebtFundPikRate ?? 8);
+      props.setHdcDebtFundCurrentPayEnabled?.(config.hdcDebtFundCurrentPayEnabled ?? false);
+      props.setHdcDebtFundCurrentPayPct?.(config.hdcDebtFundCurrentPayPct ?? 50);
+      // Sub-debt priority
+      if (config.subDebtPriority) {
+        try {
+          const priority = JSON.parse(config.subDebtPriority);
+          props.setSubDebtPriority?.(priority);
+        } catch {
+          // Use default if parsing fails
+        }
+      }
 
-    // Capital structure
-    props.setInvestorEquityPct(values.investorEquityPct);
-    props.setPhilanthropicEquityPct(values.philanthropicEquityPct);
-    props.setSeniorDebtPct(values.seniorDebtPct);
-    props.setSeniorDebtRate(values.seniorDebtRate);
-    props.setSeniorDebtAmortization(values.seniorDebtAmortization);
-    props.setPhilDebtPct(values.philDebtPct);
-    props.setPhilDebtRate(values.philDebtRate);
-    props.setPhilDebtAmortization(values.philDebtAmortization);
-    props.setHdcSubDebtPct(values.hdcSubDebtPct);
-    props.setHdcSubDebtPikRate(values.hdcSubDebtPikRate);
-    props.setInvestorSubDebtPct(values.investorSubDebtPct);
-    props.setInvestorSubDebtPikRate(values.investorSubDebtPikRate);
-    props.setOutsideInvestorSubDebtPct(values.outsideInvestorSubDebtPct);
-    props.setOutsideInvestorSubDebtPikRate(values.outsideInvestorSubDebtPikRate);
+      // Interest Reserve
+      props.setInterestReserveEnabled?.(config.interestReserveEnabled ?? false);
+      props.setInterestReserveMonths?.(config.interestReserveMonths ?? 12);
 
-    // Tax parameters - only update if not in read-only mode (investor portal)
-    if (!props.taxSectionReadOnly) {
-      props.setFederalTaxRate(values.federalTaxRate);
-      props.handleStateChange(values.selectedState);
-      props.setLtCapitalGainsRate(values.ltCapitalGainsRate);
-      props.setNiitRate(values.niitRate);
-    }
+      // Tax parameters - only update if not in read-only mode (investor portal)
+      if (!props.taxSectionReadOnly) {
+        props.setFederalTaxRate(config.federalTaxRate ?? 37);
+        props.handleStateChange(config.selectedState ?? 'CA');
+        if (config.projectLocation) {
+          props.setProjectLocation?.(config.projectLocation);
+        }
+        props.setStateCapitalGainsRate?.(config.stateCapitalGainsRate ?? 0);
+        props.setLtCapitalGainsRate(config.ltCapitalGainsRate ?? 20);
+        props.setNiitRate(config.niitRate ?? 3.8);
+      }
 
-    // HDC fees
-    props.setHdcFeeRate(values.hdcFeeRate);
-    props.setAumFeeEnabled(values.aumFeeEnabled);
-    props.setAumFeeRate(values.aumFeeRate);
+      // HDC fees
+      props.setHdcFeeRate(config.hdcFeeRate ?? 10);
+      props.setAumFeeEnabled(config.aumFeeEnabled ?? false);
+      props.setAumFeeRate(config.aumFeeRate ?? 1);
 
-    // Exit & Promote
-    props.setInvestorPromoteShare(values.investorPromoteShare);
+      // Exit & Promote
+      props.setInvestorPromoteShare(config.investorPromoteShare ?? 80);
 
-    // Reset fields that aren't in presets to defaults
-    props.setHoldPeriod(10);
-    props.setPikCurrentPayEnabled(false);
-    props.setPikCurrentPayPct(50);
-    props.setInvestorPikCurrentPayEnabled(false);
-    props.setInvestorPikCurrentPayPct(50);
-    props.setPhilCurrentPayEnabled(false);
-    props.setPhilCurrentPayPct(50);
-    props.setInterestReserveEnabled(false);
-    props.setInterestReserveMonths(12);
+      // Timing parameters
+      props.setConstructionDelayMonths?.(config.constructionDelayMonths ?? 0);
+      props.setTaxBenefitDelayMonths?.(config.taxBenefitDelayMonths ?? 0);
 
-    // IMPL-036: Re-enable auto-balance after preset loading is complete
-    props.endConfigLoading?.();
-    debugger; // BREAKPOINT 3: After preset values applied - inspect props
+      // Opportunity Zone parameters - only update if not in read-only mode
+      if (!props.taxSectionReadOnly) {
+        props.setOzEnabled?.(config.ozEnabled ?? true);
+        props.setOzType?.(config.ozType ?? 'standard');
+        props.setOzVersion?.(config.ozVersion ?? '2.0');
+        props.setDeferredCapitalGains?.(config.deferredCapitalGains ?? 0);
+        props.setCapitalGainsTaxRate?.(config.capitalGainsTaxRate ?? 23.8);
+      }
 
-    if (props.onPresetSelect) {
-      props.onPresetSelect(presetId);
+      // Additional fields - only update if not in read-only mode
+      if (!props.taxSectionReadOnly) {
+        props.setStateTaxRate?.(config.stateTaxRate ?? 0);
+        props.setInvestorTrack?.(config.investorTrack ?? 'rep');
+        props.setPassiveGainType?.(config.passiveGainType ?? 'short-term');
+        props.setAnnualIncome?.(config.annualIncome ?? 0);
+        props.setFilingStatus?.(config.filingStatus ?? 'single');
+      }
+
+      // Tax Planning Analysis - ALWAYS ENABLED (core feature)
+      props.setIncludeDepreciationSchedule?.(true);
+      props.setW2Income?.(config.w2Income ?? 0);
+      props.setBusinessIncome?.(config.businessIncome ?? 0);
+      props.setIraBalance?.(config.iraBalance ?? 0);
+      props.setPassiveIncome?.(config.passiveIncome ?? 0);
+      props.setAssetSaleGain?.(config.assetSaleGain ?? 0);
+      props.setHdcAdvanceFinancing?.(config.hdcAdvanceFinancing ?? false);
+      props.setTaxAdvanceDiscountRate?.(config.taxAdvanceDiscountRate ?? 0);
+      props.setAdvanceFinancingRate?.(config.advanceFinancingRate ?? 8);
+      props.setTaxDeliveryMonths?.(config.taxDeliveryMonths ?? 12);
+      props.setAutoBalanceCapital?.(config.autoBalanceCapital ?? false);
+      props.setInvestorEquityRatio?.(config.investorEquityRatio ?? 0.5);
+      // Investment Portal Settings
+      props.setIsInvestorFacing?.(config.isInvestorFacing ?? false);
+      props.setDealDescription?.(config.dealDescription ?? '');
+      props.setDealLocation?.(config.dealLocation ?? '');
+      props.setUnits?.(config.units ?? 0);
+      props.setAffordabilityMix?.(config.affordabilityMix ?? '');
+      props.setProjectStatus?.(config.projectStatus ?? 'available');
+      props.setMinimumInvestment?.(config.minimumInvestment ?? 0);
+      props.setDealImageUrl?.(config.dealImageUrl ?? '');
+      // HDC Platform Mode
+      props.setHdcPlatformMode?.(config.hdcPlatformMode ?? 'traditional');
+      // Private Activity Bonds (PABs)
+      props.setPabEnabled?.(config.pabEnabled ?? false);
+      props.setPabPctOfEligibleBasis?.(config.pabPctOfEligibleBasis ?? 30);
+      props.setPabRate?.(config.pabRate ?? 4.5);
+      props.setPabAmortization?.(config.pabAmortization ?? 40);
+      props.setPabIOYears?.(config.pabIOYears ?? 0);
+      // Federal LIHTC
+      props.setLihtcEnabled?.(config.lihtcEnabled ?? true);
+      props.setApplicableFraction?.(config.applicableFraction ?? 100);
+      props.setCreditRate?.(config.creditRate ?? 0.04);
+      props.setPlacedInServiceMonth?.(config.placedInServiceMonth ?? 7);
+      props.setDdaQctBoost?.(config.ddaQctBoost ?? false);
+      // State LIHTC
+      props.setStateLIHTCEnabled?.(config.stateLIHTCEnabled ?? false);
+      props.setInvestorState?.(config.investorState ?? 'WA');
+      props.setSyndicationRate?.(config.syndicationRate ?? 75);
+      props.setInvestorHasStateLiability?.(config.investorHasStateLiability ?? true);
+      if (config.stateLIHTCUserPercentage !== undefined) {
+        props.setStateLIHTCUserPercentage?.(config.stateLIHTCUserPercentage);
+      }
+      if (config.stateLIHTCUserAmount !== undefined) {
+        props.setStateLIHTCUserAmount?.(config.stateLIHTCUserAmount);
+      }
+      props.setStateLIHTCSyndicationYear?.((config.stateLIHTCSyndicationYear ?? 0) as 0 | 1 | 2);
+      // Eligible Basis Exclusions
+      props.setCommercialSpaceCosts?.(config.commercialSpaceCosts ?? 0);
+      props.setSyndicationCosts?.(config.syndicationCosts ?? 0);
+      props.setMarketingCosts?.(config.marketingCosts ?? 0);
+      props.setFinancingFees?.(config.financingFees ?? 0);
+      props.setBondIssuanceCosts?.(config.bondIssuanceCosts ?? 0);
+      props.setOperatingDeficitReserve?.(config.operatingDeficitReserve ?? 0);
+      props.setReplacementReserve?.(config.replacementReserve ?? 0);
+      props.setOtherExclusions?.(config.otherExclusions ?? 0);
+      // AUM Current Pay
+      props.setAumCurrentPayEnabled?.(config.aumCurrentPayEnabled ?? false);
+      props.setAumCurrentPayPct?.(config.aumCurrentPayPct ?? 50);
+      // HDC Deferred Interest Rate
+      props.setHdcDeferredInterestRate?.(config.hdcDeferredInterestRate ?? 8);
+      // Income Composition
+      props.setAnnualOrdinaryIncome?.(config.annualOrdinaryIncome ?? 750000);
+      props.setAnnualPassiveIncome?.(config.annualPassiveIncome ?? 0);
+      props.setAnnualPortfolioIncome?.(config.annualPortfolioIncome ?? 0);
+      props.setGroupingElection?.(config.groupingElection ?? false);
+
+      // IMPL-036: Re-enable auto-balance after config loading is complete
+      props.endConfigLoading?.();
+
+      if (props.onPresetSelect) {
+        props.onPresetSelect(presetId);
+      }
+    } catch (error) {
+      console.error('Error loading conduit:', error);
+      // IMPL-036: Ensure we re-enable auto-balance even on error
+      props.endConfigLoading?.();
     }
   };
 
@@ -655,7 +597,6 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
         stateCapitalGainsRate: props.stateCapitalGainsRate,
         ltCapitalGainsRate: props.ltCapitalGainsRate,
         niitRate: props.niitRate,
-        depreciationRecaptureRate: props.depreciationRecaptureRate || 25,
         deferredGains: (props.projectCost + props.interestReserveAmount) * (props.investorEquityPct / 100),
         hdcFeeRate: props.hdcFeeRate,
         hdcDeferredInterestRate: props.hdcDeferredInterestRate || 8,
@@ -689,6 +630,11 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
         iraBalance: props.iraBalance,
         passiveIncome: props.passiveIncome,
         assetSaleGain: props.assetSaleGain,
+        // Income Composition
+        annualOrdinaryIncome: props.annualOrdinaryIncome,
+        annualPassiveIncome: props.annualPassiveIncome,
+        annualPortfolioIncome: props.annualPortfolioIncome,
+        groupingElection: props.groupingElection,
         isInvestorFacing: props.isInvestorFacing,
         dealDescription: props.dealDescription,
         dealLocation: props.dealLocation,
@@ -744,34 +690,8 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
 
       currentConfig.completionStatus = isComplete ? 'complete' : 'in-progress';
 
-      if (props.mainAnalysisResults) {
-        const results = props.mainAnalysisResults;
-        const resultsInDollars: InvestorAnalysisResults = {
-          ...results,
-          investorEquity: results.investorEquity * 1000000,
-          totalReturns: results.totalReturns * 1000000,
-          exitProceeds: results.exitProceeds * 1000000,
-          investorTaxBenefits: results.investorTaxBenefits * 1000000,
-          investorOperatingCashFlows: results.investorOperatingCashFlows * 1000000,
-          investorCashFlows: results.investorCashFlows.map((year: CashFlowItem): CashFlowItem => ({
-            ...year,
-            taxBenefit: year.taxBenefit * 1000000,
-            operatingCashFlow: year.operatingCashFlow * 1000000,
-            totalCashFlow: year.totalCashFlow * 1000000,
-            subDebtInterest: year.subDebtInterest * 1000000,
-            exitProceeds: year.exitProceeds ? year.exitProceeds * 1000000 : 0,
-          })),
-        };
-
-        currentConfig.calculatedResultsJson = JSON.stringify(resultsInDollars);
-        currentConfig.calculatedInvestorEquity = resultsInDollars.investorEquity;
-        currentConfig.calculatedIRR = results.irr;
-        currentConfig.calculatedMultiple = results.multiple;
-        currentConfig.calculatedTotalReturns = resultsInDollars.totalReturns;
-        currentConfig.calculatedExitProceeds = resultsInDollars.exitProceeds;
-        currentConfig.calculatedTaxBenefits = resultsInDollars.investorTaxBenefits;
-        currentConfig.calculatedOperatingCashFlows = resultsInDollars.investorOperatingCashFlows;
-      }
+      // Calculated results are no longer stored — the engine is deterministic
+      // and recreates them from inputs on every load
 
       await calculatorService.saveConfiguration(currentConfig);
     } catch (error) {

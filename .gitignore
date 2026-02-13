@@ -100,3 +100,5 @@ coverage/
 *.pem 2
 *.key 2
 *credentials*.json 2
+
+*.md

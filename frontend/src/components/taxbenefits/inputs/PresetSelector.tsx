@@ -23,7 +23,6 @@ import {
 import { Trash2 } from 'lucide-react';
 import { calculatorService, CalculatorConfiguration } from '../../../services/taxbenefits/calculatorService';
 import { tokenService } from '../../../services/api';
-import { PROPERTY_PRESETS } from '../../../utils/taxbenefits/propertyPresets';
 
 interface PresetSelectorProps {
   onPresetSelect?: (presetId: string) => void;
@@ -41,16 +40,24 @@ const PresetSelector: React.FC<PresetSelectorProps> = ({
   refreshTrigger = 0
 }) => {
   const [selectedPreset, setSelectedPreset] = useState<string>('');
+  const [presets, setPresets] = useState<CalculatorConfiguration[]>([]);
   const [userConfigurations, setUserConfigurations] = useState<CalculatorConfiguration[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [configToDelete, setConfigToDelete] = useState<{ id: number; name: string } | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<{ id: number; name: string; type: 'preset' | 'config' } | null>(null);
 
-  // Fetch ALL configurations (from all users for collaboration) on mount and when refreshTrigger changes
+  // Fetch presets and configurations on mount and when refreshTrigger changes
   useEffect(() => {
-    const fetchUserConfigurations = async () => {
+    const fetchData = async () => {
+      try {
+        // Fetch presets from database (replaces hardcoded PROPERTY_PRESETS)
+        const dbPresets = await calculatorService.getPresets();
+        setPresets(dbPresets);
+      } catch (error) {
+        console.error('Error fetching presets:', error);
+      }
+
       if (tokenService.isAuthenticated()) {
         try {
-          // Get all configurations from all users for collaboration
           const configs = await calculatorService.getAllConfigurations();
           setUserConfigurations(configs);
         } catch (error) {
@@ -58,7 +65,7 @@ const PresetSelector: React.FC<PresetSelectorProps> = ({
         }
       }
     };
-    fetchUserConfigurations();
+    fetchData();
   }, [refreshTrigger]);
 
   // Separate user configs by completion status
@@ -66,7 +73,6 @@ const PresetSelector: React.FC<PresetSelectorProps> = ({
   const inProgressConfigs = userConfigurations.filter(config => config.completionStatus === 'in-progress' || !config.completionStatus);
 
   const handlePresetChange = (value: string) => {
-    debugger; // BREAKPOINT 1: Preset dropdown selection
     setSelectedPreset(value);
 
     if (value && onPresetSelect) {
@@ -77,48 +83,56 @@ const PresetSelector: React.FC<PresetSelectorProps> = ({
   const handleDeleteClick = () => {
     if (!selectedPreset) return;
 
-    // Only allow deletion of saved configs, not built-in presets
-    if (!selectedPreset.startsWith('saved-config-')) {
-      toast.error('Cannot delete built-in presets');
-      return;
-    }
-
-    // Extract config ID from selectedPreset value (format: "saved-config-123")
-    const configId = parseInt(selectedPreset.split('-')[2]);
-    const config = userConfigurations.find(c => c.id === configId);
-
-    if (config) {
-      setConfigToDelete({ id: config.id!, name: config.configurationName || `Config ${config.id}` });
-      setDeleteDialogOpen(true);
+    if (selectedPreset.startsWith('preset-')) {
+      const presetId = parseInt(selectedPreset.replace('preset-', ''));
+      const preset = presets.find(p => p.id === presetId);
+      if (preset) {
+        setItemToDelete({ id: preset.id!, name: preset.dealName || preset.configurationName || `Preset ${preset.id}`, type: 'preset' });
+        setDeleteDialogOpen(true);
+      }
+    } else if (selectedPreset.startsWith('config-')) {
+      const configId = parseInt(selectedPreset.replace('config-', ''));
+      const config = userConfigurations.find(c => c.id === configId);
+      if (config) {
+        setItemToDelete({ id: config.id!, name: config.configurationName || config.dealName || `Config ${config.id}`, type: 'config' });
+        setDeleteDialogOpen(true);
+      }
     }
   };
 
   const confirmDelete = async () => {
-    if (!configToDelete) return;
+    if (!itemToDelete) return;
 
     try {
-      await calculatorService.deleteConfiguration(configToDelete.id);
+      if (itemToDelete.type === 'preset') {
+        await calculatorService.deletePreset(itemToDelete.id);
+        toast.success('Preset Deleted', {
+          description: `Preset "${itemToDelete.name}" has been deleted.`
+        });
+        const dbPresets = await calculatorService.getPresets();
+        setPresets(dbPresets);
+      } else {
+        await calculatorService.deleteConfiguration(itemToDelete.id);
+        toast.success('Configuration Deleted', {
+          description: `Configuration "${itemToDelete.name}" has been deleted.`
+        });
+        const configs = await calculatorService.getAllConfigurations();
+        setUserConfigurations(configs);
+      }
 
-      toast.success('Configuration Deleted', {
-        description: `Configuration "${configToDelete.name}" has been deleted.`
-      });
-
-      // Refetch user configurations to update the dropdown
-      const configs = await calculatorService.getConfigurations();
-      setUserConfigurations(configs);
-
-      // Clear selection if the deleted config was selected
-      if (selectedPreset === `saved-config-${configToDelete.id}`) {
+      // Clear selection if the deleted item was selected
+      const prefix = itemToDelete.type === 'preset' ? 'preset' : 'config';
+      if (selectedPreset === `${prefix}-${itemToDelete.id}`) {
         setSelectedPreset('');
       }
     } catch (error) {
-      console.error('Error deleting configuration:', error);
+      console.error('Error deleting:', error);
       toast.error('Delete Failed', {
-        description: 'Failed to delete configuration. Please try again.'
+        description: `Failed to delete ${itemToDelete.type}. Please try again.`
       });
     } finally {
       setDeleteDialogOpen(false);
-      setConfigToDelete(null);
+      setItemToDelete(null);
     }
   };
 
@@ -127,9 +141,11 @@ const PresetSelector: React.FC<PresetSelectorProps> = ({
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Configuration</AlertDialogTitle>
+            <AlertDialogTitle>
+              Delete {itemToDelete?.type === 'preset' ? 'Preset' : 'Configuration'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{configToDelete?.name}"? This action cannot be undone.
+              Are you sure you want to delete "{itemToDelete?.name}"? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -154,18 +170,20 @@ const PresetSelector: React.FC<PresetSelectorProps> = ({
               <SelectValue placeholder="Select Configuration" />
             </SelectTrigger>
             <SelectContent>
-              {/* Built-in Property Presets */}
-              <SelectGroup>
-                <SelectLabel>Built-in Presets</SelectLabel>
-                {PROPERTY_PRESETS.map(preset => (
-                  <SelectItem
-                    key={preset.id}
-                    value={preset.id}
-                  >
-                    {preset.name}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
+              {/* Built-in Property Presets (from database) */}
+              {presets.length > 0 && (
+                <SelectGroup>
+                  <SelectLabel>Built-in Presets</SelectLabel>
+                  {presets.map(preset => (
+                    <SelectItem
+                      key={preset.id}
+                      value={`preset-${preset.id}`}
+                    >
+                      {preset.dealName || preset.configurationName || `Preset ${preset.id}`}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              )}
 
               {completeConfigs.length > 0 && (
                 <SelectGroup>
@@ -173,9 +191,9 @@ const PresetSelector: React.FC<PresetSelectorProps> = ({
                   {completeConfigs.map(config => (
                     <SelectItem
                       key={config.id}
-                      value={`saved-config-${config.id}`}
+                      value={`config-${config.id}`}
                     >
-                      {config.configurationName || `Config ${config.id}`}
+                      {config.configurationName || config.dealName || `Config ${config.id}`}
                     </SelectItem>
                   ))}
                 </SelectGroup>
@@ -187,9 +205,9 @@ const PresetSelector: React.FC<PresetSelectorProps> = ({
                   {inProgressConfigs.map(config => (
                     <SelectItem
                       key={config.id}
-                      value={`saved-config-${config.id}`}
+                      value={`config-${config.id}`}
                     >
-                      {config.configurationName || `Config ${config.id}`}
+                      {config.configurationName || config.dealName || `Config ${config.id}`}
                     </SelectItem>
                   ))}
                 </SelectGroup>
@@ -197,17 +215,16 @@ const PresetSelector: React.FC<PresetSelectorProps> = ({
             </SelectContent>
           </Select>
 
-          {selectedPreset && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 hover:bg-destructive hover:text-destructive-foreground flex-shrink-0"
-              onClick={handleDeleteClick}
-              title="Delete selected configuration"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 hover:bg-destructive hover:text-destructive-foreground flex-shrink-0"
+            onClick={handleDeleteClick}
+            disabled={!selectedPreset}
+            title="Delete selected configuration"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </>

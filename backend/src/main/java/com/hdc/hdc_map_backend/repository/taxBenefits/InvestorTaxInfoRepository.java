@@ -1,8 +1,9 @@
-package com.hdc.hdc_map_backend.repository.user;
+package com.hdc.hdc_map_backend.repository.taxBenefits;
 
-import com.hdc.hdc_map_backend.entity.InvestorTaxInfo;
+import com.hdc.hdc_map_backend.entity.taxBenefits.InvestorTaxInfo;
 import com.hdc.hdc_map_backend.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -23,6 +24,7 @@ public interface InvestorTaxInfoRepository extends JpaRepository<InvestorTaxInfo
 
     void deleteByIdAndUser(Long id, User user);
 
+    @Modifying
     @Query("UPDATE InvestorTaxInfo t SET t.isDefault = false WHERE t.user = :user AND t.isDefault = true")
     void clearDefaultForUser(@Param("user") User user);
 }

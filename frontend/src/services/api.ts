@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { PropertyPresetBackend } from '../types/propertyPreset';
 import { InvestorTaxInfo } from '../types/investorTaxInfo';
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
@@ -130,34 +129,6 @@ export const tokenService = {
 
   isAuthenticated: (): boolean => {
     return !!localStorage.getItem('authToken');
-  },
-};
-
-// Property Preset Service
-export const propertyPresetService = {
-  getAllActivePresets: async (): Promise<PropertyPresetBackend[]> => {
-    const response = await api.get<PropertyPresetBackend[]>('/property-presets');
-    return response.data;
-  },
-
-  getPresetsByCategory: async (category: string): Promise<PropertyPresetBackend[]> => {
-    const response = await api.get<PropertyPresetBackend[]>(`/property-presets/category/${category}`);
-    return response.data;
-  },
-
-  getInvestmentOpportunities: async (): Promise<PropertyPresetBackend[]> => {
-    const response = await api.get<PropertyPresetBackend[]>('/property-presets/investment-opportunities');
-    return response.data;
-  },
-
-  getPresetByPresetId: async (presetId: string): Promise<PropertyPresetBackend> => {
-    const response = await api.get<PropertyPresetBackend>(`/property-presets/preset/${presetId}`);
-    return response.data;
-  },
-
-  getPresetById: async (id: number): Promise<PropertyPresetBackend> => {
-    const response = await api.get<PropertyPresetBackend>(`/property-presets/${id}`);
-    return response.data;
   },
 };
 

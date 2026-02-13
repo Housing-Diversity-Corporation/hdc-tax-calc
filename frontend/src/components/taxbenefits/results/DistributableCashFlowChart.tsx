@@ -662,7 +662,7 @@ const DistributableCashFlowChart: React.FC<DistributableCashFlowChartProps> = ({
               />
 
               <Tooltip
-                formatter={(value: number) => formatCurrency(value * 1000000)}
+                formatter={(value: number | undefined) => formatCurrency((value ?? 0) * 1000000)}
                 contentStyle={{
                   backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   border: '1px solid #ccc',
