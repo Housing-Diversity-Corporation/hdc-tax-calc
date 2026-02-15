@@ -157,6 +157,63 @@ Utilization Engine ← dealToBenefitStream()      ← dbpService.getById() ← D
 
 ---
 
+## Pool Aggregation & Fund Sizing (IMPL-085)
+
+The pool aggregation engine consolidates N DealBenefitProfiles into a single calendar-year-aligned BenefitStream. The sizing optimizer iterates commitment levels against the pooled stream to find the utilization peak.
+
+### Architecture
+
+```
+DBPs (from pool) → aggregatePoolToBenefitStream() → BenefitStream (DOLLARS)
+                                                          ↓
+                                            scaleBenefitStreamToMillions()
+                                                          ↓
+                                            calculateTaxUtilization()
+                                                          ↓
+                                            TaxUtilizationResult
+
+Sizing:
+pooledStream → optimizeFundCommitment(stream, totalEquity, investor)
+                   ↓ iterates commitment levels
+              scaleStreamByProRata() → scaleBenefitStreamToMillions() → calculateTaxUtilization()
+                   ↓ finds peak savingsPerDollar
+              FundSizingResult (optimalCommitment, efficiencyCurve, peakType)
+```
+
+### Value Scaling Convention
+
+| Layer | Unit | Example $100M |
+|-------|------|--------------|
+| DealBenefitProfile (stored) | DOLLARS | 100,000,000 |
+| `dealToBenefitStream()` output | DOLLARS | 100,000,000 |
+| `aggregatePoolToBenefitStream()` output | DOLLARS | 100,000,000 |
+| `calculateTaxUtilization()` input | MILLIONS | 100 |
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `utils/taxbenefits/poolAggregation.ts` | `aggregatePoolToBenefitStream()` — calendar-year alignment and summation; `scaleBenefitStreamToMillions()` — dollar-to-million conversion; `buildInvestorProfileFromTaxInfo()` — portal InvestorTaxInfo to engine InvestorProfile |
+| `utils/taxbenefits/fundSizingOptimizer.ts` | `optimizeFundCommitment()` — iterates commitment levels, finds utilization peak; `scaleStreamByProRata()` — linear scaling by investor share |
+| `types/fundSizing.ts` | Type re-exports: `PoolAggregationResult`, `FundSizingResult`, `SizingDataPoint`, `PeakType` |
+| `components/investor-portal/FundDetail/` | Fund detail screen — displays pool, sizing recommendation, efficiency curve, utilization at optimal point |
+
+### Key Rules
+
+1. **No new tax calculations.** Aggregation is alignment + summation. Sizing is iteration over the existing utilization engine.
+2. **Exit events stay separate.** One per deal, sorted chronologically. The utilization engine handles recapture coverage per exit.
+3. **Scaling at the boundary.** Pool aggregation produces DOLLARS. `scaleBenefitStreamToMillions()` converts at the call site before passing to `calculateTaxUtilization()`.
+4. **Peak type classification.** The optimizer classifies curves as `peak` (benefits suspend above optimal), `plateau` (fully utilized), or `rising` (capacity exceeds fund). UI messaging adapts accordingly.
+
+### Tests
+
+| File | Tests | Coverage |
+|------|-------|----------|
+| `utils/taxbenefits/__tests__/poolAggregation.test.ts` | 28 | Aggregation, scaling, profile builder, round-trip with utilization engine |
+| `utils/taxbenefits/__tests__/fundSizingOptimizer.test.ts` | 18 | Optimizer, pro-rata scaling, peak classification, capacity warnings |
+
+---
+
 ## History
 
 | Date | Change | Reference |
@@ -166,3 +223,4 @@ Utilization Engine ← dealToBenefitStream()      ← dbpService.getById() ← D
 | 2026-01-27 | Added Override Anti-Pattern | ISS-053 |
 | 2026-01-27 | Added DSCR Display Standard | ISS-054 |
 | 2026-02-14 | Added Deal Benefit Profile Persistence | IMPL-084 |
+| 2026-02-14 | Added Pool Aggregation & Fund Sizing | IMPL-085 |

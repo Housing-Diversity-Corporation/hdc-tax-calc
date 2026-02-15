@@ -16,6 +16,7 @@ import InvestorTaxProfilePage from './components/investor-portal/InvestorTaxProf
 import AvailableInvestments from './components/investor-portal/investments/AvailableInvestments';
 import InvestorAnalysis from './components/investor-portal/InvestorAnalysis/InvestorAnalysis';
 import HDCCalculatorMain from './components/taxbenefits/HDCCalculatorMain';
+import FundDetail from './components/investor-portal/FundDetail/FundDetail';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'your-google-client-id-here';
 
@@ -28,9 +29,10 @@ console.log('Google OAuth Configuration:', {
 });
 
 const App: React.FC = () => {
-  const [currentView, setCurrentView] = useState<'signin' | 'signup' | 'reset-password' | 'account' | 'calculator' | 'tax-profile' | 'investments' | 'investor-analysis' | 'settings'>('signin');
+  const [currentView, setCurrentView] = useState<'signin' | 'signup' | 'reset-password' | 'account' | 'calculator' | 'tax-profile' | 'investments' | 'investor-analysis' | 'fund-detail' | 'settings'>('signin');
   const [_resetToken, setResetToken] = useState<string>('');
   const [selectedDealId, setSelectedDealId] = useState<string | number | null>(null);
+  const [selectedPoolId, setSelectedPoolId] = useState<number | null>(null);
   const [accountPageKey, setAccountPageKey] = useState(0);
   const [navbarKey, setNavbarKey] = useState(0);
 
@@ -122,6 +124,15 @@ const App: React.FC = () => {
                       onNavigateToTaxProfile={() => setCurrentView('tax-profile')}
                       dealId={selectedDealId || undefined}
                       onBack={() => setCurrentView('investments')}
+                    />
+                  ) : currentView === 'fund-detail' && selectedPoolId ? (
+                    <FundDetail
+                      poolId={selectedPoolId}
+                      onBack={() => {
+                        setSelectedPoolId(null);
+                        setCurrentView('investments');
+                      }}
+                      onNavigateToTaxProfile={() => setCurrentView('tax-profile')}
                     />
                   ) : null}
                 </div>
