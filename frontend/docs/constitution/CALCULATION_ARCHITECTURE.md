@@ -118,6 +118,45 @@ Functions: `findStabilizedYear()` and `calculateStabilizedDSCR()` in KPIStrip.ts
 
 ---
 
+## Deal Benefit Profile Persistence (IMPL-084)
+
+The DBP layer extracts a frozen snapshot of calculator results for multi-deal modeling and investor-facing persistence.
+
+### Architecture
+
+```
+Calculator Engine → extractDealBenefitProfile() → dbpService.save() → Backend
+                                                                          ↓
+Utilization Engine ← dealToBenefitStream()      ← dbpService.getById() ← DB
+```
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `types/dealBenefitProfile.ts` | `DealBenefitProfile`, `DealBenefitProfileView`, `InvestmentPool` types |
+| `utils/taxbenefits/dealBenefitProfile.ts` | `extractDealBenefitProfile()` — pure extraction from engine results; `dealToBenefitStream()` — reverse conversion for utilization engine |
+| `services/dbpService.ts` | HTTP service → `POST /deal-benefit-profiles/extract/{conduitId}`, `GET /conduit/{id}`, `GET /{id}/view`, `DELETE /{id}` |
+| `services/poolService.ts` | HTTP service → `POST /investment-pools`, `GET /{id}/deals`, `POST /{poolId}/deals/{dbpId}` |
+
+### Key Rules
+
+1. **DBP extraction is supplementary.** If extraction or persistence fails, the DealConduit config save still succeeds. The save flow uses try/catch isolation.
+2. **No new calculations.** `extractDealBenefitProfile()` reads from existing `InvestorAnalysisResults` and `DepreciationSchedule` only.
+3. **DBP is immutable after extraction.** Re-modeling creates a new DBP (append pattern).
+4. **Portal metadata lives on DealConduit, not DBP.** The `DealBenefitProfileView` DTO provides source context via the `/view` endpoint.
+5. **DBP extraction triggers only when `isInvestorFacing === true`** in `HDCInputsComponent.handleSaveConfiguration()`.
+
+### Tests
+
+| File | Tests | Coverage |
+|------|-------|----------|
+| `utils/taxbenefits/__tests__/dealBenefitProfile.test.ts` | 21 | Extraction, conversion, round-trip with tax utilization engine |
+| `services/__tests__/dbpService.test.ts` | 8 | Endpoint URLs, request shapes, error propagation |
+| `services/__tests__/poolService.test.ts` | 8 | Endpoint URLs, path params, error handling |
+
+---
+
 ## History
 
 | Date | Change | Reference |
@@ -126,3 +165,4 @@ Functions: `findStabilizedYear()` and `calculateStabilizedDSCR()` in KPIStrip.ts
 | 2026-01-27 | Added Sign Convention Standard | ISS-052 |
 | 2026-01-27 | Added Override Anti-Pattern | ISS-053 |
 | 2026-01-27 | Added DSCR Display Standard | ISS-054 |
+| 2026-02-14 | Added Deal Benefit Profile Persistence | IMPL-084 |

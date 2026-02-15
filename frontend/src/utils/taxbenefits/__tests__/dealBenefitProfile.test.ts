@@ -5,7 +5,7 @@
  * and converting them back to BenefitStream format.
  */
 
-import { extractDealBenefitProfile, dealToBenefitStream, PortalMetadata } from '../dealBenefitProfile';
+import { extractDealBenefitProfile, dealToBenefitStream } from '../dealBenefitProfile';
 import { calculateTaxUtilization, InvestorProfile } from '../investorTaxUtilization';
 import type { DealBenefitProfile } from '../../../types/dealBenefitProfile';
 import type { CalculationParams, InvestorAnalysisResults, CashFlowItem } from '../../../types/taxbenefits';
@@ -31,6 +31,7 @@ function createMockCalculationParams(overrides: Partial<CalculationParams> = {})
     seniorDebtPct: 65,
     philanthropicDebtPct: 30,
     investorEquityPct: 5,
+    yearOneDepreciationPct: 25,
     stateLIHTCIntegration: {
       creditPath: 'direct_use',
       syndicationRate: 0.85,
@@ -84,7 +85,7 @@ function createMockInvestorAnalysisResults(overrides: Partial<InvestorAnalysisRe
  */
 function createMockDepreciationSchedule(overrides: Partial<DepreciationSchedule> = {}): DepreciationSchedule {
   // Standard 10-year schedule with Year 1 spike
-  const year1Depreciation = 16_000_000; // 20% × $80M depreciable basis
+  const year1Depreciation = 16_000_000; // 20% x $80M depreciable basis
   const annualStraightLine = 2_327_273; // ($80M - $16M) / 27.5 years
 
   const schedule: DepreciationYear[] = [];
@@ -170,6 +171,8 @@ function createMockInvestorProfile(overrides: Partial<InvestorProfile> = {}): In
   };
 }
 
+const TEST_CONDUIT_ID = 42;
+
 // =============================================================================
 // Test Group 1: extractDealBenefitProfile()
 // =============================================================================
@@ -182,9 +185,10 @@ describe('extractDealBenefitProfile', () => {
       const depSchedule = createMockDepreciationSchedule();
       const cashFlows = createMockCashFlows();
 
-      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows);
+      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows, TEST_CONDUIT_ID);
 
       // Identity fields
+      expect(dbp.dealConduitId).toBe(TEST_CONDUIT_ID);
       expect(dbp.dealName).toBe('Test Project Alpha');
       expect(dbp.propertyState).toBe('CA');
       expect(dbp.fundYear).toBe(2024);
@@ -219,7 +223,7 @@ describe('extractDealBenefitProfile', () => {
       const depSchedule = createMockDepreciationSchedule();
       const cashFlows = createMockCashFlows();
 
-      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows);
+      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows, TEST_CONDUIT_ID);
 
       // Check depreciation values
       expect(dbp.depreciationSchedule[0]).toBe(16_000_000); // Year 1 spike
@@ -229,6 +233,43 @@ describe('extractDealBenefitProfile', () => {
       expect(dbp.lihtcSchedule[0]).toBe(700_000);
       expect(dbp.stateLihtcSchedule[0]).toBe(300_000);
       expect(dbp.operatingCashFlow[0]).toBe(500_000);
+    });
+  });
+
+  describe('new fields (IMPL-084)', () => {
+    it('should populate costSegregationPercent from yearOneDepreciationPct', () => {
+      const inputs = createMockCalculationParams({ yearOneDepreciationPct: 25 });
+      const results = createMockInvestorAnalysisResults();
+      const depSchedule = createMockDepreciationSchedule();
+      const cashFlows = createMockCashFlows();
+
+      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows, TEST_CONDUIT_ID);
+
+      expect(dbp.costSegregationPercent).toBe(25);
+    });
+
+    it('should populate depreciableBasis from depreciation schedule sum', () => {
+      const inputs = createMockCalculationParams();
+      const results = createMockInvestorAnalysisResults();
+      const depSchedule = createMockDepreciationSchedule();
+      const cashFlows = createMockCashFlows();
+
+      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows, TEST_CONDUIT_ID);
+
+      // depreciableBasis = sum of all annual depreciation values
+      const expectedBasis = depSchedule.schedule.reduce((sum, yr) => sum + yr.totalDepreciation, 0);
+      expect(dbp.depreciableBasis).toBe(expectedBasis);
+    });
+
+    it('should calculate projectedExitYear as fundYear + holdPeriod', () => {
+      const inputs = createMockCalculationParams({ fundEntryYear: 2024, holdPeriod: 10 });
+      const results = createMockInvestorAnalysisResults();
+      const depSchedule = createMockDepreciationSchedule();
+      const cashFlows = createMockCashFlows();
+
+      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows, TEST_CONDUIT_ID);
+
+      expect(dbp.projectedExitYear).toBe(2034);
     });
   });
 
@@ -243,7 +284,7 @@ describe('extractDealBenefitProfile', () => {
       const depSchedule = createMockDepreciationSchedule();
       const cashFlows = createMockCashFlows();
 
-      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows);
+      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows, TEST_CONDUIT_ID);
 
       expect(dbp.dealName).toBe('Unnamed Deal');
       expect(dbp.fundYear).toBe(new Date().getFullYear());
@@ -256,7 +297,7 @@ describe('extractDealBenefitProfile', () => {
       const depSchedule = createMockDepreciationSchedule();
       const cashFlows = createMockCashFlows();
 
-      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows);
+      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows, TEST_CONDUIT_ID);
 
       expect(dbp.propertyState).toBe('WA');
     });
@@ -272,7 +313,7 @@ describe('extractDealBenefitProfile', () => {
       const depSchedule = createMockDepreciationSchedule();
       const cashFlows = createMockCashFlows();
 
-      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows);
+      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows, TEST_CONDUIT_ID);
 
       expect(dbp.grossEquity).toBe(5_000_000);
       expect(dbp.netEquity).toBe(4_000_000); // 5M - 1M offset
@@ -287,7 +328,7 @@ describe('extractDealBenefitProfile', () => {
       const depSchedule = createMockDepreciationSchedule();
       const cashFlows = createMockCashFlows();
 
-      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows);
+      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows, TEST_CONDUIT_ID);
 
       expect(dbp.grossEquity).toBe(5_000_000);
       expect(dbp.netEquity).toBe(5_000_000); // No offset
@@ -303,7 +344,7 @@ describe('extractDealBenefitProfile', () => {
       });
       const cashFlows = createMockCashFlows();
 
-      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows);
+      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows, TEST_CONDUIT_ID);
 
       expect(dbp.cumulativeDepreciation).toBe(8_000_000);
       expect(dbp.recaptureExposure).toBe(2_000_000); // 25% of 8M
@@ -319,54 +360,9 @@ describe('extractDealBenefitProfile', () => {
       const depSchedule = createMockDepreciationSchedule();
       const cashFlows = createMockCashFlows();
 
-      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows);
+      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows, TEST_CONDUIT_ID);
 
       expect(dbp.philDebtPct).toBe(30);
-    });
-  });
-
-  describe('portal metadata', () => {
-    it('should include portal metadata when provided', () => {
-      const inputs = createMockCalculationParams();
-      const results = createMockInvestorAnalysisResults();
-      const depSchedule = createMockDepreciationSchedule();
-      const cashFlows = createMockCashFlows();
-      const portalMetadata: PortalMetadata = {
-        configurationId: 42,
-        dealDescription: 'A wonderful affordable housing project',
-        dealLocation: 'San Francisco, CA',
-        units: 150,
-        affordabilityMix: '100% AMI',
-        minimumInvestment: 1_000_000,
-        dealImageUrl: 'https://example.com/project.jpg',
-        projectStatus: 'funding',
-      };
-
-      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows, portalMetadata);
-
-      expect(dbp.configurationId).toBe(42);
-      expect(dbp.dealDescription).toBe('A wonderful affordable housing project');
-      expect(dbp.dealLocation).toBe('San Francisco, CA');
-      expect(dbp.numberOfUnits).toBe(150);
-      expect(dbp.affordabilityMix).toBe('100% AMI');
-      expect(dbp.minimumInvestment).toBe(1_000_000);
-      expect(dbp.projectImageUrl).toBe('https://example.com/project.jpg');
-      expect(dbp.projectStatus).toBe('funding');
-    });
-
-    it('should use default values when portal metadata is not provided', () => {
-      const inputs = createMockCalculationParams();
-      const results = createMockInvestorAnalysisResults();
-      const depSchedule = createMockDepreciationSchedule();
-      const cashFlows = createMockCashFlows();
-
-      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows);
-
-      expect(dbp.configurationId).toBe(0);
-      expect(dbp.dealDescription).toBe('');
-      expect(dbp.dealLocation).toBe('');
-      expect(dbp.numberOfUnits).toBe(0);
-      expect(dbp.projectStatus).toBe('available');
     });
   });
 
@@ -388,7 +384,7 @@ describe('extractDealBenefitProfile', () => {
       const depSchedule = createMockDepreciationSchedule();
       const cashFlows = createMockCashFlows();
 
-      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows);
+      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows, TEST_CONDUIT_ID);
 
       expect(dbp.stateLihtcPath).toBe('syndicated');
       expect(dbp.syndicationRate).toBe(0.92);
@@ -402,7 +398,7 @@ describe('extractDealBenefitProfile', () => {
       const depSchedule = createMockDepreciationSchedule();
       const cashFlows = createMockCashFlows();
 
-      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows);
+      const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows, TEST_CONDUIT_ID);
 
       expect(dbp.stateLihtcPath).toBe('none');
       expect(dbp.syndicationRate).toBe(0);
@@ -418,7 +414,7 @@ describe('dealToBenefitStream', () => {
   describe('basic conversion', () => {
     it('should produce a valid BenefitStream with all required fields', () => {
       const dbp: DealBenefitProfile = {
-        configurationId: 1,
+        dealConduitId: 1,
         dealName: 'Test Deal',
         propertyState: 'CA',
         fundYear: 2024,
@@ -469,7 +465,7 @@ describe('dealToBenefitStream', () => {
   describe('exit event construction', () => {
     it('should construct exit event with correct ExitEvent interface fields', () => {
       const dbp: DealBenefitProfile = {
-        configurationId: 1,
+        dealConduitId: 1,
         dealName: 'Test Deal',
         propertyState: 'CA',
         fundYear: 2024,
@@ -515,7 +511,7 @@ describe('dealToBenefitStream', () => {
   describe('equity values', () => {
     it('should preserve equity values correctly', () => {
       const dbp: DealBenefitProfile = {
-        configurationId: 1,
+        dealConduitId: 1,
         dealName: 'Test Deal',
         propertyState: 'CA',
         fundYear: 2024,
@@ -560,7 +556,7 @@ describe('dealToBenefitStream', () => {
       const operatingCashFlow = [500_000, 500_000, 500_000, 500_000, 500_000];
 
       const dbp: DealBenefitProfile = {
-        configurationId: 1,
+        dealConduitId: 1,
         dealName: 'Test Deal',
         propertyState: 'CA',
         fundYear: 2024,
@@ -603,7 +599,7 @@ describe('dealToBenefitStream', () => {
 // Test Group 3: Round-Trip with Tax Utilization Engine
 // =============================================================================
 
-describe('Round-trip: DBP → BenefitStream → calculateTaxUtilization', () => {
+describe('Round-trip: DBP -> BenefitStream -> calculateTaxUtilization', () => {
   it('should produce valid tax utilization result from a realistic DBP', () => {
     // Create realistic inputs
     const inputs = createMockCalculationParams();
@@ -612,7 +608,7 @@ describe('Round-trip: DBP → BenefitStream → calculateTaxUtilization', () => 
     const cashFlows = createMockCashFlows(10);
 
     // Extract DBP
-    const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows);
+    const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows, TEST_CONDUIT_ID);
 
     // Convert back to BenefitStream
     const benefitStream = dealToBenefitStream(dbp);
@@ -664,7 +660,7 @@ describe('Round-trip: DBP → BenefitStream → calculateTaxUtilization', () => 
     const depSchedule = createMockDepreciationSchedule();
     const cashFlows = createMockCashFlows(10);
 
-    const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows);
+    const dbp = extractDealBenefitProfile(inputs, results, depSchedule, cashFlows, TEST_CONDUIT_ID);
     const benefitStream = dealToBenefitStream(dbp);
 
     // Scale to millions

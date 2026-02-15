@@ -11,31 +11,17 @@ import type { DepreciationSchedule } from './depreciationSchedule';
 import type { BenefitStream, ExitEvent } from './investorTaxUtilization';
 
 /**
- * Optional portal metadata from CalculatorConfiguration.
- * These fields live on CalculatorConfiguration, NOT CalculationParams.
- * Pass them when extracting from a saved config context.
- */
-export interface PortalMetadata {
-  configurationId?: number;
-  dealDescription?: string;
-  dealLocation?: string;
-  units?: number;
-  affordabilityMix?: string;
-  minimumInvestment?: number;
-  dealImageUrl?: string;
-  projectStatus?: string;
-}
-
-/**
  * Extracts a DealBenefitProfile from calculator inputs and results.
  *
  * Pure function with no side effects. All inputs are read-only.
+ * Portal metadata (dealDescription, dealLocation, etc.) lives on the
+ * DealConduit, not the DBP — use the /view endpoint for source context.
  *
  * @param inputs - CalculationParams from the calculator
  * @param results - InvestorAnalysisResults from the calculation
  * @param depreciationSchedule - Full depreciation schedule
  * @param cashFlows - Annual cash flow items
- * @param portalMetadata - Optional metadata from CalculatorConfiguration
+ * @param dealConduitId - ID of the parent DealConduit (from saved configuration)
  * @returns Complete DealBenefitProfile ready for persistence or pooling
  */
 export function extractDealBenefitProfile(
@@ -43,7 +29,7 @@ export function extractDealBenefitProfile(
   results: InvestorAnalysisResults,
   depreciationSchedule: DepreciationSchedule,
   cashFlows: CashFlowItem[],
-  portalMetadata?: PortalMetadata
+  dealConduitId: number
 ): DealBenefitProfile {
   // Extract schedule arrays
   const depreciationArray = depreciationSchedule.schedule.map(yr => yr.totalDepreciation);
@@ -71,19 +57,27 @@ export function extractDealBenefitProfile(
 
   // Current year fallback for pisYear (pisYear does NOT exist on CalculationParams)
   const currentYear = new Date().getFullYear();
+  const fundYear = inputs.fundEntryYear || currentYear;
+  const holdPeriod = inputs.holdPeriod || 10;
 
   return {
     // Identity
-    configurationId: portalMetadata?.configurationId || 0,
+    dealConduitId,
     dealName: inputs.dealName || 'Unnamed Deal',
     propertyState: inputs.selectedState || 'WA',
-    fundYear: inputs.fundEntryYear || currentYear,
+    fundYear,
 
     // Economics
     projectCost: inputs.projectCost || 0,
     grossEquity,
     netEquity,
     syndicationProceeds,
+
+    // Depreciation basis
+    costSegregationPercent: inputs.yearOneDepreciationPct || 0,
+    depreciableBasis: depreciationSchedule.schedule.length > 0
+      ? depreciationArray.reduce((sum, v) => sum + v, 0)
+      : 0,
 
     // Schedules
     depreciationSchedule: depreciationArray,
@@ -92,7 +86,8 @@ export function extractDealBenefitProfile(
     operatingCashFlow: operatingCFArray,
 
     // Exit
-    holdPeriod: inputs.holdPeriod || 10,
+    holdPeriod,
+    projectedExitYear: fundYear + holdPeriod,
     exitProceeds: results.exitProceeds || 0,
     cumulativeDepreciation,
     recaptureExposure,
@@ -110,15 +105,6 @@ export function extractDealBenefitProfile(
     equityPct: inputs.investorEquityPct || 5,
     stateLihtcPath: inputs.stateLIHTCIntegration?.creditPath || 'none',
     syndicationRate: inputs.stateLIHTCIntegration?.syndicationRate || 0,
-
-    // Portal metadata
-    dealDescription: portalMetadata?.dealDescription || '',
-    dealLocation: portalMetadata?.dealLocation || '',
-    numberOfUnits: portalMetadata?.units || 0,
-    affordabilityMix: portalMetadata?.affordabilityMix || '',
-    minimumInvestment: portalMetadata?.minimumInvestment || 0,
-    projectImageUrl: portalMetadata?.dealImageUrl,
-    projectStatus: portalMetadata?.projectStatus || 'available',
 
     // Timestamps
     extractedAt: new Date().toISOString(),
