@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 // New 7-panel structure (IMPL-015)
 import ProjectDefinitionSection from './inputs/ProjectDefinitionSection';
 import CapitalStructureSection from './inputs/CapitalStructureSection';
@@ -8,10 +8,31 @@ import InvestorProfileSection from './inputs/InvestorProfileSection';
 import ProjectionsSection from './inputs/ProjectionsSection';
 import HDCFeesSection from './inputs/HDCFeesSection';
 import InvestmentPortalSection from './inputs/InvestmentPortalSection';
-import SaveConfiguration from './inputs/SaveConfiguration';
+import SaveConfiguration, { SaveConfigMetadata } from './inputs/SaveConfiguration';
+import PresetSelector, { UpdateNotification } from './inputs/PresetSelector';
 // Legacy imports (kept for save functionality)
 import { calculatorService, CalculatorConfiguration } from '../../services/taxbenefits/calculatorService';
 import { tokenService } from '../../services/api';
+import { userService } from '../../services/userService';
+import { toast } from 'sonner';
+import { Button } from '../ui/button';
+import { Trash2, RotateCcw } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../ui/tooltip';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog';
 import '../../styles/taxbenefits/hdcCalculator.css';
 import { InvestorAnalysisResults, CashFlowItem } from '../../types/taxbenefits';
 import { roundForDisplay } from '../../utils/taxbenefits/formatters';
@@ -346,6 +367,45 @@ interface HDCInputsComponentProps {
 }
 
 const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
+  // Current user ID for shared config classification
+  const [currentUserId, setCurrentUserId] = useState<number | undefined>(undefined);
+  const [updateNotification, setUpdateNotification] = useState<UpdateNotification | null>(null);
+
+  useEffect(() => {
+    const cached = userService.getCachedUser();
+    if (cached) {
+      setCurrentUserId(cached.id);
+    } else if (tokenService.isAuthenticated()) {
+      userService.getCurrentUser().then(user => {
+        if (user) setCurrentUserId(user.id);
+      });
+    }
+  }, []);
+
+  // Property Presets panel state
+  const [loadedPresetId, setLoadedPresetId] = useState<string | null>(null);
+  const [loadedPresetName, setLoadedPresetName] = useState<string>('');
+  const [loadedConfigOwnerId, setLoadedConfigOwnerId] = useState<number | null>(null);
+  const [inputSnapshot, setInputSnapshot] = useState<string | null>(null);
+  const [presetRefreshTrigger, setPresetRefreshTrigger] = useState(0);
+  const [panelDeleteOpen, setPanelDeleteOpen] = useState(false);
+  const [presetPanelExpanded, setPresetPanelExpanded] = useState(true);
+
+  // Input fingerprint for dirty detection
+  const currentFingerprint = useMemo(() => JSON.stringify({
+    pc: props.projectCost, pd: props.predevelopmentCosts, lv: props.landValue,
+    noi: props.yearOneNOI, dep: props.yearOneDepreciationPct, ng: props.noiGrowthRate,
+    ec: props.exitCapRate, hp: props.holdPeriod, ie: props.investorEquityPct,
+    sd: props.seniorDebtPct, oz: props.ozEnabled, lh: props.lihtcEnabled,
+    st: props.selectedState, hf: props.hdcFeeRate,
+  }), [props.projectCost, props.predevelopmentCosts, props.landValue, props.yearOneNOI,
+       props.yearOneDepreciationPct, props.noiGrowthRate, props.exitCapRate, props.holdPeriod,
+       props.investorEquityPct, props.seniorDebtPct, props.ozEnabled, props.lihtcEnabled,
+       props.selectedState, props.hdcFeeRate]);
+
+  const isDirty = loadedPresetId !== null && inputSnapshot !== null && currentFingerprint !== inputSnapshot;
+  const isOwnConfig = loadedConfigOwnerId === null || currentUserId === undefined || loadedConfigOwnerId === currentUserId;
+
   const handlePresetSelect = async (presetId: string) => {
     // Unified conduit loading: both presets (preset-{id}) and configs (config-{id})
     // load via the same API since @JsonUnwrapped produces identical flat JSON
@@ -531,6 +591,18 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
       // IMPL-036: Re-enable auto-balance after config loading is complete
       props.endConfigLoading?.();
 
+      // Save snapshot for dirty detection
+      setLoadedPresetId(presetId);
+      setLoadedPresetName(config.configurationName || config.dealName || 'Configuration');
+      setLoadedConfigOwnerId(config.userId ?? null);
+      setInputSnapshot(JSON.stringify({
+        pc: config.projectCost ?? 10, pd: config.predevelopmentCosts ?? 0, lv: config.landValue ?? 0,
+        noi: config.yearOneNOI ?? 0.5, dep: config.yearOneDepreciationPct ?? 25, ng: config.noiGrowthRate ?? 3,
+        ec: config.exitCapRate ?? 6, hp: config.holdPeriod ?? 10, ie: config.investorEquityPct ?? 0,
+        sd: config.seniorDebtPct ?? 0, oz: config.ozEnabled ?? true, lh: config.lihtcEnabled ?? true,
+        st: config.selectedState ?? 'CA', hf: config.hdcFeeRate ?? 10,
+      }));
+
       if (props.onPresetSelect) {
         props.onPresetSelect(presetId);
       }
@@ -541,7 +613,45 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
     }
   };
 
-  const handleSaveConfiguration = async (configName: string) => {
+  const autoTags = useMemo(() => {
+    const tags: string[] = [];
+    if (props.ozEnabled) tags.push('OZ');
+    if (props.lihtcEnabled) tags.push('LIHTC');
+    return tags;
+  }, [props.ozEnabled, props.lihtcEnabled]);
+
+  const handleUpdatesDetected = useCallback((notification: UpdateNotification | null) => {
+    setUpdateNotification(notification);
+  }, []);
+
+  const handleReset = useCallback(() => {
+    if (loadedPresetId) handlePresetSelect(loadedPresetId);
+  }, [loadedPresetId]);
+
+  const confirmDeleteFromPanel = useCallback(async () => {
+    if (!loadedPresetId) return;
+    try {
+      const id = parseInt(loadedPresetId.replace(/^(config|preset)-/, ''));
+      if (loadedPresetId.startsWith('preset-')) {
+        await calculatorService.deletePreset(id);
+      } else {
+        await calculatorService.deleteConfiguration(id);
+      }
+      toast.success('Deleted', { description: `"${loadedPresetName}" has been deleted.` });
+      setLoadedPresetId(null);
+      setLoadedPresetName('');
+      setLoadedConfigOwnerId(null);
+      setInputSnapshot(null);
+      setPresetRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      console.error('Error deleting:', error);
+      toast.error('Delete Failed', { description: 'Please try again.' });
+    } finally {
+      setPanelDeleteOpen(false);
+    }
+  }, [loadedPresetId, loadedPresetName]);
+
+  const handleSaveConfiguration = async (configName: string, metadata?: SaveConfigMetadata) => {
     if (!tokenService.isAuthenticated()) {
       return Promise.reject('Not authenticated');
     }
@@ -678,6 +788,13 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
         otherExclusions: props.otherExclusions,
       };
 
+      // Sharing & classification metadata
+      if (metadata) {
+        currentConfig.isShared = metadata.isShared;
+        currentConfig.statusCategory = metadata.statusCategory;
+        currentConfig.tags = metadata.tags.join(',');
+      }
+
       const isComplete = !!(
         props.isInvestorFacing &&
         props.dealDescription &&
@@ -693,7 +810,13 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
       // Calculated results are no longer stored — the engine is deterministic
       // and recreates them from inputs on every load
 
-      await calculatorService.saveConfiguration(currentConfig);
+      // Update existing config (PUT) if we have a loaded config; otherwise create new (POST)
+      if (loadedPresetId && loadedPresetId.startsWith('config-')) {
+        const configId = parseInt(loadedPresetId.replace('config-', ''));
+        await calculatorService.updateConfiguration(configId, currentConfig);
+      } else {
+        await calculatorService.saveConfiguration(currentConfig);
+      }
     } catch (error) {
       console.error('Error saving configuration:', error);
       throw error;
@@ -714,15 +837,110 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           borderRadius:'5px',
           background: 'rgba(127, 189, 69, 0.1)'}}
     >
-      <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
-        <h2 className="text-lg sm:text-xl font-semibold" style={{margin: 0, color: '#407F7F'}}>Inputs</h2>
-        {!props.hideSaveConfiguration && !props.isReadOnly && (
-          <SaveConfiguration
-            onSaveConfiguration={handleSaveConfiguration}
-            buttonStyle="compact"
-          />
-        )}
-      </div>
+      <h2 className="text-lg sm:text-xl font-semibold" style={{margin: '0 0 1rem 0', color: '#407F7F'}}>Inputs</h2>
+
+      {!props.isReadOnly && (
+        <div className="hdc-calculator" style={{ marginBottom: '1.5rem' }}>
+          <div className="hdc-section" style={{ borderLeft: '4px solid var(--hdc-sushi)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: presetPanelExpanded ? '0.625rem' : 0, paddingBottom: '0.375rem', borderBottom: '2px solid var(--hdc-sushi)' }}>
+              <h3
+                className="hdc-section-header"
+                style={{ marginBottom: 0, borderBottom: 'none', paddingBottom: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                onClick={() => setPresetPanelExpanded(!presetPanelExpanded)}
+              >
+                <span style={{ marginRight: '0.5rem' }}>{presetPanelExpanded ? '▼' : '▶'}</span>
+                Property Presets
+                {updateNotification && (updateNotification.green > 0 || updateNotification.yellow > 0) && (
+                  <sup
+                    className="hdc-btn-entrance"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.58rem',
+                      fontWeight: 700,
+                      color: '#fff',
+                      backgroundColor: updateNotification.green > 0 ? '#7fbd45' : '#bfb05e',
+                      borderRadius: '50%',
+                      width: '20px',
+                      height: '20px',
+                      marginLeft: '3px',
+                      lineHeight: 1,
+                      letterSpacing: '-0.5px',
+                      paddingTop: '0.5px',
+                    }}
+                    title={updateNotification.green > 0 ? 'Collaborator updates' : 'Shared updates from others'}
+                  >
+                    +{updateNotification.green + updateNotification.yellow}
+                  </sup>
+                )}
+              </h3>
+              <TooltipProvider delayDuration={300}>
+                <div className="flex items-center gap-1">
+                  {loadedPresetId && !isDirty && isOwnConfig && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 hover:bg-destructive hover:text-destructive-foreground hdc-btn-entrance"
+                          onClick={() => setPanelDeleteOpen(true)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p className="text-xs">Delete configuration</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                  {!props.hideSaveConfiguration && (
+                    <div className={loadedPresetId && isDirty ? "hdc-btn-entrance" : ""}>
+                      <SaveConfiguration
+                        onSaveConfiguration={handleSaveConfiguration}
+                        onConfigurationSaved={() => setPresetRefreshTrigger(prev => prev + 1)}
+                        buttonStyle="icon"
+                        buttonContainerStyle={{ height: '1.75rem', width: '1.75rem' }}
+                        autoTags={autoTags}
+                        stateCode={props.selectedState}
+                        lockedName={!isOwnConfig ? loadedPresetName : undefined}
+                      />
+                    </div>
+                  )}
+                  {loadedPresetId && isDirty && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 hdc-btn-entrance"
+                          style={{ animationDelay: '0.1s' }}
+                          onClick={handleReset}
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p className="text-xs">Reset to saved configuration</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+              </TooltipProvider>
+            </div>
+            {presetPanelExpanded && (
+              <PresetSelector
+                onPresetSelect={handlePresetSelect}
+                hideLabel
+                hideDelete
+                refreshTrigger={presetRefreshTrigger}
+                currentUserId={currentUserId}
+                onUpdatesDetected={handleUpdatesDetected}
+              />
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-4">
         {/* Panel 1: Project Definition - IMPL-035: Simple property state dropdown */}
@@ -738,7 +956,6 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           selectedState={props.selectedState}
           setSelectedState={props.handleStateChange}
           formatCurrency={props.formatCurrency}
-          onPresetSelect={props.isReadOnly ? undefined : handlePresetSelect}
           isReadOnly={props.isReadOnly}
         />
 
@@ -1025,6 +1242,23 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           />
         )}
       </div>
+
+      <AlertDialog open={panelDeleteOpen} onOpenChange={setPanelDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Configuration</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &quot;{loadedPresetName}&quot;? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteFromPanel} className="bg-destructive hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

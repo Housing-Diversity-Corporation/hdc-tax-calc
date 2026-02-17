@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import '../../../styles/taxbenefits/hdcCalculator.css';
 import { HDCCheckbox } from './shared/HDCCheckbox';
 import { Input } from '@/components/ui/input';
@@ -209,10 +209,35 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
 }) => {
   // IMPL-020a: Use pre-calculated value from engine, fall back to local calc for backwards compatibility
   const effectiveProjectCost = propsEffectiveProjectCost ?? (projectCost + predevelopmentCosts + (interestReserveEnabled ? interestReserveAmount : 0));
+  const [isExpanded, setIsExpanded] = useState(true);
   return (
     <div className="hdc-calculator">
-      <div className="hdc-section">    
-        <h3 className="hdc-section-header">Capital Structure</h3>
+      <div className="hdc-section">
+        <h3
+          className="hdc-section-header"
+          style={{
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            userSelect: 'none'
+          }}
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          <span style={{ display: 'flex', alignItems: 'center' }}>
+            <span style={{
+              marginRight: '0.5rem',
+              fontSize: '0.8rem',
+              transition: 'transform 0.2s',
+              transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+              display: 'inline-block'
+            }}>
+              ▶
+            </span>
+            Capital Structure
+          </span>
+        </h3>
+        {isExpanded && (<>
         <div style={{ fontSize: '0.7rem', color: 'var(--hdc-cabbage-pont)', marginBottom: '0.5rem' }}>
           Percentages apply to Total Project Cost from Basic Inputs
         </div>
@@ -1091,6 +1116,7 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
             Capital structure must total 100%
           </div>
         )}
+        </>)}
       </div>
     </div>
   );

@@ -3,6 +3,43 @@
  * Clean, modern styling with proper spacing
  */
 
+/* Pulsate-bounce animation for utility buttons on first appearance (10s) */
+@keyframes hdc-pulsate-bounce {
+  /* Initial bounce entrance */
+  0%    { transform: scale(1)    translateY(0);    opacity: 0; }
+  2%    { transform: scale(1.25) translateY(-4px); opacity: 1; }
+  4%    { transform: scale(0.95) translateY(1px);  opacity: 1; }
+  6%    { transform: scale(1.15) translateY(-2px); opacity: 1; }
+  8%    { transform: scale(1)    translateY(0);    opacity: 1; }
+  /* Gentle repeating pulse that fades out */
+  12%   { transform: scale(1);    }
+  16%   { transform: scale(1.08); }
+  20%   { transform: scale(1);    }
+  24%   { transform: scale(1.08); }
+  28%   { transform: scale(1);    }
+  32%   { transform: scale(1.08); }
+  36%   { transform: scale(1);    }
+  40%   { transform: scale(1.08); }
+  44%   { transform: scale(1);    }
+  48%   { transform: scale(1.08); }
+  52%   { transform: scale(1);    }
+  56%   { transform: scale(1.08); }
+  60%   { transform: scale(1);    }
+  64%   { transform: scale(1.06); }
+  68%   { transform: scale(1);    }
+  72%   { transform: scale(1.06); }
+  76%   { transform: scale(1);    }
+  80%   { transform: scale(1.04); }
+  84%   { transform: scale(1);    }
+  88%   { transform: scale(1.03); }
+  92%   { transform: scale(1);    }
+  96%   { transform: scale(1.02); }
+  100%  { transform: scale(1);    }
+}
+.hdc-btn-entrance {
+  animation: hdc-pulsate-bounce 10s ease-out forwards;
+}
+
 /* Root Variables from Theme */
 :root {
   /* Main Colors */

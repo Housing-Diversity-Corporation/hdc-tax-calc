@@ -6,7 +6,7 @@
  */
 import React from 'react';
 import PresetSelector from './PresetSelector';
-import SaveConfiguration from './SaveConfiguration';
+import SaveConfiguration, { SaveConfigMetadata } from './SaveConfiguration';
 import { calculateInterestReserve } from '../../../utils/taxbenefits/interestReserveCalculation';
 import { HDCCheckbox } from './shared/HDCCheckbox';
 import { Input } from '../../ui/input';
@@ -57,7 +57,7 @@ interface BasicInputsSectionProps {
   outsideInvestorPikCurrentPayPct: number;
   formatCurrency: (value: number) => string;
   onPresetSelect?: (presetId: string) => void;
-  onSaveConfiguration?: (configName: string) => Promise<void>;
+  onSaveConfiguration?: (configName: string, metadata?: SaveConfigMetadata) => Promise<void>;
   // Timing Parameters
   constructionDelayMonths: number;
   setConstructionDelayMonths: (value: number) => void;

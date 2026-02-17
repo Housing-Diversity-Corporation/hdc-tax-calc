@@ -5,7 +5,7 @@
  * Controls whether this deal appears in the Investment Portal
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import '../../../styles/taxbenefits/hdcCalculator.css';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { HDCCheckbox } from './shared/HDCCheckbox';
@@ -53,9 +53,34 @@ const InvestmentPortalSection: React.FC<InvestmentPortalSectionProps> = ({
   setDealImageUrl,
   isReadOnly = false,
 }) => {
+  const [isExpanded, setIsExpanded] = useState(true);
   return (
     <div className="hdc-section">
-      <h2 className="hdc-section-header">Investment Portal Settings</h2>
+      <h2
+        className="hdc-section-header"
+        style={{
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          userSelect: 'none'
+        }}
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <span style={{ display: 'flex', alignItems: 'center' }}>
+          <span style={{
+            marginRight: '0.5rem',
+            fontSize: '0.8rem',
+            transition: 'transform 0.2s',
+            transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+            display: 'inline-block'
+          }}>
+            ▶
+          </span>
+          Investment Portal Settings
+        </span>
+      </h2>
+      {isExpanded && (<>
       <p className="hdc-section-description">
         Configure investor-facing metadata. When "Show in Portal" is enabled, this deal will be
         visible to investors in the Investment Portal with the details below.
@@ -259,6 +284,7 @@ const InvestmentPortalSection: React.FC<InvestmentPortalSectionProps> = ({
           )}
         </>
       )}
+      </>)}
     </div>
   );
 };

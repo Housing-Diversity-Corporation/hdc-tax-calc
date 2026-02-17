@@ -141,6 +141,10 @@ export interface CalculatorConfiguration {
   assetSaleGain?: number;
   isDefault?: boolean;
   completionStatus?: 'in-progress' | 'complete';  // Track configuration completeness
+  isShared?: boolean;
+  statusCategory?: string;
+  tags?: string;  // Comma-separated: "OZ,LIHTC,PAB,Custom Tag"
+  userId?: number;
   createdAt?: string;
   updatedAt?: string;
 
@@ -155,6 +159,28 @@ export interface CalculatorConfiguration {
   projectStatus?: 'available' | 'funded' | 'pipeline';
   minimumInvestment?: number;          // Minimum investment amount
   dealImageUrl?: string;               // URL to project rendering/photo
+}
+
+export interface CollaboratorInfo {
+  userId: number;
+  fullName: string;
+  profileImageUrl: string | null;
+}
+
+export interface ConfigurationWithOwner {
+  configuration: CalculatorConfiguration;
+  ownerUserId: number | null;
+  ownerFullName: string | null;
+  ownerProfileImageUrl: string | null;
+  collaborators: CollaboratorInfo[];
+}
+
+export function autoDetectTags(config: CalculatorConfiguration): string[] {
+  const tags: string[] = [];
+  if (config.ozEnabled) tags.push('OZ');
+  if (config.lihtcEnabled) tags.push('LIHTC');
+  if (config.selectedState) tags.push(config.selectedState);
+  return tags;
 }
 
 export const calculatorService = {
@@ -229,5 +255,19 @@ export const calculatorService = {
   getConduitById: async (id: number): Promise<CalculatorConfiguration> => {
     const response = await api.get<CalculatorConfiguration>(`/deal-conduits/${id}`);
     return response.data;
-  }
+  },
+
+  // Get all configurations enriched with owner profile info
+  getAllConfigurationsWithOwners: async (): Promise<ConfigurationWithOwner[]> => {
+    const response = await api.get<ConfigurationWithOwner[]>('/deal-conduits/configurations/all');
+    return response.data;
+  },
+
+  // Get IDs of shared configs updated since a given timestamp (for update badge)
+  getUpdatedSince: async (sinceISO: string): Promise<number[]> => {
+    const response = await api.get<number[]>('/deal-conduits/configurations/updates-since', {
+      params: { since: sinceISO }
+    });
+    return response.data;
+  },
 };

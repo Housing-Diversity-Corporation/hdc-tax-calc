@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { LIHTCCreditSchedule as LIHTCCreditScheduleType } from '../../../utils/taxbenefits/lihtcCreditCalculations';
 
 interface LIHTCCreditScheduleProps {
@@ -7,6 +7,8 @@ interface LIHTCCreditScheduleProps {
 }
 
 export const LIHTCCreditSchedule: React.FC<LIHTCCreditScheduleProps> = ({ result, formatCurrency }) => {
+  const [isExpanded, setIsExpanded] = useState(true);
+
   if (!result) return null;
 
   // Calculate cumulative credits for display
@@ -21,8 +23,32 @@ export const LIHTCCreditSchedule: React.FC<LIHTCCreditScheduleProps> = ({ result
 
   return (
     <div className="hdc-section">
-      <h3 className="hdc-section-header">LIHTC Credit Schedule</h3>
+      <h3
+        className="hdc-section-header"
+        style={{
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          userSelect: 'none'
+        }}
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <span style={{ display: 'flex', alignItems: 'center' }}>
+          <span style={{
+            marginRight: '0.5rem',
+            fontSize: '0.8rem',
+            transition: 'transform 0.2s',
+            transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+            display: 'inline-block'
+          }}>
+            ▶
+          </span>
+          LIHTC Credit Schedule
+        </span>
+      </h3>
 
+      {isExpanded && (<>
       <div className="hdc-result-row">
         <span className="hdc-result-label">Year 1 Credit:</span>
         <span className="hdc-result-value hdc-value-positive">{formatCurrency(result.year1Credit)}</span>
@@ -67,6 +93,7 @@ export const LIHTCCreditSchedule: React.FC<LIHTCCreditScheduleProps> = ({ result
           </tbody>
         </table>
       </details>
+      </>)}
     </div>
   );
 };

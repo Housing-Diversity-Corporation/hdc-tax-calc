@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import PresetSelector from './PresetSelector';
 import PropertyStateDropdown from './PropertyStateDropdown';
 import { Input } from '../../ui/input';
 import { Slider } from '../../ui/slider';
@@ -25,7 +24,6 @@ interface ProjectDefinitionSectionProps {
 
   // Helper functions
   formatCurrency: (value: number) => string;
-  onPresetSelect?: (presetId: string) => void;
 
   // Read-only mode
   isReadOnly?: boolean;
@@ -44,7 +42,6 @@ const ProjectDefinitionSection: React.FC<ProjectDefinitionSectionProps> = ({
   selectedState,
   setSelectedState,
   formatCurrency,
-  onPresetSelect,
   isReadOnly = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -65,20 +62,6 @@ const ProjectDefinitionSection: React.FC<ProjectDefinitionSectionProps> = ({
 
         {isExpanded && (
           <>
-            {/* Preset Selection Section - Only show if not read-only */}
-            {!isReadOnly && onPresetSelect && (
-              <div className="preset-selection-wrapper" style={{
-                marginBottom: '1.5rem',
-                padding: '1rem',
-                borderRadius: '8px',
-                border: '1px solid rgba(127, 189, 69, 0.2)',
-              }}>
-                <PresetSelector
-                  onPresetSelect={onPresetSelect}
-                />
-              </div>
-            )}
-
             {/* Project Cost */}
             <div className="hdc-input-group">
               <label className="hdc-input-label">Project Cost ($M)</label>
