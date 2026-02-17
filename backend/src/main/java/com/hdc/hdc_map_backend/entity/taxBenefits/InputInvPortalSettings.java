@@ -43,6 +43,19 @@ public class InputInvPortalSettings {
     @Column(name = "is_investor_facing")
     private Boolean isInvestorFacing;
 
+    // Sharing & classification
+    @Column(name = "is_shared")
+    private Boolean isShared;
+
+    @Column(name = "tags", length = 1000)
+    private String tags;  // Comma-separated: "OZ,LIHTC,PAB,Custom Tag"
+
+    @Column(name = "status_category")
+    private String statusCategory;  // User-defined: "In Progress", "Completed", etc.
+
+    @Column(name = "collaborator_ids", length = 1000)
+    private String collaboratorIds;  // Comma-separated user IDs of editors: "7,12,3"
+
     // Portal display settings
     @Column(name = "deal_description", length = 5000)
     private String dealDescription;
@@ -243,6 +256,38 @@ public class InputInvPortalSettings {
 
     public void setMinimumInvestment(Double minimumInvestment) {
         this.minimumInvestment = minimumInvestment;
+    }
+
+    public Boolean getIsShared() {
+        return isShared;
+    }
+
+    public void setIsShared(Boolean isShared) {
+        this.isShared = isShared;
+    }
+
+    public String getTags() {
+        return tags;
+    }
+
+    public void setTags(String tags) {
+        this.tags = tags;
+    }
+
+    public String getStatusCategory() {
+        return statusCategory;
+    }
+
+    public void setStatusCategory(String statusCategory) {
+        this.statusCategory = statusCategory;
+    }
+
+    public String getCollaboratorIds() {
+        return collaboratorIds;
+    }
+
+    public void setCollaboratorIds(String collaboratorIds) {
+        this.collaboratorIds = collaboratorIds;
     }
 
     public LocalDateTime getCreatedAt() {

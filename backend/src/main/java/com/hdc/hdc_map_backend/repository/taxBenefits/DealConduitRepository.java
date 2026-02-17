@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,4 +31,10 @@ public interface DealConduitRepository extends JpaRepository<DealConduit, Long> 
 
     @Query("SELECT dc FROM DealConduit dc JOIN dc.portalSettings ps WHERE ps.category = :category AND ps.isActive = true AND dc.isPreset = true ORDER BY dc.createdAt DESC")
     List<DealConduit> findActivePresetsByCategory(@Param("category") String category);
+
+    @Query("SELECT dc FROM DealConduit dc JOIN dc.portalSettings ps WHERE ps.isShared = true AND dc.isPreset = false ORDER BY dc.updatedAt DESC")
+    List<DealConduit> findSharedConfigurations();
+
+    @Query("SELECT dc FROM DealConduit dc JOIN dc.portalSettings ps WHERE dc.isPreset = false AND dc.updatedAt > :since AND ps.isShared = true")
+    List<DealConduit> findSharedUpdatedSince(@Param("since") LocalDateTime since);
 }

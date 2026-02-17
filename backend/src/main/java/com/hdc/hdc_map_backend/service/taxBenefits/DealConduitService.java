@@ -1,16 +1,19 @@
 package com.hdc.hdc_map_backend.service.taxBenefits;
 
+import com.hdc.hdc_map_backend.dto.taxBenefits.ConfigurationWithOwnerDTO;
 import com.hdc.hdc_map_backend.entity.User;
 import com.hdc.hdc_map_backend.entity.taxBenefits.DealConduit;
 import com.hdc.hdc_map_backend.entity.taxBenefits.InputInvPortalSettings;
 import com.hdc.hdc_map_backend.repository.taxBenefits.DealConduitRepository;
+import com.hdc.hdc_map_backend.repository.user.UserRepo;
 import com.hdc.hdc_map_backend.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class DealConduitService {
@@ -20,6 +23,9 @@ public class DealConduitService {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private UserRepo userRepo;
 
     // === User Configurations ===
 
@@ -32,6 +38,60 @@ public class DealConduitService {
     // Get ALL configs (for HDC collaboration)
     public List<DealConduit> getAllConfigurations() {
         return dealConduitRepository.findAllConfigurations();
+    }
+
+    // Get ALL configs enriched with owner + collaborator profile info (for PresetSelector)
+    public List<ConfigurationWithOwnerDTO> getAllConfigurationsWithOwners() {
+        List<DealConduit> configs = dealConduitRepository.findAllConfigurations();
+        // Collect unique userIds (owners + collaborators)
+        Set<Long> userIds = new HashSet<>();
+        configs.forEach(dc -> {
+            if (dc.getPortalSettings() != null) {
+                if (dc.getPortalSettings().getUserId() != null)
+                    userIds.add(dc.getPortalSettings().getUserId());
+                String collabIds = dc.getPortalSettings().getCollaboratorIds();
+                if (collabIds != null && !collabIds.isBlank()) {
+                    Arrays.stream(collabIds.split(",")).map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .forEach(s -> { try { userIds.add(Long.parseLong(s)); } catch (NumberFormatException ignored) {} });
+                }
+            }
+        });
+        // Batch fetch users
+        Map<Long, User> userMap = userRepo.findAllById(userIds).stream()
+            .collect(Collectors.toMap(User::getId, u -> u));
+        // Map to DTOs
+        return configs.stream().map(dc -> {
+            Long uid = dc.getPortalSettings() != null ? dc.getPortalSettings().getUserId() : null;
+            User owner = uid != null ? userMap.get(uid) : null;
+            // Parse collaborator profiles
+            List<ConfigurationWithOwnerDTO.CollaboratorInfo> collaborators = new ArrayList<>();
+            if (dc.getPortalSettings() != null && dc.getPortalSettings().getCollaboratorIds() != null
+                    && !dc.getPortalSettings().getCollaboratorIds().isBlank()) {
+                for (String s : dc.getPortalSettings().getCollaboratorIds().split(",")) {
+                    try {
+                        Long cId = Long.parseLong(s.trim());
+                        User cUser = userMap.get(cId);
+                        if (cUser != null) {
+                            collaborators.add(new ConfigurationWithOwnerDTO.CollaboratorInfo(
+                                cId, cUser.getFullName(), cUser.getProfileImageUrl()));
+                        }
+                    } catch (NumberFormatException ignored) {}
+                }
+            }
+            return new ConfigurationWithOwnerDTO(
+                dc, uid,
+                owner != null ? owner.getFullName() : null,
+                owner != null ? owner.getProfileImageUrl() : null,
+                collaborators
+            );
+        }).collect(Collectors.toList());
+    }
+
+    // Get IDs of shared configs updated since a given timestamp (for update badge)
+    public List<Long> getSharedUpdatedSince(LocalDateTime since) {
+        List<DealConduit> updated = dealConduitRepository.findSharedUpdatedSince(since);
+        return updated.stream().map(DealConduit::getId).collect(Collectors.toList());
     }
 
     // Get config by ID (for any authenticated user — collaboration)
@@ -72,9 +132,11 @@ public class DealConduitService {
         DealConduit existing = dealConduitRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Configuration not found"));
 
-        // Authorization: HDC users can edit any config, others only their own
+        // Authorization: HDC users can edit any config; others can edit their own or shared configs
         if (!isHDCUser) {
-            if (existing.getPortalSettings() == null || !user.getId().equals(existing.getPortalSettings().getUserId())) {
+            boolean isOwner = existing.getPortalSettings() != null && user.getId().equals(existing.getPortalSettings().getUserId());
+            boolean isShared = existing.getPortalSettings() != null && Boolean.TRUE.equals(existing.getPortalSettings().getIsShared());
+            if (!isOwner && !isShared) {
                 throw new RuntimeException("Configuration not found or unauthorized");
             }
         }
@@ -83,10 +145,32 @@ public class DealConduitService {
         preserveChildIds(existing, incoming);
         incoming.setId(existing.getId());
         incoming.setIsPreset(false);
+        // Ensure portal settings exists (Jackson @JsonUnwrapped may not create it)
+        if (incoming.getPortalSettings() == null) {
+            incoming.setPortalSettings(new InputInvPortalSettings());
+        }
         ensureBackReferences(incoming);
-        incoming.getPortalSettings().setUserId(
-            existing.getPortalSettings() != null ? existing.getPortalSettings().getUserId() : user.getId()
-        );
+
+        Long originalOwnerId = existing.getPortalSettings() != null ? existing.getPortalSettings().getUserId() : user.getId();
+        incoming.getPortalSettings().setUserId(originalOwnerId);
+
+        // Track collaborator: if the editor is not the original owner, add them
+        if (!user.getId().equals(originalOwnerId)) {
+            String existingCollabs = existing.getPortalSettings() != null
+                ? existing.getPortalSettings().getCollaboratorIds() : null;
+            Set<String> collabSet = new LinkedHashSet<>();
+            if (existingCollabs != null && !existingCollabs.isBlank()) {
+                Arrays.stream(existingCollabs.split(",")).map(String::trim)
+                    .filter(s -> !s.isEmpty()).forEach(collabSet::add);
+            }
+            collabSet.add(String.valueOf(user.getId()));
+            incoming.getPortalSettings().setCollaboratorIds(String.join(",", collabSet));
+        } else {
+            // Preserve existing collaborator list
+            incoming.getPortalSettings().setCollaboratorIds(
+                existing.getPortalSettings() != null ? existing.getPortalSettings().getCollaboratorIds() : null
+            );
+        }
 
         // Handle default flag
         if (incoming.getPortalSettings().getIsDefault() != null && incoming.getPortalSettings().getIsDefault()) {

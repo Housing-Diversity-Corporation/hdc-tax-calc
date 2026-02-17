@@ -1,5 +1,6 @@
 package com.hdc.hdc_map_backend.controller.taxBenefits;
 
+import com.hdc.hdc_map_backend.dto.taxBenefits.ConfigurationWithOwnerDTO;
 import com.hdc.hdc_map_backend.entity.taxBenefits.DealConduit;
 import com.hdc.hdc_map_backend.service.taxBenefits.DealConduitService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +9,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 @RestController
@@ -26,10 +30,17 @@ public class DealConduitController {
         return ResponseEntity.ok(dealConduitService.getUserConfigurations(principal.getName()));
     }
 
-    // GET /api/deal-conduits/configurations/all — all configs (collaboration)
+    // GET /api/deal-conduits/configurations/all — all configs with owner info (collaboration)
     @GetMapping("/configurations/all")
-    public ResponseEntity<List<DealConduit>> getAllConfigurations() {
-        return ResponseEntity.ok(dealConduitService.getAllConfigurations());
+    public ResponseEntity<List<ConfigurationWithOwnerDTO>> getAllConfigurationsWithOwners() {
+        return ResponseEntity.ok(dealConduitService.getAllConfigurationsWithOwners());
+    }
+
+    // GET /api/deal-conduits/configurations/updates-since — IDs of shared configs updated since timestamp
+    @GetMapping("/configurations/updates-since")
+    public ResponseEntity<List<Long>> getUpdatedSince(@RequestParam String since) {
+        LocalDateTime sinceTime = Instant.parse(since).atZone(ZoneId.systemDefault()).toLocalDateTime();
+        return ResponseEntity.ok(dealConduitService.getSharedUpdatedSince(sinceTime));
     }
 
     // GET /api/deal-conduits/{id} — any conduit by ID (preset or config)
@@ -62,6 +73,8 @@ public class DealConduitController {
             DealConduit updated = dealConduitService.updateConfiguration(principal.getName(), id, conduit);
             return ResponseEntity.ok(updated);
         } catch (RuntimeException e) {
+            System.err.println("Error updating configuration " + id + ": " + e.getMessage());
+            e.printStackTrace(System.err);
             return ResponseEntity.notFound().build();
         }
     }

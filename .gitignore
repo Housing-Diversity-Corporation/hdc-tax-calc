@@ -102,3 +102,4 @@ coverage/
 *credentials*.json 2
 
 *.md
+dev.sh
