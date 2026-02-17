@@ -1,8 +1,8 @@
 # Validation Scenario Tracker
 
-**Version:** 1.5
-**Last Updated:** 2026-01-27
-**Status:** 19 of 25 scenarios validated (76% Institutional Certification)
+**Version:** 1.6
+**Last Updated:** 2026-02-14
+**Status:** 21 of 27 scenarios validated (78% Institutional Certification)
 
 ---
 
@@ -140,6 +140,30 @@ This document tracks all validated scenarios for the TaxBenefits Calculator. It 
 
 ---
 
+## Pool Aggregation & Fund Sizing (Scenarios 26-27)
+
+| # | Scenario | Config | Key Validation | Savings/Dollar | Date | Status |
+|---|----------|--------|----------------|----------------|------|--------|
+| 26 | Non-REP Pool Sizing | 2-deal pool (Trace 4001 + 701 S Jackson), $2M passive income, Non-REP | Optimal $555K, $2.284M savings, $4.11/dollar, 100% utilization, peak type | $4.11 | 2026-02-14 | ✅ |
+| 27 | REP Pool Sizing | Same pool, $5M ordinary, REP | Optimal $238K, nonpassive treatment, peak type (§461(l) capped) | — | 2026-02-14 | ✅ |
+
+**Scenario 26 Details (IMPL-085):**
+- Pool: 2 deals, calendar range 2024-2035, 11-year horizon, $8M gross equity
+- Non-REP investor: $2M annual passive income, MFJ, 37% federal rate
+- Optimizer: 50 steps, peak savingsPerDollar at $555K commitment
+- Direct engine call at optimal matches optimizer result exactly
+- Capacity exhausted at $5.1M for low-income ($200K passive) investor
+
+**Scenario 27 Details (IMPL-085):**
+- Same pool as Scenario 26
+- REP investor: $5M ordinary income, nonpassive grouping election
+- §461(l) excess business loss limit ($626K MFJ) correctly caps deductions at higher commitment → peak type
+- REP optimal commitment < Non-REP due to different loss treatment pathways
+
+**Validated via:** `impl085-runtime-verification.test.ts` (17 tests, go-to-market data)
+
+---
+
 ## Remaining (Scenarios 21-25)
 
 | # | Scenario | Config | Key Validation | Status |
@@ -160,7 +184,8 @@ This document tracks all validated scenarios for the TaxBenefits Calculator. It 
 | Production Certification | 10 | 11 | ✅ |
 | Capital Stack Enhancement | 4 | 4 | ✅ |
 | Interest Reserve/S-Curve | 1 | 1 | ✅ |
-| Institutional Certification | 25 | 19 | 76% |
+| Pool Aggregation & Sizing | 2 | 2 | ✅ |
+| Institutional Certification | 27 | 21 | 78% |
 
 ---
 

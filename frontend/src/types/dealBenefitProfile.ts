@@ -9,7 +9,7 @@
 export interface DealBenefitProfile {
   // Identity
   id?: number;
-  configurationId: number;
+  dealConduitId: number;
   dealName: string;
   propertyState: string;
   fundYear: number;
@@ -20,6 +20,10 @@ export interface DealBenefitProfile {
   netEquity: number;
   syndicationProceeds: number;
 
+  // Depreciation basis
+  costSegregationPercent?: number;
+  depreciableBasis?: number;
+
   // Schedules (one entry per hold year)
   depreciationSchedule: number[];
   lihtcSchedule: number[];
@@ -28,6 +32,7 @@ export interface DealBenefitProfile {
 
   // Exit
   holdPeriod: number;
+  projectedExitYear?: number;
   exitProceeds: number;
   cumulativeDepreciation: number;
   recaptureExposure: number;
@@ -46,19 +51,20 @@ export interface DealBenefitProfile {
   stateLihtcPath: string;
   syndicationRate: number;
 
-  // Portal metadata (optional — from CalculatorConfiguration, not CalculationParams)
-  dealDescription?: string;
-  dealLocation?: string;
-  numberOfUnits?: number;
-  affordabilityMix?: string;
-  minimumInvestment?: number;
-  projectImageUrl?: string;
-  projectStatus?: string;
-
   // Timestamps
   extractedAt: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+/**
+ * View DTO returned by GET /deal-benefit-profiles/{id}/view
+ * Includes source conduit context alongside the profile.
+ */
+export interface DealBenefitProfileView {
+  profile: DealBenefitProfile;
+  sourceDealName: string | null;
+  sourceConduitId: number | null;
 }
 
 export interface InvestmentPool {

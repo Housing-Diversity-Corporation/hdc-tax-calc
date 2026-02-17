@@ -118,6 +118,102 @@ Functions: `findStabilizedYear()` and `calculateStabilizedDSCR()` in KPIStrip.ts
 
 ---
 
+## Deal Benefit Profile Persistence (IMPL-084)
+
+The DBP layer extracts a frozen snapshot of calculator results for multi-deal modeling and investor-facing persistence.
+
+### Architecture
+
+```
+Calculator Engine → extractDealBenefitProfile() → dbpService.save() → Backend
+                                                                          ↓
+Utilization Engine ← dealToBenefitStream()      ← dbpService.getById() ← DB
+```
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `types/dealBenefitProfile.ts` | `DealBenefitProfile`, `DealBenefitProfileView`, `InvestmentPool` types |
+| `utils/taxbenefits/dealBenefitProfile.ts` | `extractDealBenefitProfile()` — pure extraction from engine results; `dealToBenefitStream()` — reverse conversion for utilization engine |
+| `services/dbpService.ts` | HTTP service → `POST /deal-benefit-profiles/extract/{conduitId}`, `GET /conduit/{id}`, `GET /{id}/view`, `DELETE /{id}` |
+| `services/poolService.ts` | HTTP service → `POST /investment-pools`, `GET /{id}/deals`, `POST /{poolId}/deals/{dbpId}` |
+
+### Key Rules
+
+1. **DBP extraction is supplementary.** If extraction or persistence fails, the DealConduit config save still succeeds. The save flow uses try/catch isolation.
+2. **No new calculations.** `extractDealBenefitProfile()` reads from existing `InvestorAnalysisResults` and `DepreciationSchedule` only.
+3. **DBP is immutable after extraction.** Re-modeling creates a new DBP (append pattern).
+4. **Portal metadata lives on DealConduit, not DBP.** The `DealBenefitProfileView` DTO provides source context via the `/view` endpoint.
+5. **DBP extraction triggers only when `isInvestorFacing === true`** in `HDCInputsComponent.handleSaveConfiguration()`.
+
+### Tests
+
+| File | Tests | Coverage |
+|------|-------|----------|
+| `utils/taxbenefits/__tests__/dealBenefitProfile.test.ts` | 21 | Extraction, conversion, round-trip with tax utilization engine |
+| `services/__tests__/dbpService.test.ts` | 8 | Endpoint URLs, request shapes, error propagation |
+| `services/__tests__/poolService.test.ts` | 8 | Endpoint URLs, path params, error handling |
+
+---
+
+## Pool Aggregation & Fund Sizing (IMPL-085)
+
+The pool aggregation engine consolidates N DealBenefitProfiles into a single calendar-year-aligned BenefitStream. The sizing optimizer iterates commitment levels against the pooled stream to find the utilization peak.
+
+### Architecture
+
+```
+DBPs (from pool) → aggregatePoolToBenefitStream() → BenefitStream (DOLLARS)
+                                                          ↓
+                                            scaleBenefitStreamToMillions()
+                                                          ↓
+                                            calculateTaxUtilization()
+                                                          ↓
+                                            TaxUtilizationResult
+
+Sizing:
+pooledStream → optimizeFundCommitment(stream, totalEquity, investor)
+                   ↓ iterates commitment levels
+              scaleStreamByProRata() → scaleBenefitStreamToMillions() → calculateTaxUtilization()
+                   ↓ finds peak savingsPerDollar
+              FundSizingResult (optimalCommitment, efficiencyCurve, peakType)
+```
+
+### Value Scaling Convention
+
+| Layer | Unit | Example $100M |
+|-------|------|--------------|
+| DealBenefitProfile (stored) | DOLLARS | 100,000,000 |
+| `dealToBenefitStream()` output | DOLLARS | 100,000,000 |
+| `aggregatePoolToBenefitStream()` output | DOLLARS | 100,000,000 |
+| `calculateTaxUtilization()` input | MILLIONS | 100 |
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `utils/taxbenefits/poolAggregation.ts` | `aggregatePoolToBenefitStream()` — calendar-year alignment and summation; `scaleBenefitStreamToMillions()` — dollar-to-million conversion; `buildInvestorProfileFromTaxInfo()` — portal InvestorTaxInfo to engine InvestorProfile |
+| `utils/taxbenefits/fundSizingOptimizer.ts` | `optimizeFundCommitment()` — iterates commitment levels, finds utilization peak; `scaleStreamByProRata()` — linear scaling by investor share |
+| `types/fundSizing.ts` | Type re-exports: `PoolAggregationResult`, `FundSizingResult`, `SizingDataPoint`, `PeakType` |
+| `components/investor-portal/FundDetail/` | Fund detail screen — displays pool, sizing recommendation, efficiency curve, utilization at optimal point |
+
+### Key Rules
+
+1. **No new tax calculations.** Aggregation is alignment + summation. Sizing is iteration over the existing utilization engine.
+2. **Exit events stay separate.** One per deal, sorted chronologically. The utilization engine handles recapture coverage per exit.
+3. **Scaling at the boundary.** Pool aggregation produces DOLLARS. `scaleBenefitStreamToMillions()` converts at the call site before passing to `calculateTaxUtilization()`.
+4. **Peak type classification.** The optimizer classifies curves as `peak` (benefits suspend above optimal), `plateau` (fully utilized), or `rising` (capacity exceeds fund). UI messaging adapts accordingly.
+
+### Tests
+
+| File | Tests | Coverage |
+|------|-------|----------|
+| `utils/taxbenefits/__tests__/poolAggregation.test.ts` | 28 | Aggregation, scaling, profile builder, round-trip with utilization engine |
+| `utils/taxbenefits/__tests__/fundSizingOptimizer.test.ts` | 18 | Optimizer, pro-rata scaling, peak classification, capacity warnings |
+
+---
+
 ## History
 
 | Date | Change | Reference |
@@ -126,3 +222,5 @@ Functions: `findStabilizedYear()` and `calculateStabilizedDSCR()` in KPIStrip.ts
 | 2026-01-27 | Added Sign Convention Standard | ISS-052 |
 | 2026-01-27 | Added Override Anti-Pattern | ISS-053 |
 | 2026-01-27 | Added DSCR Display Standard | ISS-054 |
+| 2026-02-14 | Added Deal Benefit Profile Persistence | IMPL-084 |
+| 2026-02-14 | Added Pool Aggregation & Fund Sizing | IMPL-085 |

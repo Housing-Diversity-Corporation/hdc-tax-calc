@@ -33,8 +33,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../ui/alert-dialog';
+import { dbpService } from '../../services/dbpService';
+import { extractDealBenefitProfile } from '../../utils/taxbenefits/dealBenefitProfile';
 import '../../styles/taxbenefits/hdcCalculator.css';
-import { InvestorAnalysisResults, CashFlowItem } from '../../types/taxbenefits';
+import { InvestorAnalysisResults, CashFlowItem, CalculationParams } from '../../types/taxbenefits';
 import { roundForDisplay } from '../../utils/taxbenefits/formatters';
 
 interface HDCInputsComponentProps {
@@ -811,11 +813,57 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
       // and recreates them from inputs on every load
 
       // Update existing config (PUT) if we have a loaded config; otherwise create new (POST)
+      let savedConfig;
       if (loadedPresetId && loadedPresetId.startsWith('config-')) {
         const configId = parseInt(loadedPresetId.replace('config-', ''));
-        await calculatorService.updateConfiguration(configId, currentConfig);
+        savedConfig = await calculatorService.updateConfiguration(configId, currentConfig);
       } else {
-        await calculatorService.saveConfiguration(currentConfig);
+        savedConfig = await calculatorService.saveConfiguration(currentConfig);
+      }
+
+      // IMPL-084: Extract and persist DealBenefitProfile when investor-facing
+      if (
+        props.isInvestorFacing &&
+        savedConfig?.id &&
+        props.mainAnalysisResults?.depreciationSchedule &&
+        props.calculatedCashFlows
+      ) {
+        try {
+          // Derive creditPath from syndicationRate (same logic as useHDCCalculations)
+          const synRate = props.syndicationRate || 0;
+          const creditPath: 'syndicated' | 'direct_use' | 'none' =
+            synRate === 0 ? 'none' : synRate === 1.0 ? 'direct_use' : 'syndicated';
+
+          const extractionInputs = {
+            dealName: configName,
+            selectedState: props.selectedState,
+            fundEntryYear: new Date().getFullYear(),
+            projectCost: props.projectCost,
+            holdPeriod: props.holdPeriod,
+            ozEnabled: props.ozEnabled,
+            placedInServiceMonth: props.placedInServiceMonth,
+            seniorDebtPct: props.seniorDebtPct,
+            philanthropicDebtPct: props.philDebtPct,
+            investorEquityPct: props.investorEquityPct,
+            ltCapitalGainsRate: props.ltCapitalGainsRate,
+            niitRate: props.niitRate,
+            yearOneDepreciationPct: props.yearOneDepreciationPct,
+            stateLIHTCIntegration: { creditPath, syndicationRate: synRate },
+          } as CalculationParams;
+
+          const dbp = extractDealBenefitProfile(
+            extractionInputs,
+            props.mainAnalysisResults,
+            props.mainAnalysisResults.depreciationSchedule,
+            props.calculatedCashFlows,
+            savedConfig.id
+          );
+
+          await dbpService.save(savedConfig.id, dbp);
+        } catch (dbpError) {
+          // DBP extraction is supplementary — don't block the config save
+          console.error('DBP extraction failed (config saved successfully):', dbpError);
+        }
       }
     } catch (error) {
       console.error('Error saving configuration:', error);

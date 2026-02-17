@@ -2,7 +2,7 @@
  * Investment Pool Service
  *
  * HTTP service for managing investment pools and their associated deals.
- * Backend endpoints will be implemented by Angel.
+ * Wired to backend InvestmentPoolController endpoints.
  */
 
 import api from './api';
@@ -23,8 +23,14 @@ export const poolService = {
     return response.data;
   },
 
+  /**
+   * Get a pool with all its member deals.
+   * Uses the /deals sub-resource endpoint that returns PoolWithDealsResponse.
+   */
   getWithDeals: async (id: number): Promise<{ pool: InvestmentPool; deals: DealBenefitProfile[] }> => {
-    const response = await api.get<{ pool: InvestmentPool; deals: DealBenefitProfile[] }>(`/investment-pools/${id}`);
+    const response = await api.get<{ pool: InvestmentPool; deals: DealBenefitProfile[] }>(
+      `/investment-pools/${id}/deals`
+    );
     return response.data;
   },
 
@@ -33,8 +39,12 @@ export const poolService = {
     return response.data;
   },
 
+  /**
+   * Add a deal to a pool. Both IDs are path params (no request body).
+   * Returns 409 CONFLICT if the deal is already in the pool.
+   */
   addDeal: async (poolId: number, dbpId: number): Promise<void> => {
-    await api.post(`/investment-pools/${poolId}/deals`, { dbpId });
+    await api.post(`/investment-pools/${poolId}/deals/${dbpId}`);
   },
 
   removeDeal: async (poolId: number, dbpId: number): Promise<void> => {
