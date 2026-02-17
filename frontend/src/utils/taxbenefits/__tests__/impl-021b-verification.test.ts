@@ -57,6 +57,7 @@ describe('IMPL-021b: Federal LIHTC IRR Integration', () => {
     interestReserveEnabled: true,
     interestReservePeriodYears: 2,
     predevelopmentCosts: 0,
+    placedInServiceMonth: 1,
     // State LIHTC (disabled)
     stateLIHTCIntegration: null,
     // Federal LIHTC (will toggle)
@@ -169,8 +170,8 @@ describe('IMPL-021b: Federal LIHTC IRR Integration', () => {
       federalLIHTCCredits: credits,
     });
 
-    // Verify we have exactly 10 years of cash flows
-    expect(result.investorCashFlows.length).toBe(10);
+    // Verify we have exactly 11 years of cash flows (IMPL-087: +1 disposition year)
+    expect(result.investorCashFlows.length).toBe(11);
 
     // Year 10 should have Year 10's credit (full annual)
     expect(result.investorCashFlows[9].federalLIHTCCredit).toBe(100000);

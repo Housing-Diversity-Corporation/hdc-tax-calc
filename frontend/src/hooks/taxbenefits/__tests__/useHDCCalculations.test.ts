@@ -77,8 +77,8 @@ describe('useHDCCalculations Hook - Integration Tests', () => {
     aumCurrentPayEnabled: false,
     aumCurrentPayPct: 50,
 
-    // Hold Period
-    holdPeriod: 10
+    // Hold Period (computed, read-only in useHDCState; passed as totalInvestmentYears to useHDCCalculations)
+    totalInvestmentYears: 10
   };
 
   describe('Depreciation Calculations', () => {
@@ -403,12 +403,13 @@ describe('useHDCCalculations Hook - Integration Tests', () => {
   });
 
   describe('Main Analysis Results', () => {
-    it('should generate 10-year cash flows', () => {
+    it('should generate cash flows matching computed hold period (12 years for mid-year PIS)', () => {
       const { result } = renderHook(() => useHDCCalculations(defaultProps));
-      
-      expect(result.current.investorCashFlows).toHaveLength(10);
+
+      // With default PIS month 7 (mid-year), credit period = 11 + 1 disposition year = 12 years per §42(f)(3) + IMPL-087
+      expect(result.current.investorCashFlows).toHaveLength(12);
       expect(result.current.investorCashFlows[0].year).toBe(1);
-      expect(result.current.investorCashFlows[9].year).toBe(10);
+      expect(result.current.investorCashFlows[11].year).toBe(12);
     });
 
     it('should calculate IRR and multiple', () => {
@@ -446,8 +447,9 @@ describe('useHDCCalculations Hook - Integration Tests', () => {
     it('should calculate HDC cash flows', () => {
       const hdcProps = { ...defaultProps, philanthropicEquityPct: 10 };
       const { result } = renderHook(() => useHDCCalculations(hdcProps));
-      
-      expect(result.current.hdcCashFlows).toHaveLength(10);
+
+      // With default PIS month 7 (mid-year), credit period = 11 + 1 disposition year = 12 per §42(f)(3) + IMPL-087
+      expect(result.current.hdcCashFlows).toHaveLength(12);
       
       // HDC fee removed - verify all fee income is 0
       const totalHDCFeesFromCashFlows = result.current.hdcCashFlows.reduce(
@@ -516,7 +518,7 @@ describe('useHDCCalculations Hook - Integration Tests', () => {
       };
       const { result } = renderHook(() => useHDCCalculations(highGrowthProps));
 
-      const lastYearNOI = result.current.investorCashFlows[9].noi;
+      const lastYearNOI = result.current.investorCashFlows[result.current.investorCashFlows.length - 1].noi;
       const firstYearNOI = result.current.investorCashFlows[0].noi;
       expect(lastYearNOI).toBeGreaterThan(firstYearNOI * 2);
     });
@@ -529,7 +531,7 @@ describe('useHDCCalculations Hook - Integration Tests', () => {
       };
       const { result } = renderHook(() => useHDCCalculations(negativeGrowthProps));
 
-      const lastYearNOI = result.current.investorCashFlows[9].noi;
+      const lastYearNOI = result.current.investorCashFlows[result.current.investorCashFlows.length - 1].noi;
       const firstYearNOI = result.current.investorCashFlows[0].noi;
       expect(lastYearNOI).toBeLessThan(firstYearNOI);
     });

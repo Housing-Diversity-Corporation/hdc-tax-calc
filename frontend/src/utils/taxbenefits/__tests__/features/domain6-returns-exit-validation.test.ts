@@ -45,52 +45,54 @@ describe('Domain 6: Returns & Exit - Math Validation', () => {
   };
 
   describe('1. Exit Value Calculation', () => {
-    it('should calculate Year 10 NOI and Exit Value correctly', () => {
+    it('should calculate Year 12 NOI and Exit Value correctly', () => {
       const result = calculateFullInvestorAnalysis(TRACE_4001_PARAMS as CalculationParams);
 
-      // FORMULA: Exit Value = Year 10 NOI / (Exit Cap Rate / 100)
+      // With pisMonth=7, computeHoldPeriod(7,0,0) yields holdFromPIS=11
+      // IMPL-087: +1 disposition year, so totalInvestmentYears=12
+      // FORMULA: Exit Value = Year 12 NOI / (Exit Cap Rate / 100)
 
       // INPUTS:
       const year1NOI = 3.5; // $3.5M
       const revenueGrowth = 3; // 3% per year
-      const yearsOfGrowth = 9; // Year 1 to Year 10
+      const yearsOfGrowth = 11; // Year 1 to Year 12 (IMPL-087: +1)
       const exitCapRate = 6; // 6%
 
       // STEP-BY-STEP MATH:
-      // Year 10 NOI = Stabilized NOI × (1 + growth)^years
+      // Year 12 NOI = Stabilized NOI × (1 + growth)^years
       const growthFactor = Math.pow(1 + revenueGrowth / 100, yearsOfGrowth);
-      const expectedYear10NOI = year1NOI * growthFactor;
+      const expectedYear12NOI = year1NOI * growthFactor;
 
       console.log('\n=== EXIT VALUE CALCULATION ===');
       console.log('Stabilized NOI: $' + year1NOI.toFixed(6) + 'M');
       console.log('Growth rate: ' + revenueGrowth + '%/year');
       console.log('Years of growth: ' + yearsOfGrowth);
-      console.log('Growth factor: (1.03)^9 = ' + growthFactor.toFixed(6));
-      console.log('Year 10 NOI = $' + year1NOI.toFixed(2) + 'M × ' + growthFactor.toFixed(6));
-      console.log('Year 10 NOI = $' + expectedYear10NOI.toFixed(6) + 'M');
+      console.log('Growth factor: (1.03)^11 = ' + growthFactor.toFixed(6));
+      console.log('Year 12 NOI = $' + year1NOI.toFixed(2) + 'M × ' + growthFactor.toFixed(6));
+      console.log('Year 12 NOI = $' + expectedYear12NOI.toFixed(6) + 'M');
 
       // Exit Value = NOI / Cap Rate
-      const expectedExitValue = expectedYear10NOI / (exitCapRate / 100);
-      console.log('\nExit Value = $' + expectedYear10NOI.toFixed(6) + 'M / ' + (exitCapRate / 100).toFixed(2));
+      const expectedExitValue = expectedYear12NOI / (exitCapRate / 100);
+      console.log('\nExit Value = $' + expectedYear12NOI.toFixed(6) + 'M / ' + (exitCapRate / 100).toFixed(2));
       console.log('Exit Value = $' + expectedExitValue.toFixed(6) + 'M');
 
-      // CODE OUTPUT:
-      const actualYear10NOI = result.investorCashFlows[9].noi;
+      // CODE OUTPUT: Year 12 = index 11 (IMPL-087: +1)
+      const actualYear12NOI = result.investorCashFlows[11].noi;
       const actualExitValue = result.exitValue || 0;
 
       console.log('\n--- CODE OUTPUT ---');
-      console.log('Year 10 NOI: $' + actualYear10NOI.toFixed(6) + 'M');
+      console.log('Year 12 NOI: $' + actualYear12NOI.toFixed(6) + 'M');
       console.log('Exit Value: $' + actualExitValue.toFixed(6) + 'M');
 
       // MATCH?
-      const noiError = Math.abs(actualYear10NOI - expectedYear10NOI) / expectedYear10NOI;
+      const noiError = Math.abs(actualYear12NOI - expectedYear12NOI) / expectedYear12NOI;
       const exitError = Math.abs(actualExitValue - expectedExitValue) / expectedExitValue;
 
       console.log('\n--- VERIFICATION ---');
       console.log('NOI Error: ' + (noiError * 100).toFixed(4) + '%');
       console.log('Exit Value Error: ' + (exitError * 100).toFixed(4) + '%');
-      console.log(noiError < 0.001 ? '✅ NOI MATCH' : '❌ NOI MISMATCH');
-      console.log(exitError < 0.001 ? '✅ EXIT VALUE MATCH' : '❌ EXIT VALUE MISMATCH');
+      console.log(noiError < 0.001 ? 'NOI MATCH' : 'NOI MISMATCH');
+      console.log(exitError < 0.001 ? 'EXIT VALUE MATCH' : 'EXIT VALUE MISMATCH');
 
       expect(noiError).toBeLessThan(0.001);
       expect(exitError).toBeLessThan(0.001);
@@ -156,7 +158,8 @@ describe('Domain 6: Returns & Exit - Math Validation', () => {
       let totalTaxBenefits = 0;
       let totalOperatingCash = 0;
 
-      for (let i = 0; i < 10; i++) {
+      // With pisMonth=7, holdPeriod=11
+      for (let i = 0; i < result.investorCashFlows.length; i++) {
         const flow = result.investorCashFlows[i];
         totalTaxBenefits += flow.taxBenefit || 0;
         // Note: operating cash may be in different fields due to DSCR
@@ -166,16 +169,16 @@ describe('Domain 6: Returns & Exit - Math Validation', () => {
       const exitProceeds = result.exitProceeds || 0;
 
       console.log('\n--- RETURN COMPONENTS ---');
-      console.log('Total Tax Benefits (10 years): $' + totalTaxBenefits.toFixed(6) + 'M');
+      console.log('Total Tax Benefits (' + result.investorCashFlows.length + ' years): $' + totalTaxBenefits.toFixed(6) + 'M');
       console.log('Investor Sub-Debt Repaid: $' + investorSubDebtRepaid.toFixed(6) + 'M');
       console.log('Exit Proceeds: ' + (exitProceeds !== null ? '$' + exitProceeds.toFixed(6) + 'M' : 'null'));
 
-      // Check cumulative returns if available
-      const year10Flow = result.investorCashFlows[9];
-      const cumulativeReturns = year10Flow.cumulativeReturns;
+      // Check cumulative returns if available (last year)
+      const lastYearFlow = result.investorCashFlows[result.investorCashFlows.length - 1];
+      const cumulativeReturns = lastYearFlow.cumulativeReturns;
 
       console.log('\n--- CODE OUTPUT ---');
-      console.log('Cumulative Returns (Year 10): ' +
+      console.log('Cumulative Returns (Year ' + result.investorCashFlows.length + '): ' +
         (cumulativeReturns !== null && cumulativeReturns !== undefined
           ? '$' + cumulativeReturns.toFixed(6) + 'M'
           : 'null'));
@@ -213,8 +216,8 @@ describe('Domain 6: Returns & Exit - Math Validation', () => {
       const investorEquity = result.investorEquity || 0;
       console.log('\nYear 0: -$' + investorEquity.toFixed(6) + 'M (initial investment)');
 
-      console.log('\n--- ANNUAL CASH FLOWS (Years 1-10) ---');
-      for (let i = 0; i < 10; i++) {
+      console.log('\n--- ANNUAL CASH FLOWS (Years 1-' + result.investorCashFlows.length + ') ---');
+      for (let i = 0; i < result.investorCashFlows.length; i++) {
         const flow = result.investorCashFlows[i];
         const year = i + 1;
 

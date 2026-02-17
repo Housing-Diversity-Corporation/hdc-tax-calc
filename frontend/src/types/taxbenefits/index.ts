@@ -82,6 +82,9 @@ export interface CashFlowItem {
   hdcDebtFundCurrentPay?: number;      // HDC Debt Fund current pay
   hdcDebtFundPIKAccrued?: number;      // HDC Debt Fund PIK accrued
 
+  // IMPL-087: Pre-proration annualized NOI (used for trailing 12-month exit valuation)
+  annualizedNOI?: number;
+
   // Investment Portal extended fields
   exitProceeds?: number;
   afterTaxCashFlow?: number;
@@ -322,6 +325,7 @@ export interface CalculationParams {
   taxAdvanceDiscountRate?: number;
   advanceFinancingRate?: number;
   taxDeliveryMonths?: number;
+  /** @deprecated Engine computes via computeHoldPeriod(). Ignored on input. */
   holdPeriod?: number;
   yearOneDepreciation?: number;
   annualStraightLineDepreciation?: number;
@@ -330,6 +334,7 @@ export interface CalculationParams {
   effectiveTaxRateForStraightLine?: number; // Effective rate for straight-line MACRS (full state rate)
   bonusConformityRate?: number;         // State bonus depreciation conformity rate (0.0 to 1.0)
   placedInServiceMonth?: number;        // Month property placed in service (1-12), default 7 for mid-year
+  exitMonth?: number;                    // IMPL-087: Month of exit/disposition (1-12), default matches pisMonth
 
   // Basis Adjustments (v7.0.7)
   loanFeesPercent?: number;             // Loan origination fees as % of total debt (0.5-3%, default 1%)
@@ -484,6 +489,7 @@ export interface HDCCalculationParams {
   annualStraightLineDepreciation?: number;
   effectiveTaxRate?: number;
   placedInServiceMonth?: number;        // Month property placed in service (1-12), default 7 for mid-year
+  exitMonth?: number;                    // IMPL-087: Month of exit/disposition (1-12)
   philCurrentPayEnabled?: boolean;
   philCurrentPayPct?: number;
   interestReserveEnabled?: boolean;

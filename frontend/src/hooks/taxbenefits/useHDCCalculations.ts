@@ -21,7 +21,8 @@ interface UseHDCCalculationsProps {
   landValue: number;
   yearOneNOI: number;
   yearOneDepreciationPct: number;
-  holdPeriod: number;
+  totalInvestmentYears: number;
+  exitMonth: number; // IMPL-087: Month of exit/disposition (1-12)
   // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
   noiGrowthRate: number;
   exitCapRate: number;
@@ -242,7 +243,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
 
     // Calculate depreciation for years 2 through N (holdPeriod)
     // Maximum 27.5 years of depreciation for residential rental (IRS Pub 946, Table A-6)
-    const remainingYears = props.holdPeriod - 1; // Years 2 through N
+    const remainingYears = props.totalInvestmentYears - 1; // Years 2 through N
     const depreciationYearsRemaining = Math.min(remainingYears, 27.5);
     const years2toNDepreciation = annualStraightLineDepreciation * depreciationYearsRemaining;
     const totalDepreciation = yearOneDepreciation + years2toNDepreciation;
@@ -257,7 +258,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       years2toNDepreciation,
       totalDepreciation
     };
-  }, [props.projectCost, props.predevelopmentCosts, props.landValue, props.yearOneDepreciationPct, props.holdPeriod, props.investorEquityPct, effectiveProjectCost]);
+  }, [props.projectCost, props.predevelopmentCosts, props.landValue, props.yearOneDepreciationPct, props.totalInvestmentYears, props.investorEquityPct, effectiveProjectCost]);
 
   // Tax rate calculations
   // IMPL-035: Use investorState for tax calculations (where investor files taxes)
@@ -326,7 +327,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     // Years 2-N benefit: all straight-line rate
     const bonusDepreciation = depreciationCalculations.yearOneDepreciation - depreciationCalculations.years2toNDepreciation;
     const year1MACRS = depreciationCalculations.years2toNDepreciation; // First year MACRS is similar to annual
-    const years2toNTotal = depreciationCalculations.years2toNDepreciation * (props.holdPeriod - 1);
+    const years2toNTotal = depreciationCalculations.years2toNDepreciation * (props.totalInvestmentYears - 1);
 
     const bonusTaxBenefit = bonusDepreciation * (effectiveTaxRateForBonus / 100);
     const year1MACRSTaxBenefit = year1MACRS * (effectiveTaxRateForStraightLine / 100);
@@ -379,7 +380,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     props.passiveGainType,
     props.ozType,
     props.ozVersion,
-    props.holdPeriod
+    props.totalInvestmentYears
   ]);
 
   // Advance financing calculations
@@ -614,7 +615,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       philCurrentPayPct: props.philCurrentPayPct,
       interestReserveEnabled: props.interestReserveEnabled,
       interestReserveMonths: props.interestReserveMonths,
-      holdPeriod: props.holdPeriod,
+      holdPeriod: props.totalInvestmentYears,
       // DON'T pass yearOneDepreciation/annualStraightLineDepreciation - let engine auto-calculate
       // to avoid circular dependency (depreciation depends on interest reserve)
       yearOneDepreciationPct: props.yearOneDepreciationPct,
@@ -625,6 +626,8 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       bonusConformityRate: taxCalculations.bonusConformityRate,
       constructionDelayMonths: props.constructionDelayMonths,
       taxBenefitDelayMonths: props.taxBenefitDelayMonths,
+      placedInServiceMonth: props.placedInServiceMonth,
+      exitMonth: props.exitMonth, // IMPL-087
       ozEnabled: props.ozEnabled,
       ozType: props.ozType,
       ozVersion: props.ozVersion,
@@ -667,7 +670,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     props.noiGrowthRate,
     props.exitCapRate,
     props.investorEquityPct,
-    props.holdPeriod,
+    props.totalInvestmentYears,
     // Capital structure
     props.seniorDebtPct,
     props.seniorDebtRate,
@@ -682,6 +685,11 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     props.aumCurrentPayEnabled,
     props.aumCurrentPayPct,
     props.investorPromoteShare, // ISS-047b: Explicit dependency for promote split changes
+    // Hold period inputs: all three feed computeHoldPeriod() inside engine
+    props.placedInServiceMonth,
+    props.exitMonth, // IMPL-087
+    props.constructionDelayMonths,
+    props.taxBenefitDelayMonths,
     taxCalculations.totalTaxBenefit,
     taxCalculations.netTaxBenefit,
     taxCalculations.hdcFee,
@@ -785,7 +793,9 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       effectiveTaxRate: taxCalculations.effectiveTaxRateForDepreciation,
       philCurrentPayEnabled: props.philCurrentPayEnabled,
       philCurrentPayPct: props.philCurrentPayPct,
-      holdPeriod: props.holdPeriod,
+      holdPeriod: mainAnalysisResults?.holdPeriod || props.totalInvestmentYears,
+      exitMonth: props.exitMonth, // IMPL-087
+      constructionDelayMonths: props.constructionDelayMonths || 0,
       interestReserveEnabled: props.interestReserveEnabled,
       interestReserveMonths: props.interestReserveMonths,
       investorCashFlows: mainAnalysisResults.investorCashFlows

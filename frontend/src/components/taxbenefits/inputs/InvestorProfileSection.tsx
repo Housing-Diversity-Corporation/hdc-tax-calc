@@ -191,7 +191,7 @@ const InvestorProfileSection: React.FC<InvestorProfileSectionProps> = ({
           onClick={() => setIsExpanded(!isExpanded)}
         >
           <span style={{ marginRight: '0.5rem' }}>{isExpanded ? '▼' : '▶'}</span>
-          5. Investor Profile
+          6. Investor Profile
         </h3>
 
         {isExpanded && (

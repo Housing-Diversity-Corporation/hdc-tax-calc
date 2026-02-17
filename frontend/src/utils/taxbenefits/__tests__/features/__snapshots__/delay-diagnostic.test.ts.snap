@@ -1,0 +1,435 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`DIAGNOSTIC: taxBenefitDelayMonths effect on engine output Group 1: delay=0 vs delay=6 (no construction) CRITICAL: delay=0 and delay=6 produce different per-year totalCashFlow arrays: per-year totalCashFlow + operatingCashFlow comparison 1`] = `
+[
+  {
+    "delay=0 opCF": 0,
+    "delay=0 taxBen": 43.51,
+    "delay=0 totalCF": 43.51,
+    "delay=6 opCF": 0,
+    "delay=6 taxBen": 21.755,
+    "delay=6 totalCF": 21.755,
+    "opCF delta": 0,
+    "totalCF delta": -21.755,
+    "year": 1,
+  },
+  {
+    "delay=0 opCF": 0,
+    "delay=0 taxBen": 0,
+    "delay=0 totalCF": 0,
+    "delay=6 opCF": 0,
+    "delay=6 taxBen": 21.755,
+    "delay=6 totalCF": 21.755,
+    "opCF delta": 0,
+    "totalCF delta": 21.755,
+    "year": 2,
+  },
+  {
+    "delay=0 opCF": 0,
+    "delay=0 taxBen": 0,
+    "delay=0 totalCF": 0,
+    "delay=6 opCF": 0,
+    "delay=6 taxBen": 0,
+    "delay=6 totalCF": 0,
+    "opCF delta": 0,
+    "totalCF delta": 0,
+    "year": 3,
+  },
+  {
+    "delay=0 opCF": 0,
+    "delay=0 taxBen": 0,
+    "delay=0 totalCF": 0,
+    "delay=6 opCF": 0,
+    "delay=6 taxBen": 0,
+    "delay=6 totalCF": 0,
+    "opCF delta": 0,
+    "totalCF delta": 0,
+    "year": 4,
+  },
+  {
+    "delay=0 opCF": 0,
+    "delay=0 taxBen": 0,
+    "delay=0 totalCF": 0,
+    "delay=6 opCF": 0,
+    "delay=6 taxBen": 0,
+    "delay=6 totalCF": 0,
+    "opCF delta": 0,
+    "totalCF delta": 0,
+    "year": 5,
+  },
+  {
+    "delay=0 opCF": 0,
+    "delay=0 taxBen": 0,
+    "delay=0 totalCF": 0,
+    "delay=6 opCF": 0,
+    "delay=6 taxBen": 0,
+    "delay=6 totalCF": 0,
+    "opCF delta": 0,
+    "totalCF delta": 0,
+    "year": 6,
+  },
+  {
+    "delay=0 opCF": 0,
+    "delay=0 taxBen": 0,
+    "delay=0 totalCF": 0,
+    "delay=6 opCF": 0,
+    "delay=6 taxBen": 0,
+    "delay=6 totalCF": 0,
+    "opCF delta": 0,
+    "totalCF delta": 0,
+    "year": 7,
+  },
+  {
+    "delay=0 opCF": 0,
+    "delay=0 taxBen": 0,
+    "delay=0 totalCF": 0,
+    "delay=6 opCF": 0,
+    "delay=6 taxBen": 0,
+    "delay=6 totalCF": 0,
+    "opCF delta": 0,
+    "totalCF delta": 0,
+    "year": 8,
+  },
+  {
+    "delay=0 opCF": 0,
+    "delay=0 taxBen": 0,
+    "delay=0 totalCF": 0,
+    "delay=6 opCF": 0,
+    "delay=6 taxBen": 0,
+    "delay=6 totalCF": 0,
+    "opCF delta": 0,
+    "totalCF delta": 0,
+    "year": 9,
+  },
+  {
+    "delay=0 opCF": 0,
+    "delay=0 taxBen": 0,
+    "delay=0 totalCF": 0,
+    "delay=6 opCF": 0,
+    "delay=6 taxBen": 0,
+    "delay=6 totalCF": 0,
+    "opCF delta": 0,
+    "totalCF delta": 0,
+    "year": 10,
+  },
+  {
+    "delay=0 opCF": 0,
+    "delay=0 taxBen": 0,
+    "delay=0 totalCF": 0,
+    "delay=6 opCF": 0,
+    "delay=6 taxBen": 0,
+    "delay=6 totalCF": 0,
+    "opCF delta": 0,
+    "totalCF delta": 0,
+    "year": 11,
+  },
+  {
+    "delay=0 opCF": 0,
+    "delay=0 taxBen": 0,
+    "delay=0 totalCF": 0,
+    "delay=6 opCF": 0,
+    "delay=6 taxBen": 0,
+    "delay=6 totalCF": 0,
+    "opCF delta": 0,
+    "totalCF delta": 0,
+    "year": 12,
+  },
+]
+`;
+
+exports[`DIAGNOSTIC: taxBenefitDelayMonths effect on engine output Group 1: delay=0 vs delay=6 (no construction) delay=0 and delay=6 produce different per-year taxBenefit arrays: per-year taxBenefit comparison 1`] = `
+[
+  {
+    "delay=0 taxBenefit": 43.51,
+    "delay=6 taxBenefit": 21.755,
+    "delta": -21.755,
+    "year": 1,
+  },
+  {
+    "delay=0 taxBenefit": 0,
+    "delay=6 taxBenefit": 21.755,
+    "delta": 21.755,
+    "year": 2,
+  },
+  {
+    "delay=0 taxBenefit": 0,
+    "delay=6 taxBenefit": 0,
+    "delta": 0,
+    "year": 3,
+  },
+  {
+    "delay=0 taxBenefit": 0,
+    "delay=6 taxBenefit": 0,
+    "delta": 0,
+    "year": 4,
+  },
+  {
+    "delay=0 taxBenefit": 0,
+    "delay=6 taxBenefit": 0,
+    "delta": 0,
+    "year": 5,
+  },
+  {
+    "delay=0 taxBenefit": 0,
+    "delay=6 taxBenefit": 0,
+    "delta": 0,
+    "year": 6,
+  },
+  {
+    "delay=0 taxBenefit": 0,
+    "delay=6 taxBenefit": 0,
+    "delta": 0,
+    "year": 7,
+  },
+  {
+    "delay=0 taxBenefit": 0,
+    "delay=6 taxBenefit": 0,
+    "delta": 0,
+    "year": 8,
+  },
+  {
+    "delay=0 taxBenefit": 0,
+    "delay=6 taxBenefit": 0,
+    "delta": 0,
+    "year": 9,
+  },
+  {
+    "delay=0 taxBenefit": 0,
+    "delay=6 taxBenefit": 0,
+    "delta": 0,
+    "year": 10,
+  },
+  {
+    "delay=0 taxBenefit": 0,
+    "delay=6 taxBenefit": 0,
+    "delta": 0,
+    "year": 11,
+  },
+  {
+    "delay=0 taxBenefit": 0,
+    "delay=6 taxBenefit": 0,
+    "delta": 0,
+    "year": 12,
+  },
+]
+`;
+
+exports[`DIAGNOSTIC: taxBenefitDelayMonths effect on engine output Group 1: delay=0 vs delay=6 (no construction) delay=6 IRR is strictly less than delay=0 IRR: IRR comparison 1`] = `
+{
+  "IRR delta": -45.538097071094086,
+  "IRR delta bps": -455381,
+  "delay=0 IRR": 117.54999996474655,
+  "delay=6 IRR": 72.01190289365246,
+}
+`;
+
+exports[`DIAGNOSTIC: taxBenefitDelayMonths effect on engine output Group 2: delay=0 vs delay=6 (construction=24) Year 3 (PIS year): delay=6 taxBenefit ≈ 50% of delay=0: Year 3 taxBenefit with construction=24 1`] = `
+{
+  "delay=0 Y3 taxBenefit": 43.51,
+  "delay=6 Y3 taxBenefit": 21.755,
+  "ratio": 0.5,
+}
+`;
+
+exports[`DIAGNOSTIC: taxBenefitDelayMonths effect on engine output Group 2: delay=0 vs delay=6 (construction=24) delay=6 IRR < delay=0 IRR (with construction): IRR comparison with construction=24 1`] = `
+{
+  "IRR delta bps": -44850,
+  "delay=0 IRR": 29.574545886298832,
+  "delay=6 IRR": 25.0895754149008,
+}
+`;
+
+exports[`DIAGNOSTIC: taxBenefitDelayMonths effect on engine output Group 2: delay=0 vs delay=6 (construction=24) full per-year taxBenefit array differs between delay=0 and delay=6: per-year taxBenefit with construction=24 1`] = `
+[
+  {
+    "delay=0": 0,
+    "delay=6": 0,
+    "delta": 0,
+    "year": 1,
+  },
+  {
+    "delay=0": 0,
+    "delay=6": 0,
+    "delta": 0,
+    "year": 2,
+  },
+  {
+    "delay=0": 43.51,
+    "delay=6": 21.755,
+    "delta": -21.755,
+    "year": 3,
+  },
+  {
+    "delay=0": 0,
+    "delay=6": 21.755,
+    "delta": 21.755,
+    "year": 4,
+  },
+  {
+    "delay=0": 0,
+    "delay=6": 0,
+    "delta": 0,
+    "year": 5,
+  },
+  {
+    "delay=0": 0,
+    "delay=6": 0,
+    "delta": 0,
+    "year": 6,
+  },
+  {
+    "delay=0": 0,
+    "delay=6": 0,
+    "delta": 0,
+    "year": 7,
+  },
+  {
+    "delay=0": 0,
+    "delay=6": 0,
+    "delta": 0,
+    "year": 8,
+  },
+  {
+    "delay=0": 0,
+    "delay=6": 0,
+    "delta": 0,
+    "year": 9,
+  },
+  {
+    "delay=0": 0,
+    "delay=6": 0,
+    "delta": 0,
+    "year": 10,
+  },
+  {
+    "delay=0": 0,
+    "delay=6": 0,
+    "delta": 0,
+    "year": 11,
+  },
+  {
+    "delay=0": 0,
+    "delay=6": 0,
+    "delta": 0,
+    "year": 12,
+  },
+  {
+    "delay=0": 0,
+    "delay=6": 0,
+    "delta": 0,
+    "year": 13,
+  },
+  {
+    "delay=0": 0,
+    "delay=6": 0,
+    "delta": 0,
+    "year": 14,
+  },
+]
+`;
+
+exports[`DIAGNOSTIC: taxBenefitDelayMonths effect on engine output Group 3: delay=0 vs delay=1 (minimal shift) delay=1 IRR is strictly less than delay=0 IRR: delay=1 IRR comparison 1`] = `
+{
+  "delay=0 IRR": 117.54999996474655,
+  "delay=1 IRR": 108.13128114084085,
+  "delta bps": -94187,
+}
+`;
+
+exports[`DIAGNOSTIC: taxBenefitDelayMonths effect on engine output Group 3: delay=0 vs delay=1 (minimal shift) delay=1 produces different Year 1 taxBenefit than delay=0: delay=1 Year 1 comparison 1`] = `
+{
+  "delay=0 Y1": 43.51,
+  "delay=1 Y1": 39.884166666666665,
+  "expected ratio": 0.9166666666666666,
+  "ratio": 0.9166666666666666,
+}
+`;
+
+exports[`DIAGNOSTIC: taxBenefitDelayMonths effect on engine output Raw engine output inspection delay=6 engine output has expected shape and non-trivial values: full delay=6 engine output 1`] = `
+{
+  "cashFlowCount": 13,
+  "irr": 72.01190289365246,
+  "moic": 2.1755,
+  "perYearTaxBenefit": [
+    {
+      "federalLIHTCCredit": 0,
+      "stateLIHTCCredit": 0,
+      "taxBenefit": 21.755,
+      "year": 1,
+    },
+    {
+      "federalLIHTCCredit": 0,
+      "stateLIHTCCredit": 0,
+      "taxBenefit": 21.755,
+      "year": 2,
+    },
+    {
+      "federalLIHTCCredit": 0,
+      "stateLIHTCCredit": 0,
+      "taxBenefit": 0,
+      "year": 3,
+    },
+    {
+      "federalLIHTCCredit": 0,
+      "stateLIHTCCredit": 0,
+      "taxBenefit": 0,
+      "year": 4,
+    },
+    {
+      "federalLIHTCCredit": 0,
+      "stateLIHTCCredit": 0,
+      "taxBenefit": 0,
+      "year": 5,
+    },
+    {
+      "federalLIHTCCredit": 0,
+      "stateLIHTCCredit": 0,
+      "taxBenefit": 0,
+      "year": 6,
+    },
+    {
+      "federalLIHTCCredit": 0,
+      "stateLIHTCCredit": 0,
+      "taxBenefit": 0,
+      "year": 7,
+    },
+    {
+      "federalLIHTCCredit": 0,
+      "stateLIHTCCredit": 0,
+      "taxBenefit": 0,
+      "year": 8,
+    },
+    {
+      "federalLIHTCCredit": 0,
+      "stateLIHTCCredit": 0,
+      "taxBenefit": 0,
+      "year": 9,
+    },
+    {
+      "federalLIHTCCredit": 0,
+      "stateLIHTCCredit": 0,
+      "taxBenefit": 0,
+      "year": 10,
+    },
+    {
+      "federalLIHTCCredit": 0,
+      "stateLIHTCCredit": 0,
+      "taxBenefit": 0,
+      "year": 11,
+    },
+    {
+      "federalLIHTCCredit": 0,
+      "stateLIHTCCredit": 0,
+      "taxBenefit": 0,
+      "year": 12,
+    },
+    {
+      "federalLIHTCCredit": 0,
+      "stateLIHTCCredit": 0,
+      "taxBenefit": 0,
+      "year": 13,
+    },
+  ],
+  "totalReturns": 43.51,
+}
+`;

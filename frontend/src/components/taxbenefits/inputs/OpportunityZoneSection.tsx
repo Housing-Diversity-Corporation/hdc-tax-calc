@@ -89,7 +89,7 @@ const OpportunityZoneSection: React.FC<OpportunityZoneSectionProps> = ({
           onClick={() => setIsExpanded(!isExpanded)}
         >
           <span style={{ marginRight: '0.5rem' }}>{isExpanded ? '▼' : '▶'}</span>
-          4. Opportunity Zone
+          5. Opportunity Zone
         </h3>
 
         {isExpanded && (

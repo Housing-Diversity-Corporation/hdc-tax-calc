@@ -166,9 +166,11 @@ interface HDCInputsComponentProps {
   taxBenefitDelayMonths: number;
   setTaxBenefitDelayMonths: (value: number) => void;
 
-  // Projections
-  holdPeriod: number;
-  setHoldPeriod: (value: number) => void;
+  // Projections — computed hold period (read-only)
+  totalInvestmentYears: number;
+  holdFromPIS: number;
+  exitMonth: number; // IMPL-087
+  setExitMonth: (value: number) => void;
   // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
   noiGrowthRate: number;
   setNoiGrowthRate: (value: number) => void;
@@ -435,7 +437,8 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
       props.setYearOneDepreciationPct(config.yearOneDepreciationPct ?? 25);
       props.setNoiGrowthRate(config.noiGrowthRate ?? 3);
       props.setExitCapRate(config.exitCapRate ?? 6);
-      props.setHoldPeriod?.(config.holdPeriod ?? 10);
+      // holdPeriod is now computed — ignore on load
+      props.setExitMonth?.(config.exitMonth ?? 7); // IMPL-087
 
       // Capital structure
       props.setInvestorEquityPct(config.investorEquityPct ?? 0);
@@ -669,7 +672,8 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
         // ISS-068c: Single NOI growth rate
         noiGrowthRate: props.noiGrowthRate,
         exitCapRate: props.exitCapRate,
-        holdPeriod: props.holdPeriod,
+        holdPeriod: props.totalInvestmentYears, // Read-only snapshot for historical comparison
+        exitMonth: props.exitMonth, // IMPL-087
         investorEquityPct: props.investorEquityPct,
         philanthropicEquityPct: props.philanthropicEquityPct,
         seniorDebtPct: props.seniorDebtPct,
@@ -839,7 +843,7 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
             selectedState: props.selectedState,
             fundEntryYear: new Date().getFullYear(),
             projectCost: props.projectCost,
-            holdPeriod: props.holdPeriod,
+            holdPeriod: props.totalInvestmentYears,
             ozEnabled: props.ozEnabled,
             placedInServiceMonth: props.placedInServiceMonth,
             seniorDebtPct: props.seniorDebtPct,
@@ -1105,7 +1109,26 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           endDebtEditing={props.endDebtEditing}
         />
 
-        {/* Panel 3: Tax Credits (Federal + State LIHTC consolidated) */}
+        {/* Panel 3: Projections */}
+        <ProjectionsSection
+          totalInvestmentYears={props.totalInvestmentYears}
+          holdFromPIS={props.holdFromPIS}
+          exitMonth={props.exitMonth}
+          setExitMonth={props.setExitMonth}
+          noiGrowthRate={props.noiGrowthRate}
+          setNoiGrowthRate={props.setNoiGrowthRate}
+          exitCapRate={props.exitCapRate}
+          setExitCapRate={props.setExitCapRate}
+          yearOneDepreciationPct={props.yearOneDepreciationPct}
+          setYearOneDepreciationPct={props.setYearOneDepreciationPct}
+          constructionDelayMonths={props.constructionDelayMonths}
+          setConstructionDelayMonths={props.setConstructionDelayMonths}
+          taxBenefitDelayMonths={props.taxBenefitDelayMonths}
+          setTaxBenefitDelayMonths={props.setTaxBenefitDelayMonths}
+          isReadOnly={props.isReadOnly}
+        />
+
+        {/* Panel 4: Tax Credits (Federal + State LIHTC consolidated) */}
         {props.lihtcEnabled !== undefined && (
           <TaxCreditsSection
             // Federal LIHTC
@@ -1162,7 +1185,7 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           />
         )}
 
-        {/* Panel 4: Opportunity Zone */}
+        {/* Panel 5: Opportunity Zone */}
         <OpportunityZoneSection
           ozEnabled={props.ozEnabled}
           setOzEnabled={props.setOzEnabled}
@@ -1183,7 +1206,7 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           isReadOnly={props.taxSectionReadOnly || props.isReadOnly}
         />
 
-        {/* Panel 5: Investor Profile - IMPL-035: StrategicOzSelector with OZ info */}
+        {/* Panel 6: Investor Profile - IMPL-035: StrategicOzSelector with OZ info */}
         <InvestorProfileSection
           investorState={props.investorState || ''}
           setInvestorState={props.setInvestorState || (() => {})}
@@ -1215,23 +1238,6 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           setGroupingElection={props.setGroupingElection}
           incomeFieldsEditable={props.incomeFieldsEditable}
           isReadOnly={props.taxSectionReadOnly || props.isReadOnly}
-        />
-
-        {/* Panel 6: Projections */}
-        <ProjectionsSection
-          holdPeriod={props.holdPeriod}
-          setHoldPeriod={props.setHoldPeriod}
-          noiGrowthRate={props.noiGrowthRate}
-          setNoiGrowthRate={props.setNoiGrowthRate}
-          exitCapRate={props.exitCapRate}
-          setExitCapRate={props.setExitCapRate}
-          yearOneDepreciationPct={props.yearOneDepreciationPct}
-          setYearOneDepreciationPct={props.setYearOneDepreciationPct}
-          constructionDelayMonths={props.constructionDelayMonths}
-          setConstructionDelayMonths={props.setConstructionDelayMonths}
-          taxBenefitDelayMonths={props.taxBenefitDelayMonths}
-          setTaxBenefitDelayMonths={props.setTaxBenefitDelayMonths}
-          isReadOnly={props.isReadOnly}
         />
 
         {/* Panel 7: HDC Economics */}

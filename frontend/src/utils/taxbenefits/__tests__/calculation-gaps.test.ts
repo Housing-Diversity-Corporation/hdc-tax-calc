@@ -36,7 +36,8 @@ describe('Critical Calculation Gaps - HIGH PRIORITY', () => {
         hdcFeeRate: 0,
         hdcFee: 0.5,
         taxBenefitDelayMonths: 0,
-    constructionDelayMonths: 0,        ozEnabled: true,
+    constructionDelayMonths: 0,        placedInServiceMonth: 1,
+        ozEnabled: true,
         ozType: 'standard',
         deferredCapitalGains: 10,
         capitalGainsTaxRate: 34.65,
@@ -203,7 +204,8 @@ describe('Critical Calculation Gaps - HIGH PRIORITY', () => {
         hdcFeeRate: 0,
         hdcFee: 0.5,
         taxBenefitDelayMonths: 0,
-    constructionDelayMonths: 0,        aumFeeRate: 1.5,
+    constructionDelayMonths: 0,        placedInServiceMonth: 1,
+        aumFeeRate: 1.5,
         ozEnabled: true,
         ozType: 'standard',
         deferredCapitalGains: 10,
@@ -216,14 +218,14 @@ describe('Critical Calculation Gaps - HIGH PRIORITY', () => {
       const depreciableBasis = params.projectCost - params.landValue; // 45M
       const bonusDepreciation = depreciableBasis * (params.yearOneDepreciationPct / 100); // 11.25M
 
-      // Add MACRS mid-month convention for Year 1 (default July placement = 5.5 months)
+      // Add MACRS mid-month convention for Year 1 (January placement = 11.5 months)
       const remainingBasis = depreciableBasis - bonusDepreciation; // 33.75M
       const annualMACRS = remainingBasis / 27.5; // 1.227M
-      const monthsInYear1 = 5.5; // July placement (12.5 - 7)
-      const year1MACRS = (monthsInYear1 / 12) * annualMACRS; // 0.5625M
+      const monthsInYear1 = 11.5; // January placement (12.5 - 1)
+      const year1MACRS = (monthsInYear1 / 12) * annualMACRS; // 1.176M
 
-      const year1Depreciation = bonusDepreciation + year1MACRS; // 11.8125M
-      const year1TaxBenefit = year1Depreciation * (params.effectiveTaxRate / 100); // 5.652M
+      const year1Depreciation = bonusDepreciation + year1MACRS; // 12.426M
+      const year1TaxBenefit = year1Depreciation * (params.effectiveTaxRate / 100); // 5.946M
       const year1HdcFee = 0; // HDC fee removed per IMPL-7.0-001
       const year1NetBenefit = year1TaxBenefit - year1HdcFee; // 5.652M
 
@@ -240,8 +242,9 @@ describe('Critical Calculation Gaps - HIGH PRIORITY', () => {
       expect(investorResult.totalInvestment).toBeGreaterThan(0);
       expect(hdcResult.totalInvestment).toBe(0); // HDC has $0 investment
 
-      // Years 1-10: Cash flows exist
-      expect(investorResult.investorCashFlows.length).toBe(10);
+      // Years 1-11: Cash flows exist (IMPL-087: +1 disposition year for investor)
+      expect(investorResult.investorCashFlows.length).toBe(11);
+      // HDC analysis uses holdPeriod directly, not computeHoldPeriod
       expect(hdcResult.hdcCashFlows.length).toBe(10);
 
       // Year 1: Tax benefits

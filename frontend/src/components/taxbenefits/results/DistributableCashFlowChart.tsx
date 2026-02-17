@@ -84,7 +84,7 @@ const DistributableCashFlowChart: React.FC<DistributableCashFlowChartProps> = ({
 
   // Transform data into waterfall structure
   // Waterfall shows: Start with NOI, stack down through deductions to distributable
-  const waterfallData: WaterfallSegment[] = investorCashFlows.slice(0, holdPeriod).map((cf, index) => {
+  const waterfallData: WaterfallSegment[] = investorCashFlows.map((cf, index) => {
     const yearNum = index + 1;
     const isConstruction = yearNum < placedInServiceYear;
 

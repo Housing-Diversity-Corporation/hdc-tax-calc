@@ -105,18 +105,20 @@ describe('Domain 5 & 6: Independent Math Verification (Trace 4001)', () => {
   });
 
   describe('Domain 5 Checkpoint 2: Exit Value', () => {
-    it('should match hand calculation: Year 10 NOI / Exit Cap Rate', () => {
+    it('should match hand calculation: Year 12 NOI / Exit Cap Rate', () => {
       // MANUAL CALCULATION
+      // With pisMonth=7, computeHoldPeriod(7,0,0) yields holdFromPIS=11
+      // IMPL-087: +1 disposition year, so totalInvestmentYears=12
+      // Exit is based on Year 12 NOI (11 years of growth from Year 1)
       const year1NOI = 3.5;
-      const year10NOI = year1NOI * Math.pow(1.03, 9); // 4.567M
+      const year12NOI = year1NOI * Math.pow(1.03, 11); // 11 years of growth
       const exitCapRate = 0.06;
 
-      const expectedExitValue = year10NOI / exitCapRate;
-      // = 4.567M / 0.06 = $76.12M
+      const expectedExitValue = year12NOI / exitCapRate;
 
       console.log('\n=== CHECKPOINT 2: Exit Value ===');
       console.log('Manual Calculation:');
-      console.log(`  Year 10 NOI: $${year10NOI.toFixed(3)}M`);
+      console.log(`  Year 12 NOI: $${year12NOI.toFixed(3)}M`);
       console.log(`  Exit Cap Rate: ${exitCapRate * 100}%`);
       console.log(`  Expected Exit Value: $${expectedExitValue.toFixed(2)}M`);
 
@@ -143,7 +145,9 @@ describe('Domain 5 & 6: Independent Math Verification (Trace 4001)', () => {
   describe('Domain 5 Checkpoint 3: Net Proceeds', () => {
     it('should match hand calculation: Exit Value - Debt Payoff', () => {
       // MANUAL CALCULATION
-      const exitValue = 76.12; // From checkpoint 2
+      // With pisMonth=7, IMPL-087: totalInvestmentYears=12 (not 11), so exit value is higher
+      const year1NOI = 3.5;
+      const exitValue = year1NOI * Math.pow(1.03, 11) / 0.06; // Year 12 NOI / 6%
 
       // Debt at exit (approximations):
       const seniorDebtInitial = 67 * 0.66; // $44.22M
@@ -152,15 +156,15 @@ describe('Domain 5 & 6: Independent Math Verification (Trace 4001)', () => {
       const investorSubDebtInitial = 67 * 0.025; // $1.675M
 
       // Senior debt amortizes over 35 years with 3 years IO
-      // After 10 years, remaining principal ≈ $40M (rough estimate)
-      const seniorDebtAtExit = 40; // Estimate
+      // After 12 years (IMPL-087: +1 disposition year), remaining principal ≈ $38M (rough estimate)
+      const seniorDebtAtExit = 38; // Estimate
 
       // Phil debt is interest-only
       const philDebtAtExit = philDebtInitial;
 
-      // Sub-debt PIK at 8% for 10 years
-      const hdcSubDebtAtExit = hdcSubDebtInitial * Math.pow(1.08, 10); // $2.90M
-      const investorSubDebtAtExit = investorSubDebtInitial * Math.pow(1.08, 10); // $3.62M
+      // Sub-debt PIK at 8% for 12 years (IMPL-087: +1 disposition year)
+      const hdcSubDebtAtExit = hdcSubDebtInitial * Math.pow(1.08, 12);
+      const investorSubDebtAtExit = investorSubDebtInitial * Math.pow(1.08, 12);
 
       const totalDebtAtExit = seniorDebtAtExit + philDebtAtExit + hdcSubDebtAtExit + investorSubDebtAtExit;
       // ≈ $40M + $13.4M + $2.9M + $3.6M = $59.9M
@@ -244,28 +248,29 @@ describe('Domain 5 & 6: Independent Math Verification (Trace 4001)', () => {
   describe('Domain 6 Checkpoint 1: Total Returns', () => {
     it('should match hand calculation: Tax Benefits + Operating Cash + Exit Proceeds', () => {
       // MANUAL CALCULATION (approximations)
+      // With pisMonth=7, holdPeriod=11 (not 10)
       const investorEquity = 67 * 0.05; // $3.35M
 
-      // Tax benefits over 10 years (rough estimate)
+      // Tax benefits over 12 years (IMPL-087: +1 disposition year)
       // Year 1: ~$5.1M net (from Step 6 validation)
-      // Years 2-10: ~$0.78M/year net = $7.0M
-      // Total: ~$12.1M
-      const estimatedTaxBenefits = 12.1;
+      // Years 2-12: ~$0.78M/year net = $8.58M
+      // Total: ~$13.68M
+      const estimatedTaxBenefits = 13.68;
 
       // Operating cash (after debt service, minimal in early years)
-      const estimatedOperatingCash = 2.0; // Rough estimate
+      const estimatedOperatingCash = 2.7; // Rough estimate for 12 years
 
       // Exit proceeds (investor share after equity recovery + promote)
-      // From checkpoint 3: ~$16M net proceeds
+      // From checkpoint 3: net proceeds with 12-year exit (IMPL-087: +1 disposition year)
       // Investor recovers equity first, then gets share of promote
-      const estimatedExitProceeds = 12.0; // Rough estimate
+      const estimatedExitProceeds = 14.5; // Rough estimate (higher exit value at Year 12)
 
       const expectedTotalReturns = estimatedTaxBenefits + estimatedOperatingCash + estimatedExitProceeds;
-      // ≈ $26.1M
+      // ≈ $29.4M
 
       console.log('\n=== CHECKPOINT 1: Total Returns ===');
       console.log('Manual Calculation (Estimates):');
-      console.log(`  Tax Benefits (10 years): ~$${estimatedTaxBenefits.toFixed(1)}M`);
+      console.log(`  Tax Benefits (11 years): ~$${estimatedTaxBenefits.toFixed(1)}M`);
       console.log(`  Operating Cash: ~$${estimatedOperatingCash.toFixed(1)}M`);
       console.log(`  Exit Proceeds: ~$${estimatedExitProceeds.toFixed(1)}M`);
       console.log(`  Expected Total Returns: ~$${expectedTotalReturns.toFixed(1)}M`);
@@ -287,7 +292,7 @@ describe('Domain 5 & 6: Independent Math Verification (Trace 4001)', () => {
 
       // Very rough check - just verify it's in reasonable ballpark
       expect(actualTotalReturns).toBeGreaterThan(20);
-      expect(actualTotalReturns).toBeLessThan(40);
+      expect(actualTotalReturns).toBeLessThan(50);
     });
   });
 
@@ -345,13 +350,14 @@ describe('Domain 5 & 6: Independent Math Verification (Trace 4001)', () => {
       console.log(`  IRR: ${(actualIRR * 100).toFixed(2)}%`);
       console.log(`  Cash Flow Years: ${cashFlows.length}`);
 
-      // Log Year 0 (initial investment) and Year 10 (exit)
-      if (cashFlows.length >= 10) {
-        const year0 = cashFlows[0];
-        const year10 = cashFlows[9];
+      // Log Year 1 (first year) and final year (exit)
+      // With pisMonth=7, IMPL-087: totalInvestmentYears=12 so cashFlows.length=12
+      if (cashFlows.length >= 12) {
+        const year1 = cashFlows[0];
+        const yearFinal = cashFlows[11];
 
-        console.log(`\n  Year 1 Net Cash: $${year0.totalCash?.toFixed(2) || 'N/A'}M`);
-        console.log(`  Year 10 Net Cash: $${year10.totalCash?.toFixed(2) || 'N/A'}M`);
+        console.log(`\n  Year 1 Net Cash: $${year1.totalCash?.toFixed(2) || 'N/A'}M`);
+        console.log(`  Year 12 Net Cash: $${yearFinal.totalCash?.toFixed(2) || 'N/A'}M`);
       }
 
       // SANITY CHECK

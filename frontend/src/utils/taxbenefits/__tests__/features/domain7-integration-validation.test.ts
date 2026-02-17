@@ -54,10 +54,12 @@ describe('Domain 7: Integration - End-to-End Validation', () => {
       // Should return a result object
       expect(result).toBeDefined();
       expect(result.investorCashFlows).toBeDefined();
-      expect(result.investorCashFlows.length).toBe(10);
+      // With pisMonth=7, computeHoldPeriod(7,0,0) yields holdFromPIS=11
+      // IMPL-087: +1 disposition year, so totalInvestmentYears=12
+      expect(result.investorCashFlows.length).toBe(12);
 
-      console.log('✅ Full calculation completed successfully');
-      console.log('✅ Generated 10 years of cash flows');
+      console.log('Full calculation completed successfully');
+      console.log('Generated 12 years of cash flows');
     });
 
     it('should have NO NaN, null, or undefined in critical outputs', () => {

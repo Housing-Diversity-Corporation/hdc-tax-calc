@@ -173,7 +173,8 @@ describe('HDC Calculator - Core Financial Calculations', () => {
       investorPikCurrentPayEnabled: false,
       investorPikCurrentPayPct: 50,
       aumFeeEnabled: false,
-      aumFeeRate: 1
+      aumFeeRate: 1,
+      placedInServiceMonth: 1
     };
 
     it('should calculate investor analysis with base case', () => {
@@ -181,7 +182,7 @@ describe('HDC Calculator - Core Financial Calculations', () => {
 
       expect(results).toBeDefined();
       expect(results.totalInvestment).toBeCloseTo(12040000, -3); // Only equity, no HDC fee
-      expect(results.investorCashFlows).toHaveLength(10);
+      expect(results.investorCashFlows).toHaveLength(11);
       expect(results.irr).toBeGreaterThan(0);
       expect(results.multiple).toBeGreaterThan(1);
     });
@@ -311,6 +312,7 @@ describe('HDC Calculator - Core Financial Calculations', () => {
       opexRatio: 25,
       holdPeriod: 10,
     constructionDelayMonths: 0,
+      placedInServiceMonth: 1,
       seniorDebtPct: 66,
       philanthropicDebtPct: 20,
       seniorDebtRate: 5,
@@ -425,7 +427,8 @@ describe('HDC Calculator - Core Financial Calculations', () => {
       seniorDebtRate: 5,
       philanthropicDebtRate: 0,
       seniorDebtAmortization: 35,
-      philDebtAmortization: 60
+      philDebtAmortization: 60,
+      placedInServiceMonth: 1
     };
 
     it('should handle zero project cost', () => {
@@ -436,7 +439,7 @@ describe('HDC Calculator - Core Financial Calculations', () => {
       
       const results = calculateFullInvestorAnalysis(zeroProjectParams);
       expect(results.totalInvestment).toBe(0); // No equity, no HDC fee
-      expect(results.investorCashFlows).toHaveLength(10);
+      expect(results.investorCashFlows).toHaveLength(11);
     });
 
     it('should handle negative NOI', () => {
@@ -538,7 +541,8 @@ describe('HDC Calculator - Core Financial Calculations', () => {
         seniorDebtRate: 5,
         philanthropicDebtRate: 0,
         seniorDebtAmortization: 35,
-        philDebtAmortization: 60
+        philDebtAmortization: 60,
+        placedInServiceMonth: 1
       };
       
       const results = calculateFullInvestorAnalysis(largeParams);
@@ -609,7 +613,8 @@ describe('HDC Calculator - Core Financial Calculations', () => {
         investorPikCurrentPayEnabled: true,
         investorPikCurrentPayPct: 60,
         aumFeeEnabled: true,
-        aumFeeRate: 1.75
+        aumFeeRate: 1.75,
+        placedInServiceMonth: 1
       };
       
       const results = calculateFullInvestorAnalysis(complexParams);
@@ -646,7 +651,8 @@ describe('HDC Calculator - Core Financial Calculations', () => {
           seniorDebtRate: 4 + (i % 3),
           philanthropicDebtRate: 0,
           seniorDebtAmortization: 30,
-          philDebtAmortization: 60
+          philDebtAmortization: 60,
+          placedInServiceMonth: 1
         };
         
         results.push(calculateFullInvestorAnalysis(params));

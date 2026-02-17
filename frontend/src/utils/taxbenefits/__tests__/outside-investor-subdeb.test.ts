@@ -49,6 +49,7 @@ describe('Outside Investor Sub-Debt Feature', () => {
     taxDeliveryMonths: 6,
     holdPeriod: 5,
     constructionDelayMonths: 0,
+    placedInServiceMonth: 1,
     yearOneDepreciation: 600000,
     annualStraightLineDepreciation: 300000,
     effectiveTaxRate: 40
@@ -135,8 +136,8 @@ describe('Outside Investor Sub-Debt Feature', () => {
 
     const principal = params.projectCost * params.outsideInvestorSubDebtPct / 100;
 
-    // Total cost should be principal + all interest
-    expect(result.outsideInvestorTotalCost).toBe(result.outsideInvestorSubDebtAtExit);
+    // Total cost should be principal + all interest (use toBeCloseTo for floating-point precision)
+    expect(result.outsideInvestorTotalCost).toBeCloseTo(result.outsideInvestorSubDebtAtExit, 2);
     expect(result.outsideInvestorTotalCost).toBeGreaterThan(principal);
 
     // Total interest should equal total cost minus principal

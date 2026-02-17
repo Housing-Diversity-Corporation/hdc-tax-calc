@@ -367,9 +367,9 @@ const BasicInputsSection: React.FC<BasicInputsSectionProps> = ({
         {/* Tax Loss Realization Timing */}
         <div className="hdc-input-group" style={{marginTop: '1rem'}}>
           <label className="hdc-input-label">
-            Tax Loss Realization Delay (Months)
+            Tax Benefit Realization Delay (Months)
             <span style={{ fontSize: '0.75rem', color: '#666', display: 'block', fontWeight: 'normal' }}>
-              Time from investment until investor receives tax benefits
+              Months after tax year end before K-1 delivery. Shifts benefit timing for IRR. Typical: 3-9 months.
             </span>
           </label>
           <Input

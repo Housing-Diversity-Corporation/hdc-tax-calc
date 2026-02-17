@@ -29,6 +29,7 @@ describe('Outside Investor Sub-Debt Impact on Promote Split', () => {
     holdPeriod: 10,
     constructionDelayMonths: 0,
     taxBenefitDelayMonths: 0,
+    placedInServiceMonth: 1,
 
     // Tax params - use effectiveTaxRate only
     effectiveTaxRate: 47.9,
@@ -137,8 +138,10 @@ describe('Outside Investor Sub-Debt Impact on Promote Split', () => {
       const investorResult = calculateFullInvestorAnalysis(params);
 
       // Calculate Outside Investor debt at exit
+      // IMPL-087: computeHoldPeriod adds +1 disposition year, so totalInvestmentYears = holdPeriod + 1
       const outsideInvestorPrincipal = params.projectCost * (params.outsideInvestorSubDebtPct / 100);
-      const outsideInvestorAtExit = outsideInvestorPrincipal * Math.pow(1.08, params.holdPeriod);
+      const totalInvestmentYears = params.holdPeriod + 1; // +1 for disposition year
+      const outsideInvestorAtExit = outsideInvestorPrincipal * Math.pow(1.08, totalInvestmentYears);
 
       // Get exit value
       const exitValue = (params.yearOneNOI * Math.pow(1.03, params.holdPeriod)) / (params.exitCapRate / 100);

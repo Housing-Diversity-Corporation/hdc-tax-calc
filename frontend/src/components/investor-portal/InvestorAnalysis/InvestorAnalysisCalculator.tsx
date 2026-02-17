@@ -69,8 +69,8 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
     outsideInvestorPikCurrentPayPct, setOutsideInvestorPikCurrentPayPct,
     subDebtPriority, setSubDebtPriority,
 
-    // Projections
-    holdPeriod, setHoldPeriod,
+    // Projections — computed hold period (read-only)
+    totalInvestmentYears, holdFromPIS,
     // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
     noiGrowthRate, setNoiGrowthRate,
     exitCapRate, setExitCapRate,
@@ -286,7 +286,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
             setLandValue(config.landValue || 0);
             setYearOneNOI(config.yearOneNOI || 0);
             setYearOneDepreciationPct(config.yearOneDepreciationPct || 0);
-            setHoldPeriod(config.holdPeriod || 10);
+            // holdPeriod is now computed — ignore on load
             // ISS-068c: Single NOI growth rate
             setNoiGrowthRate(config.noiGrowthRate || 3);
             setExitCapRate(config.exitCapRate || 0);
@@ -393,7 +393,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
     landValue,
     yearOneNOI,
     yearOneDepreciationPct,
-    holdPeriod,
+    totalInvestmentYears,
     // ISS-068c: Single NOI growth rate
     noiGrowthRate,
     exitCapRate,
@@ -498,7 +498,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
     // ISS-068c: Single NOI growth rate
     noiGrowthRate,
     exitCapRate,
-    holdPeriod,
+    holdPeriod: totalInvestmentYears,
 
     // Capital structure
     investorEquityPct,
@@ -638,7 +638,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
 
         // Cash Flow props
         investorCashFlows={calculations.investorCashFlows}
-        holdPeriod={holdPeriod}
+        holdPeriod={totalInvestmentYears}
         hdcSubDebtPct={hdcSubDebtPct}
         pikCurrentPayEnabled={pikCurrentPayEnabled}
         pikCurrentPayPct={pikCurrentPayPct}
@@ -805,8 +805,8 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
           setYearOneDepreciationPct={setYearOneDepreciationPct}
           yearOneNOI={yearOneNOI}
           setYearOneNOI={setYearOneNOI}
-          holdPeriod={holdPeriod}
-          setHoldPeriod={setHoldPeriod}
+          totalInvestmentYears={totalInvestmentYears}
+          holdFromPIS={holdFromPIS}
           noiGrowthRate={noiGrowthRate}
           setNoiGrowthRate={setNoiGrowthRate}
           exitCapRate={exitCapRate}
@@ -976,7 +976,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
           yearOneDepreciation={calculations.yearOneDepreciation}
           annualStraightLineDepreciation={calculations.annualStraightLineDepreciation}
           years2to10Depreciation={calculations.years2to10Depreciation}
-          holdPeriod={holdPeriod}
+          holdPeriod={totalInvestmentYears}
           pikCurrentPayEnabled={pikCurrentPayEnabled}
           pikCurrentPayPct={pikCurrentPayPct}
           hdcSubDebtPikRate={hdcSubDebtPikRate}
@@ -1074,7 +1074,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
                 <li>Tax Benefit Delay Months: {taxBenefitDelayMonths}</li>
                 <li>Land Value: {formatCurrencyMillions(landValue)}</li>
                 <li>Stabilized NOI: {formatCurrencyMillions(yearOneNOI)}</li>
-                <li>Hold Period: {holdPeriod} years</li>
+                <li>Hold Period: {totalInvestmentYears} years</li>
                 <li>NOI Growth: {noiGrowthRate}%</li>
                 <li>Exit Cap Rate: {exitCapRate}%</li>
                 <li>Year 1 Depreciation %: {yearOneDepreciationPct}%</li>
@@ -1137,7 +1137,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
                 <li>Asset Sale Gain: {assetSaleGain}</li>
 
                 <p><strong>Projections</strong></p>
-                <li>Hold Period: {holdPeriod}</li>
+                <li>Hold Period: {totalInvestmentYears}</li>
                 <li>NOI Growth: {noiGrowthRate}%</li>
                 <li>Exit Cap Rate: {exitCapRate}%</li>
                 
@@ -1209,7 +1209,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
 
               <p><strong>Debt Service Coverage Analysis</strong></p>
               <li>Investor Cash Flows: <code>{JSON.stringify(calculations.investorCashFlows, null, 2)}</code></li>
-              <li>Hold Period: {holdPeriod}</li>
+              <li>Hold Period: {totalInvestmentYears}</li>
 
               <p><strong>Free Investment Analysis</strong></p>
               <li>Year 1 Tax Benefit: {calculations.year1TaxBenefit}</li>
@@ -1241,7 +1241,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
 
               <p><strong>10-Year Investor Analysis & Cash Flow Model</strong></p>
               <li>investorCashFlows: {JSON.stringify(calculations.investorCashFlows)}</li>
-              <li>holdPeriod: {holdPeriod}</li>
+              <li>holdPeriod: {totalInvestmentYears}</li>
               <li>hdcSubDebtPct: {hdcSubDebtPct}</li>
               <li>pikCurrentPayEnabled: {pikCurrentPayEnabled ? 'Yes' : 'No'}</li>
               <li>pikCurrentPayPct: {pikCurrentPayPct}</li>
@@ -1259,7 +1259,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
 
               <p><strong>Distributable Cash Flow Analysis</strong></p>
               <li>investorCashFlows: {JSON.stringify(calculations.investorCashFlows)}</li>
-              <li>holdPeriod: {holdPeriod}</li>
+              <li>holdPeriod: {totalInvestmentYears}</li>
               <li>aumFeeEnabled: {aumFeeEnabled ? 'Yes' : 'No'}</li>
               <li>aumFeeRate: {aumFeeEnabled ? aumFeeRate : 0}</li>
               <li>constructionDelayMonths: {constructionDelayMonths}</li>
@@ -1270,7 +1270,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
 
               <p><strong>10-Year HDC Analysis & Cash Flow Model</strong></p>
               <li>hdcCashFlows: {JSON.stringify(calculations.hdcCashFlows)}</li>
-              <li>holdPeriod: {holdPeriod}</li>
+              <li>holdPeriod: {totalInvestmentYears}</li>
               <li>aumFeeEnabled: {aumFeeEnabled ? 'Yes' : 'No'}</li>
               <li>aumFeeRate: {aumFeeEnabled ? aumFeeRate : 0}</li>
               <li>hdcAnalysisResults: {JSON.stringify(calculations.hdcAnalysisResults)}</li>
@@ -1290,7 +1290,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
               <li>passiveGainType={passiveGainType}</li>
               <li>projectCost={projectCost}</li>
               <li>investorEquityAmount={calculations.investorEquity / 1000000}</li>
-              <li>holdPeriod={holdPeriod}</li>
+              <li>holdPeriod={totalInvestmentYears}</li>
               <li>yearOneDepreciationPct={yearOneDepreciationPct}</li>
               <li>federalOrdinaryRate={federalTaxRate}</li>
               <li>stateOrdinaryRate={stateTaxRate}</li>

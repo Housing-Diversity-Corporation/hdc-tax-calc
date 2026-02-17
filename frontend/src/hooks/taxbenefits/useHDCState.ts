@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { computeHoldPeriod } from '../../utils/taxbenefits/computeHoldPeriod';
 import { DEFAULT_VALUES } from '../../utils/taxbenefits';
 import { getStateTaxRate } from '../../utils/taxbenefits/stateProfiles';
 import { ValidationResult } from '../../utils/taxbenefits/validation';
@@ -46,6 +47,16 @@ export const useHDCState = () => {
   const [taxDeliveryMonths, setTaxDeliveryMonths] = useState(DEFAULT_VALUES.TAX_DELIVERY_MONTHS);
   const [constructionDelayMonths, setConstructionDelayMonths] = useState(0); // 0-36 months construction delay
   const [taxBenefitDelayMonths, setTaxBenefitDelayMonths] = useState(0); // 0-36 months tax realization delay
+  const [placedInServiceMonth, setPlacedInServiceMonth] = useState(7); // Month placed in service (1-12), hoisted for useMemo
+  // IMPL-087: Exit month with pisMonth sync (follows pisMonth unless user overrides)
+  const [exitMonth, setExitMonth] = useState(7); // Default matches initial pisMonth
+  const prevPisMonth = useRef(placedInServiceMonth);
+  useEffect(() => {
+    if (exitMonth === prevPisMonth.current) {
+      setExitMonth(placedInServiceMonth);
+    }
+    prevPisMonth.current = placedInServiceMonth;
+  }, [placedInServiceMonth]); // eslint-disable-line react-hooks/exhaustive-deps
   const [aumFeeEnabled, setAumFeeEnabled] = useState(false);
   const [aumFeeRate, setAumFeeRate] = useState(DEFAULT_VALUES.AUM_FEE_RATE);
   const [aumCurrentPayEnabled, setAumCurrentPayEnabled] = useState(false);
@@ -56,8 +67,11 @@ export const useHDCState = () => {
   const [stateCapitalGainsRate, setStateCapitalGainsRate] = useState(DEFAULT_VALUES.STATE_CAPITAL_GAINS_RATE);
   const [depreciationRecaptureRate, setDepreciationRecaptureRate] = useState(DEFAULT_VALUES.DEPRECIATION_RECAPTURE_RATE);
 
-  // Projections
-  const [holdPeriod, setHoldPeriod] = useState(10); // Default 10 years, range 10-30
+  // Projections — holdPeriod computed from LIHTC credit exhaustion + delay
+  const { holdFromPIS, totalInvestmentYears } = useMemo(
+    () => computeHoldPeriod(placedInServiceMonth, constructionDelayMonths, taxBenefitDelayMonths),
+    [placedInServiceMonth, constructionDelayMonths, taxBenefitDelayMonths]
+  );
   // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
   const [noiGrowthRate, setNoiGrowthRate] = useState(DEFAULT_VALUES.NOI_GROWTH_RATE);
   const [exitCapRate, setExitCapRate] = useState(DEFAULT_VALUES.EXIT_CAP_RATE);
@@ -178,7 +192,7 @@ export const useHDCState = () => {
   const [lihtcEnabled, setLihtcEnabled] = useState(true);
   const [applicableFraction, setApplicableFraction] = useState(100);
   const [creditRate, setCreditRate] = useState(0.04);
-  const [placedInServiceMonth, setPlacedInServiceMonth] = useState(7);
+  // placedInServiceMonth moved above (before computeHoldPeriod useMemo)
   const [ddaQctBoost, setDdaQctBoost] = useState(false);
 
   // Private Activity Bonds (IMPL-080)
@@ -463,8 +477,8 @@ export const useHDCState = () => {
     stateCapitalGainsRate, setStateCapitalGainsRate,
     depreciationRecaptureRate, setDepreciationRecaptureRate,
 
-    // Projections
-    holdPeriod, setHoldPeriod,
+    // Projections — computed hold period (read-only)
+    totalInvestmentYears, holdFromPIS,
     // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
     noiGrowthRate, setNoiGrowthRate,
     exitCapRate, setExitCapRate,
@@ -592,6 +606,7 @@ export const useHDCState = () => {
     applicableFraction, setApplicableFraction,
     creditRate, setCreditRate,
     placedInServiceMonth, setPlacedInServiceMonth,
+    exitMonth, setExitMonth, // IMPL-087: Exit month with pisMonth sync
     ddaQctBoost, setDdaQctBoost,
 
     // Helpers

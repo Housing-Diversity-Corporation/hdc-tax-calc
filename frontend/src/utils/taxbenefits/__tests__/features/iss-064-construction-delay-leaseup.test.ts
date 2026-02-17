@@ -71,6 +71,7 @@ describe('ISS-064: Construction Delay + Lease-Up + DSCR Logic', () => {
     interestReserveMonths: 0,
     constructionDelayMonths: 0,
     taxBenefitDelayMonths: 0,
+    placedInServiceMonth: 1, // January PIS → computeHoldPeriod(1, 0, 0) = 10
     aumFeeEnabled: false,
     aumFeeRate: 0,
     aumCurrentPayEnabled: false,
@@ -330,6 +331,474 @@ describe('ISS-064: Construction Delay + Lease-Up + DSCR Logic', () => {
       // Year 5: Placed in service
       expect(result.cashFlows[4].noi).toBeGreaterThan(0);
       expect(result.cashFlows[4].dscr).toBeGreaterThan(0);
+    });
+  });
+
+  // =====================================================================
+  // Construction Timing Fix — LIHTC Gating + Hold Period Extension Tests
+  // =====================================================================
+
+  describe('LIHTC timing with construction delay', () => {
+    // Federal LIHTC: requires federalLIHTCCredits param (11-element array)
+    const federalLIHTCCredits = [
+      0.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.5, // 10-year credit schedule (prorated Y1/Y11)
+    ];
+
+    it('constructionMonths=24: Years 1-2 federalLIHTCCredit=0, Year 3 = schedule[0]', () => {
+      const result = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 24,
+        federalLIHTCCredits,
+      });
+
+      expect(result.cashFlows[0].federalLIHTCCredit).toBe(0); // Year 1: construction
+      expect(result.cashFlows[1].federalLIHTCCredit).toBe(0); // Year 2: construction
+      expect(result.cashFlows[2].federalLIHTCCredit).toBe(federalLIHTCCredits[0]); // Year 3: PIS, schedule[0]
+      expect(result.cashFlows[3].federalLIHTCCredit).toBe(federalLIHTCCredits[1]); // Year 4: schedule[1]
+    });
+
+    it('constructionMonths=24: stateLIHTCCredit gated by PIS year', () => {
+      const stateLIHTCYearlyCredits = [0.3, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.3];
+      const result = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 24,
+        stateLIHTCIntegration: {
+          creditPath: 'direct_use',
+          yearlyCredits: stateLIHTCYearlyCredits,
+          creditDurationYears: 10,
+          grossCredits: 6,
+        },
+      });
+
+      expect(result.cashFlows[0].stateLIHTCCredit).toBe(0); // Year 1: construction
+      expect(result.cashFlows[1].stateLIHTCCredit).toBe(0); // Year 2: construction
+      expect(result.cashFlows[2].stateLIHTCCredit).toBe(stateLIHTCYearlyCredits[0]); // Year 3: PIS
+    });
+
+    it('constructionMonths=0: Year 1 = schedule[0] (regression guard)', () => {
+      const result = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 0,
+        federalLIHTCCredits,
+      });
+
+      expect(result.cashFlows[0].federalLIHTCCredit).toBe(federalLIHTCCredits[0]); // Year 1 = schedule[0]
+      expect(result.cashFlows[1].federalLIHTCCredit).toBe(federalLIHTCCredits[1]); // Year 2 = schedule[1]
+    });
+
+    it('constructionMonths=18: Year 1=0, Year 2 = schedule[0]', () => {
+      const result = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 18,
+        federalLIHTCCredits,
+      });
+
+      // floor(18/12) = 1, placedInServiceYear = 2
+      expect(result.cashFlows[0].federalLIHTCCredit).toBe(0); // Year 1: construction
+      expect(result.cashFlows[1].federalLIHTCCredit).toBe(federalLIHTCCredits[0]); // Year 2: PIS, schedule[0]
+    });
+  });
+
+  describe('Hold period extension with construction delay', () => {
+    it('constructionMonths=24, holdPeriod=10: cashFlows.length=13, results.holdPeriod=13', () => {
+      const result = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 24,
+        holdPeriod: 10,
+      });
+
+      expect(result.cashFlows.length).toBe(13); // 2 construction + 10 operations + 1 disposition
+      expect(result.holdPeriod).toBe(13);
+    });
+
+    it('constructionMonths=0, holdPeriod=10: cashFlows.length=11, results.holdPeriod=11', () => {
+      const result = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 0,
+        holdPeriod: 10,
+      });
+
+      expect(result.cashFlows.length).toBe(11); // 10 operations + 1 disposition
+      expect(result.holdPeriod).toBe(11);
+    });
+
+    it('constructionMonths=12, holdPeriod=10: cashFlows.length=12', () => {
+      const result = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 12,
+        holdPeriod: 10,
+      });
+
+      expect(result.cashFlows.length).toBe(12); // floor(12/12)=1 + 10 + 1 disposition
+      expect(result.holdPeriod).toBe(12);
+    });
+
+    it('constructionMonths=18, holdPeriod=10: cashFlows.length=12', () => {
+      const result = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 18,
+        holdPeriod: 10,
+      });
+
+      // floor(18/12) = 1, totalInvestmentYears = 1 + 10 + 1 disposition = 12
+      expect(result.cashFlows.length).toBe(12);
+      expect(result.holdPeriod).toBe(12);
+    });
+  });
+
+  describe('taxBenefitDelayMonths with construction', () => {
+    const federalLIHTCCredits = [
+      0.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.5,
+    ];
+
+    it('constructionMonths=24, taxBenefitDelayMonths=12: Year 3 credit=0, Year 4=schedule[0] (shifted)', () => {
+      const result = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 24,
+        taxBenefitDelayMonths: 12,
+        federalLIHTCCredits,
+      });
+
+      // PIS = Year 3, delay = 12mo = 1yr => schedule[0] earned Year 3, realized Year 4
+      expect(result.cashFlows[0].federalLIHTCCredit).toBe(0); // Year 1: construction
+      expect(result.cashFlows[1].federalLIHTCCredit).toBe(0); // Year 2: construction
+      expect(result.cashFlows[2].federalLIHTCCredit).toBe(0); // Year 3: PIS but delayed 1yr
+      expect(result.cashFlows[3].federalLIHTCCredit).toBe(federalLIHTCCredits[0]); // Year 4: schedule[0] shifted from Year 3
+      expect(result.cashFlows[4].federalLIHTCCredit).toBe(federalLIHTCCredits[1]); // Year 5: schedule[1] shifted from Year 4
+    });
+
+    it('constructionMonths=0, taxBenefitDelayMonths=6: 50% Year 1, 50% spillover to Year 2', () => {
+      const result = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 0,
+        taxBenefitDelayMonths: 6,
+        federalLIHTCCredits,
+      });
+
+      // delay=6: delayFullYears=0, delayFraction=0.5
+      // schedule[0]=0.5 earned Year 1 → 50% Year 1 + 50% Year 2
+      expect(result.cashFlows[0].federalLIHTCCredit).toBeCloseTo(federalLIHTCCredits[0] * 0.5, 6); // Year 1: 50% of schedule[0]
+      // Year 2: 50% spillover from schedule[0] + 50% of schedule[1]
+      expect(result.cashFlows[1].federalLIHTCCredit).toBeCloseTo(
+        federalLIHTCCredits[0] * 0.5 + federalLIHTCCredits[1] * 0.5, 6
+      );
+    });
+
+    it('constructionMonths=0, taxBenefitDelayMonths=0: identical regression guard', () => {
+      const result = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 0,
+        taxBenefitDelayMonths: 0,
+        federalLIHTCCredits,
+      });
+
+      expect(result.cashFlows[0].federalLIHTCCredit).toBe(federalLIHTCCredits[0]);
+      expect(result.cashFlows[1].federalLIHTCCredit).toBe(federalLIHTCCredits[1]);
+      expect(result.cashFlows[9].federalLIHTCCredit).toBe(federalLIHTCCredits[9]);
+    });
+  });
+
+  // =====================================================================
+  // Month-Level Tax Benefit Delay — Fractional Year Tests
+  // =====================================================================
+
+  describe('Month-level depreciation delay (fractional shifting)', () => {
+    it('delay=0: identical baseline (regression guard)', () => {
+      const baseline = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 0,
+        taxBenefitDelayMonths: 0,
+      });
+
+      const withDelay0 = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 0,
+        taxBenefitDelayMonths: 0,
+      });
+
+      // Every year's tax benefit must match exactly
+      for (let i = 0; i < baseline.cashFlows.length; i++) {
+        expect(withDelay0.cashFlows[i].taxBenefit).toBe(baseline.cashFlows[i].taxBenefit);
+      }
+    });
+
+    it('delay=6: Year 1 taxBenefit ≈ 50% of baseline, Year 2 includes spillover', () => {
+      const baseline = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 0,
+        taxBenefitDelayMonths: 0,
+      });
+
+      const delayed = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 0,
+        taxBenefitDelayMonths: 6,
+      });
+
+      // delay=6: delayFullYears=0, delayFraction=0.5
+      // Year 1 realized = 50% of Year 1 earned
+      expect(delayed.cashFlows[0].taxBenefit).toBeCloseTo(baseline.cashFlows[0].taxBenefit * 0.5, 2);
+      // Year 2 realized = 50% spillover from Year 1 + 50% of Year 2 earned
+      expect(delayed.cashFlows[1].taxBenefit).toBeCloseTo(
+        baseline.cashFlows[0].taxBenefit * 0.5 + baseline.cashFlows[1].taxBenefit * 0.5, 2
+      );
+    });
+
+    it('delay=3: Year 1 taxBenefit ≈ 75% of baseline', () => {
+      const baseline = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 0,
+        taxBenefitDelayMonths: 0,
+      });
+
+      const delayed = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 0,
+        taxBenefitDelayMonths: 3,
+      });
+
+      // delay=3: delayFullYears=0, delayFraction=0.25
+      // Year 1 realized = 75% of Year 1 earned
+      expect(delayed.cashFlows[0].taxBenefit).toBeCloseTo(baseline.cashFlows[0].taxBenefit * 0.75, 2);
+    });
+
+    it('delay=12: Year 1 = 0, Year 2 = full Year 1 baseline amount', () => {
+      const baseline = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 0,
+        taxBenefitDelayMonths: 0,
+      });
+
+      const delayed = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 0,
+        taxBenefitDelayMonths: 12,
+      });
+
+      // delay=12: delayFullYears=1, delayFraction=0
+      // Year 1 realized = 0 (nothing pending yet)
+      expect(delayed.cashFlows[0].taxBenefit).toBe(0);
+      // Year 2 realized = 100% of Year 1 earned (shifted by 1 full year)
+      expect(delayed.cashFlows[1].taxBenefit).toBeCloseTo(baseline.cashFlows[0].taxBenefit, 2);
+    });
+
+    it('delay=18: Year 1 = 0, Year 2 = 50% of Year 1 baseline', () => {
+      const baseline = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 0,
+        taxBenefitDelayMonths: 0,
+      });
+
+      const delayed = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 0,
+        taxBenefitDelayMonths: 18,
+      });
+
+      // delay=18: delayFullYears=1, delayFraction=0.5
+      // Year 1 earned → 50% to Year 2, 50% to Year 3
+      expect(delayed.cashFlows[0].taxBenefit).toBe(0); // Year 1: nothing pending
+      expect(delayed.cashFlows[1].taxBenefit).toBeCloseTo(baseline.cashFlows[0].taxBenefit * 0.5, 2);
+    });
+  });
+
+  describe('Month-level LIHTC delay', () => {
+    const federalLIHTCCredits = [
+      0.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.5,
+    ];
+
+    it('delay=6: Year 1 LIHTC = 50% of schedule[0]', () => {
+      const result = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 0,
+        taxBenefitDelayMonths: 6,
+        federalLIHTCCredits,
+      });
+
+      expect(result.cashFlows[0].federalLIHTCCredit).toBeCloseTo(federalLIHTCCredits[0] * 0.5, 6);
+    });
+
+    it('delay=12: Year 1 LIHTC = 0, Year 2 = schedule[0]', () => {
+      const result = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 0,
+        taxBenefitDelayMonths: 12,
+        federalLIHTCCredits,
+      });
+
+      expect(result.cashFlows[0].federalLIHTCCredit).toBe(0);
+      expect(result.cashFlows[1].federalLIHTCCredit).toBeCloseTo(federalLIHTCCredits[0], 6);
+    });
+  });
+
+  describe('Construction + delay combined', () => {
+    it('constructionMonths=24, delay=6: Year 3 depreciationBenefit = 50% of PIS', () => {
+      const pisBaseline = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 24,
+        taxBenefitDelayMonths: 0,
+      });
+
+      const delayed = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 24,
+        taxBenefitDelayMonths: 6,
+      });
+
+      // Year 3 is PIS year. With delay=6, only 50% of Year 3 earned benefit lands in Year 3
+      expect(delayed.cashFlows[2].taxBenefit).toBeCloseTo(pisBaseline.cashFlows[2].taxBenefit * 0.5, 2);
+    });
+
+    it('constructionMonths=24, delay=6: Year 3 LIHTC = 50% of schedule[0]', () => {
+      const federalLIHTCCredits = [0.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.5];
+      const result = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 24,
+        taxBenefitDelayMonths: 6,
+        federalLIHTCCredits,
+      });
+
+      // PIS = Year 3, schedule[0]=0.5 earned Year 3, 50% realized Year 3, 50% Year 4
+      expect(result.cashFlows[2].federalLIHTCCredit).toBeCloseTo(federalLIHTCCredits[0] * 0.5, 6);
+    });
+  });
+
+  describe('IRR impact of delay', () => {
+    it('delay=6 IRR < delay=0 IRR (time-value cost reflected)', () => {
+      const noDelay = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 0,
+        taxBenefitDelayMonths: 0,
+      });
+
+      const withDelay = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 0,
+        taxBenefitDelayMonths: 6,
+      });
+
+      // Delay reduces IRR because benefits arrive later
+      expect(withDelay.irr).toBeLessThan(noDelay.irr);
+    });
+
+    it('delay=6: computed hold period extends to capture all LIHTC credits (no loss)', () => {
+      // With computed hold period, delay=6 extends holdFromPIS from 10 to 11,
+      // so the extra year captures any spillover — no credits are lost.
+      const lihtcCredits = [0.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.5];
+
+      const noDelay = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 0,
+        taxBenefitDelayMonths: 0,
+        holdPeriod: 10,
+        federalLIHTCCredits: lihtcCredits,
+      });
+
+      const withDelay = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 0,
+        taxBenefitDelayMonths: 6,
+        holdPeriod: 10,
+        federalLIHTCCredits: lihtcCredits,
+      });
+
+      // computeHoldPeriod(1, 0, 6) => holdFromPIS = 10 + 0 + 1 = 11
+      // The hold extends to year 11, capturing all spillover credits.
+      const totalNoDelay = noDelay.cashFlows.reduce((sum, cf) => sum + (cf.federalLIHTCCredit || 0), 0);
+      const totalWithDelay = withDelay.cashFlows.reduce((sum, cf) => sum + (cf.federalLIHTCCredit || 0), 0);
+      // With extended hold, delayed scenario captures at least as many credits as no-delay
+      expect(totalWithDelay).toBeGreaterThanOrEqual(totalNoDelay);
+    });
+  });
+
+  describe('OZ 10-year qualification with construction', () => {
+    it('constructionMonths=24, ozEnabled: OZ benefits present (totalInvestmentYears=13)', () => {
+      const result = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 24,
+        holdPeriod: 8, // ignored — engine computes hold period internally
+        ozEnabled: true,
+        deferredCapitalGains: 5, // $5M deferred gains for OZ
+      });
+
+      // computeHoldPeriod(1, 24, 0) => holdFromPIS=10, totalInvestmentYears=13
+      expect(result.cashFlows.length).toBe(13);
+      // totalInvestmentYears=12 >= 10 → OZ qualifies
+      const ozTotal = (result.ozDeferralNPV || 0) + (result.ozExitAppreciation || 0);
+      expect(ozTotal).toBeGreaterThan(0);
+    });
+
+    it('ozEnabled=false, constructionMonths=24: no OZ exit benefits regardless of hold period', () => {
+      // With computed hold period, totalInvestmentYears is always >= 10 for standard
+      // scenarios (holdFromPIS=10 minimum). To verify no-OZ behavior, disable ozEnabled.
+      const result = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 24,
+        holdPeriod: 7, // ignored — engine computes hold period internally
+        ozEnabled: false,
+        deferredCapitalGains: 5,
+      });
+
+      // OZ disabled → no OZ exit benefits
+      expect(result.ozDeferralNPV || 0).toBe(0);
+      expect(result.ozExitAppreciation || 0).toBe(0);
+    });
+  });
+
+  describe('AUM fee and philanthropic PIK timing', () => {
+    it('constructionMonths=24, AUM enabled: aumFeeBase=0 in Years 1-3, accrues in Year 4', () => {
+      const result = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 24,
+        aumFeeEnabled: true,
+        aumFeeRate: 1.5,
+      });
+
+      // AUM fee base starts year > placedInServiceYear (year > 3)
+      // aumFeeAccrued captures the PIK portion (fee is calculated but deferred)
+      expect(result.cashFlows[0].aumFeeAccrued).toBe(0); // Year 1: construction
+      expect(result.cashFlows[1].aumFeeAccrued).toBe(0); // Year 2: construction
+      expect(result.cashFlows[2].aumFeeAccrued).toBe(0); // Year 3: PIS year (no AUM yet)
+      expect(result.cashFlows[3].aumFeeAccrued).toBeGreaterThan(0); // Year 4: AUM starts
+    });
+
+    it('constructionMonths=24, phil current pay: PIK-only through PIS year', () => {
+      // Use correct param names (philanthropicDebtPct/Rate) and high phil debt
+      const result = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 24,
+        philanthropicDebtPct: 30,
+        philanthropicDebtRate: 7,
+        seniorDebtPct: 30,
+        philCurrentPayEnabled: true,
+        philCurrentPayPct: 50,
+      });
+
+      // During construction: hardDebtService = 0 (no debt at all)
+      expect(result.cashFlows[0].hardDebtService ?? 0).toBe(0); // Year 1: construction
+      expect(result.cashFlows[1].hardDebtService ?? 0).toBe(0); // Year 2: construction
+
+      // Year 3 (PIS): senior debt starts, phil is PIK-only (year <= placedInServiceYear)
+      // Year 4: phil current pay kicks in → total hardDebtService increases
+      const year3DS = result.cashFlows[2].hardDebtService ?? 0;
+      const year4DS = result.cashFlows[3].hardDebtService ?? 0;
+
+      expect(year3DS).toBeGreaterThan(0); // Senior debt service present
+      // Year 4 debt service includes senior + phil current pay, so higher than Year 3 (senior only)
+      expect(year4DS).toBeGreaterThan(year3DS);
+    });
+
+    it('constructionMonths=0, AUM: accrued=0 in Year 1, > 0 in Year 2 (regression guard)', () => {
+      const result = calculateFullInvestorAnalysis({
+        ...baseParams,
+        constructionDelayMonths: 0,
+        aumFeeEnabled: true,
+        aumFeeRate: 1.5,
+      });
+
+      // year > placedInServiceYear = year > 1, so Year 1 = 0, Year 2 > 0
+      expect(result.cashFlows[0].aumFeeAccrued).toBe(0);
+      expect(result.cashFlows[1].aumFeeAccrued).toBeGreaterThan(0);
     });
   });
 

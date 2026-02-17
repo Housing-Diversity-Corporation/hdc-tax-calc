@@ -36,6 +36,7 @@ export const calculateHDCAnalysis = (params: HDCCalculationParams): HDCAnalysisR
     pikCurrentPayEnabled: paramPikCurrentPayEnabled = false,
     pikCurrentPayPct: paramPikCurrentPayPct = 50,
     holdPeriod: paramHoldPeriod = 10,
+    constructionDelayMonths: paramConstructionDelayMonths = 0,
     aumFeeEnabled: _paramAumFeeEnabled = false, // Now obtained from investor cash flows
     aumFeeRate: _paramAumFeeRate = 1.5, // Now obtained from investor cash flows
     philCurrentPayEnabled: paramPhilCurrentPayEnabled = false,
@@ -48,8 +49,12 @@ export const calculateHDCAnalysis = (params: HDCCalculationParams): HDCAnalysisR
     investorSubDebtPikRate: paramInvestorSubDebtPikRate = 8,
     investorPikCurrentPayEnabled: paramInvestorPikCurrentPayEnabled = false,
     investorPikCurrentPayPct: paramInvestorPikCurrentPayPct = 50,
-    investorCashFlows: paramInvestorCashFlows = []
+    investorCashFlows: paramInvestorCashFlows = [],
+    exitMonth: paramExitMonth = 12 // IMPL-087: Month of exit/disposition
   } = params;
+
+  // IMPL-087: Disposition year proration constant
+  const dispositionFraction = paramExitMonth / 12;
 
   const hdcPromoteShare = 100 - paramInvestorPromoteShare;
   
@@ -142,9 +147,13 @@ export const calculateHDCAnalysis = (params: HDCCalculationParams): HDCAnalysisR
   // When current pay is disabled, all interest accrues as PIK (no payments)
   // When current pay is enabled, a portion of interest is paid currently, rest accrues as PIK
 
+  // Construction delay gating — consistent with investor engine (calculations.ts)
+  const constructionDelayYears = Math.floor(paramConstructionDelayMonths / 12);
+  const placedInServiceYear = constructionDelayYears + 1;
+
   const hdcCashFlows: HDCCashFlowItem[] = [];
   // ISS-068c: Direct NOI growth - no longer tracking revenue/expenses separately
-  let currentNOI = paramYearOneNOI;
+  let currentNOI = 1 < placedInServiceYear ? 0 : paramYearOneNOI;
   let cumulativeReturns = 0;
   let hdcPikAccumulatedInterest = 0;
   let hdcPikBalance = hdcSubDebtPrincipal; // Track PIK balance for compound interest
@@ -184,45 +193,59 @@ export const calculateHDCAnalysis = (params: HDCCalculationParams): HDCAnalysisR
 
   // Years 2 through hold period
   for (let year = 2; year <= paramHoldPeriod; year++) {
-    // ISS-068c: Direct NOI growth
-    currentNOI *= (1 + paramNoiGrowthRate / 100);
+    // Construction gating — consistent with investor engine (calculations.ts)
+    if (year < placedInServiceYear) {
+      currentNOI = 0;
+    } else if (year === placedInServiceYear) {
+      currentNOI = paramYearOneNOI;
+    } else {
+      // ISS-068c: Direct NOI growth (only post-PIS)
+      currentNOI *= (1 + paramNoiGrowthRate / 100);
+    }
+
+    // IMPL-087: Disposition year proration for NOI display
+    const isDispositionYear = year === paramHoldPeriod;
+    const effectiveNOI = isDispositionYear ? currentNOI * dispositionFraction : currentNOI;
 
     // Handle philanthropic debt service calculation (always interest-only)
     let hdcPhilDebtServiceThisYear = 0;
     if (hdcPhilDebtAmount > 0 && hdcPhilDebtRate > 0) {
       // Calculate interest on total outstanding balance (principal + accumulated PIK)
       const hdcPhilTotalBalance = hdcPhilDebtAmount + hdcPhilPikBalance;
-      const hdcPhilFullInterest = hdcPhilTotalBalance * hdcPhilDebtRate;
+      // IMPL-087: Prorate in disposition year
+      const hdcPhilFullInterest = hdcPhilTotalBalance * hdcPhilDebtRate
+        * (isDispositionYear ? dispositionFraction : 1);
 
-      if (!paramPhilCurrentPayEnabled) {
-        // Current pay disabled: All interest accrues as PIK (no payment)
-        hdcPhilPikBalance += hdcPhilFullInterest;
-        hdcPhilDebtServiceThisYear = 0;
-      } else if (year === 1) {
-        // Year 1 with current pay: Full interest accrues to PIK, no payment
+      if (!paramPhilCurrentPayEnabled || year < placedInServiceYear) {
+        // Current pay disabled OR construction: All interest accrues as PIK (no payment)
         hdcPhilPikBalance += hdcPhilFullInterest;
         hdcPhilDebtServiceThisYear = 0;
       } else {
-        // Years 2+ with current pay: Pay current portion, rest accrues
+        // Post-construction with current pay: Pay current portion, rest accrues
         const hdcPhilCurrentPay = hdcPhilFullInterest * (paramPhilCurrentPayPct / 100);
         const hdcPhilPIKAccrued = hdcPhilFullInterest - hdcPhilCurrentPay;
         hdcPhilPikBalance += hdcPhilPIKAccrued;
         hdcPhilDebtServiceThisYear = hdcPhilCurrentPay;
       }
     }
-    
+
     // Calculate Outside Investor current pay for DSCR inclusion
     let outsideInvestorCurrentPayForDSCR = 0;
     if (paramOutsideInvestorSubDebtPct > 0 && outsideInvestorPikBalance > 0) {
-      const outsideInvestorFullInterest = outsideInvestorPikBalance * (paramOutsideInvestorSubDebtPikRate / 100);
-      if (paramOutsideInvestorPikCurrentPayEnabled && year > 1) {
+      // IMPL-087: Prorate in disposition year
+      const outsideInvestorFullInterest = outsideInvestorPikBalance * (paramOutsideInvestorSubDebtPikRate / 100)
+        * (isDispositionYear ? dispositionFraction : 1);
+      if (paramOutsideInvestorPikCurrentPayEnabled && year >= placedInServiceYear) {
         outsideInvestorCurrentPayForDSCR = outsideInvestorFullInterest * (paramOutsideInvestorPikCurrentPayPct / 100);
       }
     }
 
-    // Include Outside Investor current pay in total debt service for accurate DSCR
-    const debtServicePayments = hdcAnnualseniorDebtService + hdcPhilDebtServiceThisYear + outsideInvestorCurrentPayForDSCR;
-    const cashAfterDebtService = Math.max(0, currentNOI - debtServicePayments);
+    // During construction: no debt service (no income to service debt)
+    // IMPL-087: Prorate senior debt in disposition year
+    let seniorDebtServiceThisYear = year < placedInServiceYear ? 0 : hdcAnnualseniorDebtService;
+    if (isDispositionYear) seniorDebtServiceThisYear *= dispositionFraction;
+    const debtServicePayments = seniorDebtServiceThisYear + hdcPhilDebtServiceThisYear + outsideInvestorCurrentPayForDSCR;
+    const cashAfterDebtService = Math.max(0, effectiveNOI - debtServicePayments);
     
     // Get AUM fee values from investor cash flows (calculated in main engine)
     const investorCashFlowForYear = paramInvestorCashFlows[year - 1];
@@ -286,7 +309,9 @@ export const calculateHDCAnalysis = (params: HDCCalculationParams): HDCAnalysisR
     let hdcSubDebtPIKAccrued = 0;
     
     if (paramHdcSubDebtPct > 0) {
-      const hdcFullInterest = hdcPikBalance * (paramHdcSubDebtPikRate / 100);
+      // IMPL-087: Prorate in disposition year
+      const hdcFullInterest = hdcPikBalance * (paramHdcSubDebtPikRate / 100)
+        * (isDispositionYear ? dispositionFraction : 1);
       if (paramPikCurrentPayEnabled) {
         hdcSubDebtCurrentPayIncome = hdcFullInterest * (paramPikCurrentPayPct / 100);
         hdcSubDebtPIKAccrued = hdcFullInterest - hdcSubDebtCurrentPayIncome;
@@ -303,7 +328,9 @@ export const calculateHDCAnalysis = (params: HDCCalculationParams): HDCAnalysisR
 
     // Compound Outside Investor Sub-Debt PIK
     if (paramOutsideInvestorSubDebtPct > 0) {
-      const outsideInvestorFullInterest = outsideInvestorPikBalance * (paramOutsideInvestorSubDebtPikRate / 100);
+      // IMPL-087: Prorate in disposition year
+      const outsideInvestorFullInterest = outsideInvestorPikBalance * (paramOutsideInvestorSubDebtPikRate / 100)
+        * (isDispositionYear ? dispositionFraction : 1);
       if (paramOutsideInvestorPikCurrentPayEnabled) {
         const outsideInvestorCurrentPay = outsideInvestorFullInterest * (paramOutsideInvestorPikCurrentPayPct / 100);
         const outsideInvestorPIKAccrued = outsideInvestorFullInterest - outsideInvestorCurrentPay;
@@ -316,13 +343,13 @@ export const calculateHDCAnalysis = (params: HDCCalculationParams): HDCAnalysisR
     const totalCashFlow = aumFeeIncome + hdcSubDebtCurrentPayIncome + hdcPromoteShareOfCF;
     cumulativeReturns += totalCashFlow;
 
-    // Calculate DSCR (Debt Service Coverage Ratio)
-    const dscr = debtServicePayments > 0 ? currentNOI / debtServicePayments : 0;
+    // Calculate DSCR (Debt Service Coverage Ratio) — use effectiveNOI (prorated in disposition year)
+    const dscr = debtServicePayments > 0 ? effectiveNOI / debtServicePayments : 0;
 
     // Get deferred HDC tax benefit fee from investor cash flows for this year
     hdcCashFlows.push({
       year,
-      noi: currentNOI,
+      noi: effectiveNOI,
       debtServicePayments,
       cashAfterDebtService,
       aumFeeAmount,
@@ -342,12 +369,17 @@ export const calculateHDCAnalysis = (params: HDCCalculationParams): HDCAnalysisR
     });
   }
 
-  // Exit calculations
-  const finalYearNOI = hdcCashFlows[paramHoldPeriod - 1].noi;
-  const exitValue = finalYearNOI / (paramExitCapRate / 100);
+  // Exit calculations — IMPL-087: Trailing 12-month NOI for fallback exit valuation
+  // Note: grossExitProceeds from investor engine (line 392) is preferred when available
+  const dispositionYearNOI = hdcCashFlows[paramHoldPeriod - 1].noi;
+  const dispositionYearAnnualNOI = dispositionFraction > 0 ? dispositionYearNOI / dispositionFraction : dispositionYearNOI;
+  const priorYearNOI = paramHoldPeriod >= 2 ? hdcCashFlows[paramHoldPeriod - 2].noi : dispositionYearAnnualNOI;
+  const trailingNOI = (priorYearNOI * (12 - paramExitMonth) / 12) + (dispositionYearAnnualNOI * paramExitMonth / 12);
+  const exitValue = trailingNOI / (paramExitCapRate / 100);
   
-  // Calculate remaining senior debt based on amortization
-  const seniorDebtPaidOffRatio = Math.min(1, paramHoldPeriod / hdcSeniorDebtAmortYears);
+  // Calculate remaining senior debt based on amortization (only operational years service debt)
+  const operationalYears = paramHoldPeriod - constructionDelayYears;
+  const seniorDebtPaidOffRatio = Math.min(1, operationalYears / hdcSeniorDebtAmortYears);
   const remainingSeniorDebt = hdcSeniorDebtAmount * (1 - seniorDebtPaidOffRatio);
   
   // Philanthropic debt is always interest-only, so remaining balance is always principal + accumulated PIK

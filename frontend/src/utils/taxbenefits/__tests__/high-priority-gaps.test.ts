@@ -36,6 +36,7 @@ function createBaseParams(overrides = {}) {
     hdcFee: 0.5,
     taxBenefitDelayMonths: 0,
     constructionDelayMonths: 0,
+    placedInServiceMonth: 1,
     ozEnabled: true,
     ozType: 'standard',
     deferredCapitalGains: 10,
@@ -160,8 +161,8 @@ describe('HIGH PRIORITY Gaps - Previously Untested', () => {
                        result.investorSubDebtAtExit +
                        (result.outsideInvestorSubDebtAtExit || 0);
 
-      // Exit value calculation
-      const finalNOI = result.investorCashFlows[params.holdPeriod - 1].noi;
+      // Exit value calculation (IMPL-087: +1 disposition year, use last cash flow)
+      const finalNOI = result.investorCashFlows[result.investorCashFlows.length - 1].noi;
       const exitValue = finalNOI / (params.exitCapRate / 100);
 
       // Gross proceeds should equal exit value minus all debt

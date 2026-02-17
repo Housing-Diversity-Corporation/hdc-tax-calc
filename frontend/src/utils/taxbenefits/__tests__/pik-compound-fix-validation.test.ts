@@ -48,19 +48,20 @@ describe('PIK Compound Interest Fix Validation', () => {
         investorPikCurrentPayPct: 0,
         aumFeeEnabled: false,
         aumFeeRate: 0,
-        constructionDelayMonths: 0
+        constructionDelayMonths: 0,
+        placedInServiceMonth: 1
       };
-      
+
       const results = calculateFullInvestorAnalysis(params);
-      
+
       const principal = 1000000;
       const rate = 0.10;
-      const years = 9;
-      
+      const years = 10;
+
       // WRONG: Simple interest calculation (old bug)
       const simpleInterest = principal * rate * years;
       const simpleInterestTotal = principal + simpleInterest;
-      
+
       // CORRECT: Compound interest calculation (fixed)
       const compoundInterestTotal = principal * Math.pow(1 + rate, years);
       
@@ -152,31 +153,32 @@ describe('PIK Compound Interest Fix Validation', () => {
         investorPikCurrentPayPct: 0,
         aumFeeEnabled: false,
         aumFeeRate: 0,
-        constructionDelayMonths: 0
+        constructionDelayMonths: 0,
+        placedInServiceMonth: 1
       };
-      
+
       const results = calculateFullInvestorAnalysis(params);
-      
+
       // Manual year-by-year compound calculation
       let balance = 1000000;
       const rate = 0.08;
       const expectedBalances = [balance]; // Year 1 (no accrual)
-      
-      for (let year = 2; year <= 10; year++) {
+
+      for (let year = 2; year <= 11; year++) {
         balance = balance * (1 + rate);
         expectedBalances.push(balance);
       }
-      
+
       console.log('\nYear-by-Year PIK Balance Verification:');
       console.log('Starting Principal: $1,000,000 at 8% PIK\n');
       console.log('Year | Expected Balance | Interest This Year | Cumulative Interest');
       console.log('-----|------------------|-------------------|--------------------');
-      
+
       expectedBalances.forEach((balance, idx) => {
         const year = idx + 1;
         const interestThisYear = idx === 0 ? 0 : balance - expectedBalances[idx - 1];
         const cumulativeInterest = balance - 1000000;
-        
+
         console.log(
           `${year.toString().padStart(4)} | ` +
           `$${balance.toFixed(0).padStart(15)} | ` +
@@ -184,12 +186,12 @@ describe('PIK Compound Interest Fix Validation', () => {
           `$${cumulativeInterest.toFixed(0).padStart(18)}`
         );
       });
-      
+
       console.log('\nActual Final Balance:', results.subDebtAtExit);
-      console.log('Expected Final Balance:', expectedBalances[9]);
-      
+      console.log('Expected Final Balance:', expectedBalances[10]);
+
       // Should be close to expected compound balance (within reasonable tolerance)
-      const finalExpected = expectedBalances[9];
+      const finalExpected = expectedBalances[10];
       const tolerance = finalExpected * 0.1; // 10% tolerance
       expect(results.subDebtAtExit).toBeGreaterThan(finalExpected * 0.9);
       expect(results.subDebtAtExit).toBeLessThan(finalExpected * 1.1);
@@ -235,11 +237,12 @@ describe('PIK Compound Interest Fix Validation', () => {
         investorPikCurrentPayPct: 0,
         aumFeeEnabled: false,
         aumFeeRate: 0,
-        constructionDelayMonths: 0
+        constructionDelayMonths: 0,
+        placedInServiceMonth: 1
       };
-      
+
       const results = calculateFullInvestorAnalysis(params);
-      
+
       console.log('\nPartial Current Pay Compounding Test:');
       console.log('Principal: $1,000,000');
       console.log('Total Rate: 10%');
@@ -256,23 +259,23 @@ describe('PIK Compound Interest Fix Validation', () => {
       // Remove unused variables
       
       console.log('Expected behavior each year:');
-      for (let year = 2; year <= 10; year++) {
+      for (let year = 2; year <= 11; year++) {
         const fullInterest = pikBalance * fullRate;
         const currentPay = fullInterest * 0.40;
         const pikAccrual = fullInterest * 0.60;
         pikBalance += pikAccrual;
-        
+
         console.log(`Year ${year}: Interest Due: $${fullInterest.toFixed(0)}, Current Pay: $${currentPay.toFixed(0)}, PIK Accrual: $${pikAccrual.toFixed(0)}, New Balance: $${pikBalance.toFixed(0)}`);
       }
-      
+
       console.log('\nActual Final Balance:', results.subDebtAtExit);
       console.log('Expected Approximate Balance:', pikBalance);
-      
+
       // Should be less than full PIK but more than principal
-      const fullPikBalance = 1000000 * Math.pow(1.10, 9);
+      const fullPikBalance = 1000000 * Math.pow(1.10, 10);
       expect(results.subDebtAtExit).toBeLessThan(fullPikBalance);
       expect(results.subDebtAtExit).toBeGreaterThan(1000000);
-      
+
       // Should be reasonably close to our manual calculation (with adjustment factor)
       expect(results.subDebtAtExit).toBeCloseTo(pikBalance * 1.1, 1);
     });
@@ -311,18 +314,19 @@ describe('PIK Compound Interest Fix Validation', () => {
         investorPikCurrentPayEnabled: false,
         investorPikCurrentPayPct: 0,
         aumFeeEnabled: true,
-        aumFeeRate: 1.5
+        aumFeeRate: 1.5,
+        placedInServiceMonth: 1
       };
-      
+
       const results = calculateFullInvestorAnalysis(params);
-      
-      // Expected compound calculation for $500K at 8% over 9 years
-      const expectedPikBalance = 500000 * Math.pow(1.08, 9);
-      
+
+      // Expected compound calculation for $500K at 8% over 10 years
+      const expectedPikBalance = 500000 * Math.pow(1.08, 10);
+
       console.log('\nReal-World $10M Project Scenario:');
       console.log('Project Cost: $10,000,000');
       console.log('HDC Sub-debt: $500,000 at 8% PIK');
-      console.log('Hold Period: 10 years (9 years of PIK accrual)');
+      console.log('Hold Period: 11 years (10 years of PIK accrual)');
       console.log('');
       console.log('Expected PIK Balance at Exit: $', expectedPikBalance.toFixed(2));
       console.log('Actual PIK Balance at Exit: $', results.subDebtAtExit.toFixed(2));
@@ -373,20 +377,22 @@ describe('PIK Compound Interest Fix Validation', () => {
         seniorDebtRate: 5,
         philanthropicDebtRate: 0,
         seniorDebtAmortization: 30,
-        philDebtAmortization: 40
+        philDebtAmortization: 40,
+        placedInServiceMonth: 1
       };
-      
+
       const results = calculateHDCAnalysis(params);
-      
+
+      // HDC analysis uses holdPeriod directly (10), PIK compounds for 9 years
       const expectedBalance = 1000000 * Math.pow(1.08, 9);
-      
+
       console.log('\nHDC Analysis PIK Validation:');
       console.log('HDC Sub-debt Principal: $1,000,000');
       console.log('PIK Rate: 8%');
       console.log('Expected Balance at Exit:', expectedBalance);
       console.log('Actual HDC Sub-debt Repayment:', results.hdcSubDebtRepayment);
       console.log('HDC PIK Accrued:', results.hdcSubDebtPIKAccrued);
-      
+
       // Should match compound calculation
       expect(results.hdcSubDebtRepayment).toBeCloseTo(expectedBalance, -1);
     });

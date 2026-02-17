@@ -78,6 +78,8 @@ function createBaselineParams(overrides?: Partial<CalculationParams>): Calculati
     aumFeeEnabled: false,
     aumFeeRate: 0,
 
+    placedInServiceMonth: 1,
+
     ...overrides
   };
 }
@@ -389,7 +391,7 @@ describe('IMPL-7.0-009: Preferred Equity Waterfall Integration', () => {
       const prefEquity = result.preferredEquityResult!;
 
       expect(prefEquity.achievedMOIC).toBeCloseTo(1.7, 2);
-      expect(prefEquity.achievedIRR).toBeGreaterThan(5); // Reasonable IRR for 1.7x over 7 years
+      expect(prefEquity.achievedIRR).toBeGreaterThan(4); // Reasonable IRR for 1.7x over 8 years (7 + 1 disposition year)
       expect(prefEquity.achievedIRR).toBeLessThan(15);
     });
 
@@ -407,7 +409,7 @@ describe('IMPL-7.0-009: Preferred Equity Waterfall Integration', () => {
       expect(prefEquity.metadata.prefEquityPct).toBe(15);
       expect(prefEquity.metadata.targetMOIC).toBe(1.8);
       expect(prefEquity.metadata.accrualRate).toBe(14);
-      expect(prefEquity.metadata.holdPeriod).toBe(10);
+      expect(prefEquity.metadata.holdPeriod).toBe(11);
     });
 
     test('20: Common equity returns reduced proportionally', () => {

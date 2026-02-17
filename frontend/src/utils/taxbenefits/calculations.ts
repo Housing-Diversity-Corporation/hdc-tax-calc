@@ -10,6 +10,7 @@ import { calculateInterestReserve } from './interestReserveCalculation';
 import { calculateSCurve, STANDARD_STEEPNESS } from './sCurveUtility';
 import { calculateDepreciableBasis } from './depreciableBasisUtility';
 import { getOzStepUpPercent } from './constants';
+import { computeHoldPeriod } from './computeHoldPeriod';
 
 // Import new tax planning modules
 import { buildDepreciationSchedule } from './depreciationSchedule';
@@ -167,6 +168,7 @@ export const calculateFullInvestorAnalysis = (
     yearOneNOI: paramYearOneNOI,
     yearOneDepreciationPct: paramYearOneDepreciationPct = 0,
     placedInServiceMonth: paramPlacedInServiceMonth = 7,
+    exitMonth: paramExitMonth = 12, // IMPL-087: Month of exit/disposition (1-12)
     // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
     noiGrowthRate: paramNoiGrowthRate = 3,
     exitCapRate: paramExitCapRate,
@@ -464,20 +466,34 @@ export const calculateFullInvestorAnalysis = (
   let accumulatedAumPIK = 0; // Track intentional PIK portion (not subject to catch-up)
   let accumulatedAumCurrentPayDeferred = 0; // Track deferred current pay portion (subject to catch-up)
 
-  // Calculate tax benefit delay impact
-  const benefitsStartYear = Math.floor(paramTaxBenefitDelayMonths / 12) + 1;
-  const partialYearMonths = paramTaxBenefitDelayMonths > 0 ? (12 - (paramTaxBenefitDelayMonths % 12)) : 12;
+  // ISS-064: Calculate placed-in-service year outside the loop (constant for entire calculation)
+  const constructionDelayYears = Math.floor(paramConstructionDelayMonths / 12);
+  const placedInServiceYear = constructionDelayYears + 1; // Building placed in service after construction
+  // Hold period computed from LIHTC credit exhaustion + K-1 delay (not user-editable)
+  const { holdFromPIS, totalInvestmentYears } = computeHoldPeriod(
+    paramPlacedInServiceMonth,
+    paramConstructionDelayMonths,
+    paramTaxBenefitDelayMonths
+  );
 
-  // Track deferred tax benefits that will be realized later
-  const deferredTaxBenefits: number[] = new Array(paramHoldPeriod + 1).fill(0);
+  // IMPL-087: Disposition year proration constants
+  const dispositionFraction = paramExitMonth / 12;
+  const macrsFraction = (paramExitMonth - 0.5) / 12; // IRC §168(d)(2) mid-month convention
+
+  // Benefit delay shift constants (month-level K-1 delivery lag)
+  const delayFullYears = Math.floor(paramTaxBenefitDelayMonths / 12);
+  const delayFraction = (paramTaxBenefitDelayMonths % 12) / 12;
+
+  // Pending benefit arrays — earned benefits scheduled here with delay offset,
+  // then realized each year. Index = year - 1 (0-indexed).
+  // Extra slots for spillover that falls past exit (truncated = lost to investor).
+  const pendingDepBenefits = new Array(totalInvestmentYears + delayFullYears + 2).fill(0);
+  const pendingFedLIHTC = new Array(totalInvestmentYears + delayFullYears + 2).fill(0);
+  const pendingStateLIHTC = new Array(totalInvestmentYears + delayFullYears + 2).fill(0);
 
   // Track interest reserve balance for lease-up period
   let interestReserveBalance = interestReserveAmount;
   const interestReservePeriodYears = Math.ceil(interestReserveMonths / 12);
-
-  // ISS-064: Calculate placed-in-service year outside the loop (constant for entire calculation)
-  const constructionDelayYears = Math.floor(paramConstructionDelayMonths / 12);
-  const placedInServiceYear = constructionDelayYears + 1; // Building placed in service after construction
 
   // ISS-064: Anchor lease-up period to placed-in-service year, not Year 1
   // Lease-up runs from placedInServiceYear through (placedInServiceYear + interestReservePeriodYears - 1)
@@ -487,7 +503,8 @@ export const calculateFullInvestorAnalysis = (
   console.log('[ISS-070k] About to generate cash flows with:', {
     paramYearOneNOI,
     'params.seniorDebtPct': params.seniorDebtPct,
-    paramHoldPeriod,
+    totalInvestmentYears,
+    holdFromPIS,
     currentNOI,
     baseSeniorDebtAmount,
     basePhilDebtAmount,
@@ -498,7 +515,7 @@ export const calculateFullInvestorAnalysis = (
     paramConstructionDelayMonths,
   });
 
-  for (let year = 1; year <= paramHoldPeriod; year++) {
+  for (let year = 1; year <= totalInvestmentYears; year++) {
     // ISS-070L: Trace inside loop to find where NOI becomes zero
     if (year === 1) {
       console.log('[ISS-070L] Year 1 loop entry:', {
@@ -614,6 +631,14 @@ export const calculateFullInvestorAnalysis = (
       effectiveNOI = currentNOI * effectiveOccupancy;
     }
 
+    // IMPL-087: Store annualized NOI BEFORE prorating (used by trailing 12-month exit valuation)
+    const annualizedNOI = effectiveNOI;
+
+    // IMPL-087: Disposition year proration — only prorate cash received, not growth base
+    if (year === totalInvestmentYears) {
+      effectiveNOI *= dispositionFraction;
+    }
+
     // ISS-070L: Log effectiveNOI after all branch logic
     if (year === 1) {
       console.log('[ISS-070L] Year 1 after NOI calculation:', {
@@ -720,6 +745,10 @@ export const calculateFullInvestorAnalysis = (
         // Subsequent years: Annual straight-line depreciation tax benefit
         // IMPL-041: Use straight-line rate (all states accept MACRS straight-line)
         const annualDepreciation = annualStraightLineDepreciation || 0;
+        // IMPL-087: Disposition year — IRC §168(d)(2) mid-month convention
+        const adjustedDepreciation = (year === totalInvestmentYears)
+          ? annualDepreciation * macrsFraction
+          : annualDepreciation;
         // ISS-070T: Compute default effective rate including NIIT (matches Excel formula)
         const federalRate = params.federalTaxRate || 37;
         const niitRate = params.niitRate || 3.8;
@@ -727,12 +756,12 @@ export const calculateFullInvestorAnalysis = (
         const defaultEffectiveRateMACRS = federalRate + niitRate + stateRate;
         const effectiveTaxRate = paramEffectiveTaxRateForStraightLine ?? (paramEffectiveTaxRate > 0 ? paramEffectiveTaxRate : defaultEffectiveRateMACRS);
 
-        if (annualDepreciation > 0 && effectiveTaxRate > 0) {
-          grossDepreciationTaxBenefit = annualDepreciation * (effectiveTaxRate / 100);
+        if (adjustedDepreciation > 0 && effectiveTaxRate > 0) {
+          grossDepreciationTaxBenefit = adjustedDepreciation * (effectiveTaxRate / 100);
           depreciationTaxBenefit = grossDepreciationTaxBenefit; // Full benefit to investor
 
           // IMPL-048: Track raw depreciation amount for OZ recapture avoided calculation
-          yearlyDepreciationAmount = annualDepreciation;
+          yearlyDepreciationAmount = adjustedDepreciation;
 
           // Validate tax benefits go 100% to investor, never split by promote
           validateTaxBenefitDistribution(
@@ -745,84 +774,8 @@ export const calculateFullInvestorAnalysis = (
       }
     }
 
-    // Tax benefits are realized based on tax delay from investment date
+    // Tax benefit realization — computed after DSCR/waterfall, applied via pending arrays
     let yearlyTaxBenefit = 0;
-
-    if (paramTaxBenefitDelayMonths === 0 && year >= placedInServiceYear) {
-      // No tax delay and building is in service - benefits realized when earned
-      yearlyTaxBenefit = depreciationTaxBenefit;
-    } else if (paramTaxBenefitDelayMonths > 0) {
-      // Tax benefits delayed from investment date
-      // IMPORTANT: Delays < 12 months only affect timing within the year, not the total amount
-      // The full benefit is still recognized in that tax year
-
-      if (paramTaxBenefitDelayMonths < 12) {
-        // Delay less than 1 year - FULL benefit received, just delayed
-        // For IRR purposes, model this as receiving benefit at mid-point of delay
-        // E.g., 6-month delay = benefit received at month 6 of Year 1
-        if (year === 1 && year >= placedInServiceYear) {
-          // Year 1 still gets the FULL benefit (investor files taxes and gets refund)
-          // The delay just affects WHEN in Year 1 they receive it
-          yearlyTaxBenefit = depreciationTaxBenefit;
-        } else if (year > 1 && year >= placedInServiceYear) {
-          yearlyTaxBenefit = depreciationTaxBenefit; // Normal depreciation for subsequent years
-        }
-      } else {
-        // Delay 12+ months - benefit pushed to later year
-        const taxBenefitStartYear = Math.ceil(paramTaxBenefitDelayMonths / 12);
-
-        if (year < taxBenefitStartYear) {
-          // Still in delay period
-          yearlyTaxBenefit = 0;
-        } else if (year >= taxBenefitStartYear && year >= placedInServiceYear) {
-          // After delay period and building in service - get full benefits
-          yearlyTaxBenefit = depreciationTaxBenefit;
-        }
-      }
-    }
-
-    // Handle HDC advance financing override
-    if (paramHdcAdvanceFinancing) {
-      if (year === 1) {
-        // With advance financing, investor gets immediate cash even if benefits are delayed
-        // Use shared utility function to ensure consistency
-        const depreciableBasis = calculateDepreciableBasis({
-          projectCost: paramProjectCost,
-          predevelopmentCosts: paramPredevelopmentCosts,
-          landValue: paramLandValue,
-          investorEquityPct: paramInvestorEquityPct,
-          interestReserve: interestReserveAmount
-        });
-
-        // Year 1 includes BOTH bonus depreciation AND partial straight-line (IRS MACRS)
-        const bonusDepreciation = depreciableBasis * (paramYearOneDepreciationPct / 100);
-        const remainingBasis = depreciableBasis - bonusDepreciation;
-        const annualMACRS = remainingBasis / 27.5;
-        const monthsInYear1 = 12.5 - paramPlacedInServiceMonth;
-        const year1MACRS = (monthsInYear1 / 12) * annualMACRS;
-
-        // IMPL-041: Apply split rates for state conformity in advance financing
-        // ISS-070T: Compute default effective rate including NIIT (matches Excel formula)
-        const federalRate = params.federalTaxRate || 37;
-        const niitRate = params.niitRate || 3.8;
-        const stateRate = params.stateTaxRate || 0;
-        const conformityRate = params.bonusConformityRate ?? 1;
-        const defaultEffectiveRateBonus = federalRate + niitRate + (stateRate * conformityRate);
-        const defaultEffectiveRateMACRS = federalRate + niitRate + stateRate;
-        const effectiveRateForBonus = paramEffectiveTaxRateForBonus ?? (paramEffectiveTaxRate > 0 ? paramEffectiveTaxRate : defaultEffectiveRateBonus);
-        const effectiveRateForMACRS = paramEffectiveTaxRateForStraightLine ?? (paramEffectiveTaxRate > 0 ? paramEffectiveTaxRate : defaultEffectiveRateMACRS);
-        const bonusTaxBenefit = bonusDepreciation * (effectiveRateForBonus / 100);
-        const macrsTaxBenefit = year1MACRS * (effectiveRateForMACRS / 100);
-        const year1GrossBenefit = bonusTaxBenefit + macrsTaxBenefit;
-
-        const hdcFee = year1GrossBenefit * (paramHdcFeeRate / 100);
-        yearlyTaxBenefit = year1GrossBenefit - hdcFee;
-        // TODO: Add financing cost calculation based on delay period
-      } else if (year <= Math.floor(paramTaxBenefitDelayMonths / 12)) {
-        // During delay period with advance financing
-        yearlyTaxBenefit = 0; // HDC already provided the advance
-      }
-    }
 
     // Handle philanthropic debt service calculation (always interest-only)
     let philDebtServiceThisYear = 0;
@@ -835,8 +788,8 @@ export const calculateFullInvestorAnalysis = (
         // Current pay disabled: All interest accrues as PIK (no payment)
         philPikBalance += philFullInterest;
         philDebtServiceThisYear = 0;
-      } else if (year === 1) {
-        // Year 1 with current pay: Full interest accrues to PIK, no payment
+      } else if (year <= placedInServiceYear) {
+        // Construction + PIS year with current pay: Full interest accrues to PIK, no payment
         philPikBalance += philFullInterest;
         philDebtServiceThisYear = 0;
       } else {
@@ -853,7 +806,9 @@ export const calculateFullInvestorAnalysis = (
     let outsideInvestorCurrentPayDue = 0;
     let outsideInvestorSubDebtPIKAccrued = 0;
     if (paramOutsideInvestorSubDebtPct > 0 && outsideInvestorPikBalance > 0) {
-      const outsideInvestorFullInterest = outsideInvestorPikBalance * (paramOutsideInvestorSubDebtPikRate / 100);
+      // IMPL-087: Prorate by dispositionFraction in disposition year
+      const outsideInvestorFullInterest = outsideInvestorPikBalance * (paramOutsideInvestorSubDebtPikRate / 100)
+        * (year === totalInvestmentYears ? dispositionFraction : 1);
       if (paramOutsideInvestorPikCurrentPayEnabled) {
         outsideInvestorCurrentPayDue = outsideInvestorFullInterest * (paramOutsideInvestorPikCurrentPayPct / 100);
         outsideInvestorSubDebtPIKAccrued = outsideInvestorFullInterest - outsideInvestorCurrentPayDue;
@@ -867,7 +822,9 @@ export const calculateFullInvestorAnalysis = (
     let hdcDebtFundCurrentPayDue = 0;
     let hdcDebtFundPIKAccrued = 0;
     if (paramHdcDebtFundPct > 0 && hdcDebtFundPikBalance > 0) {
-      const hdcDebtFundFullInterest = hdcDebtFundPikBalance * (paramHdcDebtFundPikRate / 100);
+      // IMPL-087: Prorate by dispositionFraction in disposition year
+      const hdcDebtFundFullInterest = hdcDebtFundPikBalance * (paramHdcDebtFundPikRate / 100)
+        * (year === totalInvestmentYears ? dispositionFraction : 1);
       if (paramHdcDebtFundCurrentPayEnabled && year > interestReservePeriodYears) {
         hdcDebtFundCurrentPayDue = hdcDebtFundFullInterest * (paramHdcDebtFundCurrentPayPct / 100);
         hdcDebtFundPIKAccrued = hdcDebtFundFullInterest - hdcDebtFundCurrentPayDue;
@@ -880,7 +837,9 @@ export const calculateFullInvestorAnalysis = (
     let hdcSubDebtCurrentPayDue = 0;
     let hdcSubDebtPIKAccrued = 0;
     if (paramHdcSubDebtPct > 0 && hdcPikBalance > 0) {
-      const hdcFullInterest = hdcPikBalance * (paramHdcSubDebtPikRate / 100);
+      // IMPL-087: Prorate by dispositionFraction in disposition year
+      const hdcFullInterest = hdcPikBalance * (paramHdcSubDebtPikRate / 100)
+        * (year === totalInvestmentYears ? dispositionFraction : 1);
       // CRITICAL FIX: Use interest reserve period, not hard-coded year > 1
       // Current pay begins only after property is stabilized (interest reserve period ends)
       if (paramPikCurrentPayEnabled && year > interestReservePeriodYears) {
@@ -895,7 +854,9 @@ export const calculateFullInvestorAnalysis = (
     let investorSubDebtCurrentPayDue = 0;
     let investorSubDebtPIKAccrued = 0;
     if (paramInvestorSubDebtPct > 0 && investorPikBalance > 0) {
-      const investorFullInterest = investorPikBalance * (paramInvestorSubDebtPikRate / 100);
+      // IMPL-087: Prorate by dispositionFraction in disposition year
+      const investorFullInterest = investorPikBalance * (paramInvestorSubDebtPikRate / 100)
+        * (year === totalInvestmentYears ? dispositionFraction : 1);
       // CRITICAL FIX: Use interest reserve period, not hard-coded year > 1
       // Current pay begins only after property is stabilized (interest reserve period ends)
       if (paramInvestorPikCurrentPayEnabled && year > interestReservePeriodYears) {
@@ -920,6 +881,8 @@ export const calculateFullInvestorAnalysis = (
       const isInIOPeriod = (year >= placedInServiceYear && year < ioEndYear);
       annualSeniorDebtService = isInIOPeriod ? annualSeniorDebtIOPayment : annualSeniorDebtPIPayment;
     }
+    // IMPL-087: Disposition year proration
+    if (year === totalInvestmentYears) annualSeniorDebtService *= dispositionFraction;
 
     // Step 1.6: Calculate PAB Debt Service (IMPL-080)
     // PAB is pari passu with Senior Debt (both "must pay")
@@ -929,6 +892,8 @@ export const calculateFullInvestorAnalysis = (
       const isInPabIOPeriod = year < pabIoEndYear;
       annualPabDebtService = isInPabIOPeriod ? annualPabIOPayment : annualPabPIPayment;
     }
+    // IMPL-087: Disposition year proration
+    if (year === totalInvestmentYears) annualPabDebtService *= dispositionFraction;
 
     // Step 2: Calculate HARD DEBT service (for DSCR - Senior + PAB + Phil current pay)
     // This is used for cash management and targets 1.05x
@@ -1005,8 +970,9 @@ export const calculateFullInvestorAnalysis = (
     let investorSubDebtInterestReceived = 0;
 
     // Calculate HDC AUM fee with current pay option
-    const aumFeeBase = (paramAumFeeEnabled && year > 1) ?
-      effectiveProjectCost * (paramAumFeeRate / 100) : 0;
+    // IMPL-087: Prorate by dispositionFraction in disposition year
+    const aumFeeBase = (paramAumFeeEnabled && year > placedInServiceYear) ?
+      effectiveProjectCost * (paramAumFeeRate / 100) * (year === totalInvestmentYears ? dispositionFraction : 1) : 0;
 
     if (year === 2 && paramAumFeeEnabled) {
       console.log('💰 AUM Fee Calculation Year 2:', {
@@ -1344,40 +1310,20 @@ export const calculateFullInvestorAnalysis = (
     // Investor gets full tax benefit (no HDC fee)
     depreciationTaxBenefit = grossDepreciationTaxBenefit;
 
-    // Update yearlyTaxBenefit based on timing
-    if (paramTaxBenefitDelayMonths === 0 && year >= placedInServiceYear) {
-      // No tax delay and building is in service - benefits realized when earned
-      yearlyTaxBenefit = depreciationTaxBenefit;
-
-    } else if (paramTaxBenefitDelayMonths > 0) {
-      // Tax benefits delayed from investment date
-      // IMPORTANT: Delays < 12 months only affect timing within the year, not the total amount
-      // The full benefit is still recognized in that tax year
-
-      if (paramTaxBenefitDelayMonths < 12) {
-        // Delay less than 1 year - FULL benefit received, just delayed
-        // For IRR purposes, model this as receiving benefit at mid-point of delay
-        // E.g., 6-month delay = benefit received at month 6 of Year 1
-        if (year === 1 && year >= placedInServiceYear) {
-          // Year 1 still gets the FULL benefit (investor files taxes and gets refund)
-          // The delay just affects WHEN in Year 1 they receive it
-          yearlyTaxBenefit = depreciationTaxBenefit;
-        } else if (year > 1 && year >= placedInServiceYear) {
-          yearlyTaxBenefit = depreciationTaxBenefit; // Normal depreciation for subsequent years
-        }
-      } else {
-        // Delay 12+ months - benefit pushed to later year
-        const taxBenefitStartYear = Math.ceil(paramTaxBenefitDelayMonths / 12);
-
-        if (year < taxBenefitStartYear) {
-          // Still in delay period
-          yearlyTaxBenefit = 0;
-        } else if (year >= taxBenefitStartYear && year >= placedInServiceYear) {
-          // After delay period and building in service - get full benefits
-          yearlyTaxBenefit = depreciationTaxBenefit;
-        }
+    // Schedule earned depreciation benefit into pending array with delay shift
+    // Construction gating already zeros depreciationTaxBenefit for year < placedInServiceYear
+    // Skip scheduling when advance financing covers Year 1 (HDC fronts it directly)
+    const advanceFinancingCoversThisYear = paramHdcAdvanceFinancing && year === 1;
+    if (!advanceFinancingCoversThisYear) {
+      const depTargetIdx = (year - 1) + delayFullYears;
+      pendingDepBenefits[depTargetIdx] += depreciationTaxBenefit * (1 - delayFraction);
+      if (delayFraction > 0) {
+        pendingDepBenefits[depTargetIdx + 1] += depreciationTaxBenefit * delayFraction;
       }
     }
+
+    // Realize this year's pending depreciation benefits (includes spillover from prior years)
+    yearlyTaxBenefit = pendingDepBenefits[year - 1];
 
     // Handle HDC advance financing override (after DSCR adjustment)
     if (paramHdcAdvanceFinancing) {
@@ -1576,28 +1522,50 @@ export const calculateFullInvestorAnalysis = (
     }
 
     // State LIHTC Credit for direct use path (IMPL-018)
-    // Only add credits for direct_use path (in-state investor with 100% syndication rate)
-    // Credits follow 11-year schedule matching federal LIHTC pattern
-    let stateLIHTCCredit = 0;
+    // State LIHTC earned credits (construction gating already applied)
+    let earnedStateLIHTCCredit = 0;
     if (paramStateLIHTCIntegration?.creditPath === 'direct_use' &&
-        year <= 11 &&
+        year >= placedInServiceYear &&
         paramStateLIHTCIntegration.yearlyCredits) {
-      stateLIHTCCredit = paramStateLIHTCIntegration.yearlyCredits[year - 1] || 0;
+      const creditYear = year - placedInServiceYear; // 0-indexed from PIS
+      if (creditYear < paramStateLIHTCIntegration.yearlyCredits.length) {
+        earnedStateLIHTCCredit = paramStateLIHTCIntegration.yearlyCredits[creditYear] || 0;
+      }
     }
 
-    // Federal LIHTC Credit (IMPL-021b)
+    // Schedule state LIHTC into pending array with delay shift
+    const stateLIHTCTargetIdx = (year - 1) + delayFullYears;
+    pendingStateLIHTC[stateLIHTCTargetIdx] += earnedStateLIHTCCredit * (1 - delayFraction);
+    if (delayFraction > 0) {
+      pendingStateLIHTC[stateLIHTCTargetIdx + 1] += earnedStateLIHTCCredit * delayFraction;
+    }
+    const stateLIHTCCredit = pendingStateLIHTC[year - 1] || 0;
+
+    // Federal LIHTC earned credits (IMPL-021b)
     // Credits go 100% to investor (like depreciation tax benefits, no promote split)
     // 11-year schedule: Year 1 prorated, Years 2-10 full, Year 11 catch-up
-    let federalLIHTCCredit = 0;
-    if (paramFederalLIHTCCredits && paramFederalLIHTCCredits.length > 0 && year <= 11) {
-      federalLIHTCCredit = paramFederalLIHTCCredits[year - 1] || 0;
+    // Construction gating: credits begin at placedInServiceYear (matching depreciation pattern)
+    let earnedFedLIHTCCredit = 0;
+    if (paramFederalLIHTCCredits && paramFederalLIHTCCredits.length > 0 && year >= placedInServiceYear) {
+      const creditYear = year - placedInServiceYear; // 0-indexed from PIS
+      if (creditYear < paramFederalLIHTCCredits.length) {
+        earnedFedLIHTCCredit = paramFederalLIHTCCredits[creditYear] || 0;
+      }
     }
+
+    // Schedule federal LIHTC into pending array with delay shift
+    const fedLIHTCTargetIdx = (year - 1) + delayFullYears;
+    pendingFedLIHTC[fedLIHTCTargetIdx] += earnedFedLIHTCCredit * (1 - delayFraction);
+    if (delayFraction > 0) {
+      pendingFedLIHTC[fedLIHTCTargetIdx + 1] += earnedFedLIHTCCredit * delayFraction;
+    }
+    const federalLIHTCCredit = pendingFedLIHTC[year - 1] || 0;
 
     // IMPL-048: Calculate OZ recapture avoided for this year
     // For OZ investors with 10+ year holds, they avoid 25% federal recapture tax on depreciation
     // This benefit accrues each year as depreciation is taken (not as a lump sum at exit)
     let ozRecaptureAvoided = 0;
-    if (params.ozEnabled && paramHoldPeriod >= 10 && yearlyDepreciationAmount > 0) {
+    if (params.ozEnabled && totalInvestmentYears >= 10 && yearlyDepreciationAmount > 0) {
       // 25% federal recapture rate applies to the depreciation amount
       ozRecaptureAvoided = yearlyDepreciationAmount * 0.25;
     }
@@ -1654,6 +1622,7 @@ export const calculateFullInvestorAnalysis = (
     investorCashFlows.push({
       year,
       noi: effectiveNOI,
+      annualizedNOI, // IMPL-087: Pre-proration NOI for trailing 12-month exit valuation
       effectiveOccupancy,
       interestReserveDraw,
       interestReserveBalance,
@@ -1713,16 +1682,25 @@ export const calculateFullInvestorAnalysis = (
     });
   }
 
-  const finalYearNOI = investorCashFlows[paramHoldPeriod - 1].noi;
-  const exitValue = finalYearNOI / (paramExitCapRate / 100);
+  // IMPL-087: Trailing 12-month NOI for exit valuation
+  // Read annualized NOI directly from CashFlowItem (stored pre-proration in Change 5)
+  const dispositionYearAnnualNOI = investorCashFlows[totalInvestmentYears - 1].annualizedNOI
+    ?? investorCashFlows[totalInvestmentYears - 1].noi;
+  const priorYearNOI = totalInvestmentYears >= 2
+    ? (investorCashFlows[totalInvestmentYears - 2].annualizedNOI ?? investorCashFlows[totalInvestmentYears - 2].noi)
+    : dispositionYearAnnualNOI;
+  const trailingNOI = (priorYearNOI * (12 - paramExitMonth) / 12) + (dispositionYearAnnualNOI * paramExitMonth / 12);
+  const exitValue = trailingNOI / (paramExitCapRate / 100);
 
   // Calculate remaining senior debt accounting for IO period
   // During IO period: no principal payments, balance remains at seniorDebtAmount
   // After IO period: calculate remaining balance based on P&I payments made
   // Note: placedInServiceYear is already calculated at the start of the function
+  // IMPL-087: Account for partial disposition year in P&I payment count
   const ioEndYear = placedInServiceYear + seniorDebtIOYears;
-  const yearsOfPIPayments = Math.max(0, paramHoldPeriod - (ioEndYear - 1));
-  const monthsOfPIPayments = yearsOfPIPayments * 12;
+  const fullPIYears = Math.max(0, (totalInvestmentYears - 1) - (ioEndYear - 1)); // exclude partial dispo year
+  const partialPIMonths = (totalInvestmentYears > ioEndYear - 1) ? paramExitMonth : 0;
+  const monthsOfPIPayments = fullPIYears * 12 + partialPIMonths;
 
   const remainingSeniorDebt = monthsOfPIPayments > 0
     ? calculateRemainingBalance(seniorDebtAmount, seniorDebtRate, seniorDebtAmortYears, monthsOfPIPayments)
@@ -1756,7 +1734,7 @@ export const calculateFullInvestorAnalysis = (
       prefEquityTargetIRR: 12, // Required by module but not used for MOIC calc
       prefEquityAccrualRate: params.prefEquityAccrualRate || 12,
       prefEquityOzEligible: params.prefEquityOzEligible, // Note: matches CalculationParams interface
-      holdPeriod: paramHoldPeriod,
+      holdPeriod: totalInvestmentYears,
       totalCapitalization: effectiveProjectCost
     }, proceedsAfterHardDebt);
 
@@ -1813,7 +1791,7 @@ export const calculateFullInvestorAnalysis = (
     // Calculate specific recommendations
     const targetFeeReduction = exitShortfall * 1.2; // 20% buffer
     const recommendedAumRate = paramAumFeeEnabled && accumulatedAumFees > 0
-      ? Math.max(0, paramAumFeeRate - (targetFeeReduction / (effectiveProjectCost * (paramHoldPeriod - 1)) * 100))
+      ? Math.max(0, paramAumFeeRate - (targetFeeReduction / (effectiveProjectCost * (totalInvestmentYears - 1)) * 100))
       : paramAumFeeRate;
 
     console.error('🚨 CRITICAL: HDC Fees Exceed Exit Proceeds - Deal Structure Needs Adjustment', {
@@ -1830,7 +1808,7 @@ export const calculateFullInvestorAnalysis = (
         operationalChanges: [
           '• Enable AUM Current Pay (reduces compounding)',
           '• Enable AUM Current Pay at 100% (eliminates deferrals)',
-          `• Reduce hold period from ${paramHoldPeriod} to ${Math.max(5, paramHoldPeriod - 2)} years`,
+          `• Reduce construction period or K-1 delay to shorten computed hold (currently ${totalInvestmentYears} years)`,
           '• Improve exit value (lower cap rate or higher NOI growth)'
         ]
       },
@@ -1867,17 +1845,17 @@ export const calculateFullInvestorAnalysis = (
   let remainingFederalLIHTC = 0;
   let remainingStateLIHTC = 0;
 
-  if (paramFederalLIHTCCredits && paramFederalLIHTCCredits.length > paramHoldPeriod) {
-    // Sum any credits from Year holdPeriod+1 through end of array
-    for (let i = paramHoldPeriod; i < paramFederalLIHTCCredits.length; i++) {
+  if (paramFederalLIHTCCredits && paramFederalLIHTCCredits.length > holdFromPIS) {
+    // Sum any credits from Year holdFromPIS+1 through end of array
+    for (let i = holdFromPIS; i < paramFederalLIHTCCredits.length; i++) {
       remainingFederalLIHTC += paramFederalLIHTCCredits[i] || 0;
     }
   }
 
   if (paramStateLIHTCIntegration?.creditPath === 'direct_use' &&
       paramStateLIHTCIntegration.yearlyCredits &&
-      paramStateLIHTCIntegration.yearlyCredits.length > paramHoldPeriod) {
-    for (let i = paramHoldPeriod; i < paramStateLIHTCIntegration.yearlyCredits.length; i++) {
+      paramStateLIHTCIntegration.yearlyCredits.length > holdFromPIS) {
+    for (let i = holdFromPIS; i < paramStateLIHTCIntegration.yearlyCredits.length; i++) {
       remainingStateLIHTC += paramStateLIHTCIntegration.yearlyCredits[i] || 0;
     }
   }
@@ -1899,7 +1877,7 @@ export const calculateFullInvestorAnalysis = (
   let ozDeferralNPV = 0;
   let ozExitAppreciation = 0;
 
-  if (params.ozEnabled && paramHoldPeriod >= 10) {
+  if (params.ozEnabled && totalInvestmentYears >= 10) {
     // B) Deferral NPV: Time value of deferring capital gains tax for 5 years (8% discount rate)
     const ozDeferredGains = params.deferredCapitalGains || 0;
     const ltCapitalGainsRate = params.ltCapitalGainsRate || 20;
@@ -1961,7 +1939,7 @@ export const calculateFullInvestorAnalysis = (
   const exitOnlyOzBenefits = ozDeferralNPV + ozExitAppreciation;
   const totalReturns = cumulativeReturns + exitProceeds + investorSubDebtAtExit + exitOnlyOzBenefits + remainingLIHTCCredits;
   const multiple = totalInvestment > 0 ? totalReturns / totalInvestment : 0;
-  const irr = calculateIRR(cashFlowArray, totalInvestment, paramHoldPeriod);
+  const irr = calculateIRR(cashFlowArray, totalInvestment, totalInvestmentYears);
 
 
   // Calculate total cost of outside investor debt
@@ -1999,7 +1977,7 @@ export const calculateFullInvestorAnalysis = (
     unleveragedROE: 0, // Placeholder - would need specific calculation
     exitFees: 0, // Placeholder - would need to add exit fees calculation
     equityMultiple: multiple,
-    holdPeriod: paramHoldPeriod,
+    holdPeriod: totalInvestmentYears,
     interestReserveAmount: interestReserveAmount,
     investorEquity: investorEquity, // CRITICAL: Single source of truth for investor equity (used by UI)
     syndicatedEquityOffset: syndicatedEquityOffset, // IMPL-074: Used to reduce net equity for MOIC/IRR
@@ -2076,7 +2054,7 @@ export const calculateFullInvestorAnalysis = (
       const appreciationGain = Math.max(0, exitProceeds - investorEquity);
 
       const exitEvent: ExitEvent = {
-        year: paramHoldPeriod,
+        year: totalInvestmentYears,
         exitProceeds,
         cumulativeDepreciation,
         recaptureExposure,

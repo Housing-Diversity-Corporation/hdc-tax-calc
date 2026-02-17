@@ -64,6 +64,7 @@ describe('HDC Waterfall Comprehensive Tests', () => {
     // Timing
     constructionDelayMonths: 0,
     taxBenefitDelayMonths: 0,
+    placedInServiceMonth: 1,
 
     // OZ Settings
     ozType: undefined,
@@ -86,7 +87,7 @@ describe('HDC Waterfall Comprehensive Tests', () => {
 
       // Verify basic structure
       expect(results).toBeDefined();
-      expect(results.investorCashFlows).toHaveLength(10);
+      expect(results.investorCashFlows).toHaveLength(11);
       expect(results.investorIRR).toBeGreaterThan(0);
       expect(results.multiple).toBeGreaterThan(1);
 

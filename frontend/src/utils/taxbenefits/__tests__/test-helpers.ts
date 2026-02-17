@@ -184,6 +184,8 @@ export function getDefaultTestParams(overrides: Partial<CalculationParams> = {})
     constructionDelayMonths: 0,
     taxBenefitDelayMonths: 0,
     holdPeriod: 10,
+    placedInServiceMonth: 1, // January PIS → computeHoldPeriod(1, 0, 0) = 11 (10 credit years + 1 disposition)
+    exitMonth: 12,           // IMPL-087: December exit → dispositionFraction = 1.0 (backward compatible)
 
     // Opportunity Zone
     ozEnabled: true, // Default OZ enabled

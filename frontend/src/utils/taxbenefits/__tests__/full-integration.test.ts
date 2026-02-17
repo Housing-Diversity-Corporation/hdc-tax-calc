@@ -56,6 +56,8 @@ describe('Complete 10-Year Integration Test', () => {
       interestReserveMonths: 6,
       taxBenefitDelayMonths: 0,
     constructionDelayMonths: 0,
+      placedInServiceMonth: 1,
+
       // OZ settings
       ozEnabled: true,
       ozType: 'standard',
@@ -237,7 +239,8 @@ describe('Complete 10-Year Integration Test', () => {
       hdcFeeRate: 0,
       hdcFee: 1,
       taxBenefitDelayMonths: 24, // 2-year delay
-    constructionDelayMonths: 0,      aumFeeRate: 2.5, // High AUM fee
+    constructionDelayMonths: 0,      placedInServiceMonth: 1,
+      aumFeeRate: 2.5, // High AUM fee
       ozEnabled: true,
       ozType: 'rural', // 30% step-up
       deferredCapitalGains: 10,
@@ -256,8 +259,9 @@ describe('Complete 10-Year Integration Test', () => {
     const result = calculateFullInvestorAnalysis(edgeCaseParams);
 
     // Should handle edge cases without errors
+    // computeHoldPeriod(1, 0, 24) = 10 + 2 + 0 + 1 (disposition) = 13 (24-month delay adds 2 years)
     expect(result).toBeDefined();
-    expect(result.investorCashFlows.length).toBe(10);
+    expect(result.investorCashFlows.length).toBe(13);
 
     // May have negative returns
     console.log('\nEDGE CASE RESULTS:');

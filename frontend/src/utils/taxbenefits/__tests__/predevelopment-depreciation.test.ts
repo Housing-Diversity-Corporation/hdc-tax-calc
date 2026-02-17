@@ -194,12 +194,12 @@ describe('Predevelopment Costs - Depreciable Basis Integration Tests', () => {
       const year1CashFlow = results.investorCashFlows[0];
       expect(year1CashFlow.taxBenefit).toBeCloseTo(expectedYear1Benefit, 0);
 
-      // Year 2 should get straight-line depreciation (not affected by delay, which was only for Year 1 advance)
-      // The delay affects advance financing timing, but depreciation continues normally
-      const expectedAnnualDepreciation = annualMACRS;
-      const expectedYear2Benefit = expectedAnnualDepreciation * 0.45;
+      // Year 2 with delay=18 (delayFullYears=1, delayFraction=0.5):
+      // Year 1 was advance-financed (not scheduled into pending array)
+      // Year 2's earned benefit → 50% to Year 3, 50% to Year 4
+      // So Year 2 realizes 0 from pending array
       const year2CashFlow = results.investorCashFlows[1];
-      expect(year2CashFlow.taxBenefit).toBeCloseTo(expectedYear2Benefit, 0);
+      expect(year2CashFlow.taxBenefit).toBe(0);
     });
   });
 

@@ -58,7 +58,7 @@ export function extractDealBenefitProfile(
   // Current year fallback for pisYear (pisYear does NOT exist on CalculationParams)
   const currentYear = new Date().getFullYear();
   const fundYear = inputs.fundEntryYear || currentYear;
-  const holdPeriod = inputs.holdPeriod || 10;
+  const holdPeriod = results.holdPeriod || inputs.holdPeriod || 10;
 
   return {
     // Identity

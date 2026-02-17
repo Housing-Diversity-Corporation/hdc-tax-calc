@@ -118,9 +118,10 @@ const DistributableCashFlowTable: React.FC<DistributableCashFlowTableProps> = ({
             </tr>
           </thead>
           <tbody>
-            {investorCashFlows.slice(0, holdPeriod).map((cf, index) => {
+            {investorCashFlows.map((cf, index) => {
               const year = index + 1;
               const isConstruction = year < placedInServiceYear;
+              const isDisposition = year === investorCashFlows.length; // IMPL-087
 
               // IMPL-020a: Use pre-calculated values from calculation engine
               // All waterfall calculations now come from CashFlowItem (single source of truth)
@@ -156,7 +157,7 @@ const DistributableCashFlowTable: React.FC<DistributableCashFlowTableProps> = ({
 
               return (
                 <tr key={year} className="border-b">
-                  <td className="p-1">{year}</td>
+                  <td className="p-1">{year}{isDisposition && <span style={{color: '#999', fontSize: '0.75em', marginLeft: '2px'}}>(exit)</span>}</td>
                   <td className="text-right p-1">
                     {isConstruction ? (
                       <span style={{color: '#999', fontSize: '0.85em'}}>construction</span>
@@ -240,12 +241,12 @@ const DistributableCashFlowTable: React.FC<DistributableCashFlowTableProps> = ({
               <td className="text-right p-1">-</td>
               <td className="text-right p-1">
                 {formatCashFlowMillions(
-                  investorCashFlows.slice(0, holdPeriod).reduce((sum, cf) => sum + cf.noi, 0)
+                  investorCashFlows.reduce((sum, cf) => sum + cf.noi, 0)
                 )}
               </td>
               <td className="text-right p-1">
                 {formatCashFlowMillions(
-                  investorCashFlows.slice(0, holdPeriod).reduce((sum, cf) => {
+                  investorCashFlows.reduce((sum, cf) => {
                     return sum + (cf.hardDebtService || 0);
                   }, 0)
                 )}
@@ -254,7 +255,7 @@ const DistributableCashFlowTable: React.FC<DistributableCashFlowTableProps> = ({
               <td className="text-right p-1">-</td>
               <td className="text-right p-1">
                 {formatCashFlowMillions(
-                  investorCashFlows.slice(0, holdPeriod).reduce((sum, cf) => {
+                  investorCashFlows.reduce((sum, cf) => {
                     // IMPL-020a: Use pre-calculated gross sub-debt from engine
                     return sum + (cf.totalSubDebtInterestGross || 0);
                   }, 0)
@@ -264,13 +265,13 @@ const DistributableCashFlowTable: React.FC<DistributableCashFlowTableProps> = ({
               <td className="text-right p-1">-</td>
               <td className="text-right p-1">
                 {formatCashFlowMillions(
-                  investorCashFlows.slice(0, holdPeriod).reduce((sum, cf) => sum + (0), 0)
+                  investorCashFlows.reduce((sum, cf) => sum + (0), 0)
                 )}
               </td>
               {hasTaxDeferrals && (
                 <td className="text-right p-1" style={{color: '#dc3545'}}>
                   {formatCashFlowMillions(
-                    investorCashFlows.slice(0, holdPeriod).reduce((sum, cf) => sum + (0), 0)
+                    investorCashFlows.reduce((sum, cf) => sum + (0), 0)
                   )}
                 </td>
               )}
@@ -278,13 +279,13 @@ const DistributableCashFlowTable: React.FC<DistributableCashFlowTableProps> = ({
                 <>
                   <td className="text-right p-1">
                     {formatCashFlowMillions(
-                      investorCashFlows.slice(0, holdPeriod).reduce((sum, cf) => sum + (cf.aumFeePaid || 0), 0)
+                      investorCashFlows.reduce((sum, cf) => sum + (cf.aumFeePaid || 0), 0)
                     )}
                   </td>
                   {hasAumDeferrals && (
                     <td className="text-right p-1" style={{color: '#dc3545'}}>
                       {formatCashFlowMillions(
-                        investorCashFlows.slice(0, holdPeriod).reduce((sum, cf) => sum + (cf.aumFeeAccrued || 0), 0)
+                        investorCashFlows.reduce((sum, cf) => sum + (cf.aumFeeAccrued || 0), 0)
                       )}
                     </td>
                   )}
@@ -294,7 +295,7 @@ const DistributableCashFlowTable: React.FC<DistributableCashFlowTableProps> = ({
               <td className="text-right p-1">-</td>
               <td className="text-right p-1 font-medium">
                 {formatCashFlowMillions(
-                  investorCashFlows.slice(0, holdPeriod).reduce((sum, cf) => sum + cf.cashAfterDebtAndFees, 0)
+                  investorCashFlows.reduce((sum, cf) => sum + cf.cashAfterDebtAndFees, 0)
                 )}
               </td>
             </tr>

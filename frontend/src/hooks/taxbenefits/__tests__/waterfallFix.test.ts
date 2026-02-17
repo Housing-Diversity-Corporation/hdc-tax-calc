@@ -13,7 +13,7 @@ describe('Waterfall Distribution Fix - Free Investment Analysis', () => {
     // ISS-068c: Single NOI growth rate
     noiGrowthRate: 3,
     exitCapRate: 6,
-    holdPeriod: 10,
+    totalInvestmentYears: 10,
     
     // Tax parameters - very high rates to create large benefits
     federalTaxRate: 37,

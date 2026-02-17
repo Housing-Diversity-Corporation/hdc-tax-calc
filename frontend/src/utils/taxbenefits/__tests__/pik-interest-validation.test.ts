@@ -51,9 +51,10 @@ describe('PIK Interest Compound Calculation Validation', () => {
         investorPikCurrentPayEnabled: false,
         investorPikCurrentPayPct: 0,
         aumFeeEnabled: false,
-        aumFeeRate: 0
+        aumFeeRate: 0,
+        placedInServiceMonth: 1
       };
-      
+
       const results = calculateFullInvestorAnalysis(params);
 
       console.log('PIK Test Results:');
@@ -63,10 +64,10 @@ describe('PIK Interest Compound Calculation Validation', () => {
       console.log('Final Balance:', results.subDebtAtExit);
 
       // Verify compound interest logic: final balance should be substantially higher than initial principal
-      // With 8% compounded over 9 years, balance should roughly double (1.08^9 ≈ 2.0)
+      // With 8% compounded over 10 years, balance should more than double (1.08^10 ≈ 2.16)
       const basePrincipal = projectCost * (hdcSubDebtPct / 100);
-      expect(results.subDebtAtExit).toBeGreaterThan(basePrincipal * 1.8); // At least 80% growth
-      expect(results.subDebtAtExit).toBeLessThan(basePrincipal * 2.3);    // But not more than 130% growth
+      expect(results.subDebtAtExit).toBeGreaterThan(basePrincipal * 2.0); // At least 100% growth
+      expect(results.subDebtAtExit).toBeLessThan(basePrincipal * 2.6);    // But not more than 160% growth
     });
 
     it('should handle partial current pay correctly', () => {
@@ -106,13 +107,14 @@ describe('PIK Interest Compound Calculation Validation', () => {
         investorPikCurrentPayEnabled: false,
         investorPikCurrentPayPct: 0,
         aumFeeEnabled: false,
-        aumFeeRate: 0
+        aumFeeRate: 0,
+        placedInServiceMonth: 1
       };
-      
+
       const results = calculateFullInvestorAnalysis(params);
 
       // Calculate full PIK balance (no current pay) for comparison
-      const fullPikBalance = calculateExpectedPIKBalance({...params, pikCurrentPayEnabled: false, pikCurrentPayPct: 0}, 9, 'hdc');
+      const fullPikBalance = calculateExpectedPIKBalance({...params, pikCurrentPayEnabled: false, pikCurrentPayPct: 0}, 10, 'hdc');
 
       console.log('Partial Current Pay Test:');
       console.log('Project Cost:', projectCost);
@@ -163,9 +165,10 @@ describe('PIK Interest Compound Calculation Validation', () => {
         investorPikCurrentPayEnabled: false,
         investorPikCurrentPayPct: 0,
         aumFeeEnabled: false,
-        aumFeeRate: 0
+        aumFeeRate: 0,
+        placedInServiceMonth: 1
       };
-      
+
       const results = calculateFullInvestorAnalysis(params);
 
       console.log('Year-by-Year Compound Test:');
@@ -174,10 +177,10 @@ describe('PIK Interest Compound Calculation Validation', () => {
       console.log('PIK Rate:', hdcSubDebtPikRate, '%');
       console.log('Final Balance:', results.subDebtAtExit);
 
-      // Verify year-by-year compound calculation: 10% over 9 years should be ~2.36x
+      // Verify year-by-year compound calculation: 10% over 10 years should be ~2.59x
       const basePrincipal = projectCost * (hdcSubDebtPct / 100);
-      expect(results.subDebtAtExit).toBeGreaterThan(basePrincipal * 2.2); // At least 2.2x
-      expect(results.subDebtAtExit).toBeLessThan(basePrincipal * 2.7);    // But less than 2.7x
+      expect(results.subDebtAtExit).toBeGreaterThan(basePrincipal * 2.4); // At least 2.4x
+      expect(results.subDebtAtExit).toBeLessThan(basePrincipal * 3.0);    // But less than 3.0x
     });
   });
 
@@ -218,9 +221,10 @@ describe('PIK Interest Compound Calculation Validation', () => {
         investorPikCurrentPayEnabled: false, // Full PIK
         investorPikCurrentPayPct: 0,
         aumFeeEnabled: false,
-        aumFeeRate: 0
+        aumFeeRate: 0,
+        placedInServiceMonth: 1
       };
-      
+
       const results = calculateFullInvestorAnalysis(params);
 
       console.log('Investor PIK Test:');
@@ -229,10 +233,10 @@ describe('PIK Interest Compound Calculation Validation', () => {
       console.log('PIK Rate:', investorSubDebtPikRate, '%');
       console.log('Final Balance:', results.investorSubDebtAtExit);
 
-      // Verify compound interest: 12% over 9 years should be ~2.77x (with Fix #1, slightly higher)
+      // Verify compound interest: 12% over 10 years should be ~3.11x (with Fix #1, slightly higher)
       const basePrincipal = projectCost * (investorSubDebtPct / 100);
-      expect(results.investorSubDebtAtExit).toBeGreaterThan(basePrincipal * 2.5); // At least 2.5x
-      expect(results.investorSubDebtAtExit).toBeLessThan(basePrincipal * 3.2);    // But less than 3.2x
+      expect(results.investorSubDebtAtExit).toBeGreaterThan(basePrincipal * 2.8); // At least 2.8x
+      expect(results.investorSubDebtAtExit).toBeLessThan(basePrincipal * 3.6);    // But less than 3.6x
     });
 
     it('should track cumulative PIK balance in cash flows', () => {
@@ -271,11 +275,12 @@ describe('PIK Interest Compound Calculation Validation', () => {
         investorPikCurrentPayEnabled: false,
         investorPikCurrentPayPct: 0,
         aumFeeEnabled: false,
-        aumFeeRate: 0
+        aumFeeRate: 0,
+        placedInServiceMonth: 1
       };
-      
+
       const results = calculateFullInvestorAnalysis(params);
-      
+
       console.log('Cash Flow PIK Tracking:');
       results.investorCashFlows.forEach((cf) => {
         console.log(`Year ${cf.year}:`,
@@ -320,6 +325,7 @@ describe('PIK Interest Compound Calculation Validation', () => {
         opexRatio: 35,
         holdPeriod: 10,
     constructionDelayMonths: 0,
+        placedInServiceMonth: 1,
         aumFeeEnabled: true,
         aumFeeRate: 2, // 2% AUM fee
         seniorDebtPct: 60,
@@ -365,10 +371,10 @@ describe('PIK Interest Compound Calculation Validation', () => {
       // FV(rate, nper, pmt, pv) where pmt = 0 for PIK
       
       const testCases = [
-        { principal: 1000000, rate: 0.08, years: 9 },
-        { principal: 500000, rate: 0.10, years: 9 },
-        { principal: 2000000, rate: 0.06, years: 9 },
-        { principal: 750000, rate: 0.12, years: 9 }
+        { principal: 1000000, rate: 0.08, years: 10 },
+        { principal: 500000, rate: 0.10, years: 10 },
+        { principal: 2000000, rate: 0.06, years: 10 },
+        { principal: 750000, rate: 0.12, years: 10 }
       ];
       
       testCases.forEach(({ principal, rate, years }) => {
@@ -403,7 +409,8 @@ describe('PIK Interest Compound Calculation Validation', () => {
           investorPikCurrentPayEnabled: false,
           investorPikCurrentPayPct: 0,
           aumFeeEnabled: false,
-          aumFeeRate: 0
+          aumFeeRate: 0,
+          placedInServiceMonth: 1
         };
 
         const results = calculateFullInvestorAnalysis(params);

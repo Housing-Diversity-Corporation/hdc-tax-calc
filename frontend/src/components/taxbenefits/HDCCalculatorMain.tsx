@@ -56,8 +56,9 @@ const HDCCalculatorMain = () => {
     hdcDebtFundCurrentPayPct, setHdcDebtFundCurrentPayPct,
     subDebtPriority, setSubDebtPriority,
 
-    // Projections
-    holdPeriod, setHoldPeriod,
+    // Projections — computed hold period (read-only)
+    totalInvestmentYears, holdFromPIS,
+    exitMonth, setExitMonth, // IMPL-087
     // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
     noiGrowthRate, setNoiGrowthRate,
     exitCapRate, setExitCapRate,
@@ -204,7 +205,8 @@ const HDCCalculatorMain = () => {
     landValue,
     yearOneNOI,
     yearOneDepreciationPct,
-    holdPeriod,
+    totalInvestmentYears,
+    exitMonth, // IMPL-087
     // ISS-068c: Single NOI growth rate
     noiGrowthRate,
     exitCapRate,
@@ -471,8 +473,10 @@ const HDCCalculatorMain = () => {
           setYearOneDepreciationPct={setYearOneDepreciationPct}
           yearOneNOI={yearOneNOI}
           setYearOneNOI={setYearOneNOI}
-          holdPeriod={holdPeriod}
-          setHoldPeriod={setHoldPeriod}
+          totalInvestmentYears={totalInvestmentYears}
+          holdFromPIS={holdFromPIS}
+          exitMonth={exitMonth}
+          setExitMonth={setExitMonth}
           noiGrowthRate={noiGrowthRate}
           setNoiGrowthRate={setNoiGrowthRate}
           exitCapRate={exitCapRate}
@@ -696,7 +700,7 @@ const HDCCalculatorMain = () => {
           yearOneDepreciation={calculations.yearOneDepreciation}
           annualStraightLineDepreciation={calculations.annualStraightLineDepreciation}
           years2to10Depreciation={calculations.years2to10Depreciation}
-          holdPeriod={holdPeriod}
+          holdPeriod={totalInvestmentYears}
           pikCurrentPayEnabled={pikCurrentPayEnabled}
           pikCurrentPayPct={pikCurrentPayPct}
           hdcSubDebtPikRate={hdcSubDebtPikRate}

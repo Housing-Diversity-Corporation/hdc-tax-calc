@@ -282,7 +282,7 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
           onClick={() => setIsExpanded(!isExpanded)}
         >
           <span style={{ marginRight: '0.5rem' }}>{isExpanded ? '▼' : '▶'}</span>
-          3. Tax Credits
+          4. Tax Credits
         </h3>
 
         {isExpanded && (
