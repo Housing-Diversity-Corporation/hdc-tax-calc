@@ -3,6 +3,7 @@ package com.hdc.hdc_map_backend.entity.taxBenefits;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "deal_conduit", schema = "tax_benefits")
@@ -53,6 +54,10 @@ public class DealConduit {
     @OneToOne(mappedBy = "dealConduit", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonUnwrapped
     private InputInvPortalSettings portalSettings;
+
+    @OneToMany(mappedBy = "dealConduit", cascade = CascadeType.ALL, orphanRemoval = true)
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private List<DealBenefitProfile> benefitProfiles;
 
     @PrePersist
     protected void onCreate() {

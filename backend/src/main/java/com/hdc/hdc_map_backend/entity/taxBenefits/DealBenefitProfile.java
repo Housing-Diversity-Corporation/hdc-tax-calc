@@ -17,6 +17,9 @@ public class DealBenefitProfile {
     @JoinColumn(name = "deal_conduit_id")
     private DealConduit dealConduit;
 
+    @OneToMany(mappedBy = "dealBenefitProfile", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PoolMembership> poolMemberships;
+
     // Unique extraction data
 
     @Column(name = "deal_name")
