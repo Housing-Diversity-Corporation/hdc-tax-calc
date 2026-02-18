@@ -123,7 +123,7 @@ export function buildInputsSheet(params: CalculationParams): SheetResult {
     { label: 'State Tax Rate (%)', rangeName: 'StateTaxRate', value: params.stateTaxRate || 0, units: '%' },
     { label: 'LT Capital Gains Rate (%)', rangeName: 'LTCapitalGainsRate', value: params.ltCapitalGainsRate || 20, units: '%' },
     { label: 'State Capital Gains Rate (%)', rangeName: 'StateCapitalGainsRate', value: params.stateCapitalGainsRate || 0, units: '%' },
-    { label: 'Depreciation Recapture Rate (%)', rangeName: 'DepreciationRecaptureRate', value: params.depreciationRecaptureRate || 25, units: '%' },
+    // IMPL-096: depreciationRecaptureRate removed — character-split rates in Exit Tax section
     { label: 'Cost Segregation (%)', rangeName: 'CostSegPct', value: params.yearOneDepreciationPct || 20, units: '%' },
     { label: 'Bonus Depreciation (%)', rangeName: 'BonusDepreciationPct', value: 100, units: '%' },
     { label: 'Include Depreciation Schedule', rangeName: 'IncludeDepreciationSchedule', value: params.includeDepreciationSchedule !== false ? 1 : 0, units: '0/1' },

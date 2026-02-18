@@ -43,6 +43,10 @@ export interface DepreciationSchedule {
   totalHDCFees: number;
   totalNetBenefit: number;
 
+  // IMPL-094: Character-split cumulative depreciation for exit tax engine
+  cumulative1245: number;  // costSegPct × depreciableBasis (100% bonus, all in Year 1)
+  cumulative1250: number;  // (1 - costSegPct) × cumulative straight-line depr through hold period
+
   // Key insights
   year1Spike: number;           // Year 1 depreciation amount
   averageAnnualBenefit: number; // Average over hold period
@@ -177,12 +181,20 @@ export function buildDepreciationSchedule(
   // Note: Break-even calculation is done in main calculations.ts to avoid duplication
   // The actual free investment analysis should come from the main calculator
 
+  // IMPL-094: Character-split cumulative depreciation for exit tax engine
+  // §1245 = cost segregation (100% bonus, all in Year 1)
+  // §1250 = straight-line depreciation through hold period
+  const cumulative1245 = costSegAmount; // All bonus depreciation is §1245 property
+  const cumulative1250 = schedule.reduce((sum, y) => sum + y.straightLineDepreciation, 0); // All SL is §1250
+
   return {
     schedule,
     totalDepreciation,
     totalTaxBenefit,
     totalHDCFees,
     totalNetBenefit,
+    cumulative1245,
+    cumulative1250,
     year1Spike: year1BonusDepreciation,
     averageAnnualBenefit: totalNetBenefit / Math.min(holdPeriod, schedule.length),
     breakEvenYear: 0, // This will be populated from main calculations

@@ -321,8 +321,9 @@ const InvestorProfileSection: React.FC<InvestorProfileSectionProps> = ({
                     />
                     <span className="hdc-input-label" style={{ marginBottom: 0 }}>§469(c)(7)(A)(ii) Grouping Election</span>
                   </label>
-                  <span style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem', marginLeft: '24px' }}>
-                    Treat all rental activities as a single activity
+                  <span style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem', marginLeft: '24px' }}
+                    title="Real Estate Professionals who elect under §469(c)(7) to aggregate all real estate activities may qualify for the §1411(c)(1)(A) trade or business exception, exempting their investment income from the 3.8% Net Investment Income Tax (NIIT). This reduces effective exit tax rates by 3.8% across all gain characters (§1245: 40.8% → 37%, §1250: 28.8% → 25%, LTCG: 23.8% → 20%).">
+                    Treat all rental activities as a single activity (NIIT exemption)
                   </span>
                 </div>
               )}

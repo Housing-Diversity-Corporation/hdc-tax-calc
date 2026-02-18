@@ -136,7 +136,6 @@ interface HDCInputsComponentProps {
   selectedState: string;
   stateCapitalGainsRate: number;
   setStateCapitalGainsRate: (value: number) => void;
-  depreciationRecaptureRate?: number;
   projectLocation?: string;
   setProjectLocation?: (value: string) => void;
 
@@ -1202,7 +1201,6 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           niitRate={props.niitRate}
           stateCapitalGainsRate={props.stateCapitalGainsRate}
           totalDepreciation={props.totalDepreciation}
-          depreciationRecaptureRate={props.depreciationRecaptureRate}
           isReadOnly={props.taxSectionReadOnly || props.isReadOnly}
         />
 

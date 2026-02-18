@@ -359,6 +359,7 @@ function deriveReturnComponents(
 
   // IMPL-031: OZ Benefits (tax-related)
   // IMPL-060: Add sub-components for dropdown breakdown
+  // IMPL-099: Update recapture avoidance to use character-split values from exitTaxAnalysis
   if (totalOzBenefits > 0) {
     // Build sub-components array (only non-zero values)
     const ozSubComponents: SubComponent[] = [];
@@ -402,6 +403,58 @@ function deriveReturnComponents(
       color: COMPONENT_COLORS.ozBenefits,
       category: 'tax',
       subComponents: ozSubComponents.length > 0 ? ozSubComponents : undefined,
+    });
+  }
+
+  // IMPL-099: Exit Tax Cost row (non-OZ investors only)
+  // For OZ 10+ year holds, netExitTax = $0, so this row won't appear
+  const exitTax = results.exitTaxAnalysis;
+  if (exitTax && exitTax.netExitTax > 0) {
+    const exitTaxSubComponents: SubComponent[] = [];
+
+    if (exitTax.sec1245Tax > 0) {
+      exitTaxSubComponents.push({
+        label: `§1245 Ordinary Recapture @ ${(exitTax.sec1245Rate * 100).toFixed(0)}%`,
+        value: -exitTax.sec1245Tax,
+        multiple: -exitTax.sec1245Tax / totalInvestment,
+      });
+    }
+    if (exitTax.sec1250Tax > 0) {
+      exitTaxSubComponents.push({
+        label: `§1250 Unrecaptured Gain @ ${(exitTax.sec1250Rate * 100).toFixed(0)}%`,
+        value: -exitTax.sec1250Tax,
+        multiple: -exitTax.sec1250Tax / totalInvestment,
+      });
+    }
+    if (exitTax.remainingGainTax > 0) {
+      exitTaxSubComponents.push({
+        label: `LTCG @ ${(exitTax.remainingGainRate * 100).toFixed(0)}%`,
+        value: -exitTax.remainingGainTax,
+        multiple: -exitTax.remainingGainTax / totalInvestment,
+      });
+    }
+    if (exitTax.niitTax > 0) {
+      exitTaxSubComponents.push({
+        label: 'NIIT (3.8%)',
+        value: -exitTax.niitTax,
+        multiple: -exitTax.niitTax / totalInvestment,
+      });
+    }
+    if (exitTax.stateExitTax > 0) {
+      exitTaxSubComponents.push({
+        label: 'State Exit Tax',
+        value: -exitTax.stateExitTax,
+        multiple: -exitTax.stateExitTax / totalInvestment,
+      });
+    }
+
+    components.push({
+      label: 'Exit Tax Cost',
+      value: -exitTax.netExitTax,
+      multiple: -exitTax.netExitTax / totalInvestment,
+      color: COMPONENT_COLORS.negative,
+      category: 'exit',
+      subComponents: exitTaxSubComponents.length > 0 ? exitTaxSubComponents : undefined,
     });
   }
 

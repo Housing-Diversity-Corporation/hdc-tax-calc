@@ -7,6 +7,41 @@ import { TaxUtilizationResult } from '../../utils/taxbenefits/investorTaxUtiliza
 export type { InvestorFitResult, FitWarning, Archetype, FitRating, BenefitTimingProfile } from '../../utils/taxbenefits/investorFit';
 export type { SizingResult, SizingPoint } from '../../utils/taxbenefits/investorSizing';
 
+// IMPL-094: Exit Tax Result — §5.12 character-split recapture engine output
+export interface ExitTaxResult {
+  // §1245 component
+  sec1245Recapture: number;       // §1245 ordinary income recapture base amount
+  sec1245Rate: number;            // Federal ordinary rate (typically 0.37)
+  sec1245Tax: number;             // sec1245Recapture × sec1245Rate
+
+  // §1250 component
+  sec1250Recapture: number;       // Unrecaptured §1250 gain base amount
+  sec1250Rate: number;            // 0.25 (statutory cap)
+  sec1250Tax: number;             // sec1250Recapture × sec1250Rate
+
+  // Appreciation gain (if exit above cost)
+  remainingGain: number;          // Gain after recapture (if any) — LTCG
+  remainingGainRate: number;      // Federal CG rate (0.20)
+  remainingGainTax: number;       // remainingGain × remainingGainRate
+
+  // NIIT — stacks on ALL gain characters for passive investors
+  niitRate: number;               // 0.038 per IRC §1411
+  niitTax: number;                // 0.038 × (all gain) when niitApplies; $0 when false
+
+  // Totals
+  totalFederalExitTax: number;    // sec1245Tax + sec1250Tax + remainingGainTax + niitTax
+
+  // State component
+  stateExitTax: number;           // Conformity-aware: $0 if OZ + conforming state
+  stateConformity: string;        // Conformity type used (audit trail)
+  totalExitTaxWithState: number;  // totalFederalExitTax + stateExitTax
+
+  // OZ overlay
+  ozExcludesRecapture: boolean;   // If OZ 10+ years, all recapture = $0 via basis step-up
+  ozExcludesAppreciation: boolean; // If OZ 10+ years, appreciation excluded
+  netExitTax: number;             // After OZ exclusions ($0 for OZ 10+ year hold)
+}
+
 export interface ConformingState {
   name: string;
   rate: number;
@@ -178,6 +213,7 @@ export interface InvestorAnalysisResults {
   iraConversionPlan?: IRAConversionPlan;
   assetSaleAnalysis?: AssetSaleAnalysis;
   taxUtilization?: TaxUtilizationResult;  // Phase A1: Tax utilization analysis (when income composition provided)
+  exitTaxAnalysis?: ExitTaxResult;         // IMPL-094: Character-split exit tax (§5.12)
 
   // Investment Portal specific fields
   investorUpfrontCash?: number;
@@ -418,7 +454,7 @@ export interface CalculationParams {
   niitRate?: number;                    // Net investment income tax
   stateCapitalGainsRate?: number;       // State capital gains rate
   selectedState?: string;               // Selected state code
-  depreciationRecaptureRate?: number;   // Depreciation recapture rate (default 25%)
+  // IMPL-096: depreciationRecaptureRate removed — rates derived inside calculateExitTax() from character split
   philanthropicEquityPct?: number;      // Philanthropic equity percentage (0-100%)
   investorEquityRatio?: number;         // Ratio of investor equity to total equity (0-100%)
   autoBalanceCapital?: boolean;         // Auto-balance capital structure
@@ -435,6 +471,7 @@ export interface CalculationParams {
   annualOrdinaryIncome?: number;        // W-2, active business, board fees
   annualPortfolioIncome?: number;       // Stock/crypto gains, dividends, interest
   groupingElection?: boolean;           // §469(c)(7)(A)(ii) election, REP only
+  niitApplies?: boolean;                // IMPL-096: NIIT applies (default true, false for territory/REP aggregation)
 
   // Fund/Pool Integration (Phase 0 - Spec v2.1 Section 6.1)
   fundEntryYear?: number;               // Calendar year deal enters the fund (for pool staggering)
@@ -736,7 +773,7 @@ export interface HDCResultsProps {
   ltCapitalGainsRate: number;
   niitRate: number;
   stateCapitalGainsRate: number;
-  depreciationRecaptureRate: number;
+  // IMPL-096: depreciationRecaptureRate removed from HDCResultsProps
   yearOneDepreciationPct: number;
   taxCalculationExpanded: boolean;
   setTaxCalculationExpanded: (value: boolean) => void;

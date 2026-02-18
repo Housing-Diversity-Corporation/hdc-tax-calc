@@ -1,8 +1,8 @@
 # Validation Scenario Tracker
 
-**Version:** 1.6
-**Last Updated:** 2026-02-14
-**Status:** 21 of 27 scenarios validated (78% Institutional Certification)
+**Version:** 1.7
+**Last Updated:** 2026-02-18
+**Status:** 24 of 30 scenarios validated (80% Institutional Certification)
 
 ---
 
@@ -164,6 +164,28 @@ This document tracks all validated scenarios for the TaxBenefits Calculator. It 
 
 ---
 
+## Exit Tax Engine Validation (Scenarios 28-30)
+
+| # | Scenario | Config | Key Validation | Tests | Date | Status |
+|---|----------|--------|----------------|-------|------|--------|
+| 28 (10A) | Non-OZ Exit Tax | $100M, CA investor, 30% cost seg, no OZ | Character-split recapture, NIIT, state tax, IRR adjustment | 1 | 2026-02-18 | ✅ |
+| 29 (10B) | OZ 10-Year Hold | $100M, WA investor, 30% cost seg, OZ 10yr | netExitTax = $0, underlying components still computed | 1 | 2026-02-18 | ✅ |
+| 30 (10C) | OZ Non-Conforming State | $100M, CA investor, OZ 10yr | State tax computed even when OZ excludes net tax | 1 | 2026-02-18 | ✅ |
+
+**Unit Test Coverage (E-1 through E-20):** 20 unit tests covering every path of `calculateExitTax()`:
+- E-1 to E-6: Core character-split tax computation (§1245, §1250, LTCG, NIIT, federal total)
+- E-7 to E-9: State conformity (non-conforming, full-rolling, total with state)
+- E-10 to E-12: OZ exclusion (10+ year, short hold, non-OZ)
+- E-13 to E-16: Edge cases (zero §1245, zero §1250, zero/negative appreciation)
+- E-17 to E-18: Dollar-verified hand calculations
+- E-19 to E-20: Boundary conditions (all-zero inputs, holdPeriod 9 vs 10)
+
+**Additional:** 5 `getEffectiveStateCapGainsRate()` tests (OR full-rolling, CA none, NJ full-adopted, NY none, non-OZ passthrough) + 1 wiring test.
+
+**Validated via:** `exit-tax-engine.test.ts` (29 tests, 100% pass)
+
+---
+
 ## Remaining (Scenarios 21-25)
 
 | # | Scenario | Config | Key Validation | Status |
@@ -185,7 +207,8 @@ This document tracks all validated scenarios for the TaxBenefits Calculator. It 
 | Capital Stack Enhancement | 4 | 4 | ✅ |
 | Interest Reserve/S-Curve | 1 | 1 | ✅ |
 | Pool Aggregation & Sizing | 2 | 2 | ✅ |
-| Institutional Certification | 27 | 21 | 78% |
+| Exit Tax Engine | 3 | 3 | ✅ |
+| Institutional Certification | 30 | 24 | 80% |
 
 ---
 

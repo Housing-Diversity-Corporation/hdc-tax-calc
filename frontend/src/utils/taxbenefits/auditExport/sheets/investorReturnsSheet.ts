@@ -250,25 +250,58 @@ export function buildInvestorReturnsSheet(
   const appreciationRow = currentRow;
   currentRow++;
 
-  // Recapture Avoidance (cumulative through hold period)
-  ws[`A${currentRow}`] = { t: 's', v: 'Recapture Avoided (§1250)' };
+  // IMPL-095: Recapture Avoidance — read from engine exitTaxAnalysis (single source of truth)
+  ws[`A${currentRow}`] = { t: 's', v: 'Recapture Avoided (§1245/§1250)' };
   ws['B' + currentRow] = { t: 'n', v: 0 };
+  // Total recapture avoided = sec1245Tax + sec1250Tax from exitTaxAnalysis (character-split)
+  const totalRecaptureAvoided = ozEnabled && holdPeriod >= 10 && results.exitTaxAnalysis
+    ? results.exitTaxAnalysis.sec1245Tax + results.exitTaxAnalysis.sec1250Tax
+    : 0;
   for (let year = 1; year <= holdPeriod; year++) {
     const col = String.fromCharCode(66 + year);
-    // Recapture avoidance: cumulative depreciation × 25% federal rate
-    // Only applicable for 10+ year holds with OZ
-    const cf = cashFlows[year - 1];
-    const cumDepr = cashFlows.slice(0, year).reduce((sum, cf) => sum + ((cf?.taxBenefit || 0) / (((params.federalTaxRate || 37) + (params.niitRate || 3.8) + (params.stateTaxRate || 0)) / 100)), 0);
-    const recaptureAvoided = ozEnabled && holdPeriod >= 10 && year === holdPeriod
-      ? cumDepr * 0.25
-      : 0;
+    // Only show at exit year (lump sum recognition)
+    const recaptureAvoided = year === holdPeriod ? totalRecaptureAvoided : 0;
     const recaptureFormula = year === holdPeriod
-      ? 'IF(AND(OZEnabled,HoldPeriod>=10),TotalDepreciation*0.25,0)'
+      ? 'IF(AND(OZEnabled,HoldPeriod>=10),Sec1245Tax+Sec1250Tax,0)'
       : '0';
     ws[`${col}${currentRow}`] = { t: 'n', v: recaptureAvoided, f: recaptureFormula } as FormulaCell;
   }
   namedRanges.push({ name: 'OZRecaptureAvoided', ref: `Investor_Returns!$${lastCol}$${currentRow}` });
   currentRow += 2;
+
+  // IMPL-100: Exit Tax Analysis (character-split breakdown from exitTaxAnalysis)
+  if (results.exitTaxAnalysis) {
+    ws[`A${currentRow}`] = { t: 's', v: '=== EXIT TAX ANALYSIS ===' };
+    currentRow++;
+
+    const eta = results.exitTaxAnalysis;
+    const exitTaxRows: Array<{ label: string; value: number; rangeName?: string }> = [
+      { label: '§1245 Ordinary Recapture', value: eta.sec1245Recapture, rangeName: 'Sec1245Recapture' },
+      { label: '§1245 Rate', value: eta.sec1245Rate },
+      { label: '§1245 Tax', value: eta.sec1245Tax, rangeName: 'Sec1245Tax' },
+      { label: '§1250 Unrecaptured Gain', value: eta.sec1250Recapture, rangeName: 'Sec1250Recapture' },
+      { label: '§1250 Rate', value: eta.sec1250Rate },
+      { label: '§1250 Tax', value: eta.sec1250Tax, rangeName: 'Sec1250Tax' },
+      { label: 'Remaining Gain (LTCG)', value: eta.remainingGain },
+      { label: 'Remaining Gain Tax', value: eta.remainingGainTax },
+      { label: 'NIIT Tax', value: eta.niitTax },
+      { label: 'Total Federal Exit Tax', value: eta.totalFederalExitTax, rangeName: 'TotalFederalExitTax' },
+      { label: `State Exit Tax (${eta.stateConformity})`, value: eta.stateExitTax, rangeName: 'StateExitTax' },
+      { label: 'Total Exit Tax With State', value: eta.totalExitTaxWithState },
+      { label: 'OZ Exclusion Applied', value: eta.ozExcludesRecapture ? 1 : 0 },
+      { label: 'Net Exit Tax', value: eta.netExitTax, rangeName: 'NetExitTax' },
+    ];
+
+    for (const row of exitTaxRows) {
+      ws[`A${currentRow}`] = { t: 's', v: row.label };
+      ws[`B${currentRow}`] = { t: 'n', v: row.value };
+      if (row.rangeName) {
+        namedRanges.push({ name: row.rangeName, ref: `Investor_Returns!$B$${currentRow}` });
+      }
+      currentRow++;
+    }
+    currentRow++;
+  }
 
   // === SUMMARY ===
   ws[`A${currentRow}`] = { t: 's', v: '=== SUMMARY ===' };

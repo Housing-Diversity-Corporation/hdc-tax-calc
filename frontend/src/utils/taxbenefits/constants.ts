@@ -30,7 +30,7 @@ export const DEFAULT_VALUES = {
   LT_CAPITAL_GAINS_RATE: 20,
   NIIT_RATE: 3.8,
   STATE_CAPITAL_GAINS_RATE: 10.9,
-  DEPRECIATION_RECAPTURE_RATE: 25,
+  // IMPL-096: DEPRECIATION_RECAPTURE_RATE removed — rates derived in calculateExitTax()
   HOLD_PERIOD: 10,
   NOI_GROWTH_RATE: 3, // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
   EXIT_CAP_RATE: 6,

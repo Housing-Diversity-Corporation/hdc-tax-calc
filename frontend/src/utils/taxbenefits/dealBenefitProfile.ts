@@ -42,7 +42,10 @@ export function extractDealBenefitProfile(
   const syndicationProceeds = results.stateLIHTCSyndicationProceeds || 0;
   const netEquity = grossEquity - (results.syndicatedEquityOffset || 0);
   const cumulativeDepreciation = depreciationSchedule.totalDepreciation || 0;
-  const recaptureExposure = cumulativeDepreciation * 0.25;
+  // IMPL-095: Read recapture from exitTaxAnalysis (single source of truth) instead of independent 0.25 computation
+  const recaptureExposure = results.exitTaxAnalysis
+    ? results.exitTaxAnalysis.sec1245Recapture + results.exitTaxAnalysis.sec1250Recapture
+    : cumulativeDepreciation * 0.25; // Fallback for backward compat when exitTaxAnalysis not available
 
   // Calculate projected appreciation and capital gains tax
   const projectedAppreciation =

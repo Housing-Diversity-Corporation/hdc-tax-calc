@@ -20,7 +20,6 @@ describe('DSCR with Outside Investor Sub-Debt', () => {
     ltCapitalGainsRate: 20,
     niitRate: 3.8,
     stateCapitalGainsRate: 10.9,
-    depreciationRecaptureRate: 25,
 
     // Capital structure
     investorEquityPct: 5,

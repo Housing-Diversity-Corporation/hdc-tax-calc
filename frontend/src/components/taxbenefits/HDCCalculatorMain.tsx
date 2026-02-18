@@ -72,7 +72,6 @@ const HDCCalculatorMain = () => {
     selectedState,
     projectLocation, setProjectLocation,
     stateCapitalGainsRate, setStateCapitalGainsRate,
-    depreciationRecaptureRate,
 
     // HDC Fees
     hdcFeeRate, setHdcFeeRate,
@@ -494,7 +493,6 @@ const HDCCalculatorMain = () => {
           selectedState={selectedState}
           stateCapitalGainsRate={stateCapitalGainsRate}
           setStateCapitalGainsRate={setStateCapitalGainsRate}
-          depreciationRecaptureRate={depreciationRecaptureRate}
           projectLocation={projectLocation}
           setProjectLocation={setProjectLocation}
           hdcFeeRate={hdcFeeRate}
@@ -746,7 +744,6 @@ const HDCCalculatorMain = () => {
           ltCapitalGainsRate={ltCapitalGainsRate}
           niitRate={niitRate}
           stateCapitalGainsRate={stateCapitalGainsRate}
-          depreciationRecaptureRate={depreciationRecaptureRate}
           yearOneDepreciationPct={yearOneDepreciationPct}
           constructionDelayMonths={constructionDelayMonths}
           taxBenefitDelayMonths={taxBenefitDelayMonths}

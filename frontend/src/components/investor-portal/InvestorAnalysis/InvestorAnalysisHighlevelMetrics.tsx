@@ -40,7 +40,6 @@ interface InvestorAnalysisHighlevelMetricsProps {
   // Tax Planning Capacity props
   totalNetTaxBenefits?: number;
   totalCapitalGainsRate?: number;
-  depreciationRecaptureRate?: number;
   yearOneDepreciationPct?: number;
   years2to10Depreciation?: number;
   total10YearDepreciation?: number;
@@ -123,7 +122,6 @@ const InvestorAnalysisHighlevelMetrics: React.FC<InvestorAnalysisHighlevelMetric
   // Tax Planning Capacity
   totalNetTaxBenefits = 0,
   totalCapitalGainsRate = 0,
-  depreciationRecaptureRate = 25,
   yearOneDepreciationPct = 0,
   years2to10Depreciation = 0,
   total10YearDepreciation = 0,
@@ -298,7 +296,6 @@ const InvestorAnalysisHighlevelMetrics: React.FC<InvestorAnalysisHighlevelMetric
                 year5OZTaxDue={year5OZTaxDue}
                 totalCapitalGainsRate={totalCapitalGainsRate}
                 effectiveTaxRateForDepreciation={effectiveTaxRateForDepreciation}
-                depreciationRecaptureRate={depreciationRecaptureRate}
                 formatCurrency={formatCurrencyMillions}
               />
             )}

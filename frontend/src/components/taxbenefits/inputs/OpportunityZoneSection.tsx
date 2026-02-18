@@ -24,7 +24,6 @@ interface OpportunityZoneSectionProps {
   stateCapitalGainsRate?: number; // State capital gains rate
   // IMPL-071: Depreciation info for recapture display when OZ disabled
   totalDepreciation?: number;
-  depreciationRecaptureRate?: number;
 
   // Read-only mode
   isReadOnly?: boolean;
@@ -46,7 +45,6 @@ const OpportunityZoneSection: React.FC<OpportunityZoneSectionProps> = ({
   niitRate = 3.8,
   stateCapitalGainsRate = 0,
   totalDepreciation = 0,
-  depreciationRecaptureRate = 25,
   isReadOnly = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -132,8 +130,8 @@ const OpportunityZoneSection: React.FC<OpportunityZoneSectionProps> = ({
                   </span>
                 </div>
                 <div className="hdc-result-row" style={{ fontSize: '0.875rem' }}>
-                  <span className="hdc-result-label">Recapture Rate:</span>
-                  <span className="hdc-result-value">{depreciationRecaptureRate}%</span>
+                  <span className="hdc-result-label">Recapture Rate (§1250 cap):</span>
+                  <span className="hdc-result-value">25%</span>
                 </div>
                 <div className="hdc-result-row summary" style={{
                   marginTop: '0.5rem',
@@ -144,7 +142,7 @@ const OpportunityZoneSection: React.FC<OpportunityZoneSectionProps> = ({
                     Estimated Recapture Tax:
                   </span>
                   <span className="hdc-result-value" style={{ fontWeight: 700, color: 'var(--hdc-brown-rust)' }}>
-                    ${(totalDepreciation * (depreciationRecaptureRate / 100) * 1000000).toLocaleString()}
+                    ${(totalDepreciation * 0.25 * 1000000).toLocaleString()}
                   </span>
                 </div>
               </div>

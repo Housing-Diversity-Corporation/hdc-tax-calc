@@ -28,7 +28,6 @@ describe('Senior Debt Interest-Only Period', () => {
     ltCapitalGainsRate: 20,
     niitRate: 3.8,
     stateCapitalGainsRate: 10.9,
-    depreciationRecaptureRate: 25,
     deferredGains: 0,
     hdcFeeRate: 0,
     hdcAdvanceFinancing: false,

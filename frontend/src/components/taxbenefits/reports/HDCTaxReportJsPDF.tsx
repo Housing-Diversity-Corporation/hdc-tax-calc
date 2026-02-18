@@ -247,7 +247,7 @@ export const HDCTaxReportJsPDFButton: React.FC<HDCTaxReportJsPDFProps> = ({
         ['LT Capital Gains Rate', formatPercent(params.ltCapitalGainsRate || 20)],
         ['State Capital Gains Rate', formatPercent(params.stateCapitalGainsRate || 0)],
         ['NIIT Rate', formatPercent(params.niitRate || 3.8)],
-        ['Depreciation Recapture Rate', formatPercent(params.depreciationRecaptureRate || 25)],
+        ['Recapture Rate (§1250 cap)', formatPercent(25)],
       ];
 
       if (investorTrack === 'rep') {

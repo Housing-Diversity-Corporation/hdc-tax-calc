@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { computeHoldPeriod } from '../../utils/taxbenefits/computeHoldPeriod';
 import { DEFAULT_VALUES } from '../../utils/taxbenefits';
-import { getStateTaxRate } from '../../utils/taxbenefits/stateProfiles';
+import { getStateTaxRate, doesNIITApply } from '../../utils/taxbenefits/stateProfiles';
 import { ValidationResult } from '../../utils/taxbenefits/validation';
 
 export const useHDCState = () => {
@@ -65,7 +65,7 @@ export const useHDCState = () => {
   const [ltCapitalGainsRate, setLtCapitalGainsRate] = useState(DEFAULT_VALUES.LT_CAPITAL_GAINS_RATE);
   const [niitRate, setNiitRate] = useState(DEFAULT_VALUES.NIIT_RATE);
   const [stateCapitalGainsRate, setStateCapitalGainsRate] = useState(DEFAULT_VALUES.STATE_CAPITAL_GAINS_RATE);
-  const [depreciationRecaptureRate, setDepreciationRecaptureRate] = useState(DEFAULT_VALUES.DEPRECIATION_RECAPTURE_RATE);
+  // IMPL-096: depreciationRecaptureRate removed — rates derived inside calculateExitTax()
 
   // Projections — holdPeriod computed from LIHTC credit exhaustion + delay
   const { holdFromPIS, totalInvestmentYears } = useMemo(
@@ -153,6 +153,15 @@ export const useHDCState = () => {
   const [annualPassiveIncome, setAnnualPassiveIncome] = useState<number>(0);
   const [annualPortfolioIncome, setAnnualPortfolioIncome] = useState<number>(0);
   const [groupingElection, setGroupingElection] = useState<boolean>(false);
+
+  // IMPL-097: NIIT three-source determination
+  // Territory auto-detect (PR/GU/VI/AS/MP) → false
+  // REP + grouping election → false
+  // Default (passive/non-REP) → true
+  const niitApplies = useMemo(
+    () => doesNIITApply(selectedState) && !groupingElection,
+    [selectedState, groupingElection]
+  );
 
   // Tax Planning Analysis fields - ALWAYS ENABLED (core feature of HDC calculator)
   const [includeDepreciationSchedule, setIncludeDepreciationSchedule] = useState(true);
@@ -475,7 +484,7 @@ export const useHDCState = () => {
     ltCapitalGainsRate, setLtCapitalGainsRate,
     niitRate, setNiitRate,
     stateCapitalGainsRate, setStateCapitalGainsRate,
-    depreciationRecaptureRate, setDepreciationRecaptureRate,
+    // IMPL-096: depreciationRecaptureRate removed from return
 
     // Projections — computed hold period (read-only)
     totalInvestmentYears, holdFromPIS,
@@ -551,6 +560,7 @@ export const useHDCState = () => {
     annualPassiveIncome, setAnnualPassiveIncome,
     annualPortfolioIncome, setAnnualPortfolioIncome,
     groupingElection, setGroupingElection,
+    niitApplies, // IMPL-097: Computed from territory + grouping election + default
 
     // Tax Planning Analysis
     includeDepreciationSchedule, setIncludeDepreciationSchedule,

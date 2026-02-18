@@ -214,6 +214,81 @@ pooledStream → optimizeFundCommitment(stream, totalEquity, investor)
 
 ---
 
+## Exit Tax Engine — Character-Split Recapture (IMPL-094 through IMPL-101)
+
+Replaces the flat 25% depreciation recapture rate with an IRC-compliant character-split exit tax model.
+
+### Architecture
+
+```
+buildDepreciationSchedule() → cumulative1245, cumulative1250
+                                       ↓
+calculateExitTax() → ExitTaxResult (18 fields, single invocation)
+       ↓                           ↓
+ExitEvent (engine)      results.exitTaxAnalysis (consumers)
+```
+
+### Single Invocation Pattern
+
+`calculateExitTax()` is called exactly once inside `calculateFullInvestorAnalysis()` (in the `includeDepreciationSchedule` block). All downstream consumers read from the result — no independent recapture computations exist.
+
+**Two channels:**
+1. **ExitEvent** — engine-internal consumption (tax utilization)
+2. **results.exitTaxAnalysis** — post-engine consumers (DBP, Excel export, UI)
+
+### ExitTaxResult Interface
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `sec1245Recapture` | number | §1245 ordinary income (cost seg / bonus) |
+| `sec1245Rate` | number | Federal ordinary rate |
+| `sec1245Tax` | number | §1245 × ordinary rate |
+| `sec1250Recapture` | number | §1250 unrecaptured gain (straight-line) |
+| `sec1250Rate` | number | 25% statutory cap |
+| `sec1250Tax` | number | §1250 × 25% |
+| `remainingGain` | number | LTCG (appreciation above basis) |
+| `remainingGainRate` | number | Federal cap gains rate |
+| `remainingGainTax` | number | LTCG × cap gains rate |
+| `niitRate` | number | 3.8% if applicable, else 0 |
+| `niitTax` | number | NIIT on all gain characters |
+| `totalFederalExitTax` | number | Sum of all federal components |
+| `stateExitTax` | number | Conformity-aware state tax |
+| `stateConformity` | string | State OZ conformity type |
+| `totalExitTaxWithState` | number | Federal + state |
+| `ozExcludesRecapture` | boolean | OZ 10+ year exclusion flag |
+| `ozExcludesAppreciation` | boolean | OZ 10+ year exclusion flag |
+| `netExitTax` | number | $0 for OZ 10+ holds, else totalExitTaxWithState |
+
+### Key Rules
+
+1. **§1245 at ordinary rate.** Cost segregation / bonus depreciation recaptured as ordinary income.
+2. **§1250 capped at 25%.** Straight-line depreciation uses the IRC §1250 unrecaptured gain rate.
+3. **NIIT stacks on ALL characters.** 3.8% Net Investment Income Tax applies to passive investors across §1245, §1250, and LTCG.
+4. **Three-source NIIT determination.** Territory auto-exempts, REP aggregation election exempts, default passive applies.
+5. **Conformity-aware state tax.** `getEffectiveStateCapGainsRate()` returns 0 for full-rolling/full-adopted/no-cg-tax OZ conformity states.
+6. **OZ 10+ year hold = $0 net exit tax.** Underlying components still computed for informational display.
+7. **IRR/multiple adjusted.** Terminal cash flow reduced by `netExitTax` before IRR recalculation.
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `utils/taxbenefits/calculations.ts` | `calculateExitTax()`, `getEffectiveStateCapGainsRate()`, wiring |
+| `utils/taxbenefits/depreciationSchedule.ts` | `cumulative1245`, `cumulative1250` on DepreciationSchedule |
+| `types/taxbenefits/index.ts` | `ExitTaxResult` interface |
+| `utils/taxbenefits/investorTaxUtilization.ts` | ExitEvent + RecaptureCoverage extensions |
+| `utils/taxbenefits/dealBenefitProfile.ts` | DBP reads from exitTaxAnalysis |
+| `utils/taxbenefits/auditExport/sheets/investorReturnsSheet.ts` | Excel export character-split section |
+| `components/taxbenefits/results/ReturnsBuiltupStrip.tsx` | Exit Tax Cost row with expandable sub-rows |
+
+### Tests
+
+| File | Tests | Coverage |
+|------|-------|----------|
+| `utils/taxbenefits/__tests__/features/exit-tax-engine.test.ts` | 29 | E-1 to E-20, Scenarios 10A/10B/10C, conformity, wiring |
+
+---
+
 ## History
 
 | Date | Change | Reference |
@@ -224,3 +299,4 @@ pooledStream → optimizeFundCommitment(stream, totalEquity, investor)
 | 2026-01-27 | Added DSCR Display Standard | ISS-054 |
 | 2026-02-14 | Added Deal Benefit Profile Persistence | IMPL-084 |
 | 2026-02-14 | Added Pool Aggregation & Fund Sizing | IMPL-085 |
+| 2026-02-18 | Added Exit Tax Engine — Character-Split Recapture | IMPL-094 to IMPL-101 |

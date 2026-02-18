@@ -12,6 +12,8 @@
  * - exchangeCapacity, rothCapacity, depreciationCapacity are planning ratios
  *
  * No engine recalculation issues - all source values come from useHDCCalculations hook.
+ *
+ * IMPL-096: depreciationRecaptureRate removed — uses §1250 statutory cap (25%) inline
  */
 import React from 'react';
 import '../../../styles/taxbenefits/hdcCalculator.css';
@@ -24,7 +26,6 @@ interface SimplifiedTaxPlanningSectionProps {
   year5OZTaxDue: number;
   totalCapitalGainsRate: number;
   effectiveTaxRateForDepreciation: number;
-  depreciationRecaptureRate: number;
   formatCurrency: (value: number) => string;
 }
 
@@ -36,7 +37,6 @@ const SimplifiedTaxPlanningSection: React.FC<SimplifiedTaxPlanningSectionProps> 
   year5OZTaxDue,
   totalCapitalGainsRate,
   effectiveTaxRateForDepreciation,
-  depreciationRecaptureRate,
   formatCurrency
 }) => {
   // Calculate tax allocation
@@ -45,9 +45,11 @@ const SimplifiedTaxPlanningSection: React.FC<SimplifiedTaxPlanningSectionProps> 
   const excessBenefits = Math.max(0, remainingAfterOZ);
 
   // Calculate planning capacities
+  // IMPL-096: §1250 recapture cap = 25% (statutory rate, no longer a parameter)
+  const sec1250RecaptureRate = 25;
   const exchangeCapacity = excessBenefits / (totalCapitalGainsRate / 100);
   const rothCapacity = excessBenefits / (effectiveTaxRateForDepreciation / 100);
-  const depreciationCapacity = excessBenefits / (depreciationRecaptureRate / 100);
+  const depreciationCapacity = excessBenefits / (sec1250RecaptureRate / 100);
 
   return (
     <div className="hdc-section h-full flex flex-col">
@@ -110,7 +112,7 @@ const SimplifiedTaxPlanningSection: React.FC<SimplifiedTaxPlanningSectionProps> 
 
           <div className="hdc-result-row">
             <span className="hdc-result-label">
-              Depreciation Offset at {depreciationRecaptureRate}%:
+              Depreciation Offset at {sec1250RecaptureRate}%:
             </span>
             <span className="hdc-result-value hdc-value-positive">
               {formatCurrency(depreciationCapacity)}

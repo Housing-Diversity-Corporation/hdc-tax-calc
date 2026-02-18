@@ -85,7 +85,6 @@ interface HDCResultsComponentProps {
   ltCapitalGainsRate: number;
   niitRate: number;
   stateCapitalGainsRate: number;
-  depreciationRecaptureRate: number;
   yearOneDepreciationPct: number;
   constructionDelayMonths: number;
   taxBenefitDelayMonths: number;
@@ -261,7 +260,6 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
                 ltCapitalGainsRate: props.ltCapitalGainsRate,
                 stateCapitalGainsRate: props.stateCapitalGainsRate,
                 niitRate: props.niitRate,
-                depreciationRecaptureRate: props.depreciationRecaptureRate,
                 yearOneDepreciationPct: props.yearOneDepreciationPct,
 
                 // OZ Settings

@@ -361,7 +361,7 @@ export const HDCComprehensiveReportButton: React.FC<HDCComprehensiveReportProps>
         ['Capital Gains Rate', formatPercent(params.ltCapitalGainsRate || 20)],
         ['State Capital Gains', formatPercent(params.stateCapitalGainsRate || 0)],
         ['NIIT Rate', formatPercent(params.niitRate || 3.8)],
-        ['Depreciation Recapture', formatPercent(params.depreciationRecaptureRate || 25)],
+        ['Recapture (§1250 cap)', formatPercent(25)],
         ['Year 1 Depreciation %', formatPercent(params.yearOneDepreciationPct || 20)],
       ];
 

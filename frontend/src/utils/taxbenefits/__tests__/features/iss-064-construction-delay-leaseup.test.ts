@@ -31,7 +31,6 @@ describe('ISS-064: Construction Delay + Lease-Up + DSCR Logic', () => {
     ltCapitalGainsRate: 20,
     niitRate: 3.8,
     stateCapitalGainsRate: 5,
-    depreciationRecaptureRate: 25,
     deferredGains: 0,
     hdcFeeRate: 0,
     hdcAdvanceFinancing: false,

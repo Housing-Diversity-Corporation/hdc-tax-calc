@@ -84,7 +84,6 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
     selectedState, setSelectedState,
     projectLocation, setProjectLocation,
     stateCapitalGainsRate, setStateCapitalGainsRate,
-    depreciationRecaptureRate,
 
     // HDC Fees
     hdcFeeRate, setHdcFeeRate,
@@ -552,7 +551,6 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
     niitRate,
     stateCapitalGainsRate,
     selectedState,
-    depreciationRecaptureRate,
 
     // Tax timing
     constructionDelayMonths,
@@ -620,7 +618,6 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
         // Tax Planning Capacity
         totalNetTaxBenefits={calculations.totalNetTaxBenefits}
         totalCapitalGainsRate={calculations.totalCapitalGainsRate}
-        depreciationRecaptureRate={depreciationRecaptureRate}
         yearOneDepreciationPct={yearOneDepreciationPct}
         years2to10Depreciation={calculations.years2to10Depreciation}
         total10YearDepreciation={calculations.total10YearDepreciation}
@@ -824,7 +821,6 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
           selectedState={selectedState}
           stateCapitalGainsRate={stateCapitalGainsRate}
           setStateCapitalGainsRate={setStateCapitalGainsRate}
-          depreciationRecaptureRate={depreciationRecaptureRate}
           projectLocation={projectLocation}
           setProjectLocation={setProjectLocation}
           hdcFeeRate={hdcFeeRate}
@@ -1019,7 +1015,6 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
           ltCapitalGainsRate={ltCapitalGainsRate}
           niitRate={niitRate}
           stateCapitalGainsRate={stateCapitalGainsRate}
-          depreciationRecaptureRate={depreciationRecaptureRate}
           yearOneDepreciationPct={yearOneDepreciationPct}
           constructionDelayMonths={constructionDelayMonths}
           taxBenefitDelayMonths={taxBenefitDelayMonths}
@@ -1227,7 +1222,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
               <li>totalCapitalGainsRate: {calculations.totalCapitalGainsRate}</li>
               {/* ISS-065: Removed investmentRecovered */}
               <li>effectiveTaxRateForDepreciation: {calculations.effectiveTaxRateForDepreciation}</li>
-              <li>depreciationRecaptureRate: {depreciationRecaptureRate}</li>
+              {/* IMPL-096: depreciationRecaptureRate removed — character-split in exitTaxAnalysis */}
               {/* <li>year5OZTaxDue: {calculations.year5OZTaxDue}</li> */}
               {/* New props for depreciation details */}
               <li>yearOneDepreciation: {calculations.yearOneDepreciation}</li>

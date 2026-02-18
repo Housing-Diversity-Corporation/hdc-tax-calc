@@ -22,9 +22,12 @@ export interface ExitEvent {
   dealId?: string;                   // Optional deal identifier for pool scenarios
   exitProceeds: number;
   cumulativeDepreciation: number;
-  recaptureExposure: number;         // cumulativeDepreciation × 25%
+  recaptureExposure: number;         // cumulativeDepreciation × 25% (backward compat)
   appreciationGain: number;
   ozEnabled: boolean;
+  // IMPL-095: Character-split fields from calculateExitTax()
+  sec1245Recapture?: number;         // §1245 ordinary income recapture (cost seg / bonus)
+  sec1250Recapture?: number;         // §1250 unrecaptured gain (straight-line)
 }
 
 /**
@@ -114,9 +117,12 @@ export interface AnnualUtilization {
 export interface RecaptureCoverage {
   exitYear: number;
   dealId?: string;
-  recaptureExposure: number;         // §1250: cumDepr × 25%
+  recaptureExposure: number;         // Total recapture (§1245 + §1250)
   capitalGainsTax: number;           // Appreciation × CG rate
   totalExitTax: number;
+  // IMPL-095: Character-split recapture fields
+  sec1245Recapture?: number;         // §1245 ordinary income recapture (cost seg / bonus)
+  sec1250Recapture?: number;         // §1250 unrecaptured gain (straight-line)
 
   // Offsets available
   releasedSuspendedLosses: number;   // §469(g) passive release
@@ -863,6 +869,9 @@ function computeRecaptureCoverageInternal(
       recaptureExposure,
       capitalGainsTax,
       totalExitTax,
+      // IMPL-095: Character-split recapture from ExitEvent
+      sec1245Recapture: exitEvent.sec1245Recapture,
+      sec1250Recapture: exitEvent.sec1250Recapture,
       releasedSuspendedLosses,
       releasedLossValue,
       availableCredits,

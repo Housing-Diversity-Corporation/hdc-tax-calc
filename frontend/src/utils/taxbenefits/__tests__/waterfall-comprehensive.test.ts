@@ -37,7 +37,6 @@ describe('HDC Waterfall Comprehensive Tests', () => {
     federalTaxRate: 37,
     stateTaxRate: 9.3,
     ltCapitalGainsRate: 20,
-    depreciationRecaptureRate: 25,
 
     // HDC Fees
     hdcFeeRate: 0,

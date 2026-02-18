@@ -1,4 +1,4 @@
-import { CalculationParams, InvestorAnalysisResults, CashFlowItem } from '../../types/taxbenefits';
+import { CalculationParams, InvestorAnalysisResults, CashFlowItem, ExitTaxResult } from '../../types/taxbenefits';
 import {
   validatePIKInterestCalculation,
   validateTaxBenefitDistribution,
@@ -11,6 +11,7 @@ import { calculateSCurve, STANDARD_STEEPNESS } from './sCurveUtility';
 import { calculateDepreciableBasis } from './depreciableBasisUtility';
 import { getOzStepUpPercent } from './constants';
 import { computeHoldPeriod } from './computeHoldPeriod';
+import { getStateOzConformity } from './stateProfiles';
 
 // Import new tax planning modules
 import { buildDepreciationSchedule } from './depreciationSchedule';
@@ -129,6 +130,107 @@ export const calculateRemainingBalance = (principal: number, annualRate: number,
   }
   return balance;
 };
+
+/**
+ * IMPL-098: Conformity-aware state capital gains rate.
+ * Returns 0 for OZ investors in conforming states (full-rolling, full-adopted, no-cg-tax).
+ * Returns the full state rate for non-OZ investors or non-conforming OZ states.
+ */
+export function getEffectiveStateCapGainsRate(
+  stateCapitalGainsRate: number,
+  investorState: string,
+  ozEnabled: boolean
+): number {
+  if (!ozEnabled) return stateCapitalGainsRate;
+  const conformity = getStateOzConformity(investorState);
+  if (conformity === 'full-rolling' || conformity === 'full-adopted' || conformity === 'no-cg-tax') {
+    return 0;
+  }
+  return stateCapitalGainsRate; // 'limited', 'none', 'special'
+}
+
+/**
+ * IMPL-094: Calculate exit tax with IRC-compliant character-split recapture.
+ * Single invocation point — all downstream consumers read from this result.
+ *
+ * §1245 (cost seg / bonus depreciation) recaptured at ordinary income rates.
+ * §1250 (straight-line / unrecaptured gain) capped at 25%.
+ * NIIT (3.8%) stacks on all gain characters for passive investors.
+ * State exit tax is conformity-aware for OZ investors.
+ */
+export function calculateExitTax(params: {
+  cumulative1245: number;
+  cumulative1250: number;
+  appreciationGain: number;
+  federalOrdinaryRate: number;
+  federalCapGainsRate: number;
+  niitRate: number;
+  niitApplies: boolean;
+  investorState: string;
+  stateCapitalGainsRate: number;
+  ozEnabled: boolean;
+  holdPeriod: number;
+}): ExitTaxResult {
+  // §1245: ordinary income recapture
+  const sec1245Recapture = params.cumulative1245;
+  const sec1245Rate = params.federalOrdinaryRate;
+  const sec1245Tax = sec1245Recapture * sec1245Rate;
+
+  // §1250: unrecaptured gain, capped at 25%
+  const sec1250Recapture = params.cumulative1250;
+  const sec1250Rate = 0.25;
+  const sec1250Tax = sec1250Recapture * sec1250Rate;
+
+  // Appreciation gain (LTCG)
+  const remainingGain = Math.max(0, params.appreciationGain);
+  const remainingGainRate = params.federalCapGainsRate;
+  const remainingGainTax = remainingGain * remainingGainRate;
+
+  // NIIT — stacks on ALL gain characters for passive investors
+  const niitRate = params.niitApplies ? params.niitRate : 0;
+  const totalGain = sec1245Recapture + sec1250Recapture + remainingGain;
+  const niitTax = params.niitApplies ? params.niitRate * totalGain : 0;
+
+  // Total federal exit tax
+  const totalFederalExitTax = sec1245Tax + sec1250Tax + remainingGainTax + niitTax;
+
+  // IMPL-098: State exit tax — uses shared conformity helper
+  const effectiveStateRate = getEffectiveStateCapGainsRate(
+    params.stateCapitalGainsRate,
+    params.investorState,
+    params.ozEnabled
+  );
+  const stateConformity = getStateOzConformity(params.investorState) || 'none';
+  const stateExitTax = effectiveStateRate * totalGain;
+
+  const totalExitTaxWithState = totalFederalExitTax + stateExitTax;
+
+  // OZ overlay: 10+ year hold excludes all recapture and appreciation
+  const ozExcludesRecapture = params.ozEnabled && params.holdPeriod >= 10;
+  const ozExcludesAppreciation = params.ozEnabled && params.holdPeriod >= 10;
+  const netExitTax = ozExcludesRecapture ? 0 : totalExitTaxWithState;
+
+  return {
+    sec1245Recapture,
+    sec1245Rate,
+    sec1245Tax,
+    sec1250Recapture,
+    sec1250Rate,
+    sec1250Tax,
+    remainingGain,
+    remainingGainRate,
+    remainingGainTax,
+    niitRate,
+    niitTax,
+    totalFederalExitTax,
+    stateExitTax,
+    stateConformity: String(stateConformity),
+    totalExitTaxWithState,
+    ozExcludesRecapture,
+    ozExcludesAppreciation,
+    netExitTax
+  };
+}
 
 /**
  * Comprehensive investor returns analysis with waterfall distributions
@@ -1483,12 +1585,15 @@ export const calculateFullInvestorAnalysis = (
       const ozDeferredGains = params.deferredCapitalGains || 0;
 
       // Calculate effective capital gains tax rate
-      // If capitalGainsTaxRate is provided, use it (pre-calculated composite rate)
-      // Otherwise, calculate from components: federal LTCG + NIIT + state capital gains
+      // IMPL-098: Use conformity-aware state rate for OZ Year 5 tax
       const ltCapitalGainsRate = params.ltCapitalGainsRate || 20;
       const niitRate = params.niitRate || 3.8;
-      const stateCapitalGainsRate = params.stateCapitalGainsRate || 0;
-      const calculatedRate = ltCapitalGainsRate + niitRate + stateCapitalGainsRate;
+      const effectiveStateCGRate = getEffectiveStateCapGainsRate(
+        params.stateCapitalGainsRate || 0,
+        params.selectedState || params.investorState || 'NY',
+        params.ozEnabled || false
+      );
+      const calculatedRate = ltCapitalGainsRate + niitRate + effectiveStateCGRate;
       const ozCapitalGainsTaxRate = (params.capitalGainsTaxRate || calculatedRate) / 100;
 
       // IMPL-017: Use centralized step-up helper for OZ version support
@@ -1879,11 +1984,16 @@ export const calculateFullInvestorAnalysis = (
 
   if (params.ozEnabled && totalInvestmentYears >= 10) {
     // B) Deferral NPV: Time value of deferring capital gains tax for 5 years (8% discount rate)
+    // IMPL-098: Use conformity-aware state rate for exit appreciation
     const ozDeferredGains = params.deferredCapitalGains || 0;
     const ltCapitalGainsRate = params.ltCapitalGainsRate || 20;
     const niitRate = params.niitRate || 3.8;
-    const stateCapitalGainsRate = params.stateCapitalGainsRate || 0;
-    const calculatedCapGainsRate = ltCapitalGainsRate + niitRate + stateCapitalGainsRate;
+    const effectiveExitStateCGRate = getEffectiveStateCapGainsRate(
+      params.stateCapitalGainsRate || 0,
+      params.selectedState || params.investorState || 'NY',
+      params.ozEnabled || false
+    );
+    const calculatedCapGainsRate = ltCapitalGainsRate + niitRate + effectiveExitStateCGRate;
     const capitalGainsTaxRateDecimal = (params.capitalGainsTaxRate || calculatedCapGainsRate) / 100;
     const discountRate = 0.08;
     const deferralYears = 5;
@@ -2050,10 +2160,56 @@ export const calculateFullInvestorAnalysis = (
     // Phase A1: Compute adjustedBasis = investorEquity - cumulativeDepreciation
     const adjustedBasis = investorEquity - (depreciationSchedule?.totalDepreciation || 0);
 
+    // IMPL-094/095: Single calculateExitTax() invocation — all consumers read from this result
+    const investorStateCode = params.selectedState || params.investorState || 'NY';
+    const niitApplies = params.niitApplies !== undefined ? params.niitApplies : true;
+    const exitTaxAnalysis = calculateExitTax({
+      cumulative1245: depreciationSchedule.cumulative1245,
+      cumulative1250: depreciationSchedule.cumulative1250,
+      appreciationGain: Math.max(0, exitProceeds - investorEquity),
+      federalOrdinaryRate: (params.federalTaxRate || 37) / 100,
+      federalCapGainsRate: (params.ltCapitalGainsRate || 20) / 100,
+      niitRate: (params.niitRate || 3.8) / 100,
+      niitApplies,
+      investorState: investorStateCode,
+      stateCapitalGainsRate: (params.stateCapitalGainsRate || 0) / 100,
+      ozEnabled: params.ozEnabled || false,
+      holdPeriod: totalInvestmentYears
+    });
+
+    // IMPL-099: Subtract netExitTax from IRR terminal cash flow and totalReturns
+    // For OZ 10+ year holds, netExitTax = $0 (no change)
+    const netExitTaxAmount = exitTaxAnalysis.netExitTax;
+    let adjustedTotalReturns = baseResults.totalReturns;
+    let adjustedIRR = baseResults.irr;
+    let adjustedMultiple = baseResults.multiple;
+    let adjustedEquityMultiple = baseResults.equityMultiple;
+
+    if (netExitTaxAmount > 0) {
+      adjustedTotalReturns = baseResults.totalReturns - netExitTaxAmount;
+      const adjustedInvestment = baseResults.totalInvestment || 1;
+      adjustedMultiple = adjustedInvestment > 0 ? adjustedTotalReturns / adjustedInvestment : 0;
+      adjustedEquityMultiple = adjustedMultiple;
+
+      // Recompute IRR with exit tax subtracted from terminal cash flow
+      const irrCashFlows = baseResults.investorCashFlows.map(cf => cf.totalCashFlow);
+      irrCashFlows[irrCashFlows.length - 1] += baseResults.exitProceeds + (baseResults.investorSubDebtAtExit || 0) +
+        (baseResults.remainingLIHTCCredits || 0) + (baseResults.ozDeferralNPV || 0) + (baseResults.ozExitAppreciation || 0) -
+        netExitTaxAmount;
+      adjustedIRR = calculateIRR(irrCashFlows, adjustedInvestment, totalInvestmentYears);
+    }
+
     const results: InvestorAnalysisResults = {
       ...baseResults,
       depreciationSchedule,
-      adjustedBasis
+      adjustedBasis,
+      exitTaxAnalysis, // IMPL-095: Channel 2 — post-engine consumers
+      // IMPL-099: Override IRR/multiple with exit-tax-adjusted values
+      totalReturns: adjustedTotalReturns,
+      irr: adjustedIRR,
+      investorIRR: adjustedIRR,
+      multiple: adjustedMultiple,
+      equityMultiple: adjustedEquityMultiple
     };
 
     // Add REP or Non-REP capacity based on investor type
@@ -2082,9 +2238,9 @@ export const calculateFullInvestorAnalysis = (
       const annualStateLIHTC = investorCashFlows.map(cf => cf.stateLIHTCCredit || 0);
       const annualOperatingCF = investorCashFlows.map(cf => cf.operatingCashFlow);
 
-      // Build exit event
+      // IMPL-095: Build exit event with character-split data from exitTaxAnalysis
       const cumulativeDepreciation = depreciationSchedule.totalDepreciation;
-      const recaptureExposure = cumulativeDepreciation * 0.25; // 25% recapture rate
+      const recaptureExposure = exitTaxAnalysis.sec1245Recapture + exitTaxAnalysis.sec1250Recapture;
       const appreciationGain = Math.max(0, exitProceeds - investorEquity);
 
       const exitEvent: ExitEvent = {
@@ -2093,7 +2249,10 @@ export const calculateFullInvestorAnalysis = (
         cumulativeDepreciation,
         recaptureExposure,
         appreciationGain,
-        ozEnabled: params.ozEnabled || false
+        ozEnabled: params.ozEnabled || false,
+        // IMPL-095: Channel 1 — character-split fields for investorTaxUtilization
+        sec1245Recapture: exitTaxAnalysis.sec1245Recapture,
+        sec1250Recapture: exitTaxAnalysis.sec1250Recapture
       };
 
       const benefitStream: BenefitStream = {
@@ -2119,7 +2278,7 @@ export const calculateFullInvestorAnalysis = (
         groupingElection: params.groupingElection || false,
         federalOrdinaryRate: params.federalTaxRate || 37,
         federalCapGainsRate,
-        investorState: params.selectedState || params.investorState || 'NY',
+        investorState: investorStateCode,
         stateOrdinaryRate: (params.stateTaxRate || 10.9) / 100,
         stateCapGainsRate: (params.stateCapitalGainsRate || params.stateTaxRate || 10.9) / 100,
         investorEquity
