@@ -11,8 +11,12 @@ import FundDealList from './FundDealList';
 import OptimalCommitmentCard from './OptimalCommitmentCard';
 import EfficiencyCurveChart from './EfficiencyCurveChart';
 import CapacityWarning from './CapacityWarning';
+import FitSummaryPanel from './FitSummaryPanel';
+import SizingOptimizerPanel from './SizingOptimizerPanel';
 import { aggregatePoolToBenefitStream, buildInvestorProfileFromTaxInfo } from '../../../utils/taxbenefits/poolAggregation';
 import { optimizeFundCommitment } from '../../../utils/taxbenefits/fundSizingOptimizer';
+import { useInvestorFit } from '../../../hooks/useInvestorFit';
+import { useInvestorSizing } from '../../../hooks/useInvestorSizing';
 import type { InvestmentPool, DealBenefitProfile } from '../../../types/dealBenefitProfile';
 import type { InvestorTaxInfo } from '../../../types/investorTaxInfo';
 import type { FundSizingResult, PoolAggregationMeta } from '../../../types/fundSizing';
@@ -30,6 +34,7 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
   const [allProfiles, setAllProfiles] = useState<InvestorTaxInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sliderCommitment, setSliderCommitment] = useState<number | null>(null);
 
   // Load pool + deals
   useEffect(() => {
@@ -94,6 +99,53 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
 
     return { sizingResult: result, aggregationMeta: meta };
   }, [deals, taxProfile]);
+
+  // B3: Investor Fit + Sizing (IMPL-102 through IMPL-106)
+  const investorProfile = useMemo(() => {
+    if (!taxProfile) return null;
+    return buildInvestorProfileFromTaxInfo(taxProfile);
+  }, [taxProfile]);
+
+  const averageAnnualBenefits = useMemo(() => {
+    if (!sizingResult) return 0;
+    const util = sizingResult.fullUtilizationResult;
+    const years = util.annualUtilization.length;
+    return years > 0 ? (util.totalBenefitGenerated / years) * 1_000_000 : 0;
+  }, [sizingResult]);
+
+  const fitResult = useInvestorFit(
+    sizingResult?.fullUtilizationResult ?? null,
+    investorProfile,
+    averageAnnualBenefits
+  );
+
+  const { benefitStream: poolBenefitStream } = useMemo(() => {
+    if (deals.length === 0) return { benefitStream: null };
+    const { benefitStream } = aggregatePoolToBenefitStream(deals);
+    return { benefitStream };
+  }, [deals]);
+
+  const investorSizingResult = useInvestorSizing(
+    poolBenefitStream,
+    investorProfile,
+    aggregationMeta?.totalGrossEquity ?? 0,
+    sliderCommitment ?? sizingResult?.optimalCommitment ?? 0
+  );
+
+  const holdPeriod = useMemo(() => {
+    if (deals.length === 0) return 10;
+    return Math.max(...deals.map(d => d.holdPeriod));
+  }, [deals]);
+
+  // Sync slider to optimal when sizing result changes
+  const effectiveSliderCommitment = sliderCommitment ?? sizingResult?.optimalCommitment ?? 0;
+
+  // Dollar-based currency formatter for B3 panels
+  const formatDollarCurrency = (value: number) => {
+    if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
+    if (value >= 1_000) return `$${(value / 1_000).toFixed(0)}K`;
+    return `$${value.toFixed(0)}`;
+  };
 
   // Currency formatter for TaxUtilizationSection
   const formatCurrency = (value: number) => {
@@ -209,6 +261,48 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
             optimalCommitment={sizingResult.optimalCommitment}
             capacityExhaustedAt={sizingResult.capacityExhaustedAt}
           />
+        )}
+
+        {/* B3: Fit Summary Panel */}
+        {fitResult && investorSizingResult && (
+          <FitSummaryPanel
+            fitResult={fitResult}
+            recommendedCommitment={investorSizingResult.optimalCommitment}
+            currentCommitment={effectiveSliderCommitment !== investorSizingResult.optimalCommitment ? effectiveSliderCommitment : undefined}
+            holdPeriod={holdPeriod}
+            formatCurrency={formatDollarCurrency}
+          />
+        )}
+
+        {/* B3: Sizing Optimizer Panel */}
+        {fitResult && investorSizingResult && aggregationMeta && (
+          <SizingOptimizerPanel
+            sizingResult={investorSizingResult}
+            fitResult={fitResult}
+            currentCommitment={effectiveSliderCommitment}
+            onCommitmentChange={setSliderCommitment}
+            minSlider={100_000}
+            maxSlider={aggregationMeta.totalGrossEquity}
+            formatCurrency={formatDollarCurrency}
+          />
+        )}
+
+        {/* No profile fallback — show CTA when no B3 panels visible */}
+        {!taxProfile && !loading && (
+          <div className="mb-6 border border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
+            <p className="text-sm text-[#474a44]/70">
+              Enter your tax profile to see how this deal fits your situation
+            </p>
+            {onNavigateToTaxProfile && (
+              <Button
+                variant="outline"
+                onClick={onNavigateToTaxProfile}
+                className="mt-3 border-[#407f7f] text-[#407f7f] hover:bg-[#92c3c2] hover:text-[#474a44]"
+              >
+                Create Tax Profile
+              </Button>
+            )}
+          </div>
         )}
 
         {/* Tax Utilization at Optimal Point */}

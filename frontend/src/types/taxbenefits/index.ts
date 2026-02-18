@@ -3,6 +3,10 @@
 import { PreferredEquityResult } from '../../utils/taxbenefits/preferredEquityCalculations';
 import { TaxUtilizationResult } from '../../utils/taxbenefits/investorTaxUtilization';
 
+// Re-export B3 types for convenience
+export type { InvestorFitResult, FitWarning, Archetype, FitRating, BenefitTimingProfile } from '../../utils/taxbenefits/investorFit';
+export type { SizingResult, SizingPoint } from '../../utils/taxbenefits/investorSizing';
+
 export interface ConformingState {
   name: string;
   rate: number;
@@ -203,6 +207,15 @@ export interface InvestorAnalysisResults {
   year1BonusTaxBenefit?: number;      // Year 1 bonus depreciation tax benefit
   year1MacrsTaxBenefit?: number;      // Year 1 MACRS (partial year) tax benefit
   years2ExitMacrsTaxBenefit?: number; // Years 2-Exit MACRS tax benefit
+  // IMPL-090: Federal/State Depreciation Breakout
+  federalDepreciationBenefitYear1?: number;     // Federal rate × Year 1 depreciation
+  stateDepreciationBenefitYear1?: number;       // State rate × Year 1 depreciation (0 if non-conforming bonus)
+  federalDepreciationBenefitHoldPeriod?: number; // Federal rate × Years 2-N depreciation
+  stateDepreciationBenefitHoldPeriod?: number;   // State rate × Years 2-N depreciation
+  federalDepreciationBenefitTotal?: number;     // Sum of federal Year 1 + Hold Period
+  stateDepreciationBenefitTotal?: number;       // Sum of state Year 1 + Hold Period
+  // IMPL-090: Investor Profile Label (e.g., "NJ Non-REP" or "OR REP")
+  investorProfileLabel?: string;
   // ISS-050: Exit waterfall prior capital recovery tracking
   grossExitProceeds?: number;         // Exit proceeds after all debt, before equity waterfall
   capitalAlreadyRecovered?: number;   // Capital recovered during hold period (tax benefits + operating cash)
