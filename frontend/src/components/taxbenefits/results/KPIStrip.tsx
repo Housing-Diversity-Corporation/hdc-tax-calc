@@ -446,8 +446,30 @@ const KPIStrip: React.FC<KPIStripProps> = ({
   // ─────────────────────────────────────────────────────────────────────────
   // Expanded View
   // ─────────────────────────────────────────────────────────────────────────
+  // IMPL-093: Investor profile label for badge
+  const investorProfileLabel = mainAnalysisResults.investorProfileLabel;
+  const showProfileBadge = investorProfileLabel && investorProfileLabel !== 'Federal Only';
+
   const ExpandedView = () => (
     <div style={{ padding: '0.25rem 0.5rem 0.5rem' }}>
+      {/* IMPL-093: Investor Profile Badge */}
+      {showProfileBadge && (
+        <div style={{ marginBottom: '0.25rem' }}>
+          <span style={{
+            display: 'inline-block',
+            padding: '0.15rem 0.5rem',
+            fontSize: '0.7rem',
+            fontWeight: 600,
+            letterSpacing: '0.03em',
+            color: 'var(--hdc-faded-jade)',
+            backgroundColor: 'rgba(76, 145, 131, 0.1)',
+            border: '1px solid rgba(76, 145, 131, 0.25)',
+            borderRadius: '4px',
+          }}>
+            {investorProfileLabel}
+          </span>
+        </div>
+      )}
       {/* Row 1: Investor Equity, State LIHTC, Total Sources, Leverage, DSCR */}
       <div style={rowStyle}>
         <KPIItem

@@ -61,11 +61,13 @@ interface ReturnsBuiltupStripProps {
   cashFlows: CashFlowItem[];
 }
 
-/** IMPL-060/061: Sub-component for dropdown breakdown (OZ Benefits, Depreciation) */
+/** IMPL-060/061/092: Sub-component for dropdown breakdown (OZ Benefits, Depreciation) */
 interface SubComponent {
   label: string;
   value: number;
   multiple: number;
+  /** When true, render a thin separator line above this sub-row */
+  dividerBefore?: boolean;
 }
 
 interface ReturnComponent {
@@ -285,20 +287,44 @@ function deriveReturnComponents(
     });
   }
 
-  // IMPL-061: Depreciation Benefits with sub-components for dropdown breakdown
+  // IMPL-092 + IMPL-061: Depreciation Benefits with two-tier sub-rows
+  // Tier 1: Federal/State split (only when state benefit > 0)
+  // Tier 2: Temporal breakdown (Year 1 Bonus, Year 1 MACRS, Years 2-Exit) — always shown
   if (depreciationTotal > 0) {
-    // Build sub-components array (only non-zero values)
     const depreciationSubComponents: SubComponent[] = [];
+    const federalTotal = results.federalDepreciationBenefitTotal || 0;
+    const stateTotal = results.stateDepreciationBenefitTotal || 0;
 
+    // Tier 1: Federal/State (only when investor has state tax)
+    if (stateTotal > 0) {
+      if (federalTotal > 0) {
+        depreciationSubComponents.push({
+          label: 'Federal Depreciation',
+          value: federalTotal,
+          multiple: federalTotal / totalInvestment,
+        });
+      }
+      const stateCode = results.investorProfileLabel?.split(' ')[0] || '';
+      depreciationSubComponents.push({
+        label: stateCode ? `State Depreciation (${stateCode})` : 'State Depreciation',
+        value: stateTotal,
+        multiple: stateTotal / totalInvestment,
+      });
+    }
+
+    // Tier 2: Temporal breakdown (restored from IMPL-061)
     const year1Bonus = results.year1BonusTaxBenefit || 0;
     const year1Macrs = results.year1MacrsTaxBenefit || 0;
     const years2Exit = results.years2ExitMacrsTaxBenefit || 0;
+    // Show divider before first temporal row when federal/state group is present
+    const needsDivider = stateTotal > 0;
 
     if (year1Bonus > 0) {
       depreciationSubComponents.push({
         label: 'Year 1 Bonus Depreciation',
         value: year1Bonus,
         multiple: year1Bonus / totalInvestment,
+        dividerBefore: needsDivider,
       });
     }
 
@@ -307,6 +333,8 @@ function deriveReturnComponents(
         label: 'Year 1 MACRS Depreciation',
         value: year1Macrs,
         multiple: year1Macrs / totalInvestment,
+        // Divider only on the first temporal row (if bonus was 0, this becomes it)
+        dividerBefore: needsDivider && year1Bonus === 0,
       });
     }
 
@@ -315,6 +343,7 @@ function deriveReturnComponents(
         label: 'Years 2-Exit MACRS',
         value: years2Exit,
         multiple: years2Exit / totalInvestment,
+        dividerBefore: needsDivider && year1Bonus === 0 && year1Macrs === 0,
       });
     }
 
@@ -491,6 +520,13 @@ const SubRow: React.FC<{
     : 0;
 
   return (
+    <>
+    {subComponent.dividerBefore && (
+      <div style={{
+        margin: '0.2rem 1.5rem',
+        borderTop: '1px solid rgba(139, 92, 246, 0.15)',
+      }} />
+    )}
     <div
       className="returns-component-row oz-sub-row"
       style={{
@@ -561,6 +597,7 @@ const SubRow: React.FC<{
         {percentOfTotal.toFixed(1)}%
       </div>
     </div>
+    </>
   );
 };
 

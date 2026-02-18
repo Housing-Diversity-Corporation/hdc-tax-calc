@@ -1910,6 +1910,32 @@ export const calculateFullInvestorAnalysis = (
   // Years 2-Exit MACRS = total depreciation - Year 1 components
   const years2ExitMacrsTaxBenefit = totalDepreciationTaxBenefit - year1BonusTaxBenefit - year1MacrsTaxBenefit;
 
+  // IMPL-090/091: Federal/State Depreciation Breakout
+  // Decompose combined benefits into federal vs state using rate ratios.
+  // Rates are additive: combined = federal + NIIT + state [× conformity for bonus]
+  const breakoutFederalRate = (params.federalTaxRate || 37) + (params.niitRate || 3.8);
+  const breakoutStateRate = params.stateTaxRate || 0;
+  const breakoutConformityRate = params.bonusConformityRate ?? 1;
+  const breakoutBonusCombinedRate = breakoutFederalRate + (breakoutStateRate * breakoutConformityRate);
+  const breakoutMacrsCombinedRate = breakoutFederalRate + breakoutStateRate;
+  // Federal fraction of each rate bucket (safe division)
+  const bonusFederalFraction = breakoutBonusCombinedRate > 0 ? breakoutFederalRate / breakoutBonusCombinedRate : 1;
+  const macrsFederalFraction = breakoutMacrsCombinedRate > 0 ? breakoutFederalRate / breakoutMacrsCombinedRate : 1;
+  // Year 1: bonus uses bonus fraction, MACRS uses MACRS fraction
+  const federalDepreciationBenefitYear1 = (year1BonusTaxBenefit * bonusFederalFraction) + (year1MacrsTaxBenefit * macrsFederalFraction);
+  const stateDepreciationBenefitYear1 = (year1BonusTaxBenefit * (1 - bonusFederalFraction)) + (year1MacrsTaxBenefit * (1 - macrsFederalFraction));
+  // Hold period (Years 2-Exit): all straight-line, uses MACRS fraction
+  const federalDepreciationBenefitHoldPeriod = years2ExitMacrsTaxBenefit * macrsFederalFraction;
+  const stateDepreciationBenefitHoldPeriod = years2ExitMacrsTaxBenefit * (1 - macrsFederalFraction);
+  // Totals
+  const federalDepreciationBenefitTotal = federalDepreciationBenefitYear1 + federalDepreciationBenefitHoldPeriod;
+  const stateDepreciationBenefitTotal = stateDepreciationBenefitYear1 + stateDepreciationBenefitHoldPeriod;
+  // Investor profile label (e.g., "NJ Non-REP" or "OR REP")
+  const investorStateCode = params.selectedState || params.investorState || '';
+  const investorProfileLabel = investorStateCode
+    ? `${investorStateCode}${params.investorTrack ? (params.investorTrack === 'rep' ? ' REP' : ' Non-REP') : ''}`
+    : 'Federal Only';
+
   // Total OZ benefits (recapture is now summed from annual cash flows)
   // IMPL-057: Include step-up savings in total OZ benefits
   const totalOzBenefits = ozRecaptureAvoided + ozDeferralNPV + ozExitAppreciation + ozStepUpSavings;
@@ -2001,6 +2027,14 @@ export const calculateFullInvestorAnalysis = (
     year1BonusTaxBenefit,
     year1MacrsTaxBenefit,
     years2ExitMacrsTaxBenefit,
+    // IMPL-090/091: Federal/State Depreciation Breakout
+    federalDepreciationBenefitYear1,
+    stateDepreciationBenefitYear1,
+    federalDepreciationBenefitHoldPeriod,
+    stateDepreciationBenefitHoldPeriod,
+    federalDepreciationBenefitTotal,
+    stateDepreciationBenefitTotal,
+    investorProfileLabel,
     // ISS-050: Exit waterfall prior capital recovery tracking
     grossExitProceeds,
     capitalAlreadyRecovered,
