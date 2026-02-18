@@ -25,14 +25,16 @@ const InvestmentsStandalonePage: React.FC<InvestmentsStandalonePageProps> = ({ o
     try {
       setLoading(true);
 
-      // Get all configurations from all users (for collaboration)
-      const allConfigurations = await calculatorService.getAllConfigurations();
+      // Get all configurations from all users (with owner info for collaboration)
+      const allConfigurations = await calculatorService.getAllConfigurationsWithOwners();
 
       // Filter for complete configurations that are investor-facing
-      const completeDeals = allConfigurations.filter(config =>
-        config.completionStatus === 'complete' &&
-        config.isInvestorFacing === true
-      );
+      const completeDeals = allConfigurations
+        .filter(item =>
+          item.configuration.completionStatus === 'complete' &&
+          item.configuration.isInvestorFacing === true
+        )
+        .map(item => item.configuration);
 
       setDeals(completeDeals);
     } catch (error) {
