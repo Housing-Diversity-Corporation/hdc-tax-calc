@@ -71,6 +71,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
 
     // Projections — computed hold period (read-only)
     totalInvestmentYears, holdFromPIS,
+    exitMonth, setExitMonth, // IMPL-087
     // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
     noiGrowthRate, setNoiGrowthRate,
     exitCapRate, setExitCapRate,
@@ -394,6 +395,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
     yearOneNOI,
     yearOneDepreciationPct,
     totalInvestmentYears,
+    exitMonth, // IMPL-087
     // ISS-068c: Single NOI growth rate
     noiGrowthRate,
     exitCapRate,
@@ -807,6 +809,8 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
           setYearOneNOI={setYearOneNOI}
           totalInvestmentYears={totalInvestmentYears}
           holdFromPIS={holdFromPIS}
+          exitMonth={exitMonth}
+          setExitMonth={setExitMonth}
           noiGrowthRate={noiGrowthRate}
           setNoiGrowthRate={setNoiGrowthRate}
           exitCapRate={exitCapRate}

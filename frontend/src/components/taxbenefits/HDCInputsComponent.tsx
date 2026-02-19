@@ -399,11 +399,11 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
   const currentFingerprint = useMemo(() => JSON.stringify({
     pc: props.projectCost, pd: props.predevelopmentCosts, lv: props.landValue,
     noi: props.yearOneNOI, dep: props.yearOneDepreciationPct, ng: props.noiGrowthRate,
-    ec: props.exitCapRate, hp: props.holdPeriod, ie: props.investorEquityPct,
+    ec: props.exitCapRate, hp: props.totalInvestmentYears, ie: props.investorEquityPct,
     sd: props.seniorDebtPct, oz: props.ozEnabled, lh: props.lihtcEnabled,
     st: props.selectedState, hf: props.hdcFeeRate,
   }), [props.projectCost, props.predevelopmentCosts, props.landValue, props.yearOneNOI,
-       props.yearOneDepreciationPct, props.noiGrowthRate, props.exitCapRate, props.holdPeriod,
+       props.yearOneDepreciationPct, props.noiGrowthRate, props.exitCapRate, props.totalInvestmentYears,
        props.investorEquityPct, props.seniorDebtPct, props.ozEnabled, props.lihtcEnabled,
        props.selectedState, props.hdcFeeRate]);
 
