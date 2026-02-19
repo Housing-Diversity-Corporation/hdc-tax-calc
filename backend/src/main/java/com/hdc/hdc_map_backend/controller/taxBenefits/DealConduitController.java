@@ -51,6 +51,14 @@ public class DealConduitController {
             .orElse(ResponseEntity.notFound().build());
     }
 
+    // GET /api/deal-conduits/configurations/{id} — single config by ID
+    @GetMapping("/configurations/{id}")
+    public ResponseEntity<DealConduit> getConfigurationById(@PathVariable Long id) {
+        return dealConduitService.getConduitById(id)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
+    }
+
     // GET /api/deal-conduits/configurations/default — user's default config
     @GetMapping("/configurations/default")
     public ResponseEntity<DealConduit> getDefaultConfiguration(Principal principal) {
