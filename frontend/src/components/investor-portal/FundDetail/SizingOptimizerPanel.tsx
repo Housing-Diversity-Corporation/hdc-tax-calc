@@ -232,11 +232,11 @@ const SizingOptimizerPanel: React.FC<SizingOptimizerPanelProps> = ({
                 tick={{ fontSize: 10, fill: '#474a44' }}
               />
               <Tooltip
-                formatter={(value: number, name: string) => [
-                  `${value.toFixed(1)}%`,
+                formatter={(value: any, name: any) => [
+                  `${(Number(value) || 0).toFixed(1)}%`,
                   name === 'annualUtil' ? 'Annual Utilization' : 'Credit Utilization',
                 ]}
-                labelFormatter={(label: number) => `Commitment: ${formatCompactCurrency(label)}`}
+                labelFormatter={(label: any) => `Commitment: ${formatCompactCurrency(label)}`}
               />
               {/* Effective range shading */}
               {sizingResult.minimumEffective > 0 && sizingResult.maximumEffective > 0 && (

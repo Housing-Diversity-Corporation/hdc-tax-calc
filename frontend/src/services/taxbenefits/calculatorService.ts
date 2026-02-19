@@ -16,6 +16,7 @@ export interface CalculatorConfiguration {
   noiGrowthRate?: number;
   exitCapRate: number;
   holdPeriod?: number;
+  exitMonth?: number; // IMPL-087: Month of exit/disposition (1-12)
   investorEquityPct: number;
   philanthropicEquityPct: number;
   seniorDebtPct: number;
