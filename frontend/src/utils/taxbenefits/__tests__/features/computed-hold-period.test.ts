@@ -4,30 +4,26 @@
  * Verifies that the full calculation engine produces correct results
  * when holdPeriod is driven by LIHTC credit exhaustion via computeHoldPeriod().
  *
- * Formula:
- *   creditPeriodFromPIS = pisMonth > 1 ? 11 : 10
- *   delayFullYears = floor(taxBenefitDelayMonths / 12)
- *   delaySpillover = (taxBenefitDelayMonths % 12) > 0 ? 1 : 0
- *   holdFromPIS = creditPeriodFromPIS + delayFullYears + delaySpillover
- *   prePISYears = floor(constructionDevMonths / 12)
- *   totalInvestmentYears = prePISYears + holdFromPIS + 1 (IMPL-087: +1 disposition year)
+ * TIMING PRECISION FIX (Hypothesis A): Month-precise arithmetic.
+ * totalInvestmentYears = Math.ceil((construction + credits + delay) / 12) + 1
+ * This replaces the old dual-floor+spillover formula that compounded rounding errors.
  */
 
 import { calculateFullInvestorAnalysis } from '../../calculations';
 import { getDefaultTestParams } from '../test-helpers';
 
 describe('Computed Hold Period — Integration Tests', () => {
-  // IMPL-087: totalYears = prePIS + holdFromPIS + 1 (disposition year)
+  // totalYears = Math.ceil((constMo + creditPeriod*12 + delayMo) / 12) + 1 disposition
   const scenarios = [
-    { constructionDevMonths: 0,  pisMonth: 1,  delayMonths: 0,  holdFromPIS: 10, totalYears: 11 },
-    { constructionDevMonths: 0,  pisMonth: 7,  delayMonths: 0,  holdFromPIS: 11, totalYears: 12 },
-    { constructionDevMonths: 0,  pisMonth: 7,  delayMonths: 6,  holdFromPIS: 12, totalYears: 13 },
-    { constructionDevMonths: 0,  pisMonth: 12, delayMonths: 0,  holdFromPIS: 11, totalYears: 12 },
-    { constructionDevMonths: 24, pisMonth: 7,  delayMonths: 0,  holdFromPIS: 11, totalYears: 14 },
-    { constructionDevMonths: 24, pisMonth: 7,  delayMonths: 6,  holdFromPIS: 12, totalYears: 15 },
-    { constructionDevMonths: 48, pisMonth: 7,  delayMonths: 6,  holdFromPIS: 12, totalYears: 17 },
-    { constructionDevMonths: 0,  pisMonth: 1,  delayMonths: 12, holdFromPIS: 11, totalYears: 12 },
-    { constructionDevMonths: 0,  pisMonth: 1,  delayMonths: 13, holdFromPIS: 12, totalYears: 13 },
+    { constructionDevMonths: 0,  pisMonth: 1,  delayMonths: 0,  holdFromPIS: 10, totalYears: 11 }, // ceil(120/12)+1
+    { constructionDevMonths: 0,  pisMonth: 7,  delayMonths: 0,  holdFromPIS: 11, totalYears: 12 }, // ceil(132/12)+1
+    { constructionDevMonths: 0,  pisMonth: 7,  delayMonths: 6,  holdFromPIS: 11, totalYears: 13 }, // ceil(138/12)+1
+    { constructionDevMonths: 0,  pisMonth: 12, delayMonths: 0,  holdFromPIS: 11, totalYears: 12 }, // ceil(132/12)+1
+    { constructionDevMonths: 24, pisMonth: 7,  delayMonths: 0,  holdFromPIS: 11, totalYears: 14 }, // ceil(156/12)+1
+    { constructionDevMonths: 24, pisMonth: 7,  delayMonths: 6,  holdFromPIS: 11, totalYears: 15 }, // ceil(162/12)+1
+    { constructionDevMonths: 48, pisMonth: 7,  delayMonths: 6,  holdFromPIS: 11, totalYears: 17 }, // ceil(186/12)+1
+    { constructionDevMonths: 0,  pisMonth: 1,  delayMonths: 12, holdFromPIS: 10, totalYears: 12 }, // ceil(132/12)+1
+    { constructionDevMonths: 0,  pisMonth: 1,  delayMonths: 13, holdFromPIS: 10, totalYears: 13 }, // ceil(133/12)+1
   ];
 
   describe('holdPeriod and cashFlows.length match expected totalInvestmentYears', () => {

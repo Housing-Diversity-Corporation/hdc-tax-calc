@@ -119,6 +119,7 @@ interface HDCResultsComponentProps {
   advanceFinancingRate?: number;
   taxDeliveryMonths?: number;
   placedInServiceMonth?: number;
+  exitMonth?: number;
   subDebtPriority?: 'investor' | 'outside';
   includeOutsideInvestor?: boolean;
 

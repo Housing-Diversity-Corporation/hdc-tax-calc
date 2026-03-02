@@ -439,9 +439,9 @@ describe('ISS-064: Construction Delay + Lease-Up + DSCR Logic', () => {
         holdPeriod: 10,
       });
 
-      // floor(18/12) = 1, totalInvestmentYears = 1 + 10 + 1 disposition = 12
-      expect(result.cashFlows.length).toBe(12);
-      expect(result.holdPeriod).toBe(12);
+      // Month-precise: ceil((18 + 10*12 + 0) / 12) + 1 = ceil(138/12) + 1 = 12 + 1 = 13
+      expect(result.cashFlows.length).toBe(13);
+      expect(result.holdPeriod).toBe(13);
     });
   });
 

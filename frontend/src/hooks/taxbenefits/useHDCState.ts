@@ -67,8 +67,10 @@ export const useHDCState = () => {
   const [stateCapitalGainsRate, setStateCapitalGainsRate] = useState(DEFAULT_VALUES.STATE_CAPITAL_GAINS_RATE);
   // IMPL-096: depreciationRecaptureRate removed — rates derived inside calculateExitTax()
 
-  // Projections — holdPeriod computed from LIHTC credit exhaustion + delay
-  const { holdFromPIS, totalInvestmentYears } = useMemo(
+  // Projections — holdPeriod computed from LIHTC credit exhaustion
+  // TIMING PRECISION FIX: month-precise arithmetic, single conversion to years.
+  // exitYear = disposition year. totalInvestmentYears = full model (includes delay).
+  const { holdFromPIS, totalInvestmentYears, exitYear, delaySpilloverYears } = useMemo(
     () => computeHoldPeriod(placedInServiceMonth, constructionDelayMonths, taxBenefitDelayMonths),
     [placedInServiceMonth, constructionDelayMonths, taxBenefitDelayMonths]
   );
@@ -487,7 +489,7 @@ export const useHDCState = () => {
     // IMPL-096: depreciationRecaptureRate removed from return
 
     // Projections — computed hold period (read-only)
-    totalInvestmentYears, holdFromPIS,
+    totalInvestmentYears, holdFromPIS, exitYear, delaySpilloverYears,
     // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
     noiGrowthRate, setNoiGrowthRate,
     exitCapRate, setExitCapRate,

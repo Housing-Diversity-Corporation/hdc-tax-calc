@@ -289,6 +289,32 @@ ExitEvent (engine)      results.exitTaxAnalysis (consumers)
 
 ---
 
+## Timing Clock Precision — Hold Period vs Model Duration (Timing Handoff v3.0)
+
+`computeHoldPeriod.ts` now outputs **four values** instead of two, splitting the investor's hold period from the model's cash flow duration:
+
+| Output | Meaning | Used For |
+|--------|---------|----------|
+| `holdFromPIS` | Credit period only (10 or 11 years) — no delay | UI display, hold period communication |
+| `totalInvestmentYears` | prePIS + holdFromPIS + 1 disposition | Exit year, OZ qualification, investor hold |
+| `modelDurationYears` | totalInvestmentYears + delay spillover | Cash flow loop bound, pending array sizing |
+| `delaySpilloverYears` | Extra rows for delayed benefit capture | IRR accuracy (captures K-1 delayed benefits) |
+
+### Key Rule
+
+**K-1 delivery delay does NOT extend the investor's hold period.** The investor exits after the last credit year + disposition. The delay only extends the model's cash flow array so the IRR calculation captures delayed benefit realization in post-exit spillover rows.
+
+### Files
+
+| File | Role |
+|------|------|
+| `utils/taxbenefits/computeHoldPeriod.ts` | Pure function: computes all 4 timing outputs |
+| `utils/taxbenefits/calculations.ts` | Consumes `modelDurationYears` for loop, `totalInvestmentYears` for exit |
+| `hooks/taxbenefits/useHDCState.ts` | Calls `computeHoldPeriod()`, exposes all 4 values |
+| `utils/taxbenefits/auditExport/sheets/timingGanttSheet.ts` | Timing Gantt chart Excel sheet for auditing |
+
+---
+
 ## History
 
 | Date | Change | Reference |
@@ -300,3 +326,4 @@ ExitEvent (engine)      results.exitTaxAnalysis (consumers)
 | 2026-02-14 | Added Deal Benefit Profile Persistence | IMPL-084 |
 | 2026-02-14 | Added Pool Aggregation & Fund Sizing | IMPL-085 |
 | 2026-02-18 | Added Exit Tax Engine — Character-Split Recapture | IMPL-094 to IMPL-101 |
+| 2026-03-02 | Timing Clock Precision — Hold Period vs Model Duration Split | Timing Handoff v3.0 |

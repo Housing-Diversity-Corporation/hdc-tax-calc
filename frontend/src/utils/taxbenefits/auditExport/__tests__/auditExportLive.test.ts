@@ -189,7 +189,7 @@ describe('IMPL-056: Live Calculation Excel Model', () => {
 
       const workbook = generateLiveExcelModel(params);
 
-      expect(workbook.SheetNames).toHaveLength(14);
+      expect(workbook.SheetNames).toHaveLength(15);
       expect(workbook.SheetNames).toContain('Inputs');
       expect(workbook.SheetNames).toContain('Capital_Stack');
       expect(workbook.SheetNames).toContain('Debt_Schedule');
@@ -442,7 +442,7 @@ describe('IMPL-056: Live Calculation Excel Model', () => {
         projectName: 'Test Project',
       });
 
-      expect(workbook.SheetNames).toHaveLength(14);
+      expect(workbook.SheetNames).toHaveLength(15);
     });
   });
 
@@ -794,7 +794,7 @@ describe('IMPL-056: Live Calculation Excel Model', () => {
       const workbook = generateLiveExcelModel(params);
 
       expect(workbook.SheetNames).not.toContain('Tax_Utilization');
-      expect(workbook.SheetNames).toHaveLength(14);
+      expect(workbook.SheetNames).toHaveLength(15);
     });
 
     it('should include Tax_Utilization sheet when taxUtilization is present', () => {
@@ -834,7 +834,7 @@ describe('IMPL-056: Live Calculation Excel Model', () => {
       const workbook = generateLiveExcelModel(params);
 
       expect(workbook.SheetNames).toContain('Tax_Utilization');
-      expect(workbook.SheetNames).toHaveLength(15);
+      expect(workbook.SheetNames).toHaveLength(16);
 
       // Verify the sheet has content
       const taxUtilSheet = workbook.Sheets['Tax_Utilization'];

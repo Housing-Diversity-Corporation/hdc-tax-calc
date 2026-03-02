@@ -6,6 +6,7 @@ import { formatCurrencyMillions } from '../../utils/taxbenefits/formatters';
 // IMPL-020a: calculateMonthlyPayment removed - interest reserve now comes from useHDCCalculations hook
 import HDCInputsComponent from './HDCInputsComponent';
 import HDCResultsComponent from './HDCResultsComponent';
+import TimingGanttSection from './results/TimingGanttSection';
 import { useTheme } from '../../contexts/ThemeContext';
 
 const HDCCalculatorMain = () => {
@@ -805,8 +806,19 @@ const HDCCalculatorMain = () => {
           />
         </div>
       </div>
+
+      {/* Timing Clock Gantt Chart — full width below inputs/results */}
+      <div className="mt-6 md:mt-8">
+      <TimingGanttSection
+        constructionDelayMonths={constructionDelayMonths}
+        placedInServiceMonth={placedInServiceMonth}
+        taxBenefitDelayMonths={taxBenefitDelayMonths}
+        exitMonth={exitMonth}
+        ozEnabled={ozEnabled}
+      />
+      </div>
     </div>
-  );    
+  );
 };
 
 export default HDCCalculatorMain;

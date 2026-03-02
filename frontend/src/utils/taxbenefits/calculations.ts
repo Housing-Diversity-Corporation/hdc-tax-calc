@@ -571,8 +571,10 @@ export const calculateFullInvestorAnalysis = (
   // ISS-064: Calculate placed-in-service year outside the loop (constant for entire calculation)
   const constructionDelayYears = Math.floor(paramConstructionDelayMonths / 12);
   const placedInServiceYear = constructionDelayYears + 1; // Building placed in service after construction
-  // Hold period computed from LIHTC credit exhaustion + K-1 delay (not user-editable)
-  const { holdFromPIS, totalInvestmentYears } = computeHoldPeriod(
+  // Hold period computed from LIHTC credit exhaustion (not user-editable)
+  // TIMING PRECISION FIX: month-precise arithmetic, single conversion to years.
+  // exitYear = when investor exits (disposition). totalInvestmentYears = full model.
+  const { holdFromPIS, totalInvestmentYears, exitYear } = computeHoldPeriod(
     paramPlacedInServiceMonth,
     paramConstructionDelayMonths,
     paramTaxBenefitDelayMonths
@@ -588,10 +590,10 @@ export const calculateFullInvestorAnalysis = (
 
   // Pending benefit arrays — earned benefits scheduled here with delay offset,
   // then realized each year. Index = year - 1 (0-indexed).
-  // Extra slots for spillover that falls past exit (truncated = lost to investor).
-  const pendingDepBenefits = new Array(totalInvestmentYears + delayFullYears + 2).fill(0);
-  const pendingFedLIHTC = new Array(totalInvestmentYears + delayFullYears + 2).fill(0);
-  const pendingStateLIHTC = new Array(totalInvestmentYears + delayFullYears + 2).fill(0);
+  // Sized to totalInvestmentYears + buffer for any spillover past model end.
+  const pendingDepBenefits = new Array(totalInvestmentYears + 2).fill(0);
+  const pendingFedLIHTC = new Array(totalInvestmentYears + 2).fill(0);
+  const pendingStateLIHTC = new Array(totalInvestmentYears + 2).fill(0);
 
   // Track interest reserve balance for lease-up period
   let interestReserveBalance = interestReserveAmount;
@@ -642,6 +644,46 @@ export const calculateFullInvestorAnalysis = (
     // 3. Convert construction loan to permanent at TCO/placed-in-service
     // 4. Delay depreciation/tax benefits until placed-in-service
     // 5. Result: More value creation but longer time to tax benefits
+
+    // TIMING PRECISION FIX: Post-exit delay spillover years
+    // Years beyond exitYear only capture delayed benefit realization
+    // from pending arrays. No NOI, debt service, or operations — investor has exited.
+    if (year > exitYear) {
+      // Realize delayed benefits from pending arrays
+      const postExitTaxBenefit = pendingDepBenefits[year - 1] || 0;
+      const postExitStateLIHTC = pendingStateLIHTC[year - 1] || 0;
+      const postExitFedLIHTC = pendingFedLIHTC[year - 1] || 0;
+      const postExitTotalCF = postExitTaxBenefit + postExitStateLIHTC + postExitFedLIHTC;
+      cumulativeReturns += postExitTotalCF;
+
+      investorCashFlows.push({
+        year,
+        noi: 0, annualizedNOI: 0, effectiveOccupancy: 0,
+        interestReserveDraw: 0, interestReserveBalance: 0, excessReserveDistribution: 0,
+        hardDebtService: 0, pabDebtService: 0, debtServicePayments: 0, cashAfterDebtService: 0,
+        aumFeeAmount: 0, aumFeePaid: 0, aumFeeAccrued: 0, aumCatchUpPaid: 0,
+        cashAfterDebtAndFees: 0,
+        taxBenefit: postExitTaxBenefit,
+        operatingCashFlow: 0,
+        subDebtInterest: 0, investorSubDebtInterestReceived: 0,
+        investorSubDebtPIKAccrued: 0, investorPikBalance: 0,
+        outsideInvestorCurrentPay: 0, outsideInvestorPIKAccrued: 0,
+        hdcDebtFundCurrentPay: 0, hdcDebtFundPIKAccrued: 0, hdcSubDebtPIKAccrued: 0,
+        ozYear5TaxPayment: 0, stepUpTaxSavings: 0, ozRecaptureAvoided: 0,
+        stateLIHTCCredit: postExitStateLIHTC,
+        federalLIHTCCredit: postExitFedLIHTC,
+        stateLIHTCSyndicationProceeds: 0,
+        bonusTaxBenefit: 0, year1MacrsTaxBenefit: 0,
+        totalCashFlow: postExitTotalCF,
+        cumulativeReturns,
+        operationalDSCR: 0, dscr: 0, targetDscr: 0, dscrWithCurrentPay: 0,
+        mustPayDebtService: 0, mustPayDSCR: 0, philDSCR: 0,
+        revenue: 0, opex: 0, freeCash: 0, hardDscr: 0,
+        totalSubDebtInterestNet: 0, totalSubDebtInterestGross: 0,
+        cashAfterSubDebt: 0, subDebtDscr: 0, finalCash: 0, dscrShortfallPct: 0,
+      } as CashFlowItem);
+      continue; // Skip all operational logic for post-exit years
+    }
 
     if (year < placedInServiceYear) {
       // Building under construction - no NOI
@@ -737,7 +779,7 @@ export const calculateFullInvestorAnalysis = (
     const annualizedNOI = effectiveNOI;
 
     // IMPL-087: Disposition year proration — only prorate cash received, not growth base
-    if (year === totalInvestmentYears) {
+    if (year === exitYear) {
       effectiveNOI *= dispositionFraction;
     }
 
@@ -848,7 +890,7 @@ export const calculateFullInvestorAnalysis = (
         // IMPL-041: Use straight-line rate (all states accept MACRS straight-line)
         const annualDepreciation = annualStraightLineDepreciation || 0;
         // IMPL-087: Disposition year — IRC §168(d)(2) mid-month convention
-        const adjustedDepreciation = (year === totalInvestmentYears)
+        const adjustedDepreciation = (year === exitYear)
           ? annualDepreciation * macrsFraction
           : annualDepreciation;
         // ISS-070T: Compute default effective rate including NIIT (matches Excel formula)
@@ -910,7 +952,7 @@ export const calculateFullInvestorAnalysis = (
     if (paramOutsideInvestorSubDebtPct > 0 && outsideInvestorPikBalance > 0) {
       // IMPL-087: Prorate by dispositionFraction in disposition year
       const outsideInvestorFullInterest = outsideInvestorPikBalance * (paramOutsideInvestorSubDebtPikRate / 100)
-        * (year === totalInvestmentYears ? dispositionFraction : 1);
+        * (year === exitYear ? dispositionFraction : 1);
       if (paramOutsideInvestorPikCurrentPayEnabled) {
         outsideInvestorCurrentPayDue = outsideInvestorFullInterest * (paramOutsideInvestorPikCurrentPayPct / 100);
         outsideInvestorSubDebtPIKAccrued = outsideInvestorFullInterest - outsideInvestorCurrentPayDue;
@@ -926,7 +968,7 @@ export const calculateFullInvestorAnalysis = (
     if (paramHdcDebtFundPct > 0 && hdcDebtFundPikBalance > 0) {
       // IMPL-087: Prorate by dispositionFraction in disposition year
       const hdcDebtFundFullInterest = hdcDebtFundPikBalance * (paramHdcDebtFundPikRate / 100)
-        * (year === totalInvestmentYears ? dispositionFraction : 1);
+        * (year === exitYear ? dispositionFraction : 1);
       if (paramHdcDebtFundCurrentPayEnabled && year > interestReservePeriodYears) {
         hdcDebtFundCurrentPayDue = hdcDebtFundFullInterest * (paramHdcDebtFundCurrentPayPct / 100);
         hdcDebtFundPIKAccrued = hdcDebtFundFullInterest - hdcDebtFundCurrentPayDue;
@@ -941,7 +983,7 @@ export const calculateFullInvestorAnalysis = (
     if (paramHdcSubDebtPct > 0 && hdcPikBalance > 0) {
       // IMPL-087: Prorate by dispositionFraction in disposition year
       const hdcFullInterest = hdcPikBalance * (paramHdcSubDebtPikRate / 100)
-        * (year === totalInvestmentYears ? dispositionFraction : 1);
+        * (year === exitYear ? dispositionFraction : 1);
       // CRITICAL FIX: Use interest reserve period, not hard-coded year > 1
       // Current pay begins only after property is stabilized (interest reserve period ends)
       if (paramPikCurrentPayEnabled && year > interestReservePeriodYears) {
@@ -958,7 +1000,7 @@ export const calculateFullInvestorAnalysis = (
     if (paramInvestorSubDebtPct > 0 && investorPikBalance > 0) {
       // IMPL-087: Prorate by dispositionFraction in disposition year
       const investorFullInterest = investorPikBalance * (paramInvestorSubDebtPikRate / 100)
-        * (year === totalInvestmentYears ? dispositionFraction : 1);
+        * (year === exitYear ? dispositionFraction : 1);
       // CRITICAL FIX: Use interest reserve period, not hard-coded year > 1
       // Current pay begins only after property is stabilized (interest reserve period ends)
       if (paramInvestorPikCurrentPayEnabled && year > interestReservePeriodYears) {
@@ -984,7 +1026,7 @@ export const calculateFullInvestorAnalysis = (
       annualSeniorDebtService = isInIOPeriod ? annualSeniorDebtIOPayment : annualSeniorDebtPIPayment;
     }
     // IMPL-087: Disposition year proration
-    if (year === totalInvestmentYears) annualSeniorDebtService *= dispositionFraction;
+    if (year === exitYear) annualSeniorDebtService *= dispositionFraction;
 
     // Step 1.6: Calculate PAB Debt Service (IMPL-080)
     // PAB is pari passu with Senior Debt (both "must pay")
@@ -995,7 +1037,7 @@ export const calculateFullInvestorAnalysis = (
       annualPabDebtService = isInPabIOPeriod ? annualPabIOPayment : annualPabPIPayment;
     }
     // IMPL-087: Disposition year proration
-    if (year === totalInvestmentYears) annualPabDebtService *= dispositionFraction;
+    if (year === exitYear) annualPabDebtService *= dispositionFraction;
 
     // Step 2: Calculate HARD DEBT service (for DSCR - Senior + PAB + Phil current pay)
     // This is used for cash management and targets 1.05x
@@ -1074,7 +1116,7 @@ export const calculateFullInvestorAnalysis = (
     // Calculate HDC AUM fee with current pay option
     // IMPL-087: Prorate by dispositionFraction in disposition year
     const aumFeeBase = (paramAumFeeEnabled && year > placedInServiceYear) ?
-      effectiveProjectCost * (paramAumFeeRate / 100) * (year === totalInvestmentYears ? dispositionFraction : 1) : 0;
+      effectiveProjectCost * (paramAumFeeRate / 100) * (year === exitYear ? dispositionFraction : 1) : 0;
 
     if (year === 2 && paramAumFeeEnabled) {
       console.log('💰 AUM Fee Calculation Year 2:', {
@@ -1789,10 +1831,10 @@ export const calculateFullInvestorAnalysis = (
 
   // IMPL-087: Trailing 12-month NOI for exit valuation
   // Read annualized NOI directly from CashFlowItem (stored pre-proration in Change 5)
-  const dispositionYearAnnualNOI = investorCashFlows[totalInvestmentYears - 1].annualizedNOI
-    ?? investorCashFlows[totalInvestmentYears - 1].noi;
-  const priorYearNOI = totalInvestmentYears >= 2
-    ? (investorCashFlows[totalInvestmentYears - 2].annualizedNOI ?? investorCashFlows[totalInvestmentYears - 2].noi)
+  const dispositionYearAnnualNOI = investorCashFlows[exitYear - 1].annualizedNOI
+    ?? investorCashFlows[exitYear - 1].noi;
+  const priorYearNOI = exitYear >= 2
+    ? (investorCashFlows[exitYear - 2].annualizedNOI ?? investorCashFlows[exitYear - 2].noi)
     : dispositionYearAnnualNOI;
   const trailingNOI = (priorYearNOI * (12 - paramExitMonth) / 12) + (dispositionYearAnnualNOI * paramExitMonth / 12);
   const exitValue = trailingNOI / (paramExitCapRate / 100);
@@ -1803,8 +1845,8 @@ export const calculateFullInvestorAnalysis = (
   // Note: placedInServiceYear is already calculated at the start of the function
   // IMPL-087: Account for partial disposition year in P&I payment count
   const ioEndYear = placedInServiceYear + seniorDebtIOYears;
-  const fullPIYears = Math.max(0, (totalInvestmentYears - 1) - (ioEndYear - 1)); // exclude partial dispo year
-  const partialPIMonths = (totalInvestmentYears > ioEndYear - 1) ? paramExitMonth : 0;
+  const fullPIYears = Math.max(0, (exitYear - 1) - (ioEndYear - 1)); // exclude partial dispo year
+  const partialPIMonths = (exitYear > ioEndYear - 1) ? paramExitMonth : 0;
   const monthsOfPIPayments = fullPIYears * 12 + partialPIMonths;
 
   const remainingSeniorDebt = monthsOfPIPayments > 0
@@ -2244,7 +2286,7 @@ export const calculateFullInvestorAnalysis = (
       const appreciationGain = Math.max(0, exitProceeds - investorEquity);
 
       const exitEvent: ExitEvent = {
-        year: totalInvestmentYears,
+        year: exitYear,
         exitProceeds,
         cumulativeDepreciation,
         recaptureExposure,

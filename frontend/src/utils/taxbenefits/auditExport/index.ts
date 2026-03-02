@@ -57,6 +57,7 @@ import { buildHDCReturnsSheet } from './sheets/hdcReturnsSheet';
 import { buildSummarySheet } from './sheets/summarySheet';
 import { buildValidationSheet } from './sheets/validationSheet';
 import { buildTaxUtilizationSheet } from './sheets/taxUtilizationSheet';
+import { buildTimingGanttSheet } from './sheets/timingGanttSheet';
 
 // ============================================================================
 // MAIN EXPORT FUNCTIONS
@@ -338,7 +339,12 @@ export function generateLiveExcelModel(data: LiveExcelParams): XLSX.WorkBook {
     allNamedRanges.push(...taxUtilizationResult.namedRanges);
   }
 
-  // 15. Validation (depends on: all sheets)
+  // 15. Timing Gantt Chart — uses rawParams (before normalization) for actual timing
+  const timingGanttResult = buildTimingGanttSheet(rawParams);
+  XLSX.utils.book_append_sheet(wb, timingGanttResult.sheet, 'Timing_Gantt');
+  allNamedRanges.push(...timingGanttResult.namedRanges);
+
+  // 16. Validation (depends on: all sheets)
   const validationResult = buildValidationSheet(params, investorResults, hdcResults, cashFlows);
   XLSX.utils.book_append_sheet(wb, validationResult.sheet, 'Validation');
   allNamedRanges.push(...validationResult.namedRanges);
