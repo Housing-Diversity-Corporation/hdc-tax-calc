@@ -151,19 +151,29 @@ function validateLIHTCParams(params: LIHTCCalculationParams): void {
  * Calculates the Year 1 proration factor based on PIS month
  *
  * Formula: (13 - PIS Month) / 12
+ * With §42(f)(1) election: always 1.0 (full first year)
  *
  * Examples:
  * - January (1): 12 months in service = 100% credit
  * - July (7): 6 months in service = 50% credit
  * - December (12): 1 month in service = 8.33% credit
+ * - July (7) + election: 1.0 (deferred start, full first year)
  *
  * @param pisMonth - Placed-in-Service month (1-12)
+ * @param electDeferCreditPeriod - §42(f)(1) election (default false).
+ *   When true, credit period starts year after PIS → Year 1 gets full credit.
  * @returns Proration factor (0.0833 to 1.0)
+ * @since electDeferCreditPeriod param added in IMPL-109
  */
-export function getYear1ProrationFactor(pisMonth: number): number {
+export function getYear1ProrationFactor(
+  pisMonth: number,
+  electDeferCreditPeriod: boolean = false
+): number {
   if (pisMonth < 1 || pisMonth > 12) {
     throw new LIHTCValidationError('PIS month must be between 1 and 12');
   }
+
+  if (electDeferCreditPeriod) return 1.0;
 
   const monthsInService = 13 - pisMonth;
   return monthsInService / 12;
