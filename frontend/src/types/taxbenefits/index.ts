@@ -329,6 +329,9 @@ export interface CalculationParams {
   year1NetBenefit?: number;
   investorPromoteShare: number;
   constructionDelayMonths?: number; // 0-36 months construction delay before NOI
+  /** @deprecated IMPL-108: Replaced by auto-computed K-1 realization
+   *  dates (April 15 of year after tax year earned).
+   *  Will be removed in IMPL-117. */
   taxBenefitDelayMonths?: number; // 0-36 months delay before tax benefits realized
   hdcSubDebtPct?: number;
   hdcSubDebtPikRate?: number;
@@ -382,7 +385,14 @@ export interface CalculationParams {
   effectiveTaxRateForBonus?: number;    // Effective rate for bonus depreciation (conformity-adjusted)
   effectiveTaxRateForStraightLine?: number; // Effective rate for straight-line MACRS (full state rate)
   bonusConformityRate?: number;         // State bonus depreciation conformity rate (0.0 to 1.0)
+  /** @deprecated IMPL-108: Now auto-computed from investmentDate +
+   *  constructionPeriodMonths, with optional pisDateOverride.
+   *  Will be removed as user input in IMPL-117.
+   *  LIHTC functions still accept pisMonth as a local parameter. */
   placedInServiceMonth?: number;        // Month property placed in service (1-12), default 7 for mid-year
+  /** @deprecated IMPL-108: Now auto-computed from LIHTC credit
+   *  exhaustion + exitExtensionMonths.
+   *  Will be removed in IMPL-117. */
   exitMonth?: number;                    // IMPL-087: Month of exit/disposition (1-12), default matches pisMonth
 
   // Basis Adjustments (v7.0.7)
@@ -487,6 +497,109 @@ export interface CalculationParams {
 
   // Federal LIHTC Credits (IMPL-021b)
   federalLIHTCCredits?: number[];  // 11-year credit schedule from lihtcResult
+
+  // ══════════════════════════════════════════════════════════
+  // TIMING ARCHITECTURE (IMPL-108+)
+  // Investment Date is the single master clock. All other timing
+  // values are either user parameters or computed outputs.
+  // ══════════════════════════════════════════════════════════
+
+  /** ISO date string 'YYYY-MM-DD'. The day the investor wires
+   *  capital to the fund. Master clock for all timing computations. */
+  investmentDate?: string;
+
+  /** ISO date string or null. When non-null, overrides the
+   *  auto-computed PIS date (investmentDate + constructionPeriodMonths).
+   *  Used when actual PIS differs from projection. */
+  pisDateOverride?: string | null;
+
+  /** §42(f)(1) election to begin the 10-year credit period in the
+   *  taxable year AFTER PIS instead of the PIS year. Default false.
+   *  Only effective when pisCalendarMonth > 1 (January PIS guard:
+   *  election ignored because it would add 1 year with no benefit).
+   *  Does NOT affect depreciation — only LIHTC credit timing. */
+  electDeferCreditPeriod?: boolean;
+
+  /** Months beyond optimal exit the investor wishes to hold (0+).
+   *  Optimal exit = month after last LIHTC credit earned.
+   *  Extended hold continues depreciation, OZ appreciation,
+   *  and operating cash flow. LIHTC credits are exhausted. */
+  exitExtensionMonths?: number;
+}
+
+/** Day-precise cash flow for XIRR calculation.
+ *  Replaces uniform-annual IRR with actual calendar dates.
+ *  @since IMPL-108 */
+export interface XirrCashFlow {
+  /** ISO date string 'YYYY-MM-DD' */
+  date: string;
+  /** Positive = inflow to investor, negative = outflow */
+  amount: number;
+  /** Audit trail label for this cash flow.
+   *  Examples: 'investment', 'k1-dep-bonus', 'k1-dep-macrs',
+   *  'k1-lihtc-fed', 'k1-lihtc-state', 'cashflow',
+   *  'oz-yr5-tax', 'exit-proceeds', 'oz-exit-benefit' */
+  category: string;
+  /** Tax year this benefit was earned (for K-1 items).
+   *  The date field holds the K-1 realization date
+   *  (April 15 of taxYear + 1). */
+  taxYear?: number;
+}
+
+/** Output of computeTimeline() — all timing values derived from
+ *  Investment Date as the single master clock.
+ *  @since IMPL-108 */
+export interface ComputedTimeline {
+  // ── Master Clock ──
+  investmentDate: Date;
+
+  // ── Placed in Service ──
+  pisDate: Date;
+  pisIsOverridden: boolean;
+  pisCalendarMonth: number;        // 1-12
+  pisYear: number;                 // Calendar year
+
+  // ── §42(f)(1) Election ──
+  electDeferCreditPeriod: boolean;
+  /** pisYear or pisYear+1, depending on election */
+  creditStartYear: number;
+
+  // ── LIHTC Credit Period ──
+  /** Year 1 proration: 1.0 if elected or Jan PIS, else (12-pisMonth+1)/12 */
+  lihtcYear1Pct: number;
+  lihtcCatchUpPct: number;
+  hasCatchUp: boolean;
+  /** 10 (no catch-up) or 11 (catch-up needed) */
+  lihtcCreditYears: number;
+  lastCreditYear: number;
+
+  // ── Exit Dates ──
+  /** Engine-computed: Jan 1 of (lastCreditYear + 1) */
+  optimalExitDate: Date;
+  /** After user extension */
+  actualExitDate: Date;
+  isExtended: boolean;
+
+  // ── K-1 Realization ──
+  /** April 15 of (pisYear + 1) */
+  bonusDepK1Date: Date;
+  bonusDepLagMonths: number;
+  /** April 15 of (creditStartYear + 1) */
+  firstLihtcK1Date: Date;
+
+  // ── OZ Timing ──
+  ozDeferralEndDate: Date | null;
+  ozRecognitionDate: Date | null;
+  ozMinimumDate: Date | null;
+  /** True if OZ 10-year minimum > LIHTC optimal exit */
+  ozFloorBinding: boolean;
+
+  // ── Array Sizing (backward compat with annual loop) ──
+  totalHoldMonths: number;
+  totalInvestmentYears: number;
+  holdFromPIS: number;
+  exitYear: number;
+  placedInServiceYear: number;
 }
 
 /**
