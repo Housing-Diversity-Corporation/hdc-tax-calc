@@ -37,6 +37,9 @@ import {
 // ISS-070f: Import calculation functions to recalculate fresh results at export time
 import { calculateFullInvestorAnalysis } from '../calculations';
 import { calculateHDCAnalysis } from '../hdcAnalysis';
+// IMPL-115: Import computeTimeline for rawParams-based timing (not affected by normalization)
+import { computeTimeline } from '../computeTimeline';
+import { ComputedTimeline } from '../../../types/taxbenefits';
 
 import { LiveExcelParams, AuditExportParams, NamedRangeDefinition, SHEET_NAMES } from './types';
 import { applyNamedRanges } from './namedRanges';
@@ -88,6 +91,19 @@ export function generateLiveExcelModel(data: LiveExcelParams): XLSX.WorkBook {
     seniorDebtAmortization: rawParams.seniorDebtAmortization || 35,
     philDebtAmortization: rawParams.philDebtAmortization || 35,
   };
+
+  // IMPL-115: Compute timeline from rawParams (before normalization) for timing-aware sheets
+  // Must be computed from rawParams because normalization forces constructionDelayMonths=0
+  const rawTimeline: ComputedTimeline | null = rawParams.investmentDate
+    ? computeTimeline(
+        rawParams.investmentDate,
+        rawParams.constructionDelayMonths || 0,
+        rawParams.pisDateOverride || null,
+        rawParams.ozEnabled !== false,
+        rawParams.exitExtensionMonths || 0,
+        rawParams.electDeferCreditPeriod || false
+      )
+    : null;
 
   // ISS-070g/i: Diagnostic logging to trace params discrepancy
   const rawParamKeys = Object.keys(rawParams).filter(k => rawParams[k as keyof typeof rawParams] !== undefined);
@@ -256,7 +272,7 @@ export function generateLiveExcelModel(data: LiveExcelParams): XLSX.WorkBook {
     yearOneNOI: params.yearOneNOI,
     seniorDebtPct: params.seniorDebtPct,
   });
-  const inputsResult = buildInputsSheet(params);
+  const inputsResult = buildInputsSheet(params, rawTimeline);
   XLSX.utils.book_append_sheet(wb, inputsResult.sheet, 'Inputs');
   allNamedRanges.push(...inputsResult.namedRanges);
 
@@ -306,7 +322,7 @@ export function generateLiveExcelModel(data: LiveExcelParams): XLSX.WorkBook {
   allNamedRanges.push(...exitResult.namedRanges);
 
   // 11. Investor Returns (depends on: all above)
-  const investorReturnsResult = buildInvestorReturnsSheet(params, investorResults, cashFlows);
+  const investorReturnsResult = buildInvestorReturnsSheet(params, investorResults, cashFlows, rawTimeline);
   XLSX.utils.book_append_sheet(wb, investorReturnsResult.sheet, 'Investor_Returns');
   allNamedRanges.push(...investorReturnsResult.namedRanges);
 
@@ -339,8 +355,8 @@ export function generateLiveExcelModel(data: LiveExcelParams): XLSX.WorkBook {
     allNamedRanges.push(...taxUtilizationResult.namedRanges);
   }
 
-  // 15. Timing Gantt Chart — uses rawParams (before normalization) for actual timing
-  const timingGanttResult = buildTimingGanttSheet(rawParams);
+  // 15. Timing Gantt Chart — uses rawParams + ComputedTimeline for actual timing
+  const timingGanttResult = buildTimingGanttSheet(rawParams, rawTimeline);
   XLSX.utils.book_append_sheet(wb, timingGanttResult.sheet, 'Timing_Gantt');
   allNamedRanges.push(...timingGanttResult.namedRanges);
 

@@ -287,7 +287,13 @@ export const HDCComprehensiveReportButton: React.FC<HDCComprehensiveReportProps>
         ['Exit Cap Rate', formatPercent(params.exitCapRate || 5)],
         ['Hold Period', `${holdPeriod} years`],
         ['Construction Delay', `${params.constructionDelayMonths || 0} months`],
-        ['Tax Benefit Delay', `${params.taxBenefitDelayMonths || 0} months`]
+        ['Tax Benefit Delay', `${params.taxBenefitDelayMonths || 0} months`],
+        // IMPL-115: Show ComputedTimeline dates when available
+        ...(investorResults?.computedTimeline ? [
+          ['Investment Date', investorResults.computedTimeline.investmentDate.toLocaleDateString()],
+          ['PIS Date', investorResults.computedTimeline.pisDate.toLocaleDateString() + (investorResults.computedTimeline.pisIsOverridden ? ' (override)' : '')],
+          ['Exit Date', investorResults.computedTimeline.actualExitDate.toLocaleDateString()],
+        ] : []),
       ];
 
       autoTable(doc, {
@@ -422,7 +428,10 @@ export const HDCComprehensiveReportButton: React.FC<HDCComprehensiveReportProps>
         lihtcInputs.push(['LIHTC Credit Rate', formatPercent((params.creditRate || 0.04) * 100)]);
         lihtcInputs.push(['Applicable Fraction', formatPercent(params.applicableFraction || 100)]);
         lihtcInputs.push(['DDA/QCT Boost', params.ddaQctBoost ? 'Yes (130%)' : 'No']);
-        lihtcInputs.push(['Placed in Service Month', String(params.placedInServiceMonth || 7)]);
+        // IMPL-115: Show PIS from timeline when available, else legacy field
+        lihtcInputs.push(['Placed in Service Month', investorResults?.computedTimeline
+          ? `${investorResults.computedTimeline.pisCalendarMonth} (${investorResults.computedTimeline.pisDate.toLocaleDateString()})`
+          : String(params.placedInServiceMonth || 7)]);
         // ISS-059: Add LIHTC Eligible Basis Exclusions
         const hasExclusions = (params.commercialSpaceCosts || 0) + (params.syndicationCosts || 0) +
           (params.marketingCosts || 0) + (params.financingFees || 0) + (params.bondIssuanceCosts || 0) +

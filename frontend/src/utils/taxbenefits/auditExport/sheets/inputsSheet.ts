@@ -6,13 +6,18 @@
  */
 
 import * as XLSX from 'xlsx';
-import { CalculationParams } from '../../../../types/taxbenefits';
+import { CalculationParams, ComputedTimeline } from '../../../../types/taxbenefits';
 import { SheetResult, NamedRangeDefinition, InputRow } from '../types';
+
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const formatDate = (date: Date): string =>
+  `${MONTH_NAMES[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
 
 /**
  * Build the Inputs sheet with all parameters and named ranges
+ * IMPL-115: Optional rawTimeline for date-driven timing display
  */
-export function buildInputsSheet(params: CalculationParams): SheetResult {
+export function buildInputsSheet(params: CalculationParams, rawTimeline?: ComputedTimeline | null): SheetResult {
   // ISS-070N: Log what params inputsSheet actually receives (EXPORT prefix to distinguish from UI logs)
   console.log('[EXPORT ISS-070N] inputsSheet received params:', {
     projectCost: params.projectCost,
@@ -42,6 +47,28 @@ export function buildInputsSheet(params: CalculationParams): SheetResult {
     { label: 'Lease-Up Months', rangeName: 'LeaseUpMonths', value: 18, units: 'months' },
     { label: 'Construction Delay (months)', rangeName: 'ConstructionDelayMonths', value: params.constructionDelayMonths || 0, units: 'months' },
     { label: 'Tax Benefit Delay (months)', rangeName: 'TaxBenefitDelayMonths', value: params.taxBenefitDelayMonths || 0, units: 'months' },
+
+    // IMPL-115: Date-driven timing (when investmentDate provided)
+    ...(rawTimeline ? [
+      { label: '', rangeName: '', value: '' as string | number, units: '' },
+      { label: '=== DATE-DRIVEN TIMING ===', rangeName: '', value: '' as string | number, units: '' },
+      { label: 'Investment Date', rangeName: 'InvestmentDate', value: formatDate(rawTimeline.investmentDate), units: 'date' },
+      { label: 'PIS Date', rangeName: 'PISDate', value: formatDate(rawTimeline.pisDate) + (rawTimeline.pisIsOverridden ? ' (OVERRIDDEN)' : ''), units: 'date' },
+      { label: 'PIS Calendar Month', rangeName: 'PISCalendarMonth', value: rawTimeline.pisCalendarMonth, units: 'month' },
+      { label: 'Construction Months (actual)', rangeName: 'ConstructionMonthsActual', value: params.constructionDelayMonths || 0, units: 'months' },
+      { label: '§42(f)(1) Election', rangeName: 'ElectDeferCredit', value: rawTimeline.electDeferCreditPeriod ? 'Yes' : 'No', units: '' },
+      { label: 'Credit Start Year', rangeName: 'CreditStartYear', value: rawTimeline.creditStartYear, units: 'year' },
+      { label: 'Credit Period (years)', rangeName: 'CreditPeriodYears', value: rawTimeline.lihtcCreditYears, units: 'years' },
+      { label: 'Last Credit Year', rangeName: 'LastCreditYear', value: rawTimeline.lastCreditYear, units: 'year' },
+      { label: 'Optimal Exit Date', rangeName: 'OptimalExitDate', value: formatDate(rawTimeline.optimalExitDate), units: 'date' },
+      { label: 'Actual Exit Date', rangeName: 'ActualExitDate', value: formatDate(rawTimeline.actualExitDate), units: 'date' },
+      { label: 'Exit Extension (months)', rangeName: 'ExitExtensionMonths', value: params.exitExtensionMonths || 0, units: 'months' },
+      { label: 'Total Hold (months)', rangeName: 'TotalHoldMonths', value: rawTimeline.totalHoldMonths, units: 'months' },
+      { label: 'Total Investment Years', rangeName: 'TotalInvestmentYears', value: rawTimeline.totalInvestmentYears, units: 'years' },
+      { label: 'Bonus Dep K-1 Date', rangeName: 'BonusDepK1Date', value: formatDate(rawTimeline.bonusDepK1Date), units: 'date' },
+      { label: 'First LIHTC K-1 Date', rangeName: 'FirstLihtcK1Date', value: formatDate(rawTimeline.firstLihtcK1Date), units: 'date' },
+      { label: 'OZ Floor Binding', rangeName: 'OZFloorBinding', value: rawTimeline.ozFloorBinding ? 'Yes' : 'No', units: '' },
+    ] as InputRow[] : []),
 
     // Blank row separator
     { label: '', rangeName: '', value: '', units: '' },

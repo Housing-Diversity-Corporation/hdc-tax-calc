@@ -219,6 +219,9 @@ export interface InvestorAnalysisResults {
   xirr?: number | null;                    // Day-precise IRR (percentage), null when old path
   xirrCashFlows?: XirrCashFlow[];          // Audit trail: dated cash flows used for XIRR
 
+  // IMPL-115: ComputedTimeline on results (when investmentDate provided)
+  computedTimeline?: ComputedTimeline | null;
+
   // Investment Portal specific fields
   investorUpfrontCash?: number;
   afterTaxIRR?: number;

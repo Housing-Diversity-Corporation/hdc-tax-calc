@@ -824,7 +824,13 @@ export const HDCTaxReportJsPDFButton: React.FC<HDCTaxReportJsPDFProps> = ({
           ['10-Year Hold Benefit:', '100% OZ gain elimination'],
         ];
 
-        if (taxBenefitDelayMonths > 0) {
+        // IMPL-115: Show ComputedTimeline dates when available, else legacy delay
+        if (investorResults.computedTimeline) {
+          ozMetrics.push(
+            ['Investment Date:', investorResults.computedTimeline.investmentDate.toLocaleDateString()],
+            ['Exit Date:', investorResults.computedTimeline.actualExitDate.toLocaleDateString()]
+          );
+        } else if (taxBenefitDelayMonths > 0) {
           ozMetrics.push(
             ['Tax Benefit Delay:', `${taxBenefitDelayMonths} months`],
             ['Impact on Amount:', 'None (timing only)']

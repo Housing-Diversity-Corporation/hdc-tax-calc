@@ -2342,6 +2342,8 @@ export const calculateFullInvestorAnalysis = (
     // IMPL-111: Day-precise XIRR (new path only)
     xirr: xirr,
     xirrCashFlows: timeline ? xirrFlows : undefined,
+    // IMPL-115: ComputedTimeline on results for downstream consumers (exports, reports)
+    computedTimeline: timeline,
   };
 
   // NEW: Add tax planning calculations if requested

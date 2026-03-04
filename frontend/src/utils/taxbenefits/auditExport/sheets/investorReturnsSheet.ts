@@ -9,16 +9,18 @@
  */
 
 import * as XLSX from 'xlsx';
-import { CalculationParams, InvestorAnalysisResults, CashFlowItem } from '../../../../types/taxbenefits';
+import { CalculationParams, InvestorAnalysisResults, CashFlowItem, ComputedTimeline } from '../../../../types/taxbenefits';
 import { SheetResult, NamedRangeDefinition, FormulaCell } from '../types';
 
 /**
  * Build the Investor Returns sheet with OZ benefits
+ * IMPL-115: Optional timeline for calendar year labels
  */
 export function buildInvestorReturnsSheet(
   params: CalculationParams,
   results: InvestorAnalysisResults,
-  cashFlows: CashFlowItem[]
+  cashFlows: CashFlowItem[],
+  timeline?: ComputedTimeline | null
 ): SheetResult {
   const namedRanges: NamedRangeDefinition[] = [];
   const ws: XLSX.WorkSheet = {};
@@ -55,12 +57,14 @@ export function buildInvestorReturnsSheet(
   ws['A1'] = { t: 's', v: 'INVESTOR RETURNS' };
   ws['A2'] = { t: 's', v: '' };
 
-  // Column headers - Year 0 through Year 10
+  // Column headers - Year 0 through Year 10 (with calendar years when timeline available)
   const headerRow = 3;
   ws[`A${headerRow}`] = { t: 's', v: 'Component' };
+  const investmentCalendarYear = timeline ? timeline.investmentDate.getFullYear() : null;
   for (let year = 0; year <= holdPeriod; year++) {
     const col = String.fromCharCode(66 + year); // B, C, D, ...
-    ws[`${col}${headerRow}`] = { t: 's', v: year === 0 ? 'Year 0' : `Year ${year}` };
+    const calLabel = investmentCalendarYear ? ` (${investmentCalendarYear + year})` : '';
+    ws[`${col}${headerRow}`] = { t: 's', v: year === 0 ? `Year 0${calLabel}` : `Year ${year}${calLabel}` };
   }
 
   // Data rows
