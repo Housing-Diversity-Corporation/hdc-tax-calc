@@ -50,7 +50,6 @@ describe('OZ Depreciation Rule', () => {
       investorSubDebtPikRate: 8,
       opexRatio: 30,
       constructionDelayMonths: 0,
-      taxBenefitDelayMonths: 0,
     };
 
     const results = calculateFullInvestorAnalysis(params);
@@ -182,7 +181,6 @@ describe('OZ Depreciation Rule', () => {
       investorSubDebtPikRate: 8,
       opexRatio: 30,
       constructionDelayMonths: 0,
-      taxBenefitDelayMonths: 0,
     };
 
     const results = calculateFullInvestorAnalysis(params);

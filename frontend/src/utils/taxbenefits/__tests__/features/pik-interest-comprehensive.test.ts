@@ -240,7 +240,6 @@ describe('PIK Interest Comprehensive Test Suite', () => {
         ozType: 'standard' as const,
         deferredCapitalGains: 0,
         capitalGainsTaxRate: 34.65,
-        taxBenefitDelayMonths: 0,
         constructionDelayMonths: 0
       };
 

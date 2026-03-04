@@ -28,7 +28,6 @@ describe('Outside Investor Sub-Debt Impact on Promote Split', () => {
     opexRatio: 30,
     holdPeriod: 10,
     constructionDelayMonths: 0,
-    taxBenefitDelayMonths: 0,
     placedInServiceMonth: 1,
 
     // Tax params - use effectiveTaxRate only

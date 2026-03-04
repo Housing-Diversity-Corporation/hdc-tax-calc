@@ -25,7 +25,6 @@ const BASE_PARAMS: Partial<CalculationParams> = {
   noiGrowthRate: 3,
   placedInServiceMonth: 7,
   constructionDelayMonths: 23,
-  taxBenefitDelayMonths: 0,
   exitMonth: 12,
   ozEnabled: true,
 };

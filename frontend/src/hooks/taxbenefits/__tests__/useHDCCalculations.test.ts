@@ -70,7 +70,6 @@ describe('useHDCCalculations Hook - Integration Tests', () => {
     interestReserveMonths: 12,
 
     // Tax timing
-    taxBenefitDelayMonths: 0,
     constructionDelayMonths: 0,
 
     // AUM current pay settings
@@ -687,7 +686,6 @@ describe('useHDCCalculations Hook - Integration Tests', () => {
         landValue: 10000000,
         investorEquityPct: 20,
         hdcAdvanceFinancing: false,
-        taxBenefitDelayMonths: 0
       };
 
       const { result } = renderHook(() => useHDCCalculations(propsWithPredevelopment));

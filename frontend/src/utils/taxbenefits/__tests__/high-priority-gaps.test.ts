@@ -34,7 +34,6 @@ function createBaseParams(overrides = {}) {
     expenseGrowth: 3,
     hdcFeeRate: 0,
     hdcFee: 0.5,
-    taxBenefitDelayMonths: 0,
     constructionDelayMonths: 0,
     placedInServiceMonth: 1,
     ozEnabled: true,

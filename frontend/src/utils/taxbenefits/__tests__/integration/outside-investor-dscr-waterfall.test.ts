@@ -44,7 +44,6 @@ describe('Outside Investor Sub-Debt Current Pay & DSCR Management', () => {
     totalTaxBenefit: 0, // Will be calculated
     netTaxBenefit: 0, // Will be calculated
     hdcAdvanceFinancing: false,
-    taxBenefitDelayMonths: 0,
     constructionDelayMonths: 0,
     interestReserveEnabled: false,
     interestReserveMonths: 0,

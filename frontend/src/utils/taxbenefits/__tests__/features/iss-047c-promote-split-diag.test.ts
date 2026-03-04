@@ -33,7 +33,6 @@ describe('ISS-047c Promote Split Diagnostic', () => {
     aumFeeEnabled: false,
     aumFeeRate: 0,
     constructionDelayMonths: 0,
-    taxBenefitDelayMonths: 0,
     hdcAdvanceFinancing: false,
     investorUpfrontCash: 0,
     totalTaxBenefit: 0,

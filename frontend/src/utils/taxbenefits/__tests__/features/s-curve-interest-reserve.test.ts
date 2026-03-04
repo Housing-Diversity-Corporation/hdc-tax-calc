@@ -41,7 +41,6 @@ describe('S-Curve Interest Reserve Calculation', () => {
     totalTaxBenefit: 0,
     netTaxBenefit: 0,
     hdcAdvanceFinancing: false,
-    taxBenefitDelayMonths: 0,
     constructionDelayMonths: 0,
     interestReserveEnabled: true,
     interestReserveMonths: 12,

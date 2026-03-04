@@ -4,36 +4,34 @@
  * Verifies that the full calculation engine produces correct results
  * when holdPeriod is driven by LIHTC credit exhaustion via computeHoldPeriod().
  *
+ * IMPL-116: Removed taxBenefitDelayMonths (deprecated).
+ * Will be replaced by computeTimeline.test.ts in IMPL-116c.
+ *
  * TIMING PRECISION FIX (Hypothesis A): Month-precise arithmetic.
- * totalInvestmentYears = Math.ceil((construction + credits + delay) / 12) + 1
- * This replaces the old dual-floor+spillover formula that compounded rounding errors.
+ * totalInvestmentYears = Math.ceil((construction + credits) / 12) + 1
  */
 
 import { calculateFullInvestorAnalysis } from '../../calculations';
 import { getDefaultTestParams } from '../test-helpers';
 
 describe('Computed Hold Period — Integration Tests', () => {
-  // totalYears = Math.ceil((constMo + creditPeriod*12 + delayMo) / 12) + 1 disposition
+  // totalYears = Math.ceil((constMo + creditPeriod*12) / 12) + 1 disposition
   const scenarios = [
-    { constructionDevMonths: 0,  pisMonth: 1,  delayMonths: 0,  holdFromPIS: 10, totalYears: 11 }, // ceil(120/12)+1
-    { constructionDevMonths: 0,  pisMonth: 7,  delayMonths: 0,  holdFromPIS: 11, totalYears: 12 }, // ceil(132/12)+1
-    { constructionDevMonths: 0,  pisMonth: 7,  delayMonths: 6,  holdFromPIS: 11, totalYears: 13 }, // ceil(138/12)+1
-    { constructionDevMonths: 0,  pisMonth: 12, delayMonths: 0,  holdFromPIS: 11, totalYears: 12 }, // ceil(132/12)+1
-    { constructionDevMonths: 24, pisMonth: 7,  delayMonths: 0,  holdFromPIS: 11, totalYears: 14 }, // ceil(156/12)+1
-    { constructionDevMonths: 24, pisMonth: 7,  delayMonths: 6,  holdFromPIS: 11, totalYears: 15 }, // ceil(162/12)+1
-    { constructionDevMonths: 48, pisMonth: 7,  delayMonths: 6,  holdFromPIS: 11, totalYears: 17 }, // ceil(186/12)+1
-    { constructionDevMonths: 0,  pisMonth: 1,  delayMonths: 12, holdFromPIS: 10, totalYears: 12 }, // ceil(132/12)+1
-    { constructionDevMonths: 0,  pisMonth: 1,  delayMonths: 13, holdFromPIS: 10, totalYears: 13 }, // ceil(133/12)+1
+    { constructionDevMonths: 0,  pisMonth: 1,  holdFromPIS: 10, totalYears: 11 }, // ceil(120/12)+1
+    { constructionDevMonths: 0,  pisMonth: 7,  holdFromPIS: 11, totalYears: 12 }, // ceil(132/12)+1
+    { constructionDevMonths: 0,  pisMonth: 12, holdFromPIS: 11, totalYears: 12 }, // ceil(132/12)+1
+    { constructionDevMonths: 24, pisMonth: 7,  holdFromPIS: 11, totalYears: 14 }, // ceil(156/12)+1
+    { constructionDevMonths: 48, pisMonth: 7,  holdFromPIS: 11, totalYears: 16 }, // ceil(180/12)+1
   ];
 
   describe('holdPeriod and cashFlows.length match expected totalInvestmentYears', () => {
     it.each(scenarios)(
-      'construction=$constructionDevMonths, pisMonth=$pisMonth, delay=$delayMonths → total=$totalYears',
-      ({ constructionDevMonths, pisMonth, delayMonths, totalYears }) => {
+      'construction=$constructionDevMonths, pisMonth=$pisMonth → total=$totalYears',
+      ({ constructionDevMonths, pisMonth, totalYears }) => {
         const result = calculateFullInvestorAnalysis(getDefaultTestParams({
           constructionDelayMonths: constructionDevMonths,
           placedInServiceMonth: pisMonth,
-          taxBenefitDelayMonths: delayMonths,
+          investmentDate: undefined, // force old path — will be rewritten in IMPL-116c
         }));
 
         expect(result.holdPeriod).toBe(totalYears);
@@ -44,12 +42,11 @@ describe('Computed Hold Period — Integration Tests', () => {
 
   describe('remainingLIHTCCredits === 0 for all standard scenarios', () => {
     it.each(scenarios)(
-      'construction=$constructionDevMonths, pisMonth=$pisMonth, delay=$delayMonths',
-      ({ constructionDevMonths, pisMonth, delayMonths }) => {
+      'construction=$constructionDevMonths, pisMonth=$pisMonth',
+      ({ constructionDevMonths, pisMonth }) => {
         const result = calculateFullInvestorAnalysis(getDefaultTestParams({
           constructionDelayMonths: constructionDevMonths,
           placedInServiceMonth: pisMonth,
-          taxBenefitDelayMonths: delayMonths,
           lihtcEnabled: true,
           lihtcEligibleBasis: 50,
         }));
@@ -61,14 +58,13 @@ describe('Computed Hold Period — Integration Tests', () => {
 
   describe('OZ qualification: totalInvestmentYears >= 10 for all scenarios', () => {
     it.each(scenarios)(
-      'construction=$constructionDevMonths, pisMonth=$pisMonth, delay=$delayMonths → total=$totalYears >= 10',
-      ({ constructionDevMonths, pisMonth, delayMonths, totalYears }) => {
+      'construction=$constructionDevMonths, pisMonth=$pisMonth → total=$totalYears >= 10',
+      ({ constructionDevMonths, pisMonth, totalYears }) => {
         expect(totalYears).toBeGreaterThanOrEqual(10);
 
         const result = calculateFullInvestorAnalysis(getDefaultTestParams({
           constructionDelayMonths: constructionDevMonths,
           placedInServiceMonth: pisMonth,
-          taxBenefitDelayMonths: delayMonths,
           ozEnabled: true,
           ozType: 'standard',
           deferredCapitalGains: 1,

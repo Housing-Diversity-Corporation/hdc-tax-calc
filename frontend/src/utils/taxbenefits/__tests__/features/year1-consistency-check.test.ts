@@ -40,7 +40,6 @@ describe('Year 1 Calculation Consistency', () => {
     investorPromoteShare: 35,
     aumFeeEnabled: false,
     aumFeeRate: 1.5,
-    taxBenefitDelayMonths: 0,
     constructionDelayMonths: 0,
     hdcAdvanceFinancing: false,
     interestReserveEnabled: false,

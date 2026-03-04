@@ -52,7 +52,6 @@ describe('IRS MACRS Depreciation with Mid-Month Convention', () => {
     pikCurrentPayPct: 50,
     holdPeriod: 10,
     constructionDelayMonths: 0,
-    taxBenefitDelayMonths: 0,
     interestReserveEnabled: false,
     interestReserveMonths: 0
   };

@@ -60,7 +60,6 @@ describe('Senior Debt Interest-Only Period', () => {
     interestReserveEnabled: false,
     interestReserveMonths: 12,
     constructionDelayMonths: 0,
-    taxBenefitDelayMonths: 0,
     placedInServiceMonth: 1,
     aumFeeEnabled: false,
     aumFeeRate: 0,

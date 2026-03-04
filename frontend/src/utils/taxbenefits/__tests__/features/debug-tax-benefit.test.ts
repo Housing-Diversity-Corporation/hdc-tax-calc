@@ -21,7 +21,6 @@ describe('Debug Tax Benefit Calculation', () => {
       expenseGrowth: 3,
       hdcFeeRate: 0,
       hdcFee: 0.5,
-      taxBenefitDelayMonths: 0,
       constructionDelayMonths: 0,
       ozEnabled: true,
       ozType: 'standard' as const,

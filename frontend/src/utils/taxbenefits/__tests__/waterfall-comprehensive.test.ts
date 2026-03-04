@@ -62,7 +62,6 @@ describe('HDC Waterfall Comprehensive Tests', () => {
 
     // Timing
     constructionDelayMonths: 0,
-    taxBenefitDelayMonths: 0,
     placedInServiceMonth: 1,
 
     // OZ Settings

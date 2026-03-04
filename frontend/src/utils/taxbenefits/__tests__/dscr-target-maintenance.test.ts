@@ -43,7 +43,6 @@ describe('1.05 DSCR Target Maintenance Tests', () => {
     annualStraightLineDepreciation: 1200000,
     effectiveTaxRate: 45,
     constructionDelayMonths: 0,
-    taxBenefitDelayMonths: 0,
     interestReserveEnabled: false,
     interestReserveMonths: 0
   };

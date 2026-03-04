@@ -74,7 +74,6 @@ describe('Step 4: Capital Structure Validation', () => {
       netTaxBenefit: 0,
       hdcFee: 0,
       constructionDelayMonths: 0,
-      taxBenefitDelayMonths: 0,
     };
 
     it('should calculate correct effective project cost', () => {
@@ -212,7 +211,6 @@ describe('Step 4: Capital Structure Validation', () => {
       netTaxBenefit: 0,
       hdcFee: 0,
       constructionDelayMonths: 0,
-      taxBenefitDelayMonths: 0,
     };
 
     it('should calculate correct effective project cost with interest reserve', () => {
@@ -336,7 +334,6 @@ describe('Step 4: Capital Structure Validation', () => {
       netTaxBenefit: 0,
       hdcFee: 0,
       constructionDelayMonths: 0,
-      taxBenefitDelayMonths: 0,
     };
 
     it('should calculate correct senior debt at 65%', () => {
@@ -457,7 +454,6 @@ describe('Step 4: Capital Structure Validation', () => {
       netTaxBenefit: 0,
       hdcFee: 0,
       constructionDelayMonths: 0,
-      taxBenefitDelayMonths: 0,
     };
 
     it('should calculate all capital components correctly', () => {
@@ -536,8 +532,7 @@ describe('Step 4: Capital Structure Validation', () => {
         netTaxBenefit: 0,
         hdcFee: 0,
         constructionDelayMonths: 0,
-        taxBenefitDelayMonths: 0,
-      };
+        };
 
       const results = calculateFullInvestorAnalysis(params);
 
@@ -611,8 +606,7 @@ describe('Step 4: Capital Structure Validation', () => {
         netTaxBenefit: 0,
         hdcFee: 0,
         constructionDelayMonths: 0,
-        taxBenefitDelayMonths: 0,
-      };
+        };
 
       const results1 = calculateFullInvestorAnalysis(params);
       const results2 = calculateFullInvestorAnalysis(params);
@@ -662,8 +656,7 @@ describe('Step 4: Capital Structure Validation', () => {
         netTaxBenefit: 0,
         hdcFee: 0,
         constructionDelayMonths: 0,
-        taxBenefitDelayMonths: 0,
-      };
+        };
 
       const results = calculateFullInvestorAnalysis(params);
 

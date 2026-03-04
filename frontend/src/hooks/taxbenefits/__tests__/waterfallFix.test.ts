@@ -71,8 +71,6 @@ describe('Waterfall Distribution Fix - Free Investment Analysis', () => {
     interestReserveEnabled: false,
     interestReserveMonths: 12,
 
-    // Tax timing
-    taxBenefitDelayMonths: 0
   };
 
   it('should correctly handle Free Investment scenario with 256% coverage', () => {

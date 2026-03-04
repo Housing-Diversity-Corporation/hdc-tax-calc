@@ -1,6 +1,9 @@
 /**
  * IMPL-087: Exit-Month Precision — Integration Tests
  *
+ * Runs on the investmentDate-driven path (computeTimeline).
+ * exitMonth still controls disposition-year proration fraction.
+ *
  * Verifies disposition year proration across all financial items:
  *   - NOI prorated by exitMonth/12
  *   - MACRS uses IRC §168(d)(2) mid-month convention: (exitMonth - 0.5) / 12
@@ -18,7 +21,8 @@ import { getDefaultTestParams } from '../test-helpers';
 describe('IMPL-087: Exit-Month Precision', () => {
   /**
    * Helper: run engine with specified exitMonth and return key fields.
-   * Defaults: pisMonth=1, no construction, no delay → totalInvestmentYears=11
+   * Uses investmentDate='2025-01-01' (from defaults) → computeTimeline path.
+   * totalInvestmentYears=10 (Jan PIS, 10 credit years, exit at boundary).
    */
   function runWithExitMonth(exitMonth: number, overrides: Record<string, any> = {}) {
     const result = calculateFullInvestorAnalysis(getDefaultTestParams({
@@ -185,11 +189,11 @@ describe('IMPL-087: Exit-Month Precision', () => {
       expect(lastYear.noi).toBeCloseTo(lastYear.annualizedNOI!, 4);
     });
 
-    it('holdPeriod and cashFlows.length match computeHoldPeriod', () => {
-      // pisMonth=1, no construction, no delay → totalInvestmentYears = 11
+    it('holdPeriod and cashFlows.length match computeTimeline', () => {
+      // investmentDate='2025-01-01', no construction → totalInvestmentYears = 10
       const { result } = runWithExitMonth(12);
-      expect(result.holdPeriod).toBe(11);
-      expect(result.cashFlows.length).toBe(11);
+      expect(result.holdPeriod).toBe(10);
+      expect(result.cashFlows.length).toBe(10);
     });
   });
 
@@ -217,10 +221,10 @@ describe('IMPL-087: Exit-Month Precision', () => {
       expect(lastYear.noi / lastYear.annualizedNOI!).toBeCloseTo(1 / 12, 2);
     });
 
-    it('holdPeriod unchanged (still 11 for default params)', () => {
+    it('holdPeriod unchanged (still 10 for default params)', () => {
       const { result } = runWithExitMonth(1);
-      expect(result.holdPeriod).toBe(11);
-      expect(result.cashFlows.length).toBe(11);
+      expect(result.holdPeriod).toBe(10);
+      expect(result.cashFlows.length).toBe(10);
     });
   });
 });

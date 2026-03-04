@@ -180,12 +180,12 @@ export function getDefaultTestParams(overrides: Partial<CalculationParams> = {})
     interestReserveEnabled: false,
     interestReserveMonths: 0,
 
-    // Timing
+    // Timing — IMPL-116: investmentDate triggers new date-driven path
+    investmentDate: '2025-01-01', // January PIS → holdYears = 10 (10 credit years, exit at boundary)
     constructionDelayMonths: 0,
-    taxBenefitDelayMonths: 0,
     holdPeriod: 10,
-    placedInServiceMonth: 1, // January PIS → computeHoldPeriod(1, 0, 0) = 11 (10 credit years + 1 disposition)
-    exitMonth: 12,           // IMPL-087: December exit → dispositionFraction = 1.0 (backward compatible)
+    placedInServiceMonth: 1, // @deprecated — kept for backward compat until IMPL-117
+    exitMonth: 12,           // @deprecated — auto-computed from investmentDate path
 
     // Opportunity Zone
     ozEnabled: true, // Default OZ enabled

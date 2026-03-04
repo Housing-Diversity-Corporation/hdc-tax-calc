@@ -43,7 +43,7 @@ describe('IMPL-111: Timeline Integration (New Path)', () => {
   // ─── CT-2: Old Path Still Works Without investmentDate ───
   describe('CT-2: Old path still works', () => {
     it('produces irr but NOT xirr when investmentDate is absent', () => {
-      const params = getDefaultTestParams({ exitMonth: 12 }); // no investmentDate
+      const params = getDefaultTestParams({ exitMonth: 12, investmentDate: undefined }); // force old path
       const results = calculateFullInvestorAnalysis(params);
 
       expect(results.irr).toBeDefined();
@@ -212,12 +212,12 @@ describe('IMPL-111: Timeline Integration (New Path)', () => {
   // ─── CT-7: Backward Compatibility — Existing Test Params Still Work ───
   describe('CT-7: Backward compatibility', () => {
     it('default params without investmentDate produce same results as before', () => {
-      // Run with standard default params (old path)
-      const params1 = getDefaultTestParams({ exitMonth: 12 });
+      // Run with standard default params (old path — force investmentDate: undefined)
+      const params1 = getDefaultTestParams({ exitMonth: 12, investmentDate: undefined });
       const results1 = calculateFullInvestorAnalysis(params1);
 
       // Run again to verify deterministic
-      const params2 = getDefaultTestParams({ exitMonth: 12 });
+      const params2 = getDefaultTestParams({ exitMonth: 12, investmentDate: undefined });
       const results2 = calculateFullInvestorAnalysis(params2);
 
       // Results should be identical (deterministic)
@@ -237,6 +237,7 @@ describe('IMPL-111: Timeline Integration (New Path)', () => {
       const params = getDefaultTestParams({
         constructionDelayMonths: 12,
         exitMonth: 12,
+        investmentDate: undefined,
       });
       const results = calculateFullInvestorAnalysis(params);
 
@@ -250,6 +251,7 @@ describe('IMPL-111: Timeline Integration (New Path)', () => {
       const params = getDefaultTestParams({
         ozEnabled: false,
         exitMonth: 12,
+        investmentDate: undefined,
       });
       const results = calculateFullInvestorAnalysis(params);
 

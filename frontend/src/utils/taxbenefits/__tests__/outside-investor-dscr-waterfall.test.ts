@@ -45,7 +45,6 @@ describe('Outside Investor Sub-Debt Current Pay & DSCR Management', () => {
     hdcFeeRate: 0, // HDC tax benefit fee enabled
     hdcPromotePct: 35,
     investorPromotePct: 65,
-    taxBenefitDelayMonths: 0,
     constructionDelayMonths: 0,
     interestReserveEnabled: false,
     interestReserveMonths: 0,

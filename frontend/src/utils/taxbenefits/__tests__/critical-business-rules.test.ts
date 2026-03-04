@@ -100,7 +100,6 @@ describe('Critical Business Rules - Free Investment Principle', () => {
           hdcFee: 0.5, // Initial HDC fee
           investorPromoteShare: investorPromote,
           philanthropicEquityPct: 0,
-          taxBenefitDelayMonths: 0,
           constructionDelayMonths: 0,
           year1NetBenefit: year1NetBenefit, // Add calculated value
           ozEnabled: true,
@@ -179,7 +178,6 @@ describe('Critical Business Rules - Free Investment Principle', () => {
         hdcFee: 0.5,
         investorPromoteShare: 35,
         philanthropicEquityPct: 0,
-        taxBenefitDelayMonths: 0,
         constructionDelayMonths: 0,
         year1NetBenefit: year1NetBenefit,
         ozEnabled: true,
@@ -252,7 +250,6 @@ describe('Critical Business Rules - Free Investment Principle', () => {
         expenseGrowth: 3,
         hdcFeeRate: 0,
         hdcFee: 0.5,
-        taxBenefitDelayMonths: 0,
         constructionDelayMonths: 0,
         aumFeeRate: 2.0, // 2% AUM fee to ensure some accumulation
         aumFeeEnabled: true, // MUST enable AUM fees!
@@ -342,7 +339,6 @@ describe('Critical Business Rules - Free Investment Principle', () => {
         netTaxBenefit: 0,
         investorPromoteShare: 35,
         philanthropicEquityPct: 0,
-        taxBenefitDelayMonths: 0,
         constructionDelayMonths: 0,
         aumFeeRate: 1.5,
         aumFeeEnabled: true, // MUST enable AUM fees!
@@ -413,7 +409,6 @@ describe('Critical Business Rules - Free Investment Principle', () => {
         netTaxBenefit: 0,
         investorPromoteShare: 35, // Investor gets 35% (HDC gets 65%)
         philanthropicEquityPct: 0,
-        taxBenefitDelayMonths: 0,
         constructionDelayMonths: 0,
         year1NetBenefit: year1NetBenefit,
         ozEnabled: true,
@@ -503,7 +498,6 @@ describe('Critical Business Rules - Free Investment Principle', () => {
         netTaxBenefit: 0,
         investorPromoteShare: 35, // Investor gets 35% (HDC gets 65%)
         philanthropicEquityPct: 0,
-        taxBenefitDelayMonths: 0,
         constructionDelayMonths: 0,
         year1NetBenefit: year1NetBenefit,
         ozEnabled: true,

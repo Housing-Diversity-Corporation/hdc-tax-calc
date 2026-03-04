@@ -54,7 +54,6 @@ describe('Predevelopment Costs - Depreciable Basis Integration Tests', () => {
     annualStraightLineDepreciation: 0, // Auto-calculated
     effectiveTaxRate: 45,
     constructionDelayMonths: 0,
-    taxBenefitDelayMonths: 0,
     interestReserveEnabled: false,
     interestReserveMonths: 0
   };
@@ -133,7 +132,6 @@ describe('Predevelopment Costs - Depreciable Basis Integration Tests', () => {
       const advanceParams = {
         ...baseParams,
         hdcAdvanceFinancing: true,
-        taxBenefitDelayMonths: 0
       };
 
       const results = calculateFullInvestorAnalysis(advanceParams);
@@ -162,45 +160,6 @@ describe('Predevelopment Costs - Depreciable Basis Integration Tests', () => {
       expect(year1CashFlow.taxBenefit).toBeCloseTo(expectedNetBenefit, 0);
     });
 
-    it('should include predevelopment costs with HDC advance financing (with delay)', () => {
-      const advanceDelayParams = {
-        ...baseParams,
-        hdcAdvanceFinancing: true,
-        taxBenefitDelayMonths: 18 // 18-month delay
-      };
-
-      const results = calculateFullInvestorAnalysis(advanceDelayParams);
-
-      // Year 1 should get advance (calculated with predevelopment included)
-      const expectedDepreciableBasis = calculateDepreciableBasis({
-        projectCost: baseParams.projectCost,
-        predevelopmentCosts: baseParams.predevelopmentCosts,
-        landValue: baseParams.landValue,
-        investorEquityPct: baseParams.investorEquityPct
-      });
-
-      // Year 1 includes BOTH bonus AND partial straight-line (mid-month convention)
-      const bonusDepreciation = expectedDepreciableBasis * 0.25;
-      const remainingBasis = expectedDepreciableBasis - bonusDepreciation;
-      const annualMACRS = remainingBasis / 27.5;
-
-      const placedInServiceMonth = 7; // Default mid-year
-      const monthsInYear1 = 12.5 - placedInServiceMonth; // 5.5 months
-      const year1MACRS = (monthsInYear1 / 12) * annualMACRS;
-
-      const expectedYear1Depreciation = bonusDepreciation + year1MACRS;
-      const expectedYear1Benefit = expectedYear1Depreciation * (baseParams.effectiveTaxRate / 100);
-
-      const year1CashFlow = results.investorCashFlows[0];
-      expect(year1CashFlow.taxBenefit).toBeCloseTo(expectedYear1Benefit, 0);
-
-      // Year 2 with delay=18 (delayFullYears=1, delayFraction=0.5):
-      // Year 1 was advance-financed (not scheduled into pending array)
-      // Year 2's earned benefit → 50% to Year 3, 50% to Year 4
-      // So Year 2 realizes 0 from pending array
-      const year2CashFlow = results.investorCashFlows[1];
-      expect(year2CashFlow.taxBenefit).toBe(0);
-    });
   });
 
   describe('Comparative Impact Analysis', () => {
