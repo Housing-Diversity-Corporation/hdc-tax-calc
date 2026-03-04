@@ -60,6 +60,7 @@ function createBaseParams(overrides = {}) {
     investorUpfrontCash: 0,
     totalTaxBenefit: 0,
     netTaxBenefit: 0,
+    exitMonth: 12,
     ...overrides
   };
 }

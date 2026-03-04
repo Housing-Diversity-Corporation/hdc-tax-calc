@@ -215,6 +215,10 @@ export interface InvestorAnalysisResults {
   taxUtilization?: TaxUtilizationResult;  // Phase A1: Tax utilization analysis (when income composition provided)
   exitTaxAnalysis?: ExitTaxResult;         // IMPL-094: Character-split exit tax (§5.12)
 
+  // IMPL-111: Day-precise XIRR (when investmentDate provided)
+  xirr?: number | null;                    // Day-precise IRR (percentage), null when old path
+  xirrCashFlows?: XirrCashFlow[];          // Audit trail: dated cash flows used for XIRR
+
   // Investment Portal specific fields
   investorUpfrontCash?: number;
   afterTaxIRR?: number;

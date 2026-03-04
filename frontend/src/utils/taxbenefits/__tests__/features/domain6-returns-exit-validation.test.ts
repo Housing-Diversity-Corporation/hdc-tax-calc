@@ -42,6 +42,8 @@ describe('Domain 6: Returns & Exit - Math Validation', () => {
     revenueGrowth: 3,
     expenseGrowth: 3,
     exitCapRate: 6, // Use whatever is in test config
+
+    exitMonth: 12,
   };
 
   describe('1. Exit Value Calculation', () => {

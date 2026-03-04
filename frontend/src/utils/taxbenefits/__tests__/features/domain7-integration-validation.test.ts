@@ -43,6 +43,8 @@ describe('Domain 7: Integration - End-to-End Validation', () => {
     revenueGrowth: 3,
     expenseGrowth: 3,
     exitCapRate: 6,
+
+    exitMonth: 12,
   };
 
   describe('1. End-to-End Flow', () => {

@@ -78,7 +78,9 @@ describe('useHDCCalculations Hook - Integration Tests', () => {
     aumCurrentPayPct: 50,
 
     // Hold Period (computed, read-only in useHDCState; passed as totalInvestmentYears to useHDCCalculations)
-    totalInvestmentYears: 10
+    totalInvestmentYears: 10,
+
+    exitMonth: 12
   };
 
   describe('Depreciation Calculations', () => {

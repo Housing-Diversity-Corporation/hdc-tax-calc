@@ -69,6 +69,8 @@ describe('Outside Investor Sub-Debt Impact on Promote Split', () => {
 
     // Depreciation
     annualStraightLineDepreciation: 3_272_727,
+
+    exitMonth: 12,
   };
 
   describe('HDC Promote Calculation', () => {

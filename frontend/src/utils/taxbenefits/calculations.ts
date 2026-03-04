@@ -1,4 +1,4 @@
-import { CalculationParams, InvestorAnalysisResults, CashFlowItem, ExitTaxResult } from '../../types/taxbenefits';
+import { CalculationParams, InvestorAnalysisResults, CashFlowItem, ExitTaxResult, ComputedTimeline, XirrCashFlow } from '../../types/taxbenefits';
 import {
   validatePIKInterestCalculation,
   validateTaxBenefitDistribution,
@@ -11,6 +11,8 @@ import { calculateSCurve, STANDARD_STEEPNESS } from './sCurveUtility';
 import { calculateDepreciableBasis } from './depreciableBasisUtility';
 import { getOzStepUpPercent } from './constants';
 import { computeHoldPeriod } from './computeHoldPeriod';
+import { computeTimeline } from './computeTimeline';
+import { calculateXIRR } from './xirrCalculation';
 import { getStateOzConformity } from './stateProfiles';
 
 // Import new tax planning modules
@@ -270,7 +272,7 @@ export const calculateFullInvestorAnalysis = (
     yearOneNOI: paramYearOneNOI,
     yearOneDepreciationPct: paramYearOneDepreciationPct = 0,
     placedInServiceMonth: paramPlacedInServiceMonth = 7,
-    exitMonth: paramExitMonth = 12, // IMPL-087: Month of exit/disposition (1-12)
+    exitMonth: paramExitMonth = 7, // IMPL-087/111: Month of exit/disposition (1-12), default matches state default
     // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
     noiGrowthRate: paramNoiGrowthRate = 3,
     exitCapRate: paramExitCapRate,
@@ -568,17 +570,45 @@ export const calculateFullInvestorAnalysis = (
   let accumulatedAumPIK = 0; // Track intentional PIK portion (not subject to catch-up)
   let accumulatedAumCurrentPayDeferred = 0; // Track deferred current pay portion (subject to catch-up)
 
+  // === IMPL-111: Two-path timeline computation ===
+  // NEW PATH: Date-driven timeline (when investmentDate provided)
+  // OLD PATH: Legacy hold period (when no investmentDate) — unchanged
+  let timeline: ComputedTimeline | null = null;
+  const xirrFlows: XirrCashFlow[] = [];
+
+  if (params.investmentDate) {
+    timeline = computeTimeline(
+      params.investmentDate,
+      params.constructionDelayMonths || 0,
+      params.pisDateOverride || null,
+      params.ozEnabled !== false,  // default true
+      params.exitExtensionMonths || 0,
+      params.electDeferCreditPeriod || false
+    );
+  }
+
   // ISS-064: Calculate placed-in-service year outside the loop (constant for entire calculation)
   const constructionDelayYears = Math.floor(paramConstructionDelayMonths / 12);
-  const placedInServiceYear = constructionDelayYears + 1; // Building placed in service after construction
-  // Hold period computed from LIHTC credit exhaustion (not user-editable)
-  // TIMING PRECISION FIX: month-precise arithmetic, single conversion to years.
-  // exitYear = when investor exits (disposition). totalInvestmentYears = full model.
-  const { holdFromPIS, totalInvestmentYears, exitYear } = computeHoldPeriod(
-    paramPlacedInServiceMonth,
-    paramConstructionDelayMonths,
-    paramTaxBenefitDelayMonths
-  );
+  // Unified: timeline overrides old derivation when present
+  const placedInServiceYear = timeline
+    ? timeline.placedInServiceYear
+    : constructionDelayYears + 1; // Building placed in service after construction
+
+  // Hold period: timeline (new) or computeHoldPeriod (old)
+  let holdFromPIS: number, totalInvestmentYears: number, exitYear: number;
+  if (timeline) {
+    holdFromPIS = timeline.holdFromPIS;
+    totalInvestmentYears = timeline.totalInvestmentYears;
+    exitYear = timeline.exitYear;
+  } else {
+    // TIMING PRECISION FIX: month-precise arithmetic, single conversion to years.
+    // exitYear = when investor exits (disposition). totalInvestmentYears = full model.
+    ({ holdFromPIS, totalInvestmentYears, exitYear } = computeHoldPeriod(
+      paramPlacedInServiceMonth,
+      paramConstructionDelayMonths,
+      paramTaxBenefitDelayMonths
+    ));
+  }
 
   // IMPL-087: Disposition year proration constants
   const dispositionFraction = paramExitMonth / 12;
@@ -1456,18 +1486,23 @@ export const calculateFullInvestorAnalysis = (
 
     // Schedule earned depreciation benefit into pending array with delay shift
     // Construction gating already zeros depreciationTaxBenefit for year < placedInServiceYear
-    // Skip scheduling when advance financing covers Year 1 (HDC fronts it directly)
-    const advanceFinancingCoversThisYear = paramHdcAdvanceFinancing && year === 1;
-    if (!advanceFinancingCoversThisYear) {
-      const depTargetIdx = (year - 1) + delayFullYears;
-      pendingDepBenefits[depTargetIdx] += depreciationTaxBenefit * (1 - delayFraction);
-      if (delayFraction > 0) {
-        pendingDepBenefits[depTargetIdx + 1] += depreciationTaxBenefit * delayFraction;
+    if (!timeline) {
+      // OLD PATH: delay scheduling from taxBenefitDelayMonths
+      // Skip scheduling when advance financing covers Year 1 (HDC fronts it directly)
+      const advanceFinancingCoversThisYear = paramHdcAdvanceFinancing && year === 1;
+      if (!advanceFinancingCoversThisYear) {
+        const depTargetIdx = (year - 1) + delayFullYears;
+        pendingDepBenefits[depTargetIdx] += depreciationTaxBenefit * (1 - delayFraction);
+        if (delayFraction > 0) {
+          pendingDepBenefits[depTargetIdx + 1] += depreciationTaxBenefit * delayFraction;
+        }
       }
+      // Realize this year's pending depreciation benefits (includes spillover from prior years)
+      yearlyTaxBenefit = pendingDepBenefits[year - 1];
+    } else {
+      // NEW PATH: no delay — benefits realized immediately (timing via XIRR dates)
+      yearlyTaxBenefit = depreciationTaxBenefit;
     }
-
-    // Realize this year's pending depreciation benefits (includes spillover from prior years)
-    yearlyTaxBenefit = pendingDepBenefits[year - 1];
 
     // Handle HDC advance financing override (after DSCR adjustment)
     if (paramHdcAdvanceFinancing) {
@@ -1681,12 +1716,19 @@ export const calculateFullInvestorAnalysis = (
     }
 
     // Schedule state LIHTC into pending array with delay shift
-    const stateLIHTCTargetIdx = (year - 1) + delayFullYears;
-    pendingStateLIHTC[stateLIHTCTargetIdx] += earnedStateLIHTCCredit * (1 - delayFraction);
-    if (delayFraction > 0) {
-      pendingStateLIHTC[stateLIHTCTargetIdx + 1] += earnedStateLIHTCCredit * delayFraction;
+    let stateLIHTCCredit: number;
+    if (!timeline) {
+      // OLD PATH: delay scheduling
+      const stateLIHTCTargetIdx = (year - 1) + delayFullYears;
+      pendingStateLIHTC[stateLIHTCTargetIdx] += earnedStateLIHTCCredit * (1 - delayFraction);
+      if (delayFraction > 0) {
+        pendingStateLIHTC[stateLIHTCTargetIdx + 1] += earnedStateLIHTCCredit * delayFraction;
+      }
+      stateLIHTCCredit = pendingStateLIHTC[year - 1] || 0;
+    } else {
+      // NEW PATH: no delay — credits realized immediately
+      stateLIHTCCredit = earnedStateLIHTCCredit;
     }
-    const stateLIHTCCredit = pendingStateLIHTC[year - 1] || 0;
 
     // Federal LIHTC earned credits (IMPL-021b)
     // Credits go 100% to investor (like depreciation tax benefits, no promote split)
@@ -1701,12 +1743,19 @@ export const calculateFullInvestorAnalysis = (
     }
 
     // Schedule federal LIHTC into pending array with delay shift
-    const fedLIHTCTargetIdx = (year - 1) + delayFullYears;
-    pendingFedLIHTC[fedLIHTCTargetIdx] += earnedFedLIHTCCredit * (1 - delayFraction);
-    if (delayFraction > 0) {
-      pendingFedLIHTC[fedLIHTCTargetIdx + 1] += earnedFedLIHTCCredit * delayFraction;
+    let federalLIHTCCredit: number;
+    if (!timeline) {
+      // OLD PATH: delay scheduling
+      const fedLIHTCTargetIdx = (year - 1) + delayFullYears;
+      pendingFedLIHTC[fedLIHTCTargetIdx] += earnedFedLIHTCCredit * (1 - delayFraction);
+      if (delayFraction > 0) {
+        pendingFedLIHTC[fedLIHTCTargetIdx + 1] += earnedFedLIHTCCredit * delayFraction;
+      }
+      federalLIHTCCredit = pendingFedLIHTC[year - 1] || 0;
+    } else {
+      // NEW PATH: no delay — credits realized immediately
+      federalLIHTCCredit = earnedFedLIHTCCredit;
     }
-    const federalLIHTCCredit = pendingFedLIHTC[year - 1] || 0;
 
     // IMPL-048: Calculate OZ recapture avoided for this year
     // For OZ investors with 10+ year holds, they avoid 25% federal recapture tax on depreciation
@@ -2119,6 +2168,103 @@ export const calculateFullInvestorAnalysis = (
   const multiple = totalInvestment > 0 ? totalReturns / totalInvestment : 0;
   const irr = calculateIRR(cashFlowArray, totalInvestment, totalInvestmentYears);
 
+  // === IMPL-111: Build XirrCashFlow[] and compute XIRR (new path only) ===
+  let xirr: number | null = null;
+  if (timeline) {
+    const investmentCalendarYear = timeline.investmentDate.getFullYear();
+
+    // 1. Investment (negative, Day 1)
+    xirrFlows.push({
+      date: params.investmentDate!,
+      amount: -totalInvestment,
+      category: 'investment',
+    });
+
+    // 2. Year-by-year benefits placed at K-1 realization dates
+    for (let yr = 0; yr < investorCashFlows.length; yr++) {
+      const item = investorCashFlows[yr];
+      const calendarYear = investmentCalendarYear + yr; // Model Year yr+1 → Calendar Year
+      const k1Date = `${calendarYear + 1}-04-15`; // April 15 of following year
+
+      // Skip construction years (no benefits flowing)
+      if (yr < placedInServiceYear - 1) continue;
+
+      // Depreciation benefit (already computed as taxBenefit on CashFlowItem)
+      const depBenefit = item.taxBenefit || 0;
+      if (depBenefit !== 0) {
+        xirrFlows.push({
+          date: k1Date,
+          amount: depBenefit,
+          category: yr === placedInServiceYear - 1
+            ? 'k1-dep-bonus' : `k1-dep-yr${yr + 1}`,
+          taxYear: calendarYear,
+        });
+      }
+
+      // Federal LIHTC credits
+      const fedLihtc = item.federalLIHTCCredit || 0;
+      if (fedLihtc !== 0) {
+        xirrFlows.push({
+          date: k1Date,
+          amount: fedLihtc,
+          category: `k1-lihtc-yr${yr + 1}`,
+          taxYear: calendarYear,
+        });
+      }
+
+      // State LIHTC credits
+      const stateLihtc = item.stateLIHTCCredit || 0;
+      if (stateLihtc !== 0) {
+        xirrFlows.push({
+          date: k1Date,
+          amount: stateLihtc,
+          category: `k1-state-lihtc-yr${yr + 1}`,
+          taxYear: calendarYear,
+        });
+      }
+
+      // Operating cash flow (Dec 31 of calendar year)
+      const opCF = item.operatingCashFlow || 0;
+      if (opCF !== 0) {
+        xirrFlows.push({
+          date: `${calendarYear}-12-31`,
+          amount: opCF,
+          category: `cashflow-yr${yr + 1}`,
+        });
+      }
+    }
+
+    // 3. OZ Year 5 QCG recognition tax (if applicable)
+    // This is a COST — negative cash flow at the K-1 date
+    const ozYear5Tax = investorCashFlows.reduce(
+      (sum, cf) => sum + (cf.ozYear5TaxPayment || 0), 0
+    );
+    if (timeline.ozDeferralEndDate && ozYear5Tax > 0) {
+      xirrFlows.push({
+        date: `${investmentCalendarYear + 6}-04-15`,
+        amount: -ozYear5Tax,
+        category: 'oz-yr5-qcg-tax',
+      });
+    }
+
+    // 4. Exit proceeds (at actual exit date)
+    const exitDateStr = timeline.actualExitDate.toISOString().slice(0, 10);
+    // Exit proceeds include: sale proceeds + sub-debt repayment + remaining LIHTC + OZ exit benefits
+    const netExitAmount = exitProceeds + investorSubDebtAtExit + remainingLIHTCCredits
+      + ozDeferralNPV + ozExitAppreciation;
+    if (netExitAmount !== 0) {
+      xirrFlows.push({
+        date: exitDateStr,
+        amount: netExitAmount,
+        category: 'exit-proceeds',
+      });
+    }
+
+    // 5. Compute XIRR
+    if (xirrFlows.length >= 2) {
+      xirr = calculateXIRR(xirrFlows);
+    }
+  }
 
   // Calculate total cost of outside investor debt
   const outsideInvestorTotalInterest = totalOutsideInvestorCashPaid + totalOutsideInvestorPIKAccrued;
@@ -2192,7 +2338,10 @@ export const calculateFullInvestorAnalysis = (
     capitalAlreadyRecovered,
     remainingCapitalToRecover,
     exitReturnOfCapital: returnOfCapital,
-    exitProfitShare: investorProfitShare
+    exitProfitShare: investorProfitShare,
+    // IMPL-111: Day-precise XIRR (new path only)
+    xirr: xirr,
+    xirrCashFlows: timeline ? xirrFlows : undefined,
   };
 
   // NEW: Add tax planning calculations if requested

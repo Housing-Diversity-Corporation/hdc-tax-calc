@@ -49,7 +49,8 @@ describe('PIK Compound Interest Fix Validation', () => {
         aumFeeEnabled: false,
         aumFeeRate: 0,
         constructionDelayMonths: 0,
-        placedInServiceMonth: 1
+        placedInServiceMonth: 1,
+        exitMonth: 12
       };
 
       const results = calculateFullInvestorAnalysis(params);
@@ -154,7 +155,8 @@ describe('PIK Compound Interest Fix Validation', () => {
         aumFeeEnabled: false,
         aumFeeRate: 0,
         constructionDelayMonths: 0,
-        placedInServiceMonth: 1
+        placedInServiceMonth: 1,
+        exitMonth: 12
       };
 
       const results = calculateFullInvestorAnalysis(params);
@@ -238,7 +240,8 @@ describe('PIK Compound Interest Fix Validation', () => {
         aumFeeEnabled: false,
         aumFeeRate: 0,
         constructionDelayMonths: 0,
-        placedInServiceMonth: 1
+        placedInServiceMonth: 1,
+        exitMonth: 12
       };
 
       const results = calculateFullInvestorAnalysis(params);
@@ -315,7 +318,8 @@ describe('PIK Compound Interest Fix Validation', () => {
         investorPikCurrentPayPct: 0,
         aumFeeEnabled: true,
         aumFeeRate: 1.5,
-        placedInServiceMonth: 1
+        placedInServiceMonth: 1,
+        exitMonth: 12
       };
 
       const results = calculateFullInvestorAnalysis(params);
@@ -378,7 +382,8 @@ describe('PIK Compound Interest Fix Validation', () => {
         philanthropicDebtRate: 0,
         seniorDebtAmortization: 30,
         philDebtAmortization: 40,
-        placedInServiceMonth: 1
+        placedInServiceMonth: 1,
+        exitMonth: 12
       };
 
       const results = calculateHDCAnalysis(params);

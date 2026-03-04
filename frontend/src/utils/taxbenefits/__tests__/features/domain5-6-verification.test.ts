@@ -53,6 +53,8 @@ describe('Domain 5 & 6: Independent Math Verification (Trace 4001)', () => {
 
     // HDC fees
     aumFeeRate: 1, // 1% AUM fee
+
+    exitMonth: 12,
   };
 
   let result: any;
