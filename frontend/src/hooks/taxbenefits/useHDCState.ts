@@ -67,8 +67,8 @@ export const useHDCState = () => {
   // IMPL-096: depreciationRecaptureRate removed — rates derived inside calculateExitTax()
 
   // Projections — holdPeriod computed from LIHTC credit exhaustion
-  // IMPL-117: Inlined from deleted computeHoldPeriod.ts (pisMonth=7 default → creditPeriod=11)
-  const { holdFromPIS, totalInvestmentYears, exitYear, delaySpilloverYears } = useMemo(() => {
+  // Legacy fallback (no investmentDate): pisMonth=7 default → creditPeriod=11
+  const legacyHold = useMemo(() => {
     const creditPeriod = 11; // pisMonth=7 (non-January) → 11 years per §42(f)(3)
     const prePIS = Math.floor(constructionDelayMonths / 12);
     const totalMonths = constructionDelayMonths + (creditPeriod * 12);
@@ -154,6 +154,16 @@ export const useHDCState = () => {
     );
   }, [investmentDate, constructionDelayMonths, pisDateOverride,
       ozEnabled, exitExtensionMonths, electDeferCreditPeriod]);
+
+  // Prefer computedTimeline when available, fall back to legacy
+  const { holdFromPIS, totalInvestmentYears, exitYear, delaySpilloverYears } = useMemo(() => {
+    if (computedTimeline) {
+      const tiy = computedTimeline.totalInvestmentYears;
+      const ey = computedTimeline.exitYear;
+      return { holdFromPIS: computedTimeline.holdFromPIS, totalInvestmentYears: tiy, exitYear: ey, delaySpilloverYears: tiy - ey };
+    }
+    return legacyHold;
+  }, [computedTimeline, legacyHold]);
 
   // === Guard: §42(f)(1) election disabled for January PIS ===
   useEffect(() => {

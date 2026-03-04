@@ -340,6 +340,10 @@ const HDCCalculatorMain = () => {
 
     // Timing Architecture (IMPL-112)
     computedTimeline,
+    investmentDate,
+    pisDateOverride,
+    exitExtensionMonths,
+    electDeferCreditPeriod,
   });
 
   // IMPL-020a: Interest reserve amount now comes from useHDCCalculations hook (single source of truth)
