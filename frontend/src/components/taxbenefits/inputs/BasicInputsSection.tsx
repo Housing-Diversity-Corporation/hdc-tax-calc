@@ -61,8 +61,6 @@ interface BasicInputsSectionProps {
   // Timing Parameters
   constructionDelayMonths: number;
   setConstructionDelayMonths: (value: number) => void;
-  taxBenefitDelayMonths: number;
-  setTaxBenefitDelayMonths: (value: number) => void;
   // Read-only mode
   isReadOnly?: boolean;
 }
@@ -110,8 +108,6 @@ const BasicInputsSection: React.FC<BasicInputsSectionProps> = ({
   onSaveConfiguration,
   constructionDelayMonths,
   setConstructionDelayMonths,
-  taxBenefitDelayMonths,
-  setTaxBenefitDelayMonths,
   isReadOnly = false,
 }) => {
   // Calculate interest reserve amount using shared function (single source of truth)
@@ -359,47 +355,6 @@ const BasicInputsSection: React.FC<BasicInputsSectionProps> = ({
                 <li>No rental income (NOI) during construction</li>
                 <li>Interest reserve should cover debt payments</li>
                 <li>Depreciation starts after placed in service</li>
-              </ul>
-            </div>
-          )}
-        </div>
-
-        {/* Tax Loss Realization Timing */}
-        <div className="hdc-input-group" style={{marginTop: '1rem'}}>
-          <label className="hdc-input-label">
-            Tax Benefit Realization Delay (Months)
-            <span style={{ fontSize: '0.75rem', color: '#666', display: 'block', fontWeight: 'normal' }}>
-              Months after tax year end before K-1 delivery. Shifts benefit timing for IRR. Typical: 3-9 months.
-            </span>
-          </label>
-          <Input
-            type="number"
-            min="0"
-            max="24"
-            step="1"
-            value={taxBenefitDelayMonths}
-            onChange={(e) => setTaxBenefitDelayMonths(Number(e.target.value))}
-            className="hdc-input"
-            disabled={isReadOnly}
-            placeholder="0"
-          />
-          {taxBenefitDelayMonths > 0 && (
-            <div style={{
-              marginTop: '0.5rem',
-              fontSize: '0.75rem',
-              color: '#666',
-              fontWeight: 'normal'
-            }}>
-              <strong>Note:</strong> Tax benefits delayed {taxBenefitDelayMonths} months due to:
-              <ul style={{
-                margin: '0.25rem 0 0 1rem',
-                paddingLeft: '1.25rem',
-                listStyleType: 'disc',
-                listStylePosition: 'outside'
-              }}>
-                <li style={{ marginBottom: '0.125rem' }}>K-1 processing time</li>
-                <li style={{ marginBottom: '0.125rem' }}>Tax year timing</li>
-                <li style={{ marginBottom: '0.125rem' }}>Partnership structure requirements</li>
               </ul>
             </div>
           )}

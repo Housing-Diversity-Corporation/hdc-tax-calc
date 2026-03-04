@@ -63,7 +63,6 @@ interface InvestorAnalysisHighlevelMetricsProps {
   pikCurrentPayPct?: number;
   investorPikCurrentPayEnabled?: boolean;
   investorPikCurrentPayPct?: number;
-  taxBenefitDelayMonths?: number;
 
   // Main analysis results
   mainAnalysisResults?: InvestorAnalysisResults | null;
@@ -145,7 +144,6 @@ const InvestorAnalysisHighlevelMetrics: React.FC<InvestorAnalysisHighlevelMetric
   pikCurrentPayPct = 0,
   investorPikCurrentPayEnabled = false,
   investorPikCurrentPayPct = 0,
-  taxBenefitDelayMonths = 0,
 
   // Other
   mainAnalysisResults,
@@ -385,7 +383,6 @@ const InvestorAnalysisHighlevelMetrics: React.FC<InvestorAnalysisHighlevelMetric
               investorIRR={investorIRR}
               totalInvestment={totalInvestment || investorEquity}
               formatCurrency={formatCurrencyMillions}
-              taxBenefitDelayMonths={taxBenefitDelayMonths}
             />
           )}
 

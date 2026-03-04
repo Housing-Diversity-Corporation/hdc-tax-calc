@@ -31,8 +31,7 @@ interface TaxCreditsSectionProps {
   setApplicableFraction: (value: number) => void;
   creditRate: number;
   setCreditRate: (value: number) => void;
-  placedInServiceMonth: number;
-  setPlacedInServiceMonth: (value: number) => void;
+  // placedInServiceMonth removed (IMPL-117) — now engine-internal, auto-derived from timeline
   ddaQctBoost: boolean;
   setDdaQctBoost: (value: boolean) => void;
   lihtcEligibleBasis: number;
@@ -121,8 +120,6 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
   setApplicableFraction,
   creditRate,
   setCreditRate,
-  placedInServiceMonth,
-  setPlacedInServiceMonth,
   ddaQctBoost,
   setDdaQctBoost,
   lihtcEligibleBasis,
@@ -168,6 +165,9 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
   isReadOnly = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
+
+  // IMPL-117: placedInServiceMonth is now engine-internal. Derive from computedTimeline or default to 7 (July).
+  const placedInServiceMonth = computedTimeline?.pisCalendarMonth ?? 7;
 
   // ========== Federal LIHTC Logic ==========
 
@@ -687,22 +687,20 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
                   ) : (
                     <div className="hdc-input-group">
                       <label className="hdc-input-label">Placed-in-Service Month</label>
-                      <Select
-                        value={placedInServiceMonth.toString()}
-                        onValueChange={(val) => setPlacedInServiceMonth(parseInt(val))}
-                        disabled={isReadOnly}
+                      <div
+                        className="hdc-input"
+                        style={{
+                          backgroundColor: 'var(--hdc-alabaster)',
+                          cursor: 'default',
+                          color: 'var(--hdc-cabbage-pont)',
+                          fontWeight: 600,
+                        }}
                       >
-                        <SelectTrigger className="hdc-input">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {MONTH_NAMES.map((month) => (
-                            <SelectItem key={month.value} value={month.value.toString()}>
-                              {month.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        {MONTH_NAMES.find(m => m.value === placedInServiceMonth)?.label ?? 'July'} (default)
+                      </div>
+                      <span className="text-xs text-gray-500" style={{ marginTop: '0.25rem', display: 'block' }}>
+                        Set investment date in Projections panel to enable date-driven PIS
+                      </span>
                     </div>
                   )}
 

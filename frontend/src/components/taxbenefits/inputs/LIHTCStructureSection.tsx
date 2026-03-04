@@ -21,8 +21,7 @@ interface LIHTCStructureSectionProps {
   setApplicableFraction: (value: number) => void;
   creditRate: number;
   setCreditRate: (value: number) => void;
-  placedInServiceMonth: number;
-  setPlacedInServiceMonth: (value: number) => void;
+  // placedInServiceMonth removed (IMPL-117) — now engine-internal, auto-derived from timeline
   ddaQctBoost: boolean;
   setDdaQctBoost: (value: boolean) => void;
 
@@ -73,8 +72,6 @@ const LIHTCStructureSection: React.FC<LIHTCStructureSectionProps> = ({
   setApplicableFraction,
   creditRate,
   setCreditRate,
-  placedInServiceMonth,
-  setPlacedInServiceMonth,
   ddaQctBoost,
   setDdaQctBoost,
   lihtcEligibleBasis,
@@ -89,6 +86,9 @@ const LIHTCStructureSection: React.FC<LIHTCStructureSectionProps> = ({
   isReadOnly = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
+
+  // IMPL-117: placedInServiceMonth is now engine-internal. Hardcode to 7 (July) as default.
+  const placedInServiceMonth = 7;
 
   // Calculate breakdown if we have the required values
   const basisBreakdown = useMemo(() => {
@@ -265,26 +265,7 @@ const LIHTCStructureSection: React.FC<LIHTCStructureSectionProps> = ({
                   </Select>
                 </div>
 
-                {/* PIS Month Dropdown */}
-                <div className="hdc-input-group">
-                  <label className="hdc-input-label">Placed-in-Service Month</label>
-                  <Select
-                    value={placedInServiceMonth.toString()}
-                    onValueChange={(val) => setPlacedInServiceMonth(parseInt(val))}
-                    disabled={isReadOnly}
-                  >
-                    <SelectTrigger className="hdc-input">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {MONTH_NAMES.map((month) => (
-                        <SelectItem key={month.value} value={month.value.toString()}>
-                          {month.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* PIS Month — removed (IMPL-117), now engine-internal, hardcoded to July */}
 
                 {/* DDA/QCT Boost Toggle */}
                 <div style={{ marginTop: '0.75rem', marginBottom: '1rem' }}>

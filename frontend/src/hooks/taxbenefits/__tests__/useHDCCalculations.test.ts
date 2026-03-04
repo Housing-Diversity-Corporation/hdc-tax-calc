@@ -79,7 +79,7 @@ describe('useHDCCalculations Hook - Integration Tests', () => {
     // Hold Period (computed, read-only in useHDCState; passed as totalInvestmentYears to useHDCCalculations)
     totalInvestmentYears: 10,
 
-    exitMonth: 12
+    // exitMonth removed (IMPL-117) — engine auto-derives from timeline or defaults to 7
   };
 
   describe('Depreciation Calculations', () => {
@@ -519,8 +519,10 @@ describe('useHDCCalculations Hook - Integration Tests', () => {
       };
       const { result } = renderHook(() => useHDCCalculations(highGrowthProps));
 
-      const lastYearNOI = result.current.investorCashFlows[result.current.investorCashFlows.length - 1].noi;
-      const firstYearNOI = result.current.investorCashFlows[0].noi;
+      const cfs = result.current.investorCashFlows;
+      // Use annualizedNOI to avoid disposition-year proration effects
+      const lastYearNOI = cfs[cfs.length - 1].annualizedNOI ?? cfs[cfs.length - 1].noi;
+      const firstYearNOI = cfs[0].annualizedNOI ?? cfs[0].noi;
       expect(lastYearNOI).toBeGreaterThan(firstYearNOI * 2);
     });
 

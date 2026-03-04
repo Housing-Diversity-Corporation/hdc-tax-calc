@@ -19,8 +19,7 @@ const createMockProps = (overrides = {}) => ({
   setApplicableFraction: jest.fn(),
   creditRate: 0.04,
   setCreditRate: jest.fn(),
-  placedInServiceMonth: 7,
-  setPlacedInServiceMonth: jest.fn(),
+  // placedInServiceMonth removed (IMPL-117) — now engine-internal
   ddaQctBoost: false,
   setDdaQctBoost: jest.fn(),
   lihtcEligibleBasis: 50000000,
@@ -159,10 +158,7 @@ describe('LIHTCStructureSection', () => {
       expect(screen.getByText(/Credit Rate/i)).toBeInTheDocument();
     });
 
-    it('should show Placed-in-Service Month dropdown when enabled', () => {
-      render(<LIHTCStructureSection {...createMockProps({ lihtcEnabled: true })} />);
-      expect(screen.getByText(/Placed-in-Service Month/i)).toBeInTheDocument();
-    });
+    // PIS Month dropdown removed (IMPL-117) — now engine-internal
 
     it('should show DDA/QCT Boost checkbox when enabled', () => {
       render(<LIHTCStructureSection {...createMockProps({ lihtcEnabled: true })} />);

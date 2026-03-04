@@ -287,7 +287,6 @@ export const HDCComprehensiveReportButton: React.FC<HDCComprehensiveReportProps>
         ['Exit Cap Rate', formatPercent(params.exitCapRate || 5)],
         ['Hold Period', `${holdPeriod} years`],
         ['Construction Delay', `${params.constructionDelayMonths || 0} months`],
-        ['Tax Benefit Delay', `${params.taxBenefitDelayMonths || 0} months`],
         // IMPL-115: Show ComputedTimeline dates when available
         ...(investorResults?.computedTimeline ? [
           ['Investment Date', investorResults.computedTimeline.investmentDate.toLocaleDateString()],

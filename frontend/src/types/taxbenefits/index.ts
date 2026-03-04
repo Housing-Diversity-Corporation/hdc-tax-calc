@@ -336,10 +336,6 @@ export interface CalculationParams {
   year1NetBenefit?: number;
   investorPromoteShare: number;
   constructionDelayMonths?: number; // 0-36 months construction delay before NOI
-  /** @deprecated IMPL-108: Replaced by auto-computed K-1 realization
-   *  dates (April 15 of year after tax year earned).
-   *  Will be removed in IMPL-117. */
-  taxBenefitDelayMonths?: number; // 0-36 months delay before tax benefits realized
   hdcSubDebtPct?: number;
   hdcSubDebtPikRate?: number;
   pikCurrentPayEnabled?: boolean;
@@ -392,15 +388,11 @@ export interface CalculationParams {
   effectiveTaxRateForBonus?: number;    // Effective rate for bonus depreciation (conformity-adjusted)
   effectiveTaxRateForStraightLine?: number; // Effective rate for straight-line MACRS (full state rate)
   bonusConformityRate?: number;         // State bonus depreciation conformity rate (0.0 to 1.0)
-  /** @deprecated IMPL-108: Now auto-computed from investmentDate +
-   *  constructionPeriodMonths, with optional pisDateOverride.
-   *  Will be removed as user input in IMPL-117.
+  /** Engine-internal: auto-derived from timeline on new path, defaults to 7 on old path.
    *  LIHTC functions still accept pisMonth as a local parameter. */
-  placedInServiceMonth?: number;        // Month property placed in service (1-12), default 7 for mid-year
-  /** @deprecated IMPL-108: Now auto-computed from LIHTC credit
-   *  exhaustion + exitExtensionMonths.
-   *  Will be removed in IMPL-117. */
-  exitMonth?: number;                    // IMPL-087: Month of exit/disposition (1-12), default matches pisMonth
+  placedInServiceMonth?: number;
+  /** Engine-internal: auto-derived from timeline on new path, defaults to 7 on old path. */
+  exitMonth?: number;
 
   // Basis Adjustments (v7.0.7)
   loanFeesPercent?: number;             // Loan origination fees as % of total debt (0.5-3%, default 1%)
@@ -630,7 +622,6 @@ export interface HDCCalculationParams {
   hdcFee: number;
   investorPromoteShare: number;
   constructionDelayMonths?: number; // 0-36 months construction delay before NOI
-  taxBenefitDelayMonths?: number;
   hdcSubDebtPct?: number;
   hdcSubDebtPikRate?: number;
   pikCurrentPayEnabled?: boolean;
@@ -658,8 +649,8 @@ export interface HDCCalculationParams {
   yearOneDepreciation?: number;
   annualStraightLineDepreciation?: number;
   effectiveTaxRate?: number;
-  placedInServiceMonth?: number;        // Month property placed in service (1-12), default 7 for mid-year
-  exitMonth?: number;                    // IMPL-087: Month of exit/disposition (1-12)
+  placedInServiceMonth?: number;        // Engine-internal; auto-derived from timeline or defaults to 7
+  exitMonth?: number;                    // Engine-internal; auto-derived from timeline or defaults to 7
   philCurrentPayEnabled?: boolean;
   philCurrentPayPct?: number;
   interestReserveEnabled?: boolean;

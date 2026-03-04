@@ -13,9 +13,7 @@ interface ProjectionsSectionProps {
   // Computed hold period (read-only)
   totalInvestmentYears: number;
   holdFromPIS: number;
-  // IMPL-087: Exit month
-  exitMonth: number;
-  setExitMonth: (value: number) => void;
+  // exitMonth removed (IMPL-117) — now engine-internal, auto-derived from timeline
   // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
   noiGrowthRate: number;
   setNoiGrowthRate: (value: number) => void;
@@ -27,8 +25,6 @@ interface ProjectionsSectionProps {
   setYearOneDepreciationPct: (value: number) => void;
   constructionDelayMonths: number;
   setConstructionDelayMonths: (value: number) => void;
-  taxBenefitDelayMonths: number;
-  setTaxBenefitDelayMonths: (value: number) => void;
 
   // Timing Architecture (IMPL-114)
   investmentDate?: string;
@@ -44,8 +40,6 @@ interface ProjectionsSectionProps {
 const ProjectionsSection: React.FC<ProjectionsSectionProps> = ({
   totalInvestmentYears,
   holdFromPIS,
-  exitMonth,
-  setExitMonth,
   // ISS-068c: Single NOI growth rate
   noiGrowthRate,
   setNoiGrowthRate,
@@ -55,8 +49,6 @@ const ProjectionsSection: React.FC<ProjectionsSectionProps> = ({
   setYearOneDepreciationPct,
   constructionDelayMonths,
   setConstructionDelayMonths,
-  taxBenefitDelayMonths,
-  setTaxBenefitDelayMonths,
   investmentDate = '',
   setInvestmentDate,
   exitExtensionMonths = 0,
@@ -100,7 +92,7 @@ const ProjectionsSection: React.FC<ProjectionsSectionProps> = ({
                 <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem' }}>
                   {computedTimeline
                     ? `${computedTimeline.holdFromPIS} yr credit period, exit ${formatDate(computedTimeline.actualExitDate)}${computedTimeline.isExtended ? ` (+${exitExtensionMonths}mo extended)` : ''}`
-                    : `${holdFromPIS} years from PIS + 1 year for exit in ${MONTH_NAMES[exitMonth - 1]}`
+                    : `${holdFromPIS} years from PIS + 1 year for exit`
                   }
                 </div>
               </div>
@@ -205,46 +197,7 @@ const ProjectionsSection: React.FC<ProjectionsSectionProps> = ({
                 </div>
               </div>
 
-              {/* Tax Benefit Delay — hidden when computedTimeline exists (new path handles K-1 dates) */}
-              {!computedTimeline && (
-                <div className="hdc-input-group" style={{ marginTop: '0.75rem' }}>
-                  <label className="hdc-input-label">Tax Benefit Realization Delay (months)</label>
-                  <Input
-                    type="number"
-                    min="0"
-                    max="24"
-                    step="1"
-                    value={taxBenefitDelayMonths}
-                    onChange={(e) => setTaxBenefitDelayMonths(Number(e.target.value) || 0)}
-                    className="hdc-input"
-                    disabled={isReadOnly}
-                  />
-                  <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem' }}>
-                    Months after tax year end before K-1 delivery. Shifts benefit timing for IRR. Typical: 3-9 months.
-                  </div>
-                </div>
-              )}
-
-              {/* Exit Month — hidden when computedTimeline exists (exit is date-computed) */}
-              {!computedTimeline && (
-                <div className="hdc-input-group" style={{ marginTop: '0.75rem' }}>
-                  <label className="hdc-input-label">Exit Month</label>
-                  <select
-                    value={exitMonth}
-                    onChange={(e) => setExitMonth(Number(e.target.value))}
-                    className="hdc-input"
-                    disabled={isReadOnly}
-                    style={{ padding: '0.375rem', fontSize: '0.875rem', borderRadius: '4px', border: '1px solid #ccc' }}
-                  >
-                    {MONTH_NAMES.map((name, i) => (
-                      <option key={i + 1} value={i + 1}>{name} ({i + 1})</option>
-                    ))}
-                  </select>
-                  <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem' }}>
-                    Month of property disposition/exit. Prorates final year NOI, debt service, and fees.
-                  </div>
-                </div>
-              )}
+              {/* exitMonth dropdown removed (IMPL-117) — now engine-internal, auto-derived from timeline */}
 
               {/* IMPL-114: Exit Extension Slider — visible when computedTimeline exists */}
               {computedTimeline && (
@@ -304,14 +257,6 @@ const ProjectionsSection: React.FC<ProjectionsSectionProps> = ({
                 <div style={{ marginTop: '0.75rem', padding: '0.5rem', background: '#f0f7f7', borderRadius: '4px', fontSize: '0.7rem', color: '#474a44' }}>
                   <div><strong>Construction Project</strong></div>
                   <div>Placed in service: Year {Math.floor(constructionDelayMonths / 12) + 1}</div>
-                  <div>Tax benefits begin: Year {(() => {
-                    const pisYear = Math.floor(constructionDelayMonths / 12) + 1;
-                    const dly = Math.floor(taxBenefitDelayMonths / 12);
-                    const frac = (taxBenefitDelayMonths % 12) / 12;
-                    const startYear = pisYear + dly;
-                    if (taxBenefitDelayMonths === 0 || frac === 0) return `${startYear}`;
-                    return `${startYear} (${Math.round((1 - frac) * 100)}% Year ${startYear}, ${Math.round(frac * 100)}% Year ${startYear + 1})`;
-                  })()}</div>
                   <div>Total investment duration: {totalInvestmentYears} years</div>
                 </div>
               )}

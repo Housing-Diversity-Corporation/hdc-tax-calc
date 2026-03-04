@@ -93,26 +93,8 @@ describe('useHDCState — Timeline Architecture (IMPL-112)', () => {
     expect(result.current.electDeferCreditPeriod).toBe(true);
   });
 
-  // HS-5: Old state still functional
-  it('HS-5: deprecated state variables still present and functional', () => {
-    const { result } = renderHook(() => useHDCState());
-
-    // Verify old state is in return object
-    expect(result.current.taxBenefitDelayMonths).toBeDefined();
-    expect(result.current.placedInServiceMonth).toBeDefined();
-    expect(result.current.exitMonth).toBeDefined();
-
-    // Verify setters work
-    act(() => {
-      result.current.setTaxBenefitDelayMonths(12);
-      result.current.setPlacedInServiceMonth(3);
-      result.current.setExitMonth(9);
-    });
-
-    expect(result.current.taxBenefitDelayMonths).toBe(12);
-    expect(result.current.placedInServiceMonth).toBe(3);
-    expect(result.current.exitMonth).toBe(9);
-  });
+  // HS-5: placedInServiceMonth and exitMonth removed in IMPL-117
+  // (Both are now engine-internal, auto-derived from timeline)
 
   // HS-5b: Old computeHoldPeriod still works
   it('HS-5b: old holdFromPIS / totalInvestmentYears still computed', () => {

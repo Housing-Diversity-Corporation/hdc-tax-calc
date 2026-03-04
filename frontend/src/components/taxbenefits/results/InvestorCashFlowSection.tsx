@@ -21,7 +21,6 @@ interface InvestorCashFlowSectionProps {
   investorIRR: number;
   totalInvestment: number;
   formatCurrency: (value: number) => string;
-  taxBenefitDelayMonths?: number;
   // State LIHTC Integration (IMPL-018)
   hasStateLIHTCDirectUse?: boolean;
 }
@@ -42,7 +41,6 @@ const InvestorCashFlowSection: React.FC<InvestorCashFlowSectionProps> = ({
   investorIRR,
   totalInvestment,
   formatCurrency,
-  taxBenefitDelayMonths = 0,
   // State LIHTC Integration (IMPL-018)
   hasStateLIHTCDirectUse = false
 }) => {
@@ -150,11 +148,6 @@ const InvestorCashFlowSection: React.FC<InvestorCashFlowSectionProps> = ({
          <h3 className="text-sm font-semibold mb-3">
            Investor Returns Model
            <span className="text-xs text-gray-600 font-medium ml-2">($ in millions)</span>
-           {taxBenefitDelayMonths > 0 && (
-             <span className="text-xs text-orange-600 font-medium ml-2">
-               Tax benefits delayed {taxBenefitDelayMonths} months
-             </span>
-           )}
          </h3>    
          <div className="overflow-x-auto">    
            <table className="w-full text-xs">    

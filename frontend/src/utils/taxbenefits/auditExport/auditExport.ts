@@ -139,7 +139,6 @@ function buildInputsSheet(params: CalculationParams): {
     { name: 'Exit Cap Rate', rangeName: 'Input_ExitCapRate', value: params.exitCapRate, units: '%', description: 'Capitalization rate at exit' },
     { name: 'Investor Promote Share', rangeName: 'Input_InvestorPromote', value: params.investorPromoteShare, units: '%', description: 'Investor share of operating cash flow' },
     { name: 'Construction Delay Months', rangeName: 'Input_ConstructionDelay', value: params.constructionDelayMonths || 0, units: 'months', description: 'Months before NOI starts' },
-    { name: 'Tax Benefit Delay Months', rangeName: 'Input_TaxBenefitDelay', value: params.taxBenefitDelayMonths || 0, units: 'months', description: 'Months before tax benefits realized' },
 
     // OZ Parameters
     { name: 'OZ Enabled', rangeName: 'Input_OZEnabled', value: params.ozEnabled ? 1 : 0, units: '0/1', description: 'Opportunity Zone investment flag' },
@@ -158,8 +157,7 @@ function buildInputsSheet(params: CalculationParams): {
     { name: 'AUM Current Pay Enabled', rangeName: 'Input_AUMCurrentPayEnabled', value: params.aumCurrentPayEnabled ? 1 : 0, units: '0/1', description: 'AUM fee current pay flag' },
     { name: 'AUM Current Pay %', rangeName: 'Input_AUMCurrentPayPct', value: params.aumCurrentPayPct || 0, units: '%', description: 'AUM fee current pay percentage' },
 
-    // Placed in Service
-    { name: 'Placed in Service Month', rangeName: 'Input_PISMonth', value: params.placedInServiceMonth || 7, units: 'month', description: 'Month property placed in service (1-12)' },
+    // IMPL-117: placedInServiceMonth removed from UI-facing inputs — now engine-internal
   ];
 
   // Build sheet data

@@ -22,7 +22,7 @@ interface UseHDCCalculationsProps {
   yearOneNOI: number;
   yearOneDepreciationPct: number;
   totalInvestmentYears: number;
-  exitMonth: number; // IMPL-087: Month of exit/disposition (1-12)
+  // exitMonth removed (IMPL-117) — engine auto-derives from timeline or defaults to 7
   // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
   noiGrowthRate: number;
   exitCapRate: number;
@@ -82,7 +82,6 @@ interface UseHDCCalculationsProps {
 
   // Tax timing
   constructionDelayMonths: number;
-  taxBenefitDelayMonths: number;
 
   // Opportunity Zone
   ozEnabled?: boolean;
@@ -114,7 +113,7 @@ interface UseHDCCalculationsProps {
   lihtcEnabled?: boolean;
   applicableFraction?: number;
   creditRate?: number;
-  placedInServiceMonth?: number;
+  // placedInServiceMonth removed (IMPL-117) — derived from investmentDate+constructionDelay
   ddaQctBoost?: boolean;
 
   // Private Activity Bonds (IMPL-080)
@@ -157,6 +156,19 @@ interface UseHDCCalculationsProps {
 }
 
 export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
+  // IMPL-117: Derive pisMonth locally from timing params (no longer a prop)
+  const pisMonth = useMemo(() => {
+    if (props.investmentDate && props.pisDateOverride) {
+      return new Date(props.pisDateOverride + 'T00:00:00').getMonth() + 1;
+    }
+    if (props.investmentDate) {
+      const d = new Date(props.investmentDate + 'T00:00:00');
+      d.setMonth(d.getMonth() + (props.constructionDelayMonths || 0));
+      return d.getMonth() + 1;
+    }
+    return 7; // Default for legacy path
+  }, [props.investmentDate, props.pisDateOverride, props.constructionDelayMonths]);
+
   // Calculate interest reserve amount using shared function (single source of truth)
   const interestReserveAmount = useMemo(() => {
     return calculateInterestReserve({
@@ -239,8 +251,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     const annualMACRS = remainingBasis / 27.5; // IRS MACRS: 27.5 years for residential rental
 
     // Mid-month convention: property treated as placed in service at midpoint of month
-    const placedInServiceMonth = props.placedInServiceMonth || 7; // Default July (mid-year)
-    const monthsInYear1 = 12.5 - placedInServiceMonth;
+    const monthsInYear1 = 12.5 - pisMonth;
     const year1MACRS = (monthsInYear1 / 12) * annualMACRS;
     const yearOneDepreciation = bonusDepreciation + year1MACRS;
 
@@ -473,7 +484,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
         eligibleBasis: lihtcEligibleBasis,
         applicableFraction: (props.applicableFraction || 100) / 100,
         ddaQctBoost: props.ddaQctBoost || false,
-        pisMonth: props.placedInServiceMonth || 7,
+        pisMonth,
         creditRate: props.creditRate || 0.04
       });
     } catch (error) {
@@ -485,7 +496,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     lihtcEligibleBasis,
     props.applicableFraction,
     props.ddaQctBoost,
-    props.placedInServiceMonth,
+    pisMonth,
     props.creditRate
   ]);
 
@@ -505,7 +516,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
         federalAnnualCredit: lihtcResult.annualCredit,
         propertyState: props.selectedState,
         investorState: props.investorState || '',
-        pisMonth: props.placedInServiceMonth || 7,
+        pisMonth,
         syndicationRateOverride: props.syndicationRate || 75, // Default 75%
         investorHasStateLiability: props.investorHasStateLiability,
         userPercentage: props.stateLIHTCUserPercentage,
@@ -520,7 +531,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     lihtcResult,
     props.selectedState,
     props.investorState,
-    props.placedInServiceMonth,
+    pisMonth,
     props.syndicationRate,
     props.investorHasStateLiability,
     props.stateLIHTCUserPercentage,
@@ -631,9 +642,8 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       effectiveTaxRateForStraightLine: taxCalculations.effectiveTaxRateForStraightLine,
       bonusConformityRate: taxCalculations.bonusConformityRate,
       constructionDelayMonths: props.constructionDelayMonths,
-      taxBenefitDelayMonths: props.taxBenefitDelayMonths,
-      placedInServiceMonth: props.placedInServiceMonth,
-      exitMonth: props.exitMonth, // IMPL-087
+      // placedInServiceMonth removed (IMPL-117) — engine auto-derives from timeline
+      // exitMonth removed (IMPL-117) — engine auto-derives from timeline
       // Timing Architecture (IMPL-112+113)
       investmentDate: props.investmentDate || undefined,
       pisDateOverride: props.pisDateOverride || undefined,
@@ -697,10 +707,8 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     props.aumCurrentPayPct,
     props.investorPromoteShare, // ISS-047b: Explicit dependency for promote split changes
     // Hold period inputs: all three feed computeHoldPeriod() inside engine
-    props.placedInServiceMonth,
-    props.exitMonth, // IMPL-087
+    pisMonth,
     props.constructionDelayMonths,
-    props.taxBenefitDelayMonths,
     taxCalculations.totalTaxBenefit,
     taxCalculations.netTaxBenefit,
     taxCalculations.hdcFee,
@@ -810,7 +818,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       philCurrentPayEnabled: props.philCurrentPayEnabled,
       philCurrentPayPct: props.philCurrentPayPct,
       holdPeriod: mainAnalysisResults?.holdPeriod || props.totalInvestmentYears,
-      exitMonth: props.exitMonth, // IMPL-087
+      // exitMonth removed (IMPL-117) — engine auto-derives from timeline
       constructionDelayMonths: props.constructionDelayMonths || 0,
       interestReserveEnabled: props.interestReserveEnabled,
       interestReserveMonths: props.interestReserveMonths,

@@ -75,7 +75,6 @@ export const HDCTaxReportJsPDFButton: React.FC<HDCTaxReportJsPDFProps> = ({
       const outsideInvestorCurrentPay = params.outsideInvestorPikCurrentPayEnabled ? ((params.outsideInvestorPikCurrentPayPct || 0) / 100) : 0;
       const interestReserveAmount = params.interestReserveMonths || 0;
       const ozBasis = params.deferredCapitalGains || 0;
-      const taxBenefitDelayMonths = params.taxBenefitDelayMonths || 0;
       const hdcDeferredFeeRate = params.hdcDeferredInterestRate || 0.08;
       const bonusConformityRate = params.bonusConformityRate || 1;
 
@@ -829,11 +828,6 @@ export const HDCTaxReportJsPDFButton: React.FC<HDCTaxReportJsPDFProps> = ({
           ozMetrics.push(
             ['Investment Date:', investorResults.computedTimeline.investmentDate.toLocaleDateString()],
             ['Exit Date:', investorResults.computedTimeline.actualExitDate.toLocaleDateString()]
-          );
-        } else if (taxBenefitDelayMonths > 0) {
-          ozMetrics.push(
-            ['Tax Benefit Delay:', `${taxBenefitDelayMonths} months`],
-            ['Impact on Amount:', 'None (timing only)']
           );
         }
 

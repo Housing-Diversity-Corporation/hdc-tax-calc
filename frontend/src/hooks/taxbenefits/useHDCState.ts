@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { computeHoldPeriod } from '../../utils/taxbenefits/computeHoldPeriod';
 import { computeTimeline } from '../../utils/taxbenefits/computeTimeline';
 import { DEFAULT_VALUES } from '../../utils/taxbenefits';
 import { getStateTaxRate, doesNIITApply } from '../../utils/taxbenefits/stateProfiles';
@@ -48,17 +47,8 @@ export const useHDCState = () => {
   const [advanceFinancingRate, setAdvanceFinancingRate] = useState(DEFAULT_VALUES.ADVANCE_FINANCING_RATE);
   const [taxDeliveryMonths, setTaxDeliveryMonths] = useState(DEFAULT_VALUES.TAX_DELIVERY_MONTHS);
   const [constructionDelayMonths, setConstructionDelayMonths] = useState(0); // 0-36 months construction delay
-  const [taxBenefitDelayMonths, setTaxBenefitDelayMonths] = useState(0); // 0-36 months tax realization delay
-  const [placedInServiceMonth, setPlacedInServiceMonth] = useState(7); // Month placed in service (1-12), hoisted for useMemo
-  // IMPL-087: Exit month with pisMonth sync (follows pisMonth unless user overrides)
-  const [exitMonth, setExitMonth] = useState(7); // Default matches initial pisMonth
-  const prevPisMonth = useRef(placedInServiceMonth);
-  useEffect(() => {
-    if (exitMonth === prevPisMonth.current) {
-      setExitMonth(placedInServiceMonth);
-    }
-    prevPisMonth.current = placedInServiceMonth;
-  }, [placedInServiceMonth]); // eslint-disable-line react-hooks/exhaustive-deps
+  // placedInServiceMonth state removed (IMPL-117) — engine auto-derives from timeline
+  // exitMonth state removed (IMPL-117) — engine auto-derives from timeline
 
   // === NEW: Timing Architecture (IMPL-112) ===
   const [investmentDate, setInvestmentDate] = useState<string>('');
@@ -77,12 +67,15 @@ export const useHDCState = () => {
   // IMPL-096: depreciationRecaptureRate removed — rates derived inside calculateExitTax()
 
   // Projections — holdPeriod computed from LIHTC credit exhaustion
-  // TIMING PRECISION FIX: month-precise arithmetic, single conversion to years.
-  // exitYear = disposition year. totalInvestmentYears = full model (includes delay).
-  const { holdFromPIS, totalInvestmentYears, exitYear, delaySpilloverYears } = useMemo(
-    () => computeHoldPeriod(placedInServiceMonth, constructionDelayMonths, taxBenefitDelayMonths),
-    [placedInServiceMonth, constructionDelayMonths, taxBenefitDelayMonths]
-  );
+  // IMPL-117: Inlined from deleted computeHoldPeriod.ts (pisMonth=7 default → creditPeriod=11)
+  const { holdFromPIS, totalInvestmentYears, exitYear, delaySpilloverYears } = useMemo(() => {
+    const creditPeriod = 11; // pisMonth=7 (non-January) → 11 years per §42(f)(3)
+    const prePIS = Math.floor(constructionDelayMonths / 12);
+    const totalMonths = constructionDelayMonths + (creditPeriod * 12);
+    const total = Math.ceil(totalMonths / 12) + 1; // +1 disposition
+    const exit = prePIS + creditPeriod + 1;
+    return { holdFromPIS: creditPeriod, totalInvestmentYears: total, exitYear: exit, delaySpilloverYears: total - exit };
+  }, [constructionDelayMonths]);
   // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
   const [noiGrowthRate, setNoiGrowthRate] = useState(DEFAULT_VALUES.NOI_GROWTH_RATE);
   const [exitCapRate, setExitCapRate] = useState(DEFAULT_VALUES.EXIT_CAP_RATE);
@@ -233,7 +226,7 @@ export const useHDCState = () => {
   const [lihtcEnabled, setLihtcEnabled] = useState(true);
   const [applicableFraction, setApplicableFraction] = useState(100);
   const [creditRate, setCreditRate] = useState(0.04);
-  // placedInServiceMonth moved above (before computeHoldPeriod useMemo)
+  // placedInServiceMonth removed (IMPL-117)
   const [ddaQctBoost, setDdaQctBoost] = useState(false);
 
   // Private Activity Bonds (IMPL-080)
@@ -507,7 +500,6 @@ export const useHDCState = () => {
     advanceFinancingRate, setAdvanceFinancingRate,
     taxDeliveryMonths, setTaxDeliveryMonths,
     constructionDelayMonths, setConstructionDelayMonths,
-    taxBenefitDelayMonths, setTaxBenefitDelayMonths,
     aumFeeEnabled, setAumFeeEnabled,
     aumFeeRate, setAumFeeRate,
     aumCurrentPayEnabled, setAumCurrentPayEnabled,
@@ -647,8 +639,8 @@ export const useHDCState = () => {
     otherExclusions, setOtherExclusions,
     applicableFraction, setApplicableFraction,
     creditRate, setCreditRate,
-    placedInServiceMonth, setPlacedInServiceMonth,
-    exitMonth, setExitMonth, // IMPL-087: Exit month with pisMonth sync
+    // placedInServiceMonth removed (IMPL-117) — engine auto-derives from timeline
+    // exitMonth removed (IMPL-117) — engine auto-derives from timeline
     ddaQctBoost, setDdaQctBoost,
 
     // Helpers

@@ -87,7 +87,6 @@ interface HDCResultsComponentProps {
   stateCapitalGainsRate: number;
   yearOneDepreciationPct: number;
   constructionDelayMonths: number;
-  taxBenefitDelayMonths: number;
   ozType: 'standard' | 'rural';
   ozVersion?: '1.0' | '2.0';
   ozCapitalGainsTaxRate: number;
@@ -118,8 +117,8 @@ interface HDCResultsComponentProps {
   taxAdvanceDiscountRate?: number;
   advanceFinancingRate?: number;
   taxDeliveryMonths?: number;
-  placedInServiceMonth?: number;
-  exitMonth?: number;
+  // placedInServiceMonth removed (IMPL-117) — now engine-internal, auto-derived from timeline
+  // exitMonth removed (IMPL-117) — now engine-internal, auto-derived from timeline
   subDebtPriority?: 'investor' | 'outside';
   includeOutsideInvestor?: boolean;
 
@@ -229,8 +228,6 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
                 exitCapRate: props.exitCapRate,
                 holdPeriod: props.holdPeriod,
                 constructionDelayMonths: props.constructionDelayMonths,
-                taxBenefitDelayMonths: props.taxBenefitDelayMonths,
-                placedInServiceMonth: props.placedInServiceMonth || 7,
 
                 // Capital Structure
                 investorEquityPct: props.investorEquityPct,
@@ -338,7 +335,6 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
                 assetSaleGain: props.assetSaleGain || 0,
                 ozEnabled: props.ozEnabled,
                 deferredCapitalGains: props.deferredCapitalGains || 0,
-                taxBenefitDelayMonths: props.taxBenefitDelayMonths || 0,
                 interestReserveEnabled: props.interestReserveEnabled,
                 interestReserveMonths: props.interestReserveMonths || 0,
                 investorPromoteShare: props.investorPromoteShare,
@@ -368,7 +364,6 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
                 niitRate: props.niitRate,
                 stateCapitalGainsRate: props.stateCapitalGainsRate,
                 selectedState: props.selectedState,
-                placedInServiceMonth: props.placedInServiceMonth || 7,
                 // IMPL-064: Add missing investor tax params
                 investorState: props.investorState || props.selectedState, // Use investorState, fallback to selectedState
                 investorTrack: props.investorTrack,
@@ -424,7 +419,6 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
                 exitCapRate: props.exitCapRate,
                 investorPromoteShare: props.investorPromoteShare,
                 constructionDelayMonths: props.constructionDelayMonths,
-                taxBenefitDelayMonths: props.taxBenefitDelayMonths,
 
                 // Opportunity Zone
                 ozEnabled: props.ozEnabled || (props.ozType !== undefined && props.deferredCapitalGains > 0),
@@ -612,7 +606,6 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
           investorIRR={props.investorIRR}
           totalInvestment={props.totalInvestment}
           formatCurrency={props.formatCurrency}
-          taxBenefitDelayMonths={props.taxBenefitDelayMonths}
           // State LIHTC Integration (IMPL-018)
           hasStateLIHTCDirectUse={props.stateLIHTCIntegration?.creditPath === 'direct_use'}
         />

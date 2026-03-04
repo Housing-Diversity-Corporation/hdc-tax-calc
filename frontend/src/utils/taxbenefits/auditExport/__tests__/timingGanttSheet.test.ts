@@ -141,8 +141,7 @@ describe('timingGanttSheet — IMPL-115', () => {
     // Should have legacy title
     expect(findRow(data, 'Month-Level Precision')).toBeDefined();
 
-    // Should have K-1 Delay row (legacy only)
-    expect(findRow(data, 'K-1 Delay')).toBeDefined();
+    // K-1 Delay row removed (taxBenefitDelayMonths deprecated)
 
     // Sheet should be valid
     expect(result.sheet['!ref']).toBeDefined();

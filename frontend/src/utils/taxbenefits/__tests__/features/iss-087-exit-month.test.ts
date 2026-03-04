@@ -1,8 +1,9 @@
 /**
  * IMPL-087: Exit-Month Precision — Integration Tests
  *
- * Runs on the investmentDate-driven path (computeTimeline).
- * exitMonth still controls disposition-year proration fraction.
+ * Runs on the OLD path (no investmentDate) so exitMonth param directly
+ * controls disposition-year proration fraction.
+ * (On the new path, exitMonth is auto-derived from timeline.actualExitDate.)
  *
  * Verifies disposition year proration across all financial items:
  *   - NOI prorated by exitMonth/12
@@ -21,11 +22,12 @@ import { getDefaultTestParams } from '../test-helpers';
 describe('IMPL-087: Exit-Month Precision', () => {
   /**
    * Helper: run engine with specified exitMonth and return key fields.
-   * Uses investmentDate='2025-01-01' (from defaults) → computeTimeline path.
-   * totalInvestmentYears=10 (Jan PIS, 10 credit years, exit at boundary).
+   * Forces OLD path (investmentDate: undefined) so exitMonth param is used directly.
+   * Jan PIS → holdPeriod = 11 on old path (computeHoldPeriod adds +1 disposition).
    */
   function runWithExitMonth(exitMonth: number, overrides: Record<string, any> = {}) {
     const result = calculateFullInvestorAnalysis(getDefaultTestParams({
+      investmentDate: undefined, // Force old path — exitMonth param controls proration
       exitMonth,
       ...overrides,
     }));
@@ -189,11 +191,11 @@ describe('IMPL-087: Exit-Month Precision', () => {
       expect(lastYear.noi).toBeCloseTo(lastYear.annualizedNOI!, 4);
     });
 
-    it('holdPeriod and cashFlows.length match computeTimeline', () => {
-      // investmentDate='2025-01-01', no construction → totalInvestmentYears = 10
+    it('holdPeriod and cashFlows.length match computeHoldPeriod (old path)', () => {
+      // Old path: Jan PIS, no construction → totalInvestmentYears = 11
       const { result } = runWithExitMonth(12);
-      expect(result.holdPeriod).toBe(10);
-      expect(result.cashFlows.length).toBe(10);
+      expect(result.holdPeriod).toBe(11);
+      expect(result.cashFlows.length).toBe(11);
     });
   });
 
@@ -221,10 +223,10 @@ describe('IMPL-087: Exit-Month Precision', () => {
       expect(lastYear.noi / lastYear.annualizedNOI!).toBeCloseTo(1 / 12, 2);
     });
 
-    it('holdPeriod unchanged (still 10 for default params)', () => {
+    it('holdPeriod unchanged (still 11 for old path default params)', () => {
       const { result } = runWithExitMonth(1);
-      expect(result.holdPeriod).toBe(10);
-      expect(result.cashFlows.length).toBe(10);
+      expect(result.holdPeriod).toBe(11);
+      expect(result.cashFlows.length).toBe(11);
     });
   });
 });

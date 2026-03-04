@@ -19,7 +19,7 @@
 import * as XLSX from 'xlsx';
 import { CalculationParams, ComputedTimeline } from '../../../../types/taxbenefits';
 import { SheetResult, NamedRangeDefinition } from '../types';
-import { computeHoldPeriod } from '../../computeHoldPeriod';
+// computeHoldPeriod import removed (IMPL-117) — logic inlined below
 
 const MONTH_ABBR = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -30,7 +30,6 @@ const formatDate = (date: Date): string =>
 // Block characters for visual bars
 const FULL = '██';    // Active period
 const HALF = '▓▓';    // Partial (prorated) period
-const SPILL = '░░';   // Delay spillover
 const EXIT_MARK = '▼▼';  // Exit marker
 const EMPTY = '';
 
@@ -43,12 +42,10 @@ export function buildTimingGanttSheet(rawParams: CalculationParams, timeline?: C
 
   let pisMonth: number;
   let constructionDevMonths: number;
-  let taxBenefitDelayMonths: number;
   let exitMonth: number;
   let totalInvestmentYears: number;
   let exitYear: number;
   let holdFromPIS: number;
-  let delaySpilloverYears: number;
   let creditPeriodFromPIS: number;
   let placedInServiceYear: number;
   let creditStartYear: number;
@@ -56,28 +53,26 @@ export function buildTimingGanttSheet(rawParams: CalculationParams, timeline?: C
   if (timeline) {
     pisMonth = timeline.pisCalendarMonth;
     constructionDevMonths = rawParams.constructionDelayMonths || 0;
-    taxBenefitDelayMonths = 0; // New path: K-1 dates are auto-computed, no manual delay
     exitMonth = timeline.actualExitDate.getMonth() + 1;
     totalInvestmentYears = timeline.totalInvestmentYears;
     exitYear = timeline.exitYear;
     holdFromPIS = timeline.holdFromPIS;
-    delaySpilloverYears = 0; // New path: no manual delay spillover
     creditPeriodFromPIS = timeline.lihtcCreditYears;
     placedInServiceYear = timeline.placedInServiceYear;
     creditStartYear = timeline.creditStartYear;
   } else {
-    // Legacy path
-    pisMonth = rawParams.placedInServiceMonth || 7;
+    // Legacy path — IMPL-117: placedInServiceMonth is engine-internal; hardcode default
+    pisMonth = 7;
     constructionDevMonths = rawParams.constructionDelayMonths || 0;
-    taxBenefitDelayMonths = rawParams.taxBenefitDelayMonths || 0;
-    exitMonth = rawParams.exitMonth || 12;
+    exitMonth = 12; // IMPL-117: exitMonth is now engine-internal; legacy path defaults to December
 
-    const holdResult = computeHoldPeriod(pisMonth, constructionDevMonths, taxBenefitDelayMonths);
-    totalInvestmentYears = holdResult.totalInvestmentYears;
-    exitYear = holdResult.exitYear;
-    holdFromPIS = holdResult.holdFromPIS;
-    delaySpilloverYears = holdResult.delaySpilloverYears;
+    // IMPL-117: Inlined from deleted computeHoldPeriod.ts
     creditPeriodFromPIS = pisMonth > 1 ? 11 : 10;
+    holdFromPIS = creditPeriodFromPIS;
+    const prePIS = Math.floor(constructionDevMonths / 12);
+    const totalMonths = constructionDevMonths + (creditPeriodFromPIS * 12);
+    totalInvestmentYears = Math.ceil(totalMonths / 12) + 1;
+    exitYear = prePIS + creditPeriodFromPIS + 1;
     placedInServiceYear = Math.floor(constructionDevMonths / 12) + 1;
     creditStartYear = placedInServiceYear; // Legacy: no election support
   }
@@ -118,12 +113,12 @@ export function buildTimingGanttSheet(rawParams: CalculationParams, timeline?: C
   data.push(['Construction Period', '', `${constructionDevMonths} mo`, '', 'PIS Year', '', placedInServiceYear]);
   data.push(['PIS Month', '', MONTH_NAMES[pisMonth - 1], '', 'Credit Period', '', `${creditPeriodFromPIS} yr`]);
   if (!timeline) {
-    data.push(['K-1 Delay', '', `${taxBenefitDelayMonths} mo`, '', 'Exit Year', '', exitYear]);
+    data.push(['', '', '', '', 'Exit Year', '', exitYear]);
   } else {
     data.push(['Credit Start', '', creditStartYear, '', 'Exit Year', '', exitYear]);
   }
   data.push(['Exit Month', '', MONTH_NAMES[exitMonth - 1], '', 'Total Duration', '', `${totalInvestmentYears} yr`]);
-  data.push(['OZ Enabled', '', ozEnabled ? 'Yes' : 'No', '', timeline ? 'Hold from PIS' : 'Delay Spillover', '', timeline ? `${holdFromPIS} yr` : `${delaySpilloverYears} yr`]);
+  data.push(['OZ Enabled', '', ozEnabled ? 'Yes' : 'No', '', 'Hold from PIS', '', `${holdFromPIS} yr`]);
   data.push([]);
 
   // ==================== SECTION 3: Chart-Ready Data ====================
@@ -138,15 +133,12 @@ export function buildTimingGanttSheet(rawParams: CalculationParams, timeline?: C
   const creditOffsetYears = timeline ? (creditStartYear - timeline.pisYear) : 0;
   const creditStartMo = constructionDevMonths + (creditOffsetYears * 12);
   const creditDurationMo = creditPeriodFromPIS * 12;
-  const delayStartMo = constructionDevMonths + creditDurationMo;
-  const delayDurationMo = taxBenefitDelayMonths;
   const exitStartMo = (exitYear - 1) * 12;
   const exitDurationMo = exitMonth;
 
   if (ozEnabled) data.push(['OZ Hold (10yr)', ozStartMo, ozDurationMo]);
   data.push(['Construction', constStartMo, constDurationMo]);
   data.push(['LIHTC Credits', creditStartMo, creditDurationMo]);
-  if (taxBenefitDelayMonths > 0) data.push(['K-1 Delay', delayStartMo, delayDurationMo]);
   // K-1 realization rows (new path only)
   if (timeline) {
     const bonusDepK1Mo = (timeline.bonusDepK1Date.getFullYear() - timeline.investmentDate.getFullYear()) * 12
@@ -162,7 +154,7 @@ export function buildTimingGanttSheet(rawParams: CalculationParams, timeline?: C
   data.push([]);
 
   // ==================== SECTION 4: Visual Gantt Grid ====================
-  data.push(['VISUAL GANTT — Each column = 1 month    ██ = active    ▓▓ = prorated    ░░ = delay spillover    ▼▼ = exit']);
+  data.push(['VISUAL GANTT — Each column = 1 month    ██ = active    ▓▓ = prorated    ▼▼ = exit']);
   data.push([]);
 
   // Month header row
@@ -238,21 +230,8 @@ export function buildTimingGanttSheet(rawParams: CalculationParams, timeline?: C
   }
   data.push(lihtcGantt);
 
-  // --- Clock 4: K-1 Delay Shift (legacy only) ---
-  if (!timeline) {
-    const delayGantt: (string | null)[] = ['Clock 4: K-1 Delay'];
-    for (let mo = 0; mo < totalMonths; mo++) {
-      if (taxBenefitDelayMonths > 0 && mo >= creditEndAbsMo && mo < creditEndAbsMo + taxBenefitDelayMonths) {
-        delayGantt.push(SPILL);
-      } else {
-        delayGantt.push(EMPTY);
-      }
-    }
-    data.push(delayGantt);
-  }
-
-  // --- Clock 4 (new): Depreciation (MACRS 27.5yr) ---
-  const depGantt: (string | null)[] = ['Clock ' + (timeline ? '4' : '5') + ': Depreciation'];
+  // --- Clock 4: Depreciation (MACRS 27.5yr) ---
+  const depGantt: (string | null)[] = ['Clock 4: Depreciation'];
   for (let mo = 0; mo < totalMonths; mo++) {
     if (mo >= constructionDevMonths && mo < constructionDevMonths + 330) {
       depGantt.push(FULL);
@@ -280,8 +259,6 @@ export function buildTimingGanttSheet(rawParams: CalculationParams, timeline?: C
       combinedGantt.push('C');   // Construction
     } else if (mo >= creditStartAbsMo && mo < creditEndAbsMo) {
       combinedGantt.push('L');   // LIHTC
-    } else if (taxBenefitDelayMonths > 0 && mo >= creditEndAbsMo && mo < creditEndAbsMo + taxBenefitDelayMonths) {
-      combinedGantt.push('D');   // Delay
     } else if (mo >= absMonth(exitYear, 1) && mo <= absMonth(exitYear, exitMonth)) {
       combinedGantt.push('X');   // Exit
     } else {
@@ -300,16 +277,13 @@ export function buildTimingGanttSheet(rawParams: CalculationParams, timeline?: C
     data.push([`Total Hold: ${timeline.totalHoldMonths} months = ${totalInvestmentYears} investment years`]);
     data.push([`Exit: ${formatDate(timeline.actualExitDate)}${timeline.isExtended ? ' (extended)' : ' (optimal)'}`]);
   } else {
-    const totalMonthsCalc = constructionDevMonths + (creditPeriodFromPIS * 12) + taxBenefitDelayMonths;
-    data.push([`Construction: ${constructionDevMonths} mo + Credits: ${creditPeriodFromPIS}×12=${creditPeriodFromPIS * 12} mo + Delay: ${taxBenefitDelayMonths} mo = ${totalMonthsCalc} months`]);
+    const totalMonthsCalc = constructionDevMonths + (creditPeriodFromPIS * 12);
+    data.push([`Construction: ${constructionDevMonths} mo + Credits: ${creditPeriodFromPIS}×12=${creditPeriodFromPIS * 12} mo = ${totalMonthsCalc} months`]);
     data.push([`ceil(${totalMonthsCalc} / 12) + 1 disposition = ${Math.ceil(totalMonthsCalc / 12) + 1} years total investment duration`]);
     data.push([`Exit year: floor(${constructionDevMonths}/12) + ${creditPeriodFromPIS} + 1 = ${exitYear} (property sold, proceeds received)`]);
-    if (delaySpilloverYears > 0) {
-      data.push([`Delay spillover: ${delaySpilloverYears} additional year(s) for delayed K-1 benefit realization (IRR accuracy)`]);
-    }
   }
   data.push([]);
-  data.push(['LEGEND: C = Construction | L = LIHTC Credits | D = K-1 Delay Spillover | X = Exit/Disposition | · = No activity']);
+  data.push(['LEGEND: C = Construction | L = LIHTC Credits | X = Exit/Disposition | · = No activity']);
 
   // Convert to worksheet
   const ws = XLSX.utils.aoa_to_sheet(data);

@@ -162,8 +162,6 @@ interface HDCInputsComponentProps {
   setTaxDeliveryMonths: (value: number) => void;
   constructionDelayMonths: number;
   setConstructionDelayMonths: (value: number) => void;
-  taxBenefitDelayMonths: number;
-  setTaxBenefitDelayMonths: (value: number) => void;
 
   // Timing Architecture (IMPL-114)
   investmentDate?: string;
@@ -179,8 +177,7 @@ interface HDCInputsComponentProps {
   // Projections — computed hold period (read-only)
   totalInvestmentYears: number;
   holdFromPIS: number;
-  exitMonth: number; // IMPL-087
-  setExitMonth: (value: number) => void;
+  // exitMonth removed (IMPL-117) — now engine-internal, auto-derived from timeline
   // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
   noiGrowthRate: number;
   setNoiGrowthRate: (value: number) => void;
@@ -270,8 +267,7 @@ interface HDCInputsComponentProps {
   setApplicableFraction?: (value: number) => void;
   creditRate?: number;
   setCreditRate?: (value: number) => void;
-  placedInServiceMonth?: number;
-  setPlacedInServiceMonth?: (value: number) => void;
+  // placedInServiceMonth removed (IMPL-117) — now engine-internal, auto-derived from timeline
   ddaQctBoost?: boolean;
   setDdaQctBoost?: (value: boolean) => void;
   lihtcEligibleBasis?: number;
@@ -448,7 +444,7 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
       props.setNoiGrowthRate(config.noiGrowthRate ?? 3);
       props.setExitCapRate(config.exitCapRate ?? 6);
       // holdPeriod is now computed — ignore on load
-      props.setExitMonth?.(config.exitMonth ?? 7); // IMPL-087
+      // exitMonth removed (IMPL-117) — now engine-internal, auto-derived from timeline
 
       // Capital structure
       props.setInvestorEquityPct(config.investorEquityPct ?? 0);
@@ -515,7 +511,6 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
 
       // Timing parameters
       props.setConstructionDelayMonths?.(config.constructionDelayMonths ?? 0);
-      props.setTaxBenefitDelayMonths?.(config.taxBenefitDelayMonths ?? 0);
 
       // Opportunity Zone parameters - only update if not in read-only mode
       if (!props.taxSectionReadOnly) {
@@ -569,7 +564,7 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
       props.setLihtcEnabled?.(config.lihtcEnabled ?? true);
       props.setApplicableFraction?.(config.applicableFraction ?? 100);
       props.setCreditRate?.(config.creditRate ?? 0.04);
-      props.setPlacedInServiceMonth?.(config.placedInServiceMonth ?? 7);
+      // placedInServiceMonth removed (IMPL-117) — now engine-internal, auto-derived from timeline
       props.setDdaQctBoost?.(config.ddaQctBoost ?? false);
       // State LIHTC
       props.setStateLIHTCEnabled?.(config.stateLIHTCEnabled ?? false);
@@ -683,7 +678,7 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
         noiGrowthRate: props.noiGrowthRate,
         exitCapRate: props.exitCapRate,
         holdPeriod: props.totalInvestmentYears, // Read-only snapshot for historical comparison
-        exitMonth: props.exitMonth, // IMPL-087
+        // exitMonth removed (IMPL-117) — now engine-internal, auto-derived from timeline
         investorEquityPct: props.investorEquityPct,
         philanthropicEquityPct: props.philanthropicEquityPct,
         seniorDebtPct: props.seniorDebtPct,
@@ -732,7 +727,6 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
         aumCurrentPayPct: props.aumCurrentPayPct,
         investorPromoteShare: props.investorPromoteShare,
         constructionDelayMonths: props.constructionDelayMonths,
-        taxBenefitDelayMonths: props.taxBenefitDelayMonths,
         ozType: props.ozType,
         ozVersion: props.ozVersion,  // ISS-043
         ozEnabled: props.ozEnabled,  // ISS-043
@@ -783,7 +777,7 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
         lihtcEnabled: props.lihtcEnabled,
         applicableFraction: props.applicableFraction,
         creditRate: props.creditRate,
-        placedInServiceMonth: props.placedInServiceMonth,
+        // placedInServiceMonth removed (IMPL-117) — now engine-internal, auto-derived from timeline
         ddaQctBoost: props.ddaQctBoost,
         // ISS-043: State LIHTC
         stateLIHTCEnabled: props.stateLIHTCEnabled,
@@ -855,7 +849,6 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
             projectCost: props.projectCost,
             holdPeriod: props.totalInvestmentYears,
             ozEnabled: props.ozEnabled,
-            placedInServiceMonth: props.placedInServiceMonth,
             seniorDebtPct: props.seniorDebtPct,
             philanthropicDebtPct: props.philDebtPct,
             investorEquityPct: props.investorEquityPct,
@@ -1123,8 +1116,6 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
         <ProjectionsSection
           totalInvestmentYears={props.totalInvestmentYears}
           holdFromPIS={props.holdFromPIS}
-          exitMonth={props.exitMonth}
-          setExitMonth={props.setExitMonth}
           noiGrowthRate={props.noiGrowthRate}
           setNoiGrowthRate={props.setNoiGrowthRate}
           exitCapRate={props.exitCapRate}
@@ -1133,8 +1124,6 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           setYearOneDepreciationPct={props.setYearOneDepreciationPct}
           constructionDelayMonths={props.constructionDelayMonths}
           setConstructionDelayMonths={props.setConstructionDelayMonths}
-          taxBenefitDelayMonths={props.taxBenefitDelayMonths}
-          setTaxBenefitDelayMonths={props.setTaxBenefitDelayMonths}
           investmentDate={props.investmentDate || ''}
           setInvestmentDate={props.setInvestmentDate || (() => {})}
           exitExtensionMonths={props.exitExtensionMonths || 0}
@@ -1160,8 +1149,6 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
             setApplicableFraction={props.setApplicableFraction || (() => {})}
             creditRate={props.creditRate || 0.04}
             setCreditRate={props.setCreditRate || (() => {})}
-            placedInServiceMonth={props.placedInServiceMonth || 7}
-            setPlacedInServiceMonth={props.setPlacedInServiceMonth || (() => {})}
             ddaQctBoost={props.ddaQctBoost || false}
             setDdaQctBoost={props.setDdaQctBoost || (() => {})}
             lihtcEligibleBasis={props.lihtcEligibleBasis || 0}

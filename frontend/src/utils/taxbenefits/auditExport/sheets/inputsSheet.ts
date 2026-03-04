@@ -36,7 +36,8 @@ export function buildInputsSheet(params: CalculationParams, rawTimeline?: Comput
     { label: 'Predevelopment Costs ($M)', rangeName: 'PredevelopmentCosts', value: params.predevelopmentCosts || 0, units: '$M' },
     { label: 'Project Location', rangeName: 'ProjectLocation', value: params.projectLocation || '', units: '' },
     { label: 'Number of Units', rangeName: 'Units', value: 100, units: 'units' },
-    { label: 'Placed in Service Month (1-12)', rangeName: 'PlacedInServiceMonth', value: params.placedInServiceMonth || 7, units: 'month' },
+    // IMPL-117: placedInServiceMonth removed from UI-facing inputs — now engine-internal
+    // Date-driven timing section below shows PISCalendarMonth from ComputedTimeline
     { label: 'Property State', rangeName: 'PropertyState', value: params.selectedState || 'CA', units: '' },
     { label: 'Hold Period (years)', rangeName: 'HoldPeriod', value: params.holdPeriod || 10, units: 'years' },
     { label: 'Stabilized NOI ($M)', rangeName: 'YearOneNOI', value: params.yearOneNOI, units: '$M' },
@@ -46,7 +47,6 @@ export function buildInputsSheet(params: CalculationParams, rawTimeline?: Comput
     { label: 'Stabilized Occupancy (%)', rangeName: 'StabilizedOccupancy', value: 95, units: '%' },
     { label: 'Lease-Up Months', rangeName: 'LeaseUpMonths', value: 18, units: 'months' },
     { label: 'Construction Delay (months)', rangeName: 'ConstructionDelayMonths', value: params.constructionDelayMonths || 0, units: 'months' },
-    { label: 'Tax Benefit Delay (months)', rangeName: 'TaxBenefitDelayMonths', value: params.taxBenefitDelayMonths || 0, units: 'months' },
 
     // IMPL-115: Date-driven timing (when investmentDate provided)
     ...(rawTimeline ? [

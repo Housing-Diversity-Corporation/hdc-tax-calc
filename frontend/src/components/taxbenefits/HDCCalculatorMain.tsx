@@ -59,7 +59,7 @@ const HDCCalculatorMain = () => {
 
     // Projections — computed hold period (read-only)
     totalInvestmentYears, holdFromPIS,
-    exitMonth, setExitMonth, // IMPL-087
+    // exitMonth removed (IMPL-117) — now engine-internal, auto-derived from timeline
     // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
     noiGrowthRate, setNoiGrowthRate,
     exitCapRate, setExitCapRate,
@@ -89,7 +89,6 @@ const HDCCalculatorMain = () => {
 
     // Tax Timing
     constructionDelayMonths, setConstructionDelayMonths,
-    taxBenefitDelayMonths, setTaxBenefitDelayMonths,
 
     // Opportunity Zone
     ozEnabled, setOzEnabled,
@@ -145,7 +144,7 @@ const HDCCalculatorMain = () => {
     lihtcEnabled, setLihtcEnabled,
     applicableFraction, setApplicableFraction,
     creditRate, setCreditRate,
-    placedInServiceMonth, setPlacedInServiceMonth,
+    // placedInServiceMonth removed (IMPL-117) — now engine-internal, auto-derived from timeline
     ddaQctBoost, setDdaQctBoost,
     // Private Activity Bonds (IMPL-080)
     pabEnabled, setPabEnabled,
@@ -213,7 +212,7 @@ const HDCCalculatorMain = () => {
     yearOneNOI,
     yearOneDepreciationPct,
     totalInvestmentYears,
-    exitMonth, // IMPL-087
+    // exitMonth removed (IMPL-117) — now engine-internal
     // ISS-068c: Single NOI growth rate
     noiGrowthRate,
     exitCapRate,
@@ -275,7 +274,6 @@ const HDCCalculatorMain = () => {
 
     // Tax Timing
     constructionDelayMonths,
-    taxBenefitDelayMonths,
 
     // Opportunity Zone
     ozEnabled,
@@ -307,7 +305,7 @@ const HDCCalculatorMain = () => {
     lihtcEnabled,
     applicableFraction,
     creditRate,
-    placedInServiceMonth,
+    // placedInServiceMonth removed (IMPL-117) — now engine-internal
     ddaQctBoost,
     // Private Activity Bonds (IMPL-080)
     pabEnabled,
@@ -482,8 +480,6 @@ const HDCCalculatorMain = () => {
           setYearOneNOI={setYearOneNOI}
           totalInvestmentYears={totalInvestmentYears}
           holdFromPIS={holdFromPIS}
-          exitMonth={exitMonth}
-          setExitMonth={setExitMonth}
           noiGrowthRate={noiGrowthRate}
           setNoiGrowthRate={setNoiGrowthRate}
           exitCapRate={exitCapRate}
@@ -527,8 +523,6 @@ const HDCCalculatorMain = () => {
           setTaxDeliveryMonths={setTaxDeliveryMonths}
           constructionDelayMonths={constructionDelayMonths}
           setConstructionDelayMonths={setConstructionDelayMonths}
-          taxBenefitDelayMonths={taxBenefitDelayMonths}
-          setTaxBenefitDelayMonths={setTaxBenefitDelayMonths}
           ozEnabled={ozEnabled}
           setOzEnabled={setOzEnabled}
           ozType={ozType}
@@ -586,8 +580,6 @@ const HDCCalculatorMain = () => {
           setApplicableFraction={setApplicableFraction}
           creditRate={creditRate}
           setCreditRate={setCreditRate}
-          placedInServiceMonth={placedInServiceMonth}
-          setPlacedInServiceMonth={setPlacedInServiceMonth}
           ddaQctBoost={ddaQctBoost}
           setDdaQctBoost={setDdaQctBoost}
           lihtcEligibleBasis={calculations.lihtcEligibleBasis}
@@ -764,8 +756,6 @@ const HDCCalculatorMain = () => {
           stateCapitalGainsRate={stateCapitalGainsRate}
           yearOneDepreciationPct={yearOneDepreciationPct}
           constructionDelayMonths={constructionDelayMonths}
-          taxBenefitDelayMonths={taxBenefitDelayMonths}
-          placedInServiceMonth={placedInServiceMonth}
           investorTrack={investorTrack}
           stateTaxRate={stateTaxRate}
           deferredCapitalGains={deferredCapitalGains}
@@ -828,9 +818,6 @@ const HDCCalculatorMain = () => {
       <div className="mt-6 md:mt-8">
       <TimingGanttSection
         constructionDelayMonths={constructionDelayMonths}
-        placedInServiceMonth={placedInServiceMonth}
-        taxBenefitDelayMonths={taxBenefitDelayMonths}
-        exitMonth={exitMonth}
         ozEnabled={ozEnabled}
       />
       </div>

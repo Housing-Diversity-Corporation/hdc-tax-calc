@@ -71,7 +71,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
 
     // Projections — computed hold period (read-only)
     totalInvestmentYears, holdFromPIS,
-    exitMonth, setExitMonth, // IMPL-087
+    // exitMonth removed (IMPL-117) — now engine-internal, auto-derived from timeline
     // ISS-068c: Single NOI growth rate replaces revenueGrowth, expenseGrowth, opexRatio
     noiGrowthRate, setNoiGrowthRate,
     exitCapRate, setExitCapRate,
@@ -101,7 +101,6 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
 
     // Tax Timing
     constructionDelayMonths, setConstructionDelayMonths,
-    taxBenefitDelayMonths, setTaxBenefitDelayMonths,
 
     // Opportunity Zone
     ozEnabled, setOzEnabled,
@@ -331,7 +330,6 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
 
             // Timing
             setConstructionDelayMonths(config.constructionDelayMonths || 0);
-            setTaxBenefitDelayMonths(config.taxBenefitDelayMonths || 0);
 
             // HDC Advance Financing
             setHdcAdvanceFinancing(config.hdcAdvanceFinancing || false);
@@ -394,7 +392,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
     yearOneNOI,
     yearOneDepreciationPct,
     totalInvestmentYears,
-    exitMonth, // IMPL-087
+    // exitMonth removed (IMPL-117) — now engine-internal
     // ISS-068c: Single NOI growth rate
     noiGrowthRate,
     exitCapRate,
@@ -456,7 +454,6 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
 
     // Tax Timing
     constructionDelayMonths,
-    taxBenefitDelayMonths,
 
     // Opportunity Zone
     ozEnabled,
@@ -556,7 +553,6 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
 
     // Tax timing
     constructionDelayMonths,
-    taxBenefitDelayMonths,
 
     // Opportunity Zone
     ozEnabled,
@@ -643,7 +639,6 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
         pikCurrentPayPct={pikCurrentPayPct}
         investorPikCurrentPayEnabled={investorPikCurrentPayEnabled}
         investorPikCurrentPayPct={investorPikCurrentPayPct}
-        taxBenefitDelayMonths={taxBenefitDelayMonths}
 
         // Main results
         mainAnalysisResults={calculations.mainAnalysisResults}
@@ -806,8 +801,6 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
           setYearOneNOI={setYearOneNOI}
           totalInvestmentYears={totalInvestmentYears}
           holdFromPIS={holdFromPIS}
-          exitMonth={exitMonth}
-          setExitMonth={setExitMonth}
           noiGrowthRate={noiGrowthRate}
           setNoiGrowthRate={setNoiGrowthRate}
           exitCapRate={exitCapRate}
@@ -851,8 +844,6 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
           setTaxDeliveryMonths={setTaxDeliveryMonths}
           constructionDelayMonths={constructionDelayMonths}
           setConstructionDelayMonths={setConstructionDelayMonths}
-          taxBenefitDelayMonths={taxBenefitDelayMonths}
-          setTaxBenefitDelayMonths={setTaxBenefitDelayMonths}
           ozType={ozType}
           setOzType={setOzType}
           ozVersion={ozVersion}
@@ -1021,7 +1012,6 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
           stateCapitalGainsRate={stateCapitalGainsRate}
           yearOneDepreciationPct={yearOneDepreciationPct}
           constructionDelayMonths={constructionDelayMonths}
-          taxBenefitDelayMonths={taxBenefitDelayMonths}
           investorTrack={investorTrack}
           stateTaxRate={stateTaxRate}
           deferredCapitalGains={deferredCapitalGains}
@@ -1070,7 +1060,6 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
                 <li>Interest Reserve Enabled: {interestReserveEnabled ? 'Yes' : 'No'}</li>
                 <li>Interest Reserve Months: {interestReserveMonths}</li>
                 <li>Construction Delay Months: {constructionDelayMonths}</li>
-                <li>Tax Benefit Delay Months: {taxBenefitDelayMonths}</li>
                 <li>Land Value: {formatCurrencyMillions(landValue)}</li>
                 <li>Stabilized NOI: {formatCurrencyMillions(yearOneNOI)}</li>
                 <li>Hold Period: {totalInvestmentYears} years</li>
@@ -1253,7 +1242,6 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
               <li>multipleOnInvested: {calculations.multipleOnInvested}</li>
               <li>investorIRR: {calculations.investorIRR}</li>
               <li>totalInvestment: {calculations.totalInvestment}</li>
-              <li>taxBenefitDelayMonths: {taxBenefitDelayMonths}</li>
 
 
               <p><strong>Distributable Cash Flow Analysis</strong></p>
