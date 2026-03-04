@@ -4,10 +4,6 @@
  * Pure function that takes Investment Date and derives ALL timing values.
  * Returns ComputedTimeline (defined in IMPL-108 types).
  *
- * Co-exists with computeHoldPeriod.ts — that file is NOT modified.
- * computeHoldPeriod continues to serve all existing consumers.
- * This file has ZERO consumers until IMPL-111 wires it in.
- *
  * Key design decisions:
  *   - Math.floor for placedInServiceYear (matches computeHoldPeriod convention)
  *   - §42(f)(1) election with January PIS guard
@@ -119,9 +115,6 @@ export function computeTimeline(
   // placedInServiceYear = "the year of the investment containing PIS"
   // Year 1 = months 0-11, Year 2 = months 12-23, Year 3 = months 24-35
   // For 23-month construction: floor(23/12) + 1 = 2 (PIS in Year 2)
-  // This matches the current computeHoldPeriod.ts convention:
-  //   prePISYears = Math.floor(constructionDevMonths / 12)
-  //   placedInServiceYear = prePISYears + 1
   const pisMonthsFromInvestment = monthsBetween(investmentDate, pisDate);
   const placedInServiceYear = Math.floor(pisMonthsFromInvestment / 12) + 1;
 

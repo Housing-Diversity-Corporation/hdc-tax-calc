@@ -12,7 +12,7 @@ import { getStateBonusConformityRate, getStateTaxRate } from '../../utils/taxben
 import { getOzStepUpPercent } from '../../utils/taxbenefits/constants';
 import { calculateLIHTCSchedule, LIHTCCreditSchedule } from '../../utils/taxbenefits/lihtcCreditCalculations';
 import { calculateStateLIHTC, StateLIHTCCalculationResult } from '../../utils/taxbenefits/stateLIHTCCalculations';
-import { InvestorAnalysisResults, HDCAnalysisResults, StateLIHTCIntegrationResult } from '../../types/taxbenefits';
+import { InvestorAnalysisResults, HDCAnalysisResults, StateLIHTCIntegrationResult, ComputedTimeline } from '../../types/taxbenefits';
 
 interface UseHDCCalculationsProps {
   // Core project parameters
@@ -144,6 +144,7 @@ interface UseHDCCalculationsProps {
   pisDateOverride?: string | null;
   exitExtensionMonths?: number;
   electDeferCreditPeriod?: boolean;
+  computedTimeline?: ComputedTimeline | null;
 
   // State LIHTC (v7.0.14)
   stateLIHTCEnabled?: boolean;
@@ -156,8 +157,12 @@ interface UseHDCCalculationsProps {
 }
 
 export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
-  // IMPL-117: Derive pisMonth locally from timing params (no longer a prop)
+  // Read pisMonth from ComputedTimeline when available (single source of truth).
+  // Fall back to inline derivation for legacy path (no investmentDate).
   const pisMonth = useMemo(() => {
+    if (props.computedTimeline) {
+      return props.computedTimeline.pisCalendarMonth;
+    }
     if (props.investmentDate && props.pisDateOverride) {
       return new Date(props.pisDateOverride + 'T00:00:00').getMonth() + 1;
     }
@@ -167,7 +172,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       return d.getMonth() + 1;
     }
     return 7; // Default for legacy path
-  }, [props.investmentDate, props.pisDateOverride, props.constructionDelayMonths]);
+  }, [props.computedTimeline, props.investmentDate, props.pisDateOverride, props.constructionDelayMonths]);
 
   // Calculate interest reserve amount using shared function (single source of truth)
   const interestReserveAmount = useMemo(() => {

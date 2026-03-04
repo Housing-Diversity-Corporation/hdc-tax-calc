@@ -336,7 +336,10 @@ const HDCCalculatorMain = () => {
     investorHasStateLiability,
     stateLIHTCUserPercentage,
     stateLIHTCUserAmount,
-    stateLIHTCSyndicationYear // IMPL-073
+    stateLIHTCSyndicationYear, // IMPL-073
+
+    // Timing Architecture (IMPL-112)
+    computedTimeline,
   });
 
   // IMPL-020a: Interest reserve amount now comes from useHDCCalculations hook (single source of truth)
