@@ -185,7 +185,14 @@ const HDCCalculatorMain = () => {
 
     // ISS-040d: Debt editing helpers to prevent PAB adjustment during user input
     startDebtEditing,
-    endDebtEditing
+    endDebtEditing,
+
+    // Timing Architecture (IMPL-112)
+    investmentDate, setInvestmentDate,
+    pisDateOverride, setPisDateOverride,
+    exitExtensionMonths, setExitExtensionMonths,
+    electDeferCreditPeriod, setElectDeferCreditPeriod,
+    computedTimeline,
   } = useHDCState();
 
   // Helper function for percentage inputs
@@ -650,6 +657,16 @@ const HDCCalculatorMain = () => {
           endConfigLoading={endConfigLoading}
           startDebtEditing={startDebtEditing}
           endDebtEditing={endDebtEditing}
+          // Timing Architecture (IMPL-114)
+          investmentDate={investmentDate}
+          setInvestmentDate={setInvestmentDate}
+          pisDateOverride={pisDateOverride}
+          setPisDateOverride={setPisDateOverride}
+          exitExtensionMonths={exitExtensionMonths}
+          setExitExtensionMonths={setExitExtensionMonths}
+          electDeferCreditPeriod={electDeferCreditPeriod}
+          setElectDeferCreditPeriod={setElectDeferCreditPeriod}
+          computedTimeline={computedTimeline}
           />
         </div>
 

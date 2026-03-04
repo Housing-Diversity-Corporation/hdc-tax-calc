@@ -2,8 +2,12 @@ import React, { useState } from 'react';
 import '../../../styles/taxbenefits/hdcCalculator.css';
 import { Slider } from '../../ui/slider';
 import { Input } from '../../ui/input';
+import { ComputedTimeline } from '../../../types/taxbenefits';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const formatDate = (date: Date): string =>
+  `${MONTH_NAMES[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
 
 interface ProjectionsSectionProps {
   // Computed hold period (read-only)
@@ -26,6 +30,13 @@ interface ProjectionsSectionProps {
   taxBenefitDelayMonths: number;
   setTaxBenefitDelayMonths: (value: number) => void;
 
+  // Timing Architecture (IMPL-114)
+  investmentDate?: string;
+  setInvestmentDate?: (value: string) => void;
+  exitExtensionMonths?: number;
+  setExitExtensionMonths?: (value: number) => void;
+  computedTimeline?: ComputedTimeline | null;
+
   // Read-only mode
   isReadOnly?: boolean;
 }
@@ -46,6 +57,11 @@ const ProjectionsSection: React.FC<ProjectionsSectionProps> = ({
   setConstructionDelayMonths,
   taxBenefitDelayMonths,
   setTaxBenefitDelayMonths,
+  investmentDate = '',
+  setInvestmentDate,
+  exitExtensionMonths = 0,
+  setExitExtensionMonths,
+  computedTimeline = null,
   isReadOnly = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -76,10 +92,16 @@ const ProjectionsSection: React.FC<ProjectionsSectionProps> = ({
               <label className="hdc-input-label">Hold Period (Computed)</label>
               <div style={{ padding: '0.5rem', background: '#f0f7f7', borderRadius: '4px' }}>
                 <div style={{ fontSize: '0.875rem', fontWeight: 600 }}>
-                  {totalInvestmentYears} years total investment (includes disposition year)
+                  {computedTimeline
+                    ? `${computedTimeline.totalInvestmentYears} years total (${(computedTimeline.totalHoldMonths / 12).toFixed(1)} yr precise)`
+                    : `${totalInvestmentYears} years total investment (includes disposition year)`
+                  }
                 </div>
                 <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem' }}>
-                  {holdFromPIS} years from PIS + 1 year for exit in {MONTH_NAMES[exitMonth - 1]}
+                  {computedTimeline
+                    ? `${computedTimeline.holdFromPIS} yr credit period, exit ${formatDate(computedTimeline.actualExitDate)}${computedTimeline.isExtended ? ` (+${exitExtensionMonths}mo extended)` : ''}`
+                    : `${holdFromPIS} years from PIS + 1 year for exit in ${MONTH_NAMES[exitMonth - 1]}`
+                  }
                 </div>
               </div>
             </div>
@@ -146,6 +168,25 @@ const ProjectionsSection: React.FC<ProjectionsSectionProps> = ({
                 </div>
               </div>
 
+              {/* IMPL-114: Investment Date Picker */}
+              <div className="hdc-input-group" style={{ marginTop: '0.75rem' }}>
+                <label className="hdc-input-label">Investment Date</label>
+                <input
+                  type="date"
+                  value={investmentDate}
+                  onChange={(e) => setInvestmentDate?.(e.target.value)}
+                  className="hdc-input"
+                  disabled={isReadOnly}
+                  style={{ padding: '0.375rem', fontSize: '0.875rem', borderRadius: '4px', border: '1px solid #ccc' }}
+                />
+                <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem' }}>
+                  {investmentDate
+                    ? 'Date-driven timing active — K-1 dates, XIRR, and exit auto-computed'
+                    : 'Set to enable date-precise timing (XIRR, K-1 realization dates, exit planning)'
+                  }
+                </div>
+              </div>
+
               {/* Construction/Development Period */}
               <div className="hdc-input-group" style={{ marginTop: '0.75rem' }}>
                 <label className="hdc-input-label">Construction/Development Period (months)</label>
@@ -164,45 +205,102 @@ const ProjectionsSection: React.FC<ProjectionsSectionProps> = ({
                 </div>
               </div>
 
-              {/* Tax Benefit Delay */}
-              <div className="hdc-input-group" style={{ marginTop: '0.75rem' }}>
-                <label className="hdc-input-label">Tax Benefit Realization Delay (months)</label>
-                <Input
-                  type="number"
-                  min="0"
-                  max="24"
-                  step="1"
-                  value={taxBenefitDelayMonths}
-                  onChange={(e) => setTaxBenefitDelayMonths(Number(e.target.value) || 0)}
-                  className="hdc-input"
-                  disabled={isReadOnly}
-                />
-                <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem' }}>
-                  Months after tax year end before K-1 delivery. Shifts benefit timing for IRR. Typical: 3-9 months.
+              {/* Tax Benefit Delay — hidden when computedTimeline exists (new path handles K-1 dates) */}
+              {!computedTimeline && (
+                <div className="hdc-input-group" style={{ marginTop: '0.75rem' }}>
+                  <label className="hdc-input-label">Tax Benefit Realization Delay (months)</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="24"
+                    step="1"
+                    value={taxBenefitDelayMonths}
+                    onChange={(e) => setTaxBenefitDelayMonths(Number(e.target.value) || 0)}
+                    className="hdc-input"
+                    disabled={isReadOnly}
+                  />
+                  <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem' }}>
+                    Months after tax year end before K-1 delivery. Shifts benefit timing for IRR. Typical: 3-9 months.
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* IMPL-087: Exit Month */}
-              <div className="hdc-input-group" style={{ marginTop: '0.75rem' }}>
-                <label className="hdc-input-label">Exit Month</label>
-                <select
-                  value={exitMonth}
-                  onChange={(e) => setExitMonth(Number(e.target.value))}
-                  className="hdc-input"
-                  disabled={isReadOnly}
-                  style={{ padding: '0.375rem', fontSize: '0.875rem', borderRadius: '4px', border: '1px solid #ccc' }}
-                >
-                  {MONTH_NAMES.map((name, i) => (
-                    <option key={i + 1} value={i + 1}>{name} ({i + 1})</option>
-                  ))}
-                </select>
-                <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem' }}>
-                  Month of property disposition/exit. Prorates final year NOI, debt service, and fees.
+              {/* Exit Month — hidden when computedTimeline exists (exit is date-computed) */}
+              {!computedTimeline && (
+                <div className="hdc-input-group" style={{ marginTop: '0.75rem' }}>
+                  <label className="hdc-input-label">Exit Month</label>
+                  <select
+                    value={exitMonth}
+                    onChange={(e) => setExitMonth(Number(e.target.value))}
+                    className="hdc-input"
+                    disabled={isReadOnly}
+                    style={{ padding: '0.375rem', fontSize: '0.875rem', borderRadius: '4px', border: '1px solid #ccc' }}
+                  >
+                    {MONTH_NAMES.map((name, i) => (
+                      <option key={i + 1} value={i + 1}>{name} ({i + 1})</option>
+                    ))}
+                  </select>
+                  <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem' }}>
+                    Month of property disposition/exit. Prorates final year NOI, debt service, and fees.
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Construction Timing Summary */}
-              {constructionDelayMonths > 0 && (
+              {/* IMPL-114: Exit Extension Slider — visible when computedTimeline exists */}
+              {computedTimeline && (
+                <div className="hdc-input-group" style={{ marginTop: '0.75rem' }}>
+                  <label className="hdc-input-label">Extend Hold</label>
+                  <Slider
+                    disabled={isReadOnly}
+                    min={0}
+                    max={240}
+                    step={1}
+                    value={[exitExtensionMonths]}
+                    onValueChange={(vals) => setExitExtensionMonths?.(vals[0])}
+                  />
+                  <div style={{ fontSize: '0.7rem', color: 'var(--hdc-cabbage-pont)', marginTop: '0.25rem' }}>
+                    {exitExtensionMonths === 0
+                      ? 'Optimal exit (no extension)'
+                      : exitExtensionMonths >= 12
+                        ? `+${(exitExtensionMonths / 12).toFixed(1)} yr beyond optimal exit`
+                        : `+${exitExtensionMonths} mo beyond optimal exit`
+                    }
+                  </div>
+                </div>
+              )}
+
+              {/* IMPL-114: Computed Dates Display — when investmentDate is set */}
+              {computedTimeline && (
+                <div style={{ marginTop: '0.75rem', padding: '0.5rem', background: '#f0f7f7', borderRadius: '4px', fontSize: '0.75rem', color: '#474a44' }}>
+                  <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>Computed Timeline</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.15rem 0.75rem' }}>
+                    <span style={{ color: '#888' }}>PIS Date:</span>
+                    <span style={{ fontWeight: 600, color: 'var(--hdc-cabbage-pont)' }}>
+                      {formatDate(computedTimeline.pisDate)}
+                      {computedTimeline.pisIsOverridden && (
+                        <span style={{ marginLeft: '0.5rem', fontSize: '0.6rem', padding: '1px 5px', borderRadius: 3, background: '#FDF2F2', border: '1px solid #E74C3C', color: '#922B21', fontWeight: 700, textTransform: 'uppercase' as const }}>overridden</span>
+                      )}
+                    </span>
+                    <span style={{ color: '#888' }}>Bonus Dep K-1:</span>
+                    <span>{formatDate(computedTimeline.bonusDepK1Date)} ({computedTimeline.bonusDepLagMonths} mo from PIS)</span>
+                    <span style={{ color: '#888' }}>First LIHTC K-1:</span>
+                    <span>{formatDate(computedTimeline.firstLihtcK1Date)}</span>
+                    <span style={{ color: '#888' }}>Optimal Exit:</span>
+                    <span>{formatDate(computedTimeline.actualExitDate)} ({(computedTimeline.totalHoldMonths / 12).toFixed(1)} yr total hold)</span>
+                    {computedTimeline.ozFloorBinding && (
+                      <>
+                        <span style={{ color: '#888' }}>OZ Floor:</span>
+                        <span style={{ color: 'var(--hdc-brown-rust)', fontWeight: 600 }}>
+                          OZ 10-year minimum is binding ({computedTimeline.ozMinimumDate ? formatDate(computedTimeline.ozMinimumDate) : ''})
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Construction Timing Summary — only on old path */}
+              {!computedTimeline && constructionDelayMonths > 0 && (
                 <div style={{ marginTop: '0.75rem', padding: '0.5rem', background: '#f0f7f7', borderRadius: '4px', fontSize: '0.7rem', color: '#474a44' }}>
                   <div><strong>Construction Project</strong></div>
                   <div>Placed in service: Year {Math.floor(constructionDelayMonths / 12) + 1}</div>

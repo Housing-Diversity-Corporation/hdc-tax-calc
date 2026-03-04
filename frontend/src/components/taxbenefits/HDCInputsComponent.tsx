@@ -36,7 +36,7 @@ import {
 import { dbpService } from '../../services/dbpService';
 import { extractDealBenefitProfile } from '../../utils/taxbenefits/dealBenefitProfile';
 import '../../styles/taxbenefits/hdcCalculator.css';
-import { InvestorAnalysisResults, CashFlowItem, CalculationParams } from '../../types/taxbenefits';
+import { InvestorAnalysisResults, CashFlowItem, CalculationParams, ComputedTimeline } from '../../types/taxbenefits';
 import { roundForDisplay } from '../../utils/taxbenefits/formatters';
 
 interface HDCInputsComponentProps {
@@ -164,6 +164,17 @@ interface HDCInputsComponentProps {
   setConstructionDelayMonths: (value: number) => void;
   taxBenefitDelayMonths: number;
   setTaxBenefitDelayMonths: (value: number) => void;
+
+  // Timing Architecture (IMPL-114)
+  investmentDate?: string;
+  setInvestmentDate?: (value: string) => void;
+  pisDateOverride?: string | null;
+  setPisDateOverride?: (value: string | null) => void;
+  exitExtensionMonths?: number;
+  setExitExtensionMonths?: (value: number) => void;
+  electDeferCreditPeriod?: boolean;
+  setElectDeferCreditPeriod?: (value: boolean) => void;
+  computedTimeline?: ComputedTimeline | null;
 
   // Projections — computed hold period (read-only)
   totalInvestmentYears: number;
@@ -1124,12 +1135,24 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           setConstructionDelayMonths={props.setConstructionDelayMonths}
           taxBenefitDelayMonths={props.taxBenefitDelayMonths}
           setTaxBenefitDelayMonths={props.setTaxBenefitDelayMonths}
+          investmentDate={props.investmentDate || ''}
+          setInvestmentDate={props.setInvestmentDate || (() => {})}
+          exitExtensionMonths={props.exitExtensionMonths || 0}
+          setExitExtensionMonths={props.setExitExtensionMonths || (() => {})}
+          computedTimeline={props.computedTimeline || null}
           isReadOnly={props.isReadOnly}
         />
 
         {/* Panel 4: Tax Credits (Federal + State LIHTC consolidated) */}
         {props.lihtcEnabled !== undefined && (
           <TaxCreditsSection
+            // Timing Architecture (IMPL-114)
+            pisDateOverride={props.pisDateOverride || null}
+            setPisDateOverride={props.setPisDateOverride || (() => {})}
+            electDeferCreditPeriod={props.electDeferCreditPeriod || false}
+            setElectDeferCreditPeriod={props.setElectDeferCreditPeriod || (() => {})}
+            computedTimeline={props.computedTimeline || null}
+            constructionDelayMonths={props.constructionDelayMonths}
             // Federal LIHTC
             lihtcEnabled={props.lihtcEnabled}
             setLihtcEnabled={props.setLihtcEnabled || (() => {})}

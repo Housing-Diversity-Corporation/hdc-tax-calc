@@ -9,9 +9,21 @@ import { calculateLIHTCEligibleBasisBreakdown } from '../../../utils/taxbenefits
 import { getStateLIHTCProgram } from '../../../utils/taxbenefits/stateProfiles';
 import { calculateStateLIHTC, StateLIHTCCalculationResult } from '../../../utils/taxbenefits/stateLIHTCCalculations';
 import { HDC_OZ_STRATEGY } from '../../../utils/taxbenefits/hdcOzStrategy';
+import { ComputedTimeline } from '../../../types/taxbenefits';
 import '../../../styles/taxbenefits/hdcCalculator.css';
 
+const SHORT_MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const formatDate = (date: Date): string =>
+  `${SHORT_MONTH_NAMES[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+
 interface TaxCreditsSectionProps {
+  // Timing Architecture (IMPL-114)
+  pisDateOverride?: string | null;
+  setPisDateOverride?: (value: string | null) => void;
+  electDeferCreditPeriod?: boolean;
+  setElectDeferCreditPeriod?: (value: boolean) => void;
+  computedTimeline?: ComputedTimeline | null;
+  constructionDelayMonths?: number;
   // Federal LIHTC
   lihtcEnabled: boolean;
   setLihtcEnabled: (value: boolean) => void;
@@ -95,6 +107,13 @@ const formatFullDollars = (value: number): string => {
 };
 
 const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
+  // Timing Architecture (IMPL-114)
+  pisDateOverride = null,
+  setPisDateOverride,
+  electDeferCreditPeriod = false,
+  setElectDeferCreditPeriod,
+  computedTimeline = null,
+  constructionDelayMonths = 0,
   // Federal LIHTC props
   lihtcEnabled,
   setLihtcEnabled,
@@ -599,26 +618,134 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
                     </Select>
                   </div>
 
-                  {/* PIS Month Dropdown */}
-                  <div className="hdc-input-group">
-                    <label className="hdc-input-label">Placed-in-Service Month</label>
-                    <Select
-                      value={placedInServiceMonth.toString()}
-                      onValueChange={(val) => setPlacedInServiceMonth(parseInt(val))}
-                      disabled={isReadOnly}
-                    >
-                      <SelectTrigger className="hdc-input">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {MONTH_NAMES.map((month) => (
-                          <SelectItem key={month.value} value={month.value.toString()}>
-                            {month.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* PIS Month — computed display with override when timeline active, dropdown when legacy */}
+                  {computedTimeline ? (
+                    <div className="hdc-input-group">
+                      <label className="hdc-input-label">Placed-in-Service Date</label>
+                      <div style={{ padding: '0.5rem', background: '#f0f7f7', borderRadius: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.875rem', fontWeight: 700, color: pisDateOverride ? 'var(--hdc-brown-rust)' : 'var(--hdc-cabbage-pont)' }}>
+                            {formatDate(computedTimeline.pisDate)}
+                          </span>
+                          {!pisDateOverride && (
+                            <span style={{ fontSize: '0.65rem', color: '#AAA' }}>
+                              (auto: investment + {constructionDelayMonths} mo)
+                            </span>
+                          )}
+                          {pisDateOverride && (
+                            <span style={{ padding: '2px 8px', borderRadius: 3, background: '#FDF2F2', border: '1px solid #E74C3C', fontSize: '0.55rem', fontWeight: 700, color: '#922B21', textTransform: 'uppercase' as const }}>
+                              overridden
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Override controls */}
+                        <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          {!pisDateOverride ? (
+                            <button
+                              onClick={() => {
+                                const auto = computedTimeline.pisDate;
+                                const y = auto.getFullYear();
+                                const m = String(auto.getMonth() + 1).padStart(2, '0');
+                                const d = String(auto.getDate()).padStart(2, '0');
+                                setPisDateOverride?.(`${y}-${m}-${d}`);
+                              }}
+                              disabled={isReadOnly}
+                              style={{
+                                padding: '3px 10px', fontSize: '0.7rem', fontWeight: 600,
+                                borderRadius: 4, border: '1px solid #D1D5DB', background: '#F9FAFB',
+                                color: '#888', cursor: isReadOnly ? 'not-allowed' : 'pointer',
+                              }}
+                            >
+                              Override
+                            </button>
+                          ) : (
+                            <>
+                              <input
+                                type="date"
+                                value={pisDateOverride}
+                                onChange={(e) => setPisDateOverride?.(e.target.value)}
+                                disabled={isReadOnly}
+                                style={{ padding: '3px 6px', fontSize: '0.75rem', borderRadius: 4, border: '1px solid #D1D5DB' }}
+                              />
+                              <button
+                                onClick={() => setPisDateOverride?.(null)}
+                                disabled={isReadOnly}
+                                style={{
+                                  padding: '3px 10px', fontSize: '0.7rem', fontWeight: 600,
+                                  borderRadius: 4, border: '1px solid #D1D5DB', background: '#F9FAFB',
+                                  color: '#666', cursor: isReadOnly ? 'not-allowed' : 'pointer',
+                                }}
+                              >
+                                Reset to Auto
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="hdc-input-group">
+                      <label className="hdc-input-label">Placed-in-Service Month</label>
+                      <Select
+                        value={placedInServiceMonth.toString()}
+                        onValueChange={(val) => setPlacedInServiceMonth(parseInt(val))}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger className="hdc-input">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {MONTH_NAMES.map((month) => (
+                            <SelectItem key={month.value} value={month.value.toString()}>
+                              {month.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* IMPL-114: §42(f)(1) Election Toggle — visible when timeline active */}
+                  {computedTimeline && (
+                    <div className="hdc-input-group" style={{ marginTop: '0.5rem' }}>
+                      <label className="hdc-input-label">§42(f)(1) Election</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <button
+                          onClick={() => {
+                            if (computedTimeline.pisCalendarMonth > 1) {
+                              setElectDeferCreditPeriod?.(!electDeferCreditPeriod);
+                            }
+                          }}
+                          disabled={isReadOnly || computedTimeline.pisCalendarMonth === 1}
+                          style={{
+                            padding: '4px 12px', fontSize: '0.75rem', fontWeight: 600,
+                            borderRadius: 4,
+                            opacity: computedTimeline.pisCalendarMonth === 1 ? 0.4 : 1,
+                            cursor: computedTimeline.pisCalendarMonth === 1 || isReadOnly ? 'not-allowed' : 'pointer',
+                            border: computedTimeline.electDeferCreditPeriod ? '1.5px solid #2471A3' : '1px solid #D1D5DB',
+                            background: computedTimeline.electDeferCreditPeriod ? '#D6EAF8' : '#F9FAFB',
+                            color: computedTimeline.electDeferCreditPeriod ? '#1A5276' : '#888',
+                          }}
+                        >
+                          {computedTimeline.electDeferCreditPeriod ? 'ELECTED' : 'Elect'}
+                        </button>
+                        {computedTimeline.electDeferCreditPeriod && (
+                          <span style={{ padding: '2px 8px', borderRadius: 3, background: '#D6EAF8', border: '1px solid #2471A3', fontSize: '0.55rem', fontWeight: 700, color: '#1A5276', textTransform: 'uppercase' as const }}>
+                            §42(f)(1)
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: '#888', marginTop: '0.25rem' }}>
+                        {computedTimeline.pisCalendarMonth === 1
+                          ? 'Disabled — January PIS already receives 100% Year 1 credit. Election would add 1 year with no benefit.'
+                          : computedTimeline.electDeferCreditPeriod
+                            ? `Defer credit start to ${computedTimeline.creditStartYear}. Year 1 = 100%. No catch-up. Clean 10-year period.`
+                            : `Begin credits in PIS year (${computedTimeline.pisYear}). Elect to defer to ${computedTimeline.pisYear + 1} for full Year 1.`
+                        }
+                      </div>
+                    </div>
+                  )}
 
                   {/* DDA/QCT Boost Toggle */}
                   <div style={{ marginTop: '0.75rem', marginBottom: '1rem' }}>
