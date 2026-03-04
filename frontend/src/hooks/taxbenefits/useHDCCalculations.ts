@@ -140,6 +140,12 @@ interface UseHDCCalculationsProps {
   hdcDebtFundCurrentPayEnabled?: boolean;
   hdcDebtFundCurrentPayPct?: number;
 
+  // Timing Architecture (IMPL-112)
+  investmentDate?: string;
+  pisDateOverride?: string | null;
+  exitExtensionMonths?: number;
+  electDeferCreditPeriod?: boolean;
+
   // State LIHTC (v7.0.14)
   stateLIHTCEnabled?: boolean;
   investorState?: string;
@@ -628,6 +634,11 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       taxBenefitDelayMonths: props.taxBenefitDelayMonths,
       placedInServiceMonth: props.placedInServiceMonth,
       exitMonth: props.exitMonth, // IMPL-087
+      // Timing Architecture (IMPL-112+113)
+      investmentDate: props.investmentDate || undefined,
+      pisDateOverride: props.pisDateOverride || undefined,
+      exitExtensionMonths: props.exitExtensionMonths || undefined,
+      electDeferCreditPeriod: props.electDeferCreditPeriod || undefined,
       ozEnabled: props.ozEnabled,
       ozType: props.ozType,
       ozVersion: props.ozVersion,
@@ -704,7 +715,12 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     props.annualPassiveIncome,
     props.annualPortfolioIncome,
     props.groupingElection,
-    props.filingStatus
+    props.filingStatus,
+    // Timing Architecture (IMPL-112+113)
+    props.investmentDate,
+    props.pisDateOverride,
+    props.exitExtensionMonths,
+    props.electDeferCreditPeriod
   ]);
 
   // Investment calculations using investor equity from main analysis (single source of truth)

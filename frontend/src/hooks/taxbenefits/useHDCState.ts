@@ -1,8 +1,10 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { computeHoldPeriod } from '../../utils/taxbenefits/computeHoldPeriod';
+import { computeTimeline } from '../../utils/taxbenefits/computeTimeline';
 import { DEFAULT_VALUES } from '../../utils/taxbenefits';
 import { getStateTaxRate, doesNIITApply } from '../../utils/taxbenefits/stateProfiles';
 import { ValidationResult } from '../../utils/taxbenefits/validation';
+import { ComputedTimeline } from '../../types/taxbenefits';
 
 export const useHDCState = () => {
   // Basic state declarations
@@ -57,6 +59,13 @@ export const useHDCState = () => {
     }
     prevPisMonth.current = placedInServiceMonth;
   }, [placedInServiceMonth]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // === NEW: Timing Architecture (IMPL-112) ===
+  const [investmentDate, setInvestmentDate] = useState<string>('');
+  const [pisDateOverride, setPisDateOverride] = useState<string | null>(null);
+  const [exitExtensionMonths, setExitExtensionMonths] = useState<number>(0);
+  const [electDeferCreditPeriod, setElectDeferCreditPeriod] = useState<boolean>(false);
+
   const [aumFeeEnabled, setAumFeeEnabled] = useState(false);
   const [aumFeeRate, setAumFeeRate] = useState(DEFAULT_VALUES.AUM_FEE_RATE);
   const [aumCurrentPayEnabled, setAumCurrentPayEnabled] = useState(false);
@@ -138,6 +147,27 @@ export const useHDCState = () => {
   const [ozVersion, setOzVersion] = useState<'1.0' | '2.0'>('2.0'); // IMPL-017: OZ legislation version
   const [deferredCapitalGains, setDeferredCapitalGains] = useState(0);
   const [ozCapitalGainsTaxRate, setOzCapitalGainsTaxRate] = useState(23.8); // Default to federal LTCG + NIIT
+
+  // === NEW: Date-driven timeline (IMPL-112) ===
+  const computedTimeline: ComputedTimeline | null = useMemo(() => {
+    if (!investmentDate) return null;
+    return computeTimeline(
+      investmentDate,
+      constructionDelayMonths,
+      pisDateOverride,
+      ozEnabled,
+      exitExtensionMonths,
+      electDeferCreditPeriod
+    );
+  }, [investmentDate, constructionDelayMonths, pisDateOverride,
+      ozEnabled, exitExtensionMonths, electDeferCreditPeriod]);
+
+  // === Guard: §42(f)(1) election disabled for January PIS ===
+  useEffect(() => {
+    if (computedTimeline && computedTimeline.pisCalendarMonth === 1) {
+      setElectDeferCreditPeriod(false);
+    }
+  }, [computedTimeline?.pisCalendarMonth]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Investor Type
   const [investorType, setInvestorType] = useState<'ordinary' | 'stcg' | 'ltcg' | 'custom'>('ordinary');
@@ -631,6 +661,17 @@ export const useHDCState = () => {
 
     // ISS-040d: Debt editing helpers to prevent PAB adjustment during user input
     startDebtEditing,
-    endDebtEditing
+    endDebtEditing,
+
+    // NEW: Timing Architecture (IMPL-112)
+    investmentDate,
+    setInvestmentDate,
+    pisDateOverride,
+    setPisDateOverride,
+    exitExtensionMonths,
+    setExitExtensionMonths,
+    electDeferCreditPeriod,
+    setElectDeferCreditPeriod,
+    computedTimeline,
   };
 };
