@@ -315,6 +315,12 @@ ExitEvent (engine)      results.exitTaxAnalysis (consumers)
 
 ---
 
+## Documented Assumptions Gate (IMPL-118)
+
+Before implementing any IMPL that touches LIHTC credit calculations, deal type, applicable fraction, or occupancy ramp, read `docs/DOCUMENTED_ASSUMPTIONS.md` in full and confirm the implementation does not violate any documented assumption.
+
+---
+
 ## History
 
 | Date | Change | Reference |
@@ -327,3 +333,4 @@ ExitEvent (engine)      results.exitTaxAnalysis (consumers)
 | 2026-02-14 | Added Pool Aggregation & Fund Sizing | IMPL-085 |
 | 2026-02-18 | Added Exit Tax Engine — Character-Split Recapture | IMPL-094 to IMPL-101 |
 | 2026-03-02 | Timing Clock Precision — Hold Period vs Model Duration Split | Timing Handoff v3.0 |
+| 2026-03-04 | Added Documented Assumptions Gate | IMPL-118 |
