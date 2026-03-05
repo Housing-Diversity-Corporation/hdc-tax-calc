@@ -429,8 +429,8 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
 
                 // IMPL-064: Add missing LIHTC params (metadata uses decimals, params expect percentages)
                 lihtcEnabled: props.lihtcResult != null,
-                applicableFraction: props.lihtcResult?.metadata?.applicableFraction != null
-                  ? props.lihtcResult.metadata.applicableFraction * 100 : undefined,
+                applicableFraction: props.lihtcResult?.metadata?.stabilizedApplicableFraction != null
+                  ? props.lihtcResult.metadata.stabilizedApplicableFraction * 100 : undefined,
                 creditRate: props.lihtcResult?.metadata?.creditRate != null
                   ? props.lihtcResult.metadata.creditRate * 100 : undefined,
                 ddaQctBoost: props.lihtcResult?.metadata?.boostMultiplier === 1.3,

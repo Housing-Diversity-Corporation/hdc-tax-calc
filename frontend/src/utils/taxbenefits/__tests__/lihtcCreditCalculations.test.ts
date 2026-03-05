@@ -25,6 +25,7 @@ import {
   calculateAnnualLIHTCCredit,
   calculateTotalLIHTCCredits,
   formatLIHTCSchedule,
+  computeEffectiveYear1AF,
   LIHTCValidationError,
   type LIHTCCalculationParams,
   type LIHTCCreditSchedule,
@@ -124,7 +125,7 @@ describe('LIHTC Credit Calculations', () => {
     it('ACCEPTANCE: July PIS should yield 50% Year 1 and 50% Year 11', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: 50000000,
-        applicableFraction: 0.75,
+        stabilizedApplicableFraction: 0.75,
         ddaQctBoost: true,
         pisMonth: 7,
         creditRate: 0.04,
@@ -145,7 +146,7 @@ describe('LIHTC Credit Calculations', () => {
     it('ACCEPTANCE: January PIS should yield 100% Year 1 and 0% Year 11', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: 50000000,
-        applicableFraction: 0.75,
+        stabilizedApplicableFraction: 0.75,
         ddaQctBoost: true,
         pisMonth: 1,
         creditRate: 0.04,
@@ -169,7 +170,7 @@ describe('LIHTC Credit Calculations', () => {
       pisMonths.forEach((pisMonth) => {
         const params: LIHTCCalculationParams = {
           eligibleBasis: 50000000,
-          applicableFraction: 0.75,
+          stabilizedApplicableFraction: 0.75,
           ddaQctBoost: false,
           pisMonth,
           creditRate: 0.04,
@@ -185,7 +186,7 @@ describe('LIHTC Credit Calculations', () => {
     it('ACCEPTANCE: DDA/QCT 130% boost applied correctly', () => {
       const baseParams: LIHTCCalculationParams = {
         eligibleBasis: 50000000,
-        applicableFraction: 0.75,
+        stabilizedApplicableFraction: 0.75,
         ddaQctBoost: false,
         pisMonth: 7,
         creditRate: 0.04,
@@ -212,7 +213,7 @@ describe('LIHTC Credit Calculations', () => {
   describe('PIS Proration Tests', () => {
     const baseParams: Omit<LIHTCCalculationParams, 'pisMonth'> = {
       eligibleBasis: 50000000,
-      applicableFraction: 0.75,
+      stabilizedApplicableFraction: 0.75,
       ddaQctBoost: false,
       pisMonth: 1, // Will be overridden
       creditRate: 0.04,
@@ -283,7 +284,7 @@ describe('LIHTC Credit Calculations', () => {
     it('should calculate credits without boost', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: 50000000,
-        applicableFraction: 0.75,
+        stabilizedApplicableFraction: 0.75,
         ddaQctBoost: false,
         pisMonth: 7,
         creditRate: 0.04,
@@ -299,7 +300,7 @@ describe('LIHTC Credit Calculations', () => {
     it('should calculate credits with DDA/QCT boost', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: 50000000,
-        applicableFraction: 0.75,
+        stabilizedApplicableFraction: 0.75,
         ddaQctBoost: true,
         pisMonth: 7,
         creditRate: 0.04,
@@ -315,7 +316,7 @@ describe('LIHTC Credit Calculations', () => {
     it('should calculate Year 1 and Year 11 correctly with boost', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: 50000000,
-        applicableFraction: 0.75,
+        stabilizedApplicableFraction: 0.75,
         ddaQctBoost: true,
         pisMonth: 7,
         creditRate: 0.04,
@@ -337,7 +338,7 @@ describe('LIHTC Credit Calculations', () => {
     it('should handle 40% applicable fraction (minimum)', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: 50000000,
-        applicableFraction: 0.4,
+        stabilizedApplicableFraction: 0.4,
         ddaQctBoost: false,
         pisMonth: 1,
         creditRate: 0.04,
@@ -352,7 +353,7 @@ describe('LIHTC Credit Calculations', () => {
     it('should handle 75% applicable fraction (typical)', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: 50000000,
-        applicableFraction: 0.75,
+        stabilizedApplicableFraction: 0.75,
         ddaQctBoost: false,
         pisMonth: 1,
         creditRate: 0.04,
@@ -367,7 +368,7 @@ describe('LIHTC Credit Calculations', () => {
     it('should handle 100% applicable fraction', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: 50000000,
-        applicableFraction: 1.0,
+        stabilizedApplicableFraction: 1.0,
         ddaQctBoost: false,
         pisMonth: 1,
         creditRate: 0.04,
@@ -388,7 +389,7 @@ describe('LIHTC Credit Calculations', () => {
     it('should calculate credits at 4% rate (PAB-financed)', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: 50000000,
-        applicableFraction: 0.75,
+        stabilizedApplicableFraction: 0.75,
         ddaQctBoost: false,
         pisMonth: 7,
         creditRate: 0.04,
@@ -403,7 +404,7 @@ describe('LIHTC Credit Calculations', () => {
     it('should calculate credits at 9% rate (competitive)', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: 50000000,
-        applicableFraction: 0.75,
+        stabilizedApplicableFraction: 0.75,
         ddaQctBoost: false,
         pisMonth: 7,
         creditRate: 0.09,
@@ -418,7 +419,7 @@ describe('LIHTC Credit Calculations', () => {
     it('should maintain Year 1/Year 11 relationship across credit rates', () => {
       const baseParams: Omit<LIHTCCalculationParams, 'creditRate'> = {
         eligibleBasis: 50000000,
-        applicableFraction: 0.75,
+        stabilizedApplicableFraction: 0.75,
         ddaQctBoost: false,
         pisMonth: 7,
       };
@@ -440,7 +441,7 @@ describe('LIHTC Credit Calculations', () => {
     it('should generate 11 years of credits', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: 50000000,
-        applicableFraction: 0.75,
+        stabilizedApplicableFraction: 0.75,
         ddaQctBoost: false,
         pisMonth: 7,
         creditRate: 0.04,
@@ -456,7 +457,7 @@ describe('LIHTC Credit Calculations', () => {
     it('should have correct proration factors', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: 50000000,
-        applicableFraction: 0.75,
+        stabilizedApplicableFraction: 0.75,
         ddaQctBoost: false,
         pisMonth: 7,
         creditRate: 0.04,
@@ -479,7 +480,7 @@ describe('LIHTC Credit Calculations', () => {
     it('should sum yearly credits to total', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: 50000000,
-        applicableFraction: 0.75,
+        stabilizedApplicableFraction: 0.75,
         ddaQctBoost: false,
         pisMonth: 7,
         creditRate: 0.04,
@@ -504,7 +505,7 @@ describe('LIHTC Credit Calculations', () => {
     it('should handle zero eligible basis', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: 0,
-        applicableFraction: 0.75,
+        stabilizedApplicableFraction: 0.75,
         ddaQctBoost: false,
         pisMonth: 7,
         creditRate: 0.04,
@@ -519,7 +520,7 @@ describe('LIHTC Credit Calculations', () => {
     it('should reject negative eligible basis', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: -1000000,
-        applicableFraction: 0.75,
+        stabilizedApplicableFraction: 0.75,
         ddaQctBoost: false,
         pisMonth: 7,
         creditRate: 0.04,
@@ -531,7 +532,7 @@ describe('LIHTC Credit Calculations', () => {
     it('should reject invalid applicable fraction', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: 50000000,
-        applicableFraction: 1.5,
+        stabilizedApplicableFraction: 1.5,
         ddaQctBoost: false,
         pisMonth: 7,
         creditRate: 0.04,
@@ -543,7 +544,7 @@ describe('LIHTC Credit Calculations', () => {
     it('should reject invalid PIS month', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: 50000000,
-        applicableFraction: 0.75,
+        stabilizedApplicableFraction: 0.75,
         ddaQctBoost: false,
         pisMonth: 13,
         creditRate: 0.04,
@@ -555,7 +556,7 @@ describe('LIHTC Credit Calculations', () => {
     it('should reject invalid credit rate', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: 50000000,
-        applicableFraction: 0.75,
+        stabilizedApplicableFraction: 0.75,
         ddaQctBoost: false,
         pisMonth: 7,
         creditRate: 1.5,
@@ -567,7 +568,7 @@ describe('LIHTC Credit Calculations', () => {
     it('should handle very small eligible basis', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: 100,
-        applicableFraction: 0.75,
+        stabilizedApplicableFraction: 0.75,
         ddaQctBoost: false,
         pisMonth: 7,
         creditRate: 0.04,
@@ -582,7 +583,7 @@ describe('LIHTC Credit Calculations', () => {
     it('should handle very large eligible basis', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: 1000000000, // $1 billion
-        applicableFraction: 0.75,
+        stabilizedApplicableFraction: 0.75,
         ddaQctBoost: true,
         pisMonth: 1,
         creditRate: 0.09,
@@ -604,7 +605,7 @@ describe('LIHTC Credit Calculations', () => {
     it('should calculate realistic scenario: 4% PAB deal with DDA boost', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: 75000000,
-        applicableFraction: 0.8,
+        stabilizedApplicableFraction: 0.8,
         ddaQctBoost: true,
         pisMonth: 6, // June
         creditRate: 0.04,
@@ -631,7 +632,7 @@ describe('LIHTC Credit Calculations', () => {
     it('should calculate realistic scenario: 9% competitive deal', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: 45000000,
-        applicableFraction: 0.75,
+        stabilizedApplicableFraction: 0.75,
         ddaQctBoost: false,
         pisMonth: 4, // April
         creditRate: 0.09,
@@ -658,7 +659,7 @@ describe('LIHTC Credit Calculations', () => {
     it('should calculate scenario: 100% affordable, no boost', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: 60000000,
-        applicableFraction: 1.0,
+        stabilizedApplicableFraction: 1.0,
         ddaQctBoost: false,
         pisMonth: 1, // January
         creditRate: 0.09,
@@ -691,7 +692,7 @@ describe('LIHTC Credit Calculations', () => {
     it('should format LIHTC schedule for display', () => {
       const params: LIHTCCalculationParams = {
         eligibleBasis: 50000000,
-        applicableFraction: 0.75,
+        stabilizedApplicableFraction: 0.75,
         ddaQctBoost: true,
         pisMonth: 7,
         creditRate: 0.04,
@@ -707,6 +708,402 @@ describe('LIHTC Credit Calculations', () => {
       expect(formatted).toContain('Year 1 Credit');
       expect(formatted).toContain('Year 11 Credit');
       expect(formatted).toContain('TOTAL CREDITS');
+    });
+  });
+
+  // ============================================================================
+  // IMPL-118: FIRST-YEAR LIHTC APPLICABLE FRACTION — DEAL TYPE + OCCUPANCY RAMP
+  // ============================================================================
+
+  describe('IMPL-118: Deal Type + Occupancy Ramp', () => {
+    // --------------------------------------------------------------------------
+    // computeEffectiveYear1AF() unit tests
+    // --------------------------------------------------------------------------
+
+    describe('computeEffectiveYear1AF()', () => {
+      describe('acquisition deal type', () => {
+        it('should return stabilizedAF directly (ramp bypassed)', () => {
+          expect(computeEffectiveYear1AF('acquisition', 1.0, 6)).toBe(1.0);
+          expect(computeEffectiveYear1AF('acquisition', 0.75, 6)).toBe(0.75);
+        });
+
+        it('should ignore leaseUpRampInput', () => {
+          expect(computeEffectiveYear1AF('acquisition', 1.0, 6, { leaseUpMonths: 4 })).toBe(1.0);
+        });
+      });
+
+      describe('acquisition_rehab deal type', () => {
+        it('should return stabilizedAF directly (ramp bypassed)', () => {
+          expect(computeEffectiveYear1AF('acquisition_rehab', 0.9, 6)).toBe(0.9);
+        });
+      });
+
+      describe('new_construction with linear ramp', () => {
+        it('should compute correct AF when leaseUpMonths < monthsInService (Scenario 32)', () => {
+          // July PIS (6 months), 4-month lease-up
+          // Monthly AFs: 0.25, 0.50, 0.75, 1.00, 1.00, 1.00 = 4.50 / 6 = 0.75
+          const result = computeEffectiveYear1AF('new_construction', 1.0, 6, { leaseUpMonths: 4 });
+          expect(result).toBeCloseTo(0.75, 6);
+        });
+
+        it('should compute correct AF when leaseUpMonths = monthsInService', () => {
+          // 6 months in service, 6-month lease-up
+          // Monthly AFs: 1/6, 2/6, 3/6, 4/6, 5/6, 6/6 = sum/6
+          const result = computeEffectiveYear1AF('new_construction', 1.0, 6, { leaseUpMonths: 6 });
+          const expected = (1/6 + 2/6 + 3/6 + 4/6 + 5/6 + 6/6) / 6;
+          expect(result).toBeCloseTo(expected, 6);
+        });
+
+        it('should compute correct AF when leaseUpMonths > monthsInService (Scenario 33)', () => {
+          // December PIS (1 month), 4-month lease-up
+          // Monthly AFs: 1/4 × 1.0 = 0.25
+          const result = computeEffectiveYear1AF('new_construction', 1.0, 1, { leaseUpMonths: 4 });
+          expect(result).toBeCloseTo(0.25, 6);
+        });
+
+        it('should scale by stabilizedAF', () => {
+          const result = computeEffectiveYear1AF('new_construction', 0.8, 6, { leaseUpMonths: 4 });
+          // Monthly AFs: 0.8×0.25, 0.8×0.50, 0.8×0.75, 0.8×1.0, 0.8×1.0, 0.8×1.0
+          // = 0.2 + 0.4 + 0.6 + 0.8 + 0.8 + 0.8 = 3.6 / 6 = 0.6
+          expect(result).toBeCloseTo(0.6, 6);
+        });
+      });
+
+      describe('new_construction with caller-supplied array', () => {
+        it('should average provided fractions (Scenario 34)', () => {
+          const result = computeEffectiveYear1AF(
+            'new_construction', 1.0, 6,
+            { monthlyOccupancyFractions: [0.1, 0.3, 0.6, 0.9, 1.0, 1.0] }
+          );
+          expect(result).toBeCloseTo(0.65, 6);
+        });
+
+        it('should truncate array when longer than monthsInService', () => {
+          const result = computeEffectiveYear1AF(
+            'new_construction', 1.0, 3,
+            { monthlyOccupancyFractions: [0.2, 0.5, 0.8, 1.0, 1.0, 1.0] }
+          );
+          // Only first 3 values: (0.2 + 0.5 + 0.8) / 3 = 0.5
+          expect(result).toBeCloseTo(0.5, 6);
+        });
+
+        it('should handle array shorter than monthsInService', () => {
+          const result = computeEffectiveYear1AF(
+            'new_construction', 1.0, 6,
+            { monthlyOccupancyFractions: [0.3, 0.6] }
+          );
+          // slice gives [0.3, 0.6], sum = 0.9, divided by 6 months = 0.15
+          expect(result).toBeCloseTo(0.9 / 6, 6);
+        });
+      });
+
+      describe('default parameter behavior', () => {
+        it('should default to acquisition when no dealType provided', () => {
+          expect(computeEffectiveYear1AF(undefined, 0.95, 6)).toBe(0.95);
+        });
+
+        it('should default to 6-month linear ramp when no rampInput provided', () => {
+          const result = computeEffectiveYear1AF('new_construction', 1.0, 6);
+          const expected = (1/6 + 2/6 + 3/6 + 4/6 + 5/6 + 6/6) / 6;
+          expect(result).toBeCloseTo(expected, 6);
+        });
+      });
+    });
+
+    // --------------------------------------------------------------------------
+    // calculateLIHTCSchedule() with dealType: 'acquisition'
+    // --------------------------------------------------------------------------
+
+    describe('calculateLIHTCSchedule with acquisition deal type', () => {
+      it('Scenario 31: effectiveYear1AF equals stabilized, ramp bypassed', () => {
+        const schedule = calculateLIHTCSchedule({
+          eligibleBasis: 50,
+          stabilizedApplicableFraction: 1.0,
+          ddaQctBoost: false,
+          pisMonth: 7,
+          creditRate: 0.04,
+          dealType: 'acquisition',
+          leaseUpRampInput: { leaseUpMonths: 4 }, // must be silently ignored
+        });
+
+        expect(schedule.metadata.effectiveYear1ApplicableFraction).toBe(1.0);
+        expect(schedule.metadata.dealType).toBe('acquisition');
+        expect(schedule.section42f3PenaltyRisk).toBe(false);
+
+        // Year 1 = annualCredit × 0.5 (same as pre-IMPL-118)
+        expect(schedule.year1Credit).toBeCloseTo(schedule.annualCredit * 0.5, 6);
+      });
+
+      it('Scenario 35: backward compatibility — no dealType defaults to acquisition', () => {
+        const schedule = calculateLIHTCSchedule({
+          eligibleBasis: 50,
+          stabilizedApplicableFraction: 0.95,
+          ddaQctBoost: false,
+          pisMonth: 7,
+          creditRate: 0.04,
+        });
+
+        expect(schedule.metadata.effectiveYear1ApplicableFraction).toBe(0.95);
+        expect(schedule.metadata.dealType).toBe('acquisition');
+        expect(schedule.section42f3PenaltyRisk).toBe(false);
+      });
+
+      it('should preserve existing Fund 1 behavior unchanged', () => {
+        const schedule = calculateLIHTCSchedule({
+          eligibleBasis: 50,
+          stabilizedApplicableFraction: 0.75,
+          ddaQctBoost: true,
+          pisMonth: 7,
+          creditRate: 0.04,
+        });
+
+        // Qualified basis: 50 × 1.3 × 0.75 = 48.75
+        expect(schedule.metadata.qualifiedBasis).toBe(48.75);
+        // Annual credit: 48.75 × 0.04 = 1.95
+        expect(schedule.annualCredit).toBe(1.95);
+        // Year 1: 50% of annual
+        expect(schedule.year1Credit).toBeCloseTo(0.975, 6);
+        // Year 11: 50% catch-up
+        expect(schedule.year11Credit).toBeCloseTo(0.975, 6);
+        // Total: 10 × 1.95 = 19.5
+        expect(schedule.totalCredits).toBe(19.5);
+      });
+    });
+
+    // --------------------------------------------------------------------------
+    // calculateLIHTCSchedule() with dealType: 'new_construction' + linear ramp
+    // --------------------------------------------------------------------------
+
+    describe('calculateLIHTCSchedule with new_construction + linear ramp', () => {
+      it('Scenario 32: July PIS, 4-month lease-up, effectiveYear1AF = 0.75', () => {
+        const schedule = calculateLIHTCSchedule({
+          eligibleBasis: 50,
+          stabilizedApplicableFraction: 1.0,
+          ddaQctBoost: false,
+          pisMonth: 7,
+          creditRate: 0.04,
+          dealType: 'new_construction',
+          leaseUpRampInput: { leaseUpMonths: 4 },
+        });
+
+        expect(schedule.metadata.effectiveYear1ApplicableFraction).toBeCloseTo(0.75, 6);
+        expect(schedule.section42f3PenaltyRisk).toBe(false);
+
+        // annualCredit uses stabilized AF: 50 × 1.0 × 1.0 × 0.04 = 2.0
+        expect(schedule.annualCredit).toBe(2.0);
+
+        // Year 1 credit: annualCredit × prorationFactor × (effectiveAF / stabilizedAF)
+        // = 2.0 × 0.5 × (0.75 / 1.0) = 0.75
+        const expectedYear1 = 2.0 * 0.5 * 0.75;
+        expect(schedule.year1Credit).toBeCloseTo(expectedYear1, 6);
+
+        // Years 2-10 use stabilized AF
+        expect(schedule.years2to10Credit).toBe(2.0);
+      });
+
+      it('Scenario 33: December PIS, 4-month lease-up, §42(f)(3) penalty risk', () => {
+        const schedule = calculateLIHTCSchedule({
+          eligibleBasis: 50,
+          stabilizedApplicableFraction: 1.0,
+          ddaQctBoost: false,
+          pisMonth: 12,
+          creditRate: 0.04,
+          dealType: 'new_construction',
+          leaseUpRampInput: { leaseUpMonths: 4 },
+        });
+
+        expect(schedule.metadata.effectiveYear1ApplicableFraction).toBeCloseTo(0.25, 6);
+        expect(schedule.section42f3PenaltyRisk).toBe(true);
+      });
+    });
+
+    // --------------------------------------------------------------------------
+    // calculateLIHTCSchedule() with new_construction + caller-supplied array
+    // --------------------------------------------------------------------------
+
+    describe('calculateLIHTCSchedule with new_construction + caller-supplied array', () => {
+      it('Scenario 34: effectiveYear1AF = 0.65 from array', () => {
+        const schedule = calculateLIHTCSchedule({
+          eligibleBasis: 50,
+          stabilizedApplicableFraction: 1.0,
+          ddaQctBoost: false,
+          pisMonth: 7,
+          creditRate: 0.04,
+          dealType: 'new_construction',
+          leaseUpRampInput: { monthlyOccupancyFractions: [0.1, 0.3, 0.6, 0.9, 1.0, 1.0] },
+        });
+
+        expect(schedule.metadata.effectiveYear1ApplicableFraction).toBeCloseTo(0.65, 6);
+        expect(schedule.section42f3PenaltyRisk).toBe(false);
+      });
+    });
+
+    // --------------------------------------------------------------------------
+    // section42f3PenaltyRisk flag
+    // --------------------------------------------------------------------------
+
+    describe('section42f3PenaltyRisk', () => {
+      it('should be false for acquisition regardless of ramp input', () => {
+        const schedule = calculateLIHTCSchedule({
+          eligibleBasis: 50,
+          stabilizedApplicableFraction: 1.0,
+          ddaQctBoost: false,
+          pisMonth: 12,
+          creditRate: 0.04,
+          dealType: 'acquisition',
+          leaseUpRampInput: { leaseUpMonths: 24 },
+        });
+        expect(schedule.section42f3PenaltyRisk).toBe(false);
+      });
+
+      it('should be false when leaseUpMonths ≤ monthsInService', () => {
+        const schedule = calculateLIHTCSchedule({
+          eligibleBasis: 50,
+          stabilizedApplicableFraction: 1.0,
+          ddaQctBoost: false,
+          pisMonth: 7, // 6 months in service
+          creditRate: 0.04,
+          dealType: 'new_construction',
+          leaseUpRampInput: { leaseUpMonths: 4 },
+        });
+        expect(schedule.section42f3PenaltyRisk).toBe(false);
+      });
+
+      it('should be true when leaseUpMonths > monthsInService', () => {
+        const schedule = calculateLIHTCSchedule({
+          eligibleBasis: 50,
+          stabilizedApplicableFraction: 1.0,
+          ddaQctBoost: false,
+          pisMonth: 12, // 1 month in service
+          creditRate: 0.04,
+          dealType: 'new_construction',
+          leaseUpRampInput: { leaseUpMonths: 4 },
+        });
+        expect(schedule.section42f3PenaltyRisk).toBe(true);
+      });
+    });
+
+    // --------------------------------------------------------------------------
+    // Total credits invariant
+    // --------------------------------------------------------------------------
+
+    describe('total credits invariant', () => {
+      it('should hold for acquisition path', () => {
+        const schedule = calculateLIHTCSchedule({
+          eligibleBasis: 50,
+          stabilizedApplicableFraction: 0.75,
+          ddaQctBoost: true,
+          pisMonth: 7,
+          creditRate: 0.04,
+          dealType: 'acquisition',
+        });
+
+        const total = schedule.year1Credit + (schedule.years2to10Credit * 9) + schedule.year11Credit;
+        expect(total).toBeCloseTo(schedule.annualCredit * 10, 3);
+      });
+
+      it('should hold for new_construction path with linear ramp', () => {
+        const schedule = calculateLIHTCSchedule({
+          eligibleBasis: 50,
+          stabilizedApplicableFraction: 1.0,
+          ddaQctBoost: false,
+          pisMonth: 7,
+          creditRate: 0.04,
+          dealType: 'new_construction',
+          leaseUpRampInput: { leaseUpMonths: 4 },
+        });
+
+        const total = schedule.year1Credit + (schedule.years2to10Credit * 9) + schedule.year11Credit;
+        expect(total).toBeCloseTo(schedule.annualCredit * 10, 3);
+
+        // annualCredit must be from stabilized AF, not effective
+        const expectedAnnual = 50 * 1.0 * 1.0 * 0.04;
+        expect(schedule.annualCredit).toBe(expectedAnnual);
+      });
+
+      it('should hold for new_construction path with caller-supplied array', () => {
+        const schedule = calculateLIHTCSchedule({
+          eligibleBasis: 50,
+          stabilizedApplicableFraction: 1.0,
+          ddaQctBoost: false,
+          pisMonth: 7,
+          creditRate: 0.04,
+          dealType: 'new_construction',
+          leaseUpRampInput: { monthlyOccupancyFractions: [0.1, 0.3, 0.6, 0.9, 1.0, 1.0] },
+        });
+
+        const total = schedule.year1Credit + (schedule.years2to10Credit * 9) + schedule.year11Credit;
+        expect(total).toBeCloseTo(schedule.annualCredit * 10, 3);
+      });
+    });
+
+    // --------------------------------------------------------------------------
+    // validateLIHTCParams() — new field validations
+    // --------------------------------------------------------------------------
+
+    describe('validateLIHTCParams with new fields', () => {
+      const baseParams: LIHTCCalculationParams = {
+        eligibleBasis: 50,
+        stabilizedApplicableFraction: 0.75,
+        ddaQctBoost: false,
+        pisMonth: 7,
+        creditRate: 0.04,
+      };
+
+      it('should throw for leaseUpMonths: 0', () => {
+        expect(() => calculateLIHTCSchedule({
+          ...baseParams,
+          leaseUpRampInput: { leaseUpMonths: 0 },
+        })).toThrow('leaseUpMonths must be between 1 and 24');
+      });
+
+      it('should throw for leaseUpMonths: 25', () => {
+        expect(() => calculateLIHTCSchedule({
+          ...baseParams,
+          leaseUpRampInput: { leaseUpMonths: 25 },
+        })).toThrow('leaseUpMonths must be between 1 and 24');
+      });
+
+      it('should accept leaseUpMonths: 1', () => {
+        expect(() => calculateLIHTCSchedule({
+          ...baseParams,
+          leaseUpRampInput: { leaseUpMonths: 1 },
+        })).not.toThrow();
+      });
+
+      it('should accept leaseUpMonths: 24', () => {
+        expect(() => calculateLIHTCSchedule({
+          ...baseParams,
+          leaseUpRampInput: { leaseUpMonths: 24 },
+        })).not.toThrow();
+      });
+
+      it('should throw for empty monthlyOccupancyFractions', () => {
+        expect(() => calculateLIHTCSchedule({
+          ...baseParams,
+          leaseUpRampInput: { monthlyOccupancyFractions: [] },
+        })).toThrow('monthlyOccupancyFractions must be a non-empty array');
+      });
+
+      it('should throw for monthlyOccupancyFractions values outside 0-1', () => {
+        expect(() => calculateLIHTCSchedule({
+          ...baseParams,
+          leaseUpRampInput: { monthlyOccupancyFractions: [0.5, 1.2] },
+        })).toThrow('monthlyOccupancyFractions values must be between 0 and 1');
+
+        expect(() => calculateLIHTCSchedule({
+          ...baseParams,
+          leaseUpRampInput: { monthlyOccupancyFractions: [-0.1, 0.5] },
+        })).toThrow('monthlyOccupancyFractions values must be between 0 and 1');
+      });
+
+      it('should silently accept leaseUpRampInput on acquisition deal', () => {
+        expect(() => calculateLIHTCSchedule({
+          ...baseParams,
+          dealType: 'acquisition',
+          leaseUpRampInput: { leaseUpMonths: 12 },
+        })).not.toThrow();
+      });
     });
   });
 });

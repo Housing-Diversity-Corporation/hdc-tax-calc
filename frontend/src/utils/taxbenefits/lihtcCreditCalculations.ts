@@ -13,6 +13,46 @@
  */
 
 /**
+ * Deal type classification controlling occupancy ramp behavior in LIHTC
+ * applicable fraction computation.
+ *
+ * - 'acquisition': Pre-PIS purchase of stabilized building. Units already occupied.
+ *   Occupancy ramp is bypassed. effectiveYear1AF = stabilizedApplicableFraction.
+ *   Fund 1 default (Trace 4001, 701 S Jackson).
+ *
+ * - 'acquisition_rehab': Future use. Acquisition + significant rehabilitation.
+ *   Tack-back rule applies (credits start later of acquisition date or Jan 1 of
+ *   rehab completion year). Not implemented in Fund 1.
+ *
+ * - 'new_construction': Ground-up development. Occupancy ramp applies via
+ *   LeaseUpRampInput. Reserved for future deals beyond Fund 1.
+ */
+export type DealType = 'acquisition' | 'acquisition_rehab' | 'new_construction';
+
+/**
+ * Input to the Year 1 occupancy ramp computation. Two paths:
+ *
+ * Linear ramp (Fund 1 implementation):
+ *   Provide { leaseUpMonths } — the function computes a linear ramp from 0
+ *   to stabilizedApplicableFraction over leaseUpMonths, then averages across
+ *   months-in-service in credit Year 1.
+ *
+ * Caller-supplied array (future proforma engine hookup):
+ *   Provide { monthlyOccupancyFractions } — an array of monthly applicable
+ *   fractions (0.0–1.0) indexed from month 1 of the credit period. The function
+ *   averages the first monthsInServiceYear1 values directly.
+ *
+ * NOTE: The proforma engine's lease-up S-curve is used for sizing the lease-up
+ * reserve (financial modeling) — a separate purpose from LIHTC applicable fraction
+ * computation. Do not conflate the two. The monthlyOccupancyFractions path is the
+ * future hookup point for any occupancy curve (S-curve or otherwise) once the
+ * proforma engine ships as callable TypeScript.
+ */
+export type LeaseUpRampInput =
+  | { leaseUpMonths: number }
+  | { monthlyOccupancyFractions: number[] };
+
+/**
  * Represents a single year's LIHTC credit allocation.
  *
  * IMPORTANT: All monetary values are in MILLIONS (e.g., 3.04 = $3,040,000).
@@ -56,8 +96,29 @@ export interface LIHTCMetadata {
   /** Credit rate (typically 4% or 9%) */
   creditRate: number;
 
-  /** Applicable fraction (percentage of qualified units) */
-  applicableFraction: number;
+  /**
+   * Stabilized applicable fraction — percentage of qualified low-income units (0.0–1.0).
+   * Used for Years 2–10 of the credit period and as the Year 1 fraction for acquisition
+   * and acquisition_rehab deals where units are already occupied.
+   * For new_construction, Year 1 uses effectiveYear1ApplicableFraction (computed from
+   * the LeaseUpRampInput).
+   * NOT 0–100; must be a decimal (e.g., 1.0 for 100%).
+   */
+  stabilizedApplicableFraction: number;
+
+  /**
+   * Effective applicable fraction for Year 1, accounting for lease-up ramp.
+   * For acquisition deals: equals stabilizedApplicableFraction (ramp bypassed).
+   * For new_construction with linear ramp: average of monthly fractions across
+   * months-in-service computed from leaseUpMonths parameter.
+   * For new_construction with caller-supplied array: average of provided fractions
+   * across months-in-service.
+   * This is the value actually used to compute Year 1 qualified basis and credits.
+   */
+  effectiveYear1ApplicableFraction: number;
+
+  /** Deal type used in this calculation. */
+  dealType: DealType;
 }
 
 /**
@@ -87,6 +148,21 @@ export interface LIHTCCreditSchedule {
 
   /** Calculation metadata */
   metadata: LIHTCMetadata;
+
+  /**
+   * True when a new_construction deal has a lease-up period extending beyond the
+   * months-in-service in Year 1, meaning some units may remain unoccupied at
+   * December 31 of the first credit year. Units not leased by that date receive
+   * credits over 15 years instead of 10 (IRC §42(f)(3)).
+   *
+   * When true, the §42(f)(1) election is strongly recommended — it defers the
+   * credit start year by one, giving until December 31 of the year after PIS
+   * to reach full occupancy, and eliminates all §42(f)(3) exposure.
+   *
+   * Always false for acquisition and acquisition_rehab deal types.
+   * Always false when the §42(f)(1) election is applied.
+   */
+  section42f3PenaltyRisk: boolean;
 }
 
 /**
@@ -98,8 +174,15 @@ export interface LIHTCCalculationParams {
   /** Total eligible basis in millions (e.g., 90 = $90M) */
   eligibleBasis: number;
 
-  /** Percentage of qualified low-income units (0.0 - 1.0, NOT 0-100) */
-  applicableFraction: number;
+  /**
+   * Stabilized applicable fraction — percentage of qualified low-income units (0.0–1.0).
+   * Used for Years 2–10 of the credit period and as the Year 1 fraction for acquisition
+   * and acquisition_rehab deals where units are already occupied.
+   * For new_construction, Year 1 uses effectiveYear1ApplicableFraction (computed from
+   * the LeaseUpRampInput).
+   * NOT 0–100; must be a decimal (e.g., 1.0 for 100%).
+   */
+  stabilizedApplicableFraction: number;
 
   /** Whether DDA/QCT 130% boost applies */
   ddaQctBoost: boolean;
@@ -109,6 +192,20 @@ export interface LIHTCCalculationParams {
 
   /** LIHTC credit rate (typically 0.04 or 0.09) */
   creditRate: number;
+
+  /**
+   * Deal type classification. Controls whether the occupancy ramp is applied.
+   * Defaults to 'acquisition' if not provided — safe default for Fund 1.
+   */
+  dealType?: DealType;
+
+  /**
+   * Lease-up ramp input for new_construction deals.
+   * Ignored when dealType is 'acquisition' or 'acquisition_rehab'.
+   * See LeaseUpRampInput for the two available paths (linear ramp vs. caller-supplied array).
+   * Defaults to { leaseUpMonths: 6 } if dealType is 'new_construction' and this is omitted.
+   */
+  leaseUpRampInput?: LeaseUpRampInput;
 }
 
 /**
@@ -128,13 +225,13 @@ export class LIHTCValidationError extends Error {
  * @throws {LIHTCValidationError} If parameters are invalid
  */
 function validateLIHTCParams(params: LIHTCCalculationParams): void {
-  const { eligibleBasis, applicableFraction, pisMonth, creditRate } = params;
+  const { eligibleBasis, stabilizedApplicableFraction, pisMonth, creditRate } = params;
 
   if (eligibleBasis < 0) {
     throw new LIHTCValidationError('Eligible basis cannot be negative');
   }
 
-  if (applicableFraction < 0 || applicableFraction > 1) {
+  if (stabilizedApplicableFraction < 0 || stabilizedApplicableFraction > 1) {
     throw new LIHTCValidationError('Applicable fraction must be between 0 and 1');
   }
 
@@ -145,6 +242,33 @@ function validateLIHTCParams(params: LIHTCCalculationParams): void {
   if (creditRate < 0 || creditRate > 1) {
     throw new LIHTCValidationError('Credit rate must be between 0 and 1');
   }
+
+  // Validate leaseUpMonths if provided via linear ramp path
+  if (
+    params.leaseUpRampInput &&
+    'leaseUpMonths' in params.leaseUpRampInput
+  ) {
+    const { leaseUpMonths } = params.leaseUpRampInput;
+    if (leaseUpMonths < 1 || leaseUpMonths > 24) {
+      throw new LIHTCValidationError('leaseUpMonths must be between 1 and 24');
+    }
+  }
+
+  // Validate monthlyOccupancyFractions if provided
+  if (
+    params.leaseUpRampInput &&
+    'monthlyOccupancyFractions' in params.leaseUpRampInput
+  ) {
+    const { monthlyOccupancyFractions } = params.leaseUpRampInput;
+    if (!Array.isArray(monthlyOccupancyFractions) || monthlyOccupancyFractions.length === 0) {
+      throw new LIHTCValidationError('monthlyOccupancyFractions must be a non-empty array');
+    }
+    if (monthlyOccupancyFractions.some(f => f < 0 || f > 1)) {
+      throw new LIHTCValidationError('monthlyOccupancyFractions values must be between 0 and 1');
+    }
+  }
+
+  // leaseUpRampInput on non-new_construction deals is silently ignored — do not throw
 }
 
 /**
@@ -238,6 +362,60 @@ export function calculateAnnualLIHTCCredit(
 }
 
 /**
+ * Computes the effective Year 1 applicable fraction accounting for lease-up ramp.
+ *
+ * For acquisition and acquisition_rehab deals (units pre-occupied):
+ *   Returns stabilizedApplicableFraction directly. Ramp is bypassed.
+ *
+ * For new_construction with { leaseUpMonths }:
+ *   Computes a linear ramp from 0 to stabilizedAF over leaseUpMonths, then
+ *   averages across all months-in-service in credit Year 1.
+ *   monthlyAF[m] = stabilizedAF × min(m / leaseUpMonths, 1.0)  (m is 1-indexed from PIS)
+ *
+ * For new_construction with { monthlyOccupancyFractions }:
+ *   Averages the first monthsInServiceYear1 values from the provided array directly.
+ *   This is the hookup point for any external occupancy curve (e.g., proforma engine
+ *   S-curve output) once that engine ships as callable TypeScript.
+ *
+ * NOTE: The proforma engine's lease-up S-curve sizes the lease-up reserve — a separate
+ * financial modeling purpose. Do not conflate with this computation.
+ *
+ * @param dealType - Deal type classification. Defaults to 'acquisition'.
+ * @param stabilizedAF - Target applicable fraction at full stabilization (0.0–1.0).
+ * @param monthsInServiceYear1 - Months in credit Year 1 (derived from PIS proration).
+ * @param rampInput - Linear ramp scalar or caller-supplied monthly array.
+ *   Ignored for acquisition and acquisition_rehab deal types.
+ * @returns Effective Year 1 applicable fraction (0.0–1.0).
+ */
+export function computeEffectiveYear1AF(
+  dealType: DealType = 'acquisition',
+  stabilizedAF: number,
+  monthsInServiceYear1: number,
+  rampInput: LeaseUpRampInput = { leaseUpMonths: 6 }
+): number {
+  // Acquisition and acquisition_rehab: units already occupied, bypass ramp
+  if (dealType === 'acquisition' || dealType === 'acquisition_rehab') {
+    return stabilizedAF;
+  }
+
+  // New construction — discriminate on ramp input type
+  if ('monthlyOccupancyFractions' in rampInput) {
+    // Caller-supplied array path (future proforma engine hookup)
+    const fractions = rampInput.monthlyOccupancyFractions.slice(0, monthsInServiceYear1);
+    if (fractions.length === 0) return stabilizedAF;
+    return fractions.reduce((sum, f) => sum + f, 0) / monthsInServiceYear1;
+  }
+
+  // Linear ramp path (Fund 1 implementation)
+  const { leaseUpMonths } = rampInput;
+  let totalAF = 0;
+  for (let m = 1; m <= monthsInServiceYear1; m++) {
+    totalAF += stabilizedAF * Math.min(m / leaseUpMonths, 1.0);
+  }
+  return totalAF / monthsInServiceYear1;
+}
+
+/**
  * Calculates complete LIHTC credit schedule over 11-year period
  *
  * Implements the following mechanics:
@@ -259,7 +437,7 @@ export function calculateAnnualLIHTCCredit(
  * // July PIS with DDA/QCT boost
  * const schedule = calculateLIHTCSchedule({
  *   eligibleBasis: 50000000,
- *   applicableFraction: 0.75,
+ *   stabilizedApplicableFraction: 0.75,
  *   ddaQctBoost: true,
  *   pisMonth: 7,
  *   creditRate: 0.04
@@ -279,48 +457,64 @@ export function calculateLIHTCSchedule(
   // Step 1: Validate inputs
   validateLIHTCParams(params);
 
-  const { eligibleBasis, applicableFraction, ddaQctBoost, pisMonth, creditRate } = params;
+  const { eligibleBasis, stabilizedApplicableFraction, ddaQctBoost, pisMonth, creditRate } = params;
+  const dealType = params.dealType ?? 'acquisition';
 
   // Step 2: Apply DDA/QCT boost
   const boostMultiplier = getDDAQCTBoostMultiplier(ddaQctBoost);
 
-  // Step 3: Calculate qualified basis
+  // Step 3: Calculate stabilized qualified basis (used for Years 2–10 and annualCredit)
   const qualifiedBasis = calculateQualifiedBasis(
     eligibleBasis,
     boostMultiplier,
-    applicableFraction
+    stabilizedApplicableFraction
   );
 
-  // Step 4: Calculate annual credit
+  // Step 4: Calculate annual credit (always from stabilized AF)
   const annualCredit = calculateAnnualLIHTCCredit(qualifiedBasis, creditRate);
 
-  // Step 5: Calculate Year 1 proration
+  // Step 5: Calculate Year 1 proration and effective applicable fraction
   const monthsInServiceYear1 = getMonthsInServiceYear1(pisMonth);
   const year1ProrationFactor = getYear1ProrationFactor(pisMonth);
-  const year1Credit = annualCredit * year1ProrationFactor;
 
-  // Step 6: Years 2-10 receive full annual credit
+  const effectiveYear1AF = computeEffectiveYear1AF(
+    dealType,
+    stabilizedApplicableFraction,
+    monthsInServiceYear1,
+    params.leaseUpRampInput ?? { leaseUpMonths: 6 }
+  );
+
+  // Step 6: Calculate Year 1 credit using effective AF
+  const year1QualifiedBasis = calculateQualifiedBasis(
+    eligibleBasis,
+    boostMultiplier,
+    effectiveYear1AF
+  );
+  const year1AnnualEquiv = calculateAnnualLIHTCCredit(year1QualifiedBasis, creditRate);
+  const year1Credit = year1AnnualEquiv * year1ProrationFactor;
+
+  // Step 7: Years 2-10 receive full annual credit (stabilized AF)
   const years2to10Credit = annualCredit;
 
-  // Step 7: Calculate Year 11 catch-up
-  // This ensures: year1 + (9 × annual) + year11 = 10 × annual
+  // Step 8: Calculate Year 11 catch-up
+  // Ensures: year1 + (9 × annual) + year11 = 10 × annual
   const year11Credit = annualCredit - year1Credit;
 
-  // Step 8: Verify total credits invariant
+  // Step 9: Verify total credits invariant
   const totalCredits = year1Credit + (9 * annualCredit) + year11Credit;
   const expectedTotal = 10 * annualCredit;
 
-  // Allow for floating-point precision errors (within 1 cent)
-  if (Math.abs(totalCredits - expectedTotal) > 0.01) {
+  // Allow for floating-point precision errors (within $0.001M)
+  if (Math.abs(totalCredits - expectedTotal) > 0.001) {
     throw new LIHTCValidationError(
       `Total credits verification failed: expected ${expectedTotal}, got ${totalCredits}`
     );
   }
 
-  // Step 9: Build year-by-year breakdown
+  // Step 10: Build year-by-year breakdown
   const yearlyBreakdown: YearlyCredit[] = [];
 
-  // Year 1 (prorated)
+  // Year 1 (prorated, possibly with ramp-adjusted AF)
   yearlyBreakdown.push({
     year: 1,
     creditAmount: year1Credit,
@@ -328,7 +522,7 @@ export function calculateLIHTCSchedule(
     description: `Year 1 (${monthsInServiceYear1} months in service, ${(year1ProrationFactor * 100).toFixed(1)}% proration)`,
   });
 
-  // Years 2-10 (full credit)
+  // Years 2-10 (full credit at stabilized AF)
   for (let year = 2; year <= 10; year++) {
     yearlyBreakdown.push({
       year,
@@ -339,7 +533,7 @@ export function calculateLIHTCSchedule(
   }
 
   // Year 11 (catch-up)
-  const year11ProrationFactor = year11Credit / annualCredit;
+  const year11ProrationFactor = annualCredit > 0 ? year11Credit / annualCredit : 0;
   yearlyBreakdown.push({
     year: 11,
     creditAmount: year11Credit,
@@ -347,7 +541,7 @@ export function calculateLIHTCSchedule(
     description: `Year 11 (catch-up, ${(year11ProrationFactor * 100).toFixed(1)}% of annual)`,
   });
 
-  // Step 10: Build metadata
+  // Step 11: Build metadata
   const metadata: LIHTCMetadata = {
     qualifiedBasis,
     boostMultiplier,
@@ -355,8 +549,18 @@ export function calculateLIHTCSchedule(
     monthsInServiceYear1,
     year1ProrationFactor,
     creditRate,
-    applicableFraction,
+    stabilizedApplicableFraction,
+    effectiveYear1ApplicableFraction: effectiveYear1AF,
+    dealType,
   };
+
+  // Determine §42(f)(3) penalty risk: lease-up extends beyond Year 1 months-in-service
+  const rampInput = params.leaseUpRampInput ?? { leaseUpMonths: 6 };
+  const leaseUpLength = 'leaseUpMonths' in rampInput
+    ? rampInput.leaseUpMonths
+    : rampInput.monthlyOccupancyFractions.length;
+  const section42f3PenaltyRisk =
+    dealType === 'new_construction' && leaseUpLength > monthsInServiceYear1;
 
   return {
     annualCredit,
@@ -366,6 +570,7 @@ export function calculateLIHTCSchedule(
     totalCredits: expectedTotal, // Use exact expected value
     yearlyBreakdown,
     metadata,
+    section42f3PenaltyRisk,
   };
 }
 

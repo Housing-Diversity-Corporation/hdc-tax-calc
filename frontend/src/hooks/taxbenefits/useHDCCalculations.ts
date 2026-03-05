@@ -487,7 +487,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     try {
       return calculateLIHTCSchedule({
         eligibleBasis: lihtcEligibleBasis,
-        applicableFraction: (props.applicableFraction || 100) / 100,
+        stabilizedApplicableFraction: (props.applicableFraction || 100) / 100,
         ddaQctBoost: props.ddaQctBoost || false,
         pisMonth,
         creditRate: props.creditRate || 0.04

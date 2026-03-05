@@ -198,6 +198,54 @@ This document tracks all validated scenarios for the TaxBenefits Calculator. It 
 
 ---
 
+## First-Year LIHTC Applicable Fraction (Scenarios 31-35)
+
+**IMPL-118 — Deal Type + Occupancy Ramp**
+**Validated via:** `lihtcCreditCalculations.test.ts` (IMPL-118 describe block)
+
+### Scenario 31: Acquisition deal — ramp bypassed
+- `dealType: 'acquisition'`, `stabilizedApplicableFraction: 1.0`, `pisMonth: 7`
+- `leaseUpRampInput: { leaseUpMonths: 4 }` (silently ignored)
+- **Expected:** `effectiveYear1ApplicableFraction = 1.0`
+- **Expected:** `section42f3PenaltyRisk = false`
+- **Expected:** Year 1 credit = `annualCredit × (6/12) × 1.0` — identical to pre-IMPL-118 behavior for Fund 1
+- **Status:** ✅ Validated 2026-03-04
+
+### Scenario 32: New construction — linear ramp, lease-up completes within Year 1 (July PIS, 4-month lease-up)
+- `dealType: 'new_construction'`, `stabilizedApplicableFraction: 1.0`, `pisMonth: 7`
+- `leaseUpRampInput: { leaseUpMonths: 4 }`
+- Months in service Year 1: 6 (July–December)
+- Monthly AFs: 0.25, 0.50, 0.75, 1.00, 1.00, 1.00
+- **Expected:** `effectiveYear1ApplicableFraction = 4.50 / 6 = 0.750`
+- **Expected:** `section42f3PenaltyRisk = false` (leaseUpMonths 4 ≤ monthsInServiceYear1 6)
+- **Expected:** Year 1 credit = `annualCredit × (6/12) × 0.75` (not × 1.0)
+- **Status:** ✅ Validated 2026-03-04
+
+### Scenario 33: New construction — §42(f)(3) penalty risk (December PIS, 4-month lease-up)
+- `dealType: 'new_construction'`, `stabilizedApplicableFraction: 1.0`, `pisMonth: 12`
+- `leaseUpRampInput: { leaseUpMonths: 4 }`
+- Months in service Year 1: 1 (December only)
+- Monthly AFs: 0.25
+- **Expected:** `effectiveYear1ApplicableFraction = 0.25`
+- **Expected:** `section42f3PenaltyRisk = true` (leaseUpMonths 4 > monthsInServiceYear1 1)
+- **Status:** ✅ Validated 2026-03-04
+
+### Scenario 34: New construction — caller-supplied occupancy array
+- `dealType: 'new_construction'`, `stabilizedApplicableFraction: 1.0`, `pisMonth: 7`
+- `leaseUpRampInput: { monthlyOccupancyFractions: [0.1, 0.3, 0.6, 0.9, 1.0, 1.0] }`
+- Months in service Year 1: 6
+- **Expected:** `effectiveYear1ApplicableFraction = (0.1 + 0.3 + 0.6 + 0.9 + 1.0 + 1.0) / 6 = 0.650`
+- **Expected:** `section42f3PenaltyRisk = false` (array length 6 ≥ monthsInServiceYear1 6)
+- **Status:** ✅ Validated 2026-03-04
+
+### Scenario 35: Backward compatibility — no dealType provided defaults to acquisition
+- `dealType` not provided (undefined), `stabilizedApplicableFraction: 0.95`, `pisMonth: 7`
+- **Expected:** `effectiveYear1ApplicableFraction = 0.95` (default 'acquisition' path, ramp bypassed)
+- **Expected:** Behavior identical to pre-IMPL-118 for any existing test that doesn't supply dealType
+- **Status:** ✅ Validated 2026-03-04
+
+---
+
 ## Summary
 
 | Level | Required | Complete | Status |
@@ -208,7 +256,8 @@ This document tracks all validated scenarios for the TaxBenefits Calculator. It 
 | Interest Reserve/S-Curve | 1 | 1 | ✅ |
 | Pool Aggregation & Sizing | 2 | 2 | ✅ |
 | Exit Tax Engine | 3 | 3 | ✅ |
-| Institutional Certification | 30 | 24 | 80% |
+| First-Year LIHTC AF | 5 | 5 | ✅ |
+| Institutional Certification | 35 | 29 | 83% |
 
 ---
 
