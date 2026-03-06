@@ -1,9 +1,9 @@
 # TaxBenefits Calculator — Implementation Tracker
 
-**Document Version:** 9.0
-**Last Updated:** 2026-02-01
+**Document Version:** 10.0
+**Last Updated:** 2026-03-06
 **Branch:** main
-**Current Test Count:** 1,237 passing
+**Current Test Count:** 1,817 passing (90 suites, 0 failures)
 **Validation Status:** 13/15 Three Sigma scenarios complete (Production Certification ✅)
 
 ---
@@ -12,6 +12,7 @@
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v10.0 | 2026-03-06 | Major update: 35 IMPLs added (084-118). B2 save-flow wiring, pool aggregation, computed hold period, fed/state depreciation breakout, exit tax engine, B3 fit/archetype/sizing, timing architecture rewire (computeTimeline, XIRR, §42(f)(1) election), LIHTC applicable fraction. Test count 1,237→1,817. |
 | v9.0 | 2026-02-01 | Jan 23-31 sessions: IMPL-079-083 (Capital Stack Enhancement), ISS-024-068c (~45 bug fixes), test count 1,195→1,237, ISS-014 fixed |
 | v8.5 | 2026-01-22 | ISS-023: Fixed Time to Recovery using gross equity instead of net for Y0 syndication |
 | v8.4 | 2026-01-22 | IMPL-078: Merged Free Investment Analysis + Tax Planning Capacity into single InvestmentRecoverySection |
@@ -374,6 +375,113 @@ This caused impossible 275% IRR. Fix: Year 0 syndication proceeds are netted in 
 | ISS-067 | Currency display inconsistency | Local formatters, varying decimals | Standardized formatters | 2026-01-31 |
 | ISS-068c | Three redundant inputs (Rev/Exp/OpEx) | Model complexity without value | Single noiGrowthRate | 2026-01-31 |
 
+### Phase 17: B2 Save-Flow Wiring (Feb 14, 2026)
+
+| IMPL | Description | Status | Date |
+|------|-------------|--------|------|
+| IMPL-084 | Phase B2 save-flow wiring — DBP extraction on save, service endpoints matched to backend | ✅ Complete | 2026-02-14 |
+
+**IMPL-084 Details:** Wired `extractDealBenefitProfile` into save flow in HDCInputsComponent. Created dbpService and poolService with backend-matching endpoints. 9 files changed, 512 insertions, 115 deletions. Key files: `dbpService.ts`, `poolService.ts`, `dealBenefitProfile.ts`, `HDCInputsComponent.tsx`.
+
+### Phase 18: Pool Aggregation & Fund Sizing (Feb 14, 2026)
+
+| IMPL | Description | Status | Date |
+|------|-------------|--------|------|
+| IMPL-085 | Pool aggregation engine + fund sizing optimizer — 63 tests, runtime-verified | ✅ Complete | 2026-02-14 |
+
+**IMPL-085 Details:** Created `poolAggregation.ts` (aggregatePoolToBenefitStream, scaleBenefitStreamToMillions) and `fundSizingOptimizer.ts` (iterates across commitment levels with calculateTaxUtilization). Built FundDetail page with FundDealList, FundDetailHeader, EfficiencyCurveChart, OptimalCommitmentCard, CapacityWarning. 15 files changed, 2,588 insertions. 63 new tests across poolAggregation.test.ts, fundSizingOptimizer.test.ts, impl085-runtime-verification.test.ts.
+
+### Phase 19: Construction Timing & Exit-Month Precision (Feb 17, 2026)
+
+| IMPL | Description | Status | Date |
+|------|-------------|--------|------|
+| IMPL-086 | Computed hold period engine | ✅ Complete | 2026-02-17 |
+| IMPL-087 | Exit-month precision — 1,583 tests green | ✅ Complete | 2026-02-17 |
+| IMPL-088 | *Reserved buffer — not used* | — | — |
+| IMPL-089 | *Reserved buffer — not used* | — | — |
+
+**IMPL-086+087 Details:** Introduced computed hold period engine and exit-month precision logic in hdcAnalysis.ts. 44 files changed, 2,280 insertions, 460 deletions. Test count at 1,583 after this commit.
+
+### Phase 20: Federal/State Depreciation Breakout (Feb 18, 2026)
+
+| IMPL | Description | Status | Date |
+|------|-------------|--------|------|
+| IMPL-090 | Federal depreciation benefit calculation (Year 1 + Hold Period) | ✅ Complete | 2026-02-18 |
+| IMPL-091 | State depreciation benefit calculation (Year 1 + Hold Period) | ✅ Complete | 2026-02-18 |
+| IMPL-092 | Breakout fields added to engine output | ✅ Complete | 2026-02-18 |
+| IMPL-093 | Temporal sub-row restoration in returns display | ✅ Complete | 2026-02-18 |
+
+**IMPL-090-093 Details:** Added 6 breakout fields to calculations.ts: `federalDepreciationBenefitYear1`, `stateDepreciationBenefitYear1`, `federalDepreciationBenefitHoldPeriod`, `stateDepreciationBenefitHoldPeriod`, `federalDepreciationBenefitTotal`, `stateDepreciationBenefitTotal`. Created depreciationBreakout.test.ts (465 lines). 4 files changed, 561 insertions.
+
+### Phase 21: Stage 5.5 — Exit Tax Engine (Feb 18, 2026)
+
+| IMPL | Description | Status | Date |
+|------|-------------|--------|------|
+| IMPL-094 | ExitTaxParams and ExitTaxResult interfaces | ✅ Complete | 2026-02-18 |
+| IMPL-095 | Character-split fields in investorTaxUtilization | ✅ Complete | 2026-02-18 |
+| IMPL-096 | depreciationRecaptureRate removal — rates derived inside calculateExitTax() | ✅ Complete | 2026-02-18 |
+| IMPL-097 | §1245 ordinary income recapture (cost seg / bonus) | ✅ Complete | 2026-02-18 |
+| IMPL-098 | §1250 unrecaptured gain capped at 25% | ✅ Complete | 2026-02-18 |
+| IMPL-099 | NIIT calculation with territory-aware doesNIITApply() | ✅ Complete | 2026-02-18 |
+| IMPL-100 | State exit tax with conformity-aware rate lookup | ✅ Complete | 2026-02-18 |
+| IMPL-101 | OZ 10-year hold exit tax exclusion | ✅ Complete | 2026-02-18 |
+
+**IMPL-094-101 Details:** Built IRC-compliant exit tax engine with character-split recapture: sec1245Recapture (ordinary rate), sec1250Recapture (25% cap), remainingGainTax, niitTax, totalFederalExitTax, state exit tax. Removed single depreciationRecaptureRate in favor of derived rates. Added doesNIITApply() for territories. 28 files changed, 937 insertions. exit-tax-engine.test.ts (471 lines) with E-1 through E-10 unit tests + Scenario 10A/10B integration.
+
+### Phase 22: B3 — Investor Fit & Archetype Classification (Feb 17, 2026)
+
+| IMPL | Description | Status | Date |
+|------|-------------|--------|------|
+| IMPL-102 | Investor archetype classification engine (A-F grades) | ✅ Complete | 2026-02-17 |
+| IMPL-103 | Fit scoring with passive income, REP track, benefit timing | ✅ Complete | 2026-02-17 |
+| IMPL-104 | Investor sizing — commitment-level tax utilization | ✅ Complete | 2026-02-17 |
+| IMPL-105 | FitSummaryPanel UI component | ✅ Complete | 2026-02-17 |
+| IMPL-106 | SizingOptimizerPanel UI component | ✅ Complete | 2026-02-17 |
+| IMPL-107 | useInvestorFit and useInvestorSizing hooks | ✅ Complete | 2026-02-17 |
+
+**IMPL-102-107 Details:** Built investorFit.ts (364 lines, A-F archetype grading with passive income thresholds, REP track detection, benefit timing profiles) and investorSizing.ts (224 lines, commitment-level utilization via calculateTaxUtilization). UI: FitSummaryPanel.tsx, SizingOptimizerPanel.tsx wired into FundDetail. Hooks: useInvestorFit.ts, useInvestorSizing.ts. 11 files changed, 2,588 insertions. 76 tests across investorFit.test.ts, investorSizing.test.ts, investorB3Integration.test.ts.
+
+### Phase 23: Timing Architecture Rewire (Mar 3-4, 2026)
+
+| IMPL | Description | Status | Date |
+|------|-------------|--------|------|
+| IMPL-108 | Timing rewire types — investmentDate, ComputedTimeline, XirrCashFlow, §42(f)(1) election | ✅ Complete | 2026-03-03 |
+| IMPL-109 | computeTimeline.ts — date-driven timing engine with K-1 realization dates, January guard | ✅ Complete | 2026-03-03 |
+| IMPL-110 | calculateXIRR — Newton-Raphson with ACT/365.25 day-count, 10 validation scenarios | ✅ Complete | 2026-03-03 |
+| IMPL-111 | Wire computeTimeline + calculateXIRR into calculations.ts | ✅ Complete | 2026-03-03 |
+| IMPL-112 | useHDCState adds investmentDate, pisDateOverride, exitExtensionMonths, electDeferCreditPeriod | ✅ Complete | 2026-03-03 |
+| IMPL-113 | computeTimeline useMemo in useHDCCalculations, election auto-reset guard for Jan PIS | ✅ Complete | 2026-03-03 |
+| IMPL-114 | UI — Investment Date picker, Exit Extension slider, PIS override toggle, §42(f)(1) election toggle | ✅ Complete | 2026-03-03 |
+| IMPL-115 | Timing exports — ComputedTimeline in audit export, timingGanttSheet with calendar dates | ✅ Complete | 2026-03-04 |
+| IMPL-116 | Bulk test migration — remove taxBenefitDelayMonths, add investmentDate to defaults | ✅ Complete | 2026-03-04 |
+| IMPL-117 | Production cleanup — remove deprecated timing fields, delete computeHoldPeriod.ts | ✅ Complete | 2026-03-04 |
+
+**IMPL-108 Details:** Added investmentDate (Date), ComputedTimeline interface, XirrCashFlow type, §42(f)(1) election boolean, @deprecated tags on taxBenefitDelayMonths/placedInServiceMonth/exitMonth. 1 file changed (types/index.ts), 113 insertions.
+
+**IMPL-109 Details:** Created computeTimeline.ts (157 lines) — pure function producing ComputedTimeline from investmentDate + pisDate + election. K-1 realization dates, January guard (auto-disables election for Jan PIS). Math.floor placedInServiceYear preserves existing gate convention. computeTimeline.test.ts (10 scenarios). 3 files changed, 556 insertions.
+
+**IMPL-110 Details:** Created xirrCalculation.ts (88 lines) — day-precise Newton-Raphson with ACT/365.25 day-count, daysBetween UTC utility. xirrCalculation.test.ts (271 lines, 10 scenarios including HDC K-1 timing and Jan/Dec PIS comparison). 2 files changed, 359 insertions.
+
+**IMPL-111 Details:** Wired computeTimeline and calculateXIRR into calculations.ts. Added timeline-aware code paths alongside legacy paths. 10 files changed, 469 insertions.
+
+**IMPL-112+113 Details:** Added investmentDate, pisDateOverride, exitExtensionMonths, electDeferCreditPeriod state to useHDCState. computeTimeline useMemo in useHDCCalculations. Election auto-reset guard for Jan PIS. All 1,841 existing tests unchanged. 3 files changed, 186 insertions.
+
+**IMPL-114 Details:** Investment Date picker, Exit Extension slider (months), PIS override toggle with OVERRIDDEN badge, §42(f)(1) election toggle (disabled for Jan PIS). Deprecated controls hidden behind computedTimeline gate. 4 files changed, 324 insertions.
+
+**IMPL-115 Details:** ComputedTimeline wired to audit export. timingGanttSheet updated with calendar dates. Calendar year labels on investor returns sheet. 6 new tests in timingGanttSheet.test.ts. 9 files changed, 380 insertions.
+
+**IMPL-116 Details:** Bulk test migration removing taxBenefitDelayMonths references, adding investmentDate to test defaults, migrating exit-month tests to computeTimeline path. 35 files changed, 44 insertions, 1,319 deletions.
+
+**IMPL-117 Details:** Production cleanup — removed deprecated timing fields from types and calculations, deleted computeHoldPeriod.ts (65 lines). Migrated computed-hold-period.test.ts to computeTimeline path. 29 files changed (across 2 commits), 205 insertions, 709 deletions.
+
+### Phase 24: First-Year LIHTC Applicable Fraction (Mar 5, 2026)
+
+| IMPL | Description | Status | Date |
+|------|-------------|--------|------|
+| IMPL-118 | First-Year LIHTC Applicable Fraction — deal type + occupancy ramp + Documented Assumptions Gate | ✅ Complete | 2026-03-05 |
+
+**IMPL-118 Details:** Added deal type (acquisition vs new construction) and occupancy ramp logic to first-year LIHTC applicable fraction in lihtcCreditCalculations.ts (255 lines of changes). Created DOCUMENTED_ASSUMPTIONS.md gate. Added section to CALCULATION_ARCHITECTURE.md. 7 files changed, 807 insertions. lihtcCreditCalculations.test.ts expanded by 453 lines with deal type + ramp scenarios.
+
 ---
 
 ## Open Issues
@@ -397,6 +505,7 @@ This caused impossible 275% IRR. Fix: Year 0 syndication proceeds are netted in 
 | IMPL-032 | Superseded by IMPL-041 |
 | IMPL-035 to 039 | Skipped |
 | IMPL-043 | Skipped |
+| IMPL-088, 089 | Reserved buffer — not used |
 
 ---
 
@@ -422,7 +531,15 @@ This caused impossible 275% IRR. Fix: Year 0 syndication proceeds are netted in 
 | Feature: Syndication Year Timing | 074-077 | 4/4 | ✅ 100% |
 | Phase 15: UI Consolidation | 078 | 1/1 | ✅ 100% |
 | Phase 16: Capital Stack Enhancement | 079-083 | 5/5 | ✅ 100% |
-| **Total** | **85 IMPLs** | **85/85** | **✅ 100%** |
+| Phase 17: B2 Save-Flow Wiring | 084 | 1/1 | ✅ 100% |
+| Phase 18: Pool Aggregation & Fund Sizing | 085 | 1/1 | ✅ 100% |
+| Phase 19: Construction Timing & Exit-Month | 086-087 | 2/2 | ✅ 100% |
+| Phase 20: Fed/State Depreciation Breakout | 090-093 | 4/4 | ✅ 100% |
+| Phase 21: Stage 5.5 Exit Tax Engine | 094-101 | 8/8 | ✅ 100% |
+| Phase 22: B3 Fit & Archetype | 102-107 | 6/6 | ✅ 100% |
+| Phase 23: Timing Architecture Rewire | 108-117 | 10/10 | ✅ 100% |
+| Phase 24: LIHTC Applicable Fraction | 118 | 1/1 | ✅ 100% |
+| **Total** | **118 IMPLs** | **118/118** | **✅ 100%** |
 
 ---
 
@@ -430,6 +547,13 @@ This caused impossible 275% IRR. Fix: Year 0 syndication proceeds are netted in 
 
 | Date | Test Count | Notes |
 |------|------------|-------|
+| 2026-03-06 | 1,817 | Post IMPL-118 (90 suites, 0 failures) |
+| 2026-03-05 | ~1,817 | Post IMPL-118 (LIHTC applicable fraction, 453 new test lines) |
+| 2026-03-04 | ~1,841 | Post IMPL-115-117 (timing exports, bulk test migration, deprecated field cleanup) |
+| 2026-03-03 | ~1,841 | Post IMPL-108-114 (timing architecture rewire, XIRR, UI controls) |
+| 2026-02-18 | ~1,583+ | Post IMPL-090-101 (depreciation breakout, exit tax engine) |
+| 2026-02-17 | 1,583 | Post IMPL-086-087+102-107 (hold period, B3 fit/sizing, 76 new tests) |
+| 2026-02-14 | ~1,300+ | Post IMPL-084-085 (B2 wiring, pool aggregation, 63 new tests) |
 | 2026-01-31 | 1,237 | Post ISS-064-068c (Construction delay, NOI Growth Rate simplification) |
 | 2026-01-30 | 1,223 | Post ISS-060-063 (Senior Debt IO, export params, test fixes) |
 | 2026-01-27 | 1,220 | Post ISS-052-055 (S-curve, DSCR fixes) |
@@ -488,6 +612,7 @@ All Claude Code prompts must reference `VALIDATION_PROTOCOL.md` and require:
 | [audits/CALCULATION-ARCHITECTURE-AUDIT-2026-01-19.md](./audits/CALCULATION-ARCHITECTURE-AUDIT-2026-01-19.md) | IMPL-065 calculation architecture audit report |
 | [audits/IMPL-065-PHASE-3B-ANALYSIS.md](./audits/IMPL-065-PHASE-3B-ANALYSIS.md) | Phase 3B detailed analysis (hook vs engine calculations) |
 | [audits/RETURNS-BUILDUP-STRIP-AUDIT-2026-01-19.md](./audits/RETURNS-BUILDUP-STRIP-AUDIT-2026-01-19.md) | Returns Buildup Strip data source audit (IMPL-067 pre-req) |
+| [DOCUMENTED_ASSUMPTIONS.md](./DOCUMENTED_ASSUMPTIONS.md) | Documented assumptions gate (IMPL-118) |
 
 ---
 
