@@ -130,10 +130,11 @@ describe('useHDCCalculations Hook - Integration Tests', () => {
      */
 
     describe('REP Investors (Track 1) - Active Income Logic', () => {
-      it('should include federal + state for REP in conforming state (exclude NIIT)', () => {
+      it('should include federal + state for REP + grouped in conforming state (exclude NIIT)', () => {
         const repConformingProps = {
           ...defaultProps,
           investorTrack: 'rep' as const,
+          groupingElection: true, // IMPL-119: REP + grouped = no NIIT
           selectedState: 'NJ', // Conforming state
           // IMPL-035: investorState drives tax calculations
           investorState: 'NJ',
@@ -146,8 +147,7 @@ describe('useHDCCalculations Hook - Integration Tests', () => {
         expect(result.current.isConformingState).toBe(true);
 
         // FORMULA: Federal + State ORDINARY INCOME rate (NO NIIT for active income)
-        // REPs offset ordinary income, so hook uses CONFORMING_STATES[state].rate
-        // NOT stateCapitalGainsRate prop
+        // REPs with grouping election offset ordinary income, so hook uses CONFORMING_STATES[state].rate
         const njOrdinaryIncomeRate = CONFORMING_STATES['NJ'].rate; // 10.75%
         const expectedRate = repConformingProps.federalTaxRate + njOrdinaryIncomeRate;
         expect(result.current.effectiveTaxRateForDepreciation).toBe(expectedRate); // 35 + 10.75 = 45.75
@@ -158,12 +158,32 @@ describe('useHDCCalculations Hook - Integration Tests', () => {
         );
       });
 
-      it('should include federal + state for REP in non-conforming state (IMPL-066: state tax always applies)', () => {
+      it('should include federal + NIIT + state for REP ungrouped (IMPL-119)', () => {
+        const repUngroupedProps = {
+          ...defaultProps,
+          investorTrack: 'rep' as const,
+          groupingElection: false, // IMPL-119: REP ungrouped = passive losses = NIIT applies
+          selectedState: 'NJ',
+          investorState: 'NJ',
+          federalTaxRate: 35,
+          stateCapitalGainsRate: 12,
+          niitRate: 3.8
+        };
+        const { result } = renderHook(() => useHDCCalculations(repUngroupedProps));
+
+        // FORMULA: Federal + NIIT + State ORDINARY INCOME rate (NIIT applies to passive losses)
+        const njOrdinaryIncomeRate = CONFORMING_STATES['NJ'].rate; // 10.75%
+        const expectedRate = repUngroupedProps.federalTaxRate + 3.8 + njOrdinaryIncomeRate;
+        expect(result.current.effectiveTaxRateForDepreciation).toBe(expectedRate); // 35 + 3.8 + 10.75 = 49.55
+      });
+
+      it('should include federal + state for REP + grouped in non-conforming state (IMPL-066: state tax always applies)', () => {
         // IMPL-066: State income tax is INDEPENDENT of OZ conformity
         // OZ conformity only affects OZ benefits (deferral, step-up), NOT state income tax
         const repNonConformingProps = {
           ...defaultProps,
           investorTrack: 'rep' as const,
+          groupingElection: true, // IMPL-119: REP + grouped = no NIIT
           selectedState: 'NY', // Non-conforming for OZ, but state tax still applies
           // IMPL-035: investorState drives tax calculations
           investorState: 'NY',
@@ -179,7 +199,7 @@ describe('useHDCCalculations Hook - Integration Tests', () => {
         const expectedRate = repNonConformingProps.federalTaxRate + nyOrdinaryRate;
         expect(result.current.effectiveTaxRateForDepreciation).toBe(expectedRate); // 35 + 10.9 = 45.9
 
-        // Verify NIIT is NOT included (REP is exempt)
+        // Verify NIIT is NOT included (REP + grouped is exempt)
         expect(result.current.effectiveTaxRateForDepreciation).toBeLessThan(
           expectedRate + repNonConformingProps.niitRate
         );
@@ -316,6 +336,7 @@ describe('useHDCCalculations Hook - Integration Tests', () => {
         const noneStateProps = {
           ...defaultProps,
           investorTrack: 'rep' as const,
+          groupingElection: true, // IMPL-119: REP + grouped = no NIIT
           selectedState: 'NONE',
           // IMPL-035: investorState drives tax calculations
           investorState: 'NONE',
@@ -332,6 +353,7 @@ describe('useHDCCalculations Hook - Integration Tests', () => {
         const customStateProps = {
           ...defaultProps,
           investorTrack: 'rep' as const,
+          groupingElection: true, // IMPL-119: REP + grouped = no NIIT
           selectedState: 'CUSTOM',
           // IMPL-035: investorState drives tax calculations
           investorState: 'CUSTOM',

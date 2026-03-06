@@ -300,34 +300,39 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     // IMPL-066: Removed isNonConforming check - OZ conformity is independent of state income tax
     // OZ conformity affects OZ benefits (deferral, step-up), NOT state income tax rates
 
-    // Check if NIIT applies (false for territories)
+    // IMPL-119: NIIT applies when (1) not a territory AND (2) depreciation offsets passive income.
+    // REP + grouped: losses are non-passive (Section 1411(c)(1)(A) exception) -> no NIIT
+    // REP ungrouped: losses remain passive -> NIIT applies
+    // Non-REP: losses are passive -> NIIT applies
     const niitApplies = doesNIITApply(investorStateForTax || '');
+    const depreciationNiitApplies = niitApplies && !(props.investorTrack === 'rep' && props.groupingElection);
+    const niitRate = depreciationNiitApplies ? NIIT_RATE : 0;
 
     // IMPL-041: Calculate TWO effective rates:
-    // 1. effectiveTaxRateForBonus - Federal + (State × Conformity Rate) for bonus depreciation
-    // 2. effectiveTaxRateForStraightLine - Federal + State (full rate) for straight-line depreciation
+    // 1. effectiveTaxRateForBonus - Federal + NIIT (if applicable) + (State x Conformity Rate)
+    // 2. effectiveTaxRateForStraightLine - Federal + NIIT (if applicable) + State (full rate)
     let effectiveTaxRateForBonus: number;
     let effectiveTaxRateForStraightLine: number;
     let effectiveTaxRateForDepreciation: number; // Keep for backward compatibility (weighted average)
 
     if (props.investorTrack === 'rep' || props.investorTrack === undefined) {
-      // Track 1: REPs - Active losses offset ordinary income (W-2)
+      // Track 1: REPs
       // IMPL-066: State income tax rate is INDEPENDENT of OZ conformity
       // Use getStateTaxRate() directly - returns topRate (ordinary income rate)
       const stateRate = getStateTaxRate(investorStateForTax);
 
+      // IMPL-119: REP + grouped -> no NIIT; REP ungrouped -> NIIT on passive losses
       // Straight-line: Full state rate (all states accept straight-line depreciation)
-      effectiveTaxRateForStraightLine = props.federalTaxRate + stateRate;
+      effectiveTaxRateForStraightLine = props.federalTaxRate + niitRate + stateRate;
 
-      // Bonus: State rate × conformity rate (NJ = 30% of state rate, CA = 0%, etc.)
-      effectiveTaxRateForBonus = props.federalTaxRate + (stateRate * bonusConformityRate);
+      // Bonus: State rate x conformity rate (NJ = 30% of state rate, CA = 0%, etc.)
+      effectiveTaxRateForBonus = props.federalTaxRate + niitRate + (stateRate * bonusConformityRate);
 
       // For backward compatibility: use weighted average based on depreciation split
       // Year 1 is mostly bonus, Years 2+ are all straight-line
       effectiveTaxRateForDepreciation = effectiveTaxRateForStraightLine; // Default to straight-line for legacy calcs
     } else {
-      // Track 2: Non-REPs - Passive losses offset passive gains
-      const niitRate = niitApplies ? NIIT_RATE : 0;
+      // Track 2: Non-REPs - Passive losses offset passive gains (NIIT always applies if not territory)
       // IMPL-066: State income tax rate is INDEPENDENT of OZ conformity
       // For passive gains, use stateCapitalGainsRate for long-term, ordinary rate for short-term
       const stateRate = props.passiveGainType === 'long-term'
@@ -337,7 +342,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       // Straight-line: Full state rate
       effectiveTaxRateForStraightLine = props.federalTaxRate + niitRate + stateRate;
 
-      // Bonus: State rate × conformity rate
+      // Bonus: State rate x conformity rate
       effectiveTaxRateForBonus = props.federalTaxRate + niitRate + (stateRate * bonusConformityRate);
 
       // For backward compatibility
@@ -377,6 +382,8 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       effectiveTaxRateForBonus,
       effectiveTaxRateForStraightLine,
       bonusConformityRate,
+      // IMPL-119: Expose for engine call
+      depreciationNiitApplies,
       totalTaxBenefit,
       hdcFee,
       netTaxBenefit,
@@ -399,6 +406,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     props.niitRate,
     props.deferredGains,
     props.investorTrack,
+    props.groupingElection,
     props.passiveGainType,
     props.ozType,
     props.ozVersion,
@@ -671,6 +679,8 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       annualPassiveIncome: props.annualPassiveIncome,
       annualPortfolioIncome: props.annualPortfolioIncome,
       groupingElection: props.groupingElection,
+      // IMPL-119: Pass computed niitApplies so engine default path + exit tax are correct
+      niitApplies: taxCalculations.depreciationNiitApplies,
       filingStatus: props.filingStatus,
       federalTaxRate: props.federalTaxRate,
       stateTaxRate: getEffectiveTaxRate(props.selectedState, false),

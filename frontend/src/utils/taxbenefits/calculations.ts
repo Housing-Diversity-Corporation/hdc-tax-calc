@@ -881,9 +881,10 @@ export const calculateFullInvestorAnalysis = (
         // IMPL-041: Apply split rates for state conformity
         // Bonus depreciation: Uses conformity-adjusted rate (e.g., NJ 30% conformity)
         // MACRS depreciation: Uses full state rate (all states accept straight-line)
-        // ISS-070T: Compute default effective rate including NIIT (matches Excel formula)
+        // ISS-070T: Compute default effective rate including NIIT when applicable
+        // IMPL-119: Gate NIIT on niitApplies (false for REP+grouped and territories)
         const federalRate = params.federalTaxRate || 37;
-        const niitRate = params.niitRate || 3.8;
+        const niitRate = (params.niitApplies !== false) ? (params.niitRate || 3.8) : 0;
         const stateRate = params.stateTaxRate || 0;
         const conformityRate = params.bonusConformityRate ?? 1;
         const defaultEffectiveRateBonus = federalRate + niitRate + (stateRate * conformityRate);
@@ -927,9 +928,10 @@ export const calculateFullInvestorAnalysis = (
         const adjustedDepreciation = (year === exitYear)
           ? annualDepreciation * macrsFraction
           : annualDepreciation;
-        // ISS-070T: Compute default effective rate including NIIT (matches Excel formula)
+        // ISS-070T: Compute default effective rate including NIIT when applicable
+        // IMPL-119: Gate NIIT on niitApplies (false for REP+grouped and territories)
         const federalRate = params.federalTaxRate || 37;
-        const niitRate = params.niitRate || 3.8;
+        const niitRate = (params.niitApplies !== false) ? (params.niitRate || 3.8) : 0;
         const stateRate = params.stateTaxRate || 0;
         const defaultEffectiveRateMACRS = federalRate + niitRate + stateRate;
         const effectiveTaxRate = paramEffectiveTaxRateForStraightLine ?? (paramEffectiveTaxRate > 0 ? paramEffectiveTaxRate : defaultEffectiveRateMACRS);
@@ -1529,9 +1531,10 @@ export const calculateFullInvestorAnalysis = (
         const year1MACRS = (monthsInYear1 / 12) * annualMACRS;
 
         // IMPL-041: Apply split rates for state conformity in advance financing override
-        // ISS-070T: Compute default effective rate including NIIT (matches Excel formula)
+        // ISS-070T: Compute default effective rate including NIIT when applicable
+        // IMPL-119: Gate NIIT on niitApplies (false for REP+grouped and territories)
         const federalRate = params.federalTaxRate || 37;
-        const niitRate = params.niitRate || 3.8;
+        const niitRate = (params.niitApplies !== false) ? (params.niitRate || 3.8) : 0;
         const stateRate = params.stateTaxRate || 0;
         const conformityRate = params.bonusConformityRate ?? 1;
         const defaultEffectiveRateBonus = federalRate + niitRate + (stateRate * conformityRate);
@@ -2357,10 +2360,15 @@ export const calculateFullInvestorAnalysis = (
     // IMPL-094/095: Single calculateExitTax() invocation — all consumers read from this result
     const investorStateCode = params.selectedState || params.investorState || 'NY';
     const niitApplies = params.niitApplies !== undefined ? params.niitApplies : true;
+    // IMPL-094/095: Compute residual appreciation gain using adjusted basis (not raw equity)
+    const _exitAdjustedBasis = Math.max(0, investorEquity - (depreciationSchedule.cumulative1245 + depreciationSchedule.cumulative1250));
+    const _exitTotalGain = Math.max(0, exitProceeds - _exitAdjustedBasis);
+    const _exitResidualGain = Math.max(0, _exitTotalGain - depreciationSchedule.cumulative1245 - depreciationSchedule.cumulative1250);
+
     const exitTaxAnalysis = calculateExitTax({
       cumulative1245: depreciationSchedule.cumulative1245,
       cumulative1250: depreciationSchedule.cumulative1250,
-      appreciationGain: Math.max(0, exitProceeds - investorEquity),
+      appreciationGain: _exitResidualGain,
       federalOrdinaryRate: (params.federalTaxRate || 37) / 100,
       federalCapGainsRate: (params.ltCapitalGainsRate || 20) / 100,
       niitRate: (params.niitRate || 3.8) / 100,
@@ -2393,11 +2401,18 @@ export const calculateFullInvestorAnalysis = (
       adjustedIRR = calculateIRR(irrCashFlows, adjustedInvestment, totalInvestmentYears);
     }
 
+    // Sync ozExitAppreciation to the engine's remainingGainTax (single source of truth)
+    const engineOzExitAppreciation = (params.ozEnabled && totalInvestmentYears >= 10)
+      ? exitTaxAnalysis.remainingGainTax
+      : 0;
+
     const results: InvestorAnalysisResults = {
       ...baseResults,
       depreciationSchedule,
       adjustedBasis,
       exitTaxAnalysis, // IMPL-095: Channel 2 — post-engine consumers
+      // Override ozExitAppreciation with engine-derived value
+      ozExitAppreciation: engineOzExitAppreciation,
       // IMPL-099: Override IRR/multiple with exit-tax-adjusted values
       totalReturns: adjustedTotalReturns,
       irr: adjustedIRR,
@@ -2435,7 +2450,7 @@ export const calculateFullInvestorAnalysis = (
       // IMPL-095: Build exit event with character-split data from exitTaxAnalysis
       const cumulativeDepreciation = depreciationSchedule.totalDepreciation;
       const recaptureExposure = exitTaxAnalysis.sec1245Recapture + exitTaxAnalysis.sec1250Recapture;
-      const appreciationGain = Math.max(0, exitProceeds - investorEquity);
+      const appreciationGain = _exitResidualGain;
 
       const exitEvent: ExitEvent = {
         year: exitYear,

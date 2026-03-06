@@ -37,15 +37,15 @@ export function buildTaxBenefitsSheet(
   ws['A2'] = { t: 's', v: '' };
 
   // Tax Rate Section
-  // ISS-070T: Excel formula now uses IsREP flag to conditionally include NIIT
-  // REP investors: Federal + (State × conformity) -- NO NIIT (depreciation offsets W-2 income)
-  // Non-REP investors: Federal + NIIT + (State × conformity) -- WITH NIIT (passive income tax)
+  // IMPL-119: Excel formula uses IsREP + GroupingElection to conditionally include NIIT
+  // REP + grouped: Federal + (State x conformity) -- NO NIIT (Section 1411(c)(1)(A) exception)
+  // REP ungrouped / Non-REP: Federal + NIIT + (State x conformity) -- WITH NIIT (passive income)
   ws['A3'] = { t: 's', v: 'Effective Tax Rate (Bonus)' };
-  ws['B3'] = { t: 'n', v: effectiveForBonus, f: 'IF(IsREP=1,FederalTaxRate+StateTaxRate*StateConforms,FederalTaxRate+NIITRate+StateTaxRate*StateConforms)' } as FormulaCell;
+  ws['B3'] = { t: 'n', v: effectiveForBonus, f: 'IF(AND(IsREP=1,GroupingElection=1),FederalTaxRate+StateTaxRate*StateConforms,FederalTaxRate+NIITRate+StateTaxRate*StateConforms)' } as FormulaCell;
   namedRanges.push({ name: 'EffectiveTaxRateBonus', ref: 'Tax_Benefits!$B$3' });
 
   ws['A4'] = { t: 's', v: 'Effective Tax Rate (MACRS)' };
-  ws['B4'] = { t: 'n', v: effectiveForMACRS, f: 'IF(IsREP=1,FederalTaxRate+StateTaxRate,FederalTaxRate+NIITRate+StateTaxRate)' } as FormulaCell;
+  ws['B4'] = { t: 'n', v: effectiveForMACRS, f: 'IF(AND(IsREP=1,GroupingElection=1),FederalTaxRate+StateTaxRate,FederalTaxRate+NIITRate+StateTaxRate)' } as FormulaCell;
   namedRanges.push({ name: 'EffectiveTaxRateMACRS', ref: 'Tax_Benefits!$B$4' });
 
   ws['A5'] = { t: 's', v: '' };

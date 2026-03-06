@@ -315,6 +315,46 @@ ExitEvent (engine)      results.exitTaxAnalysis (consumers)
 
 ---
 
+## NIIT-Aware Depreciation Benefit Calculation (IMPL-119)
+
+Depreciation tax savings now conditionally include NIIT (3.8%) based on investor type and grouping election status.
+
+### NIIT Determination Matrix
+
+| Investor Type | Grouping Election | NIIT Applied | Rationale |
+|---------------|-------------------|--------------|-----------|
+| REP + grouped | §469(c)(7) = true | **No** | Section 1411(c)(1)(A) — active income exception |
+| REP ungrouped | §469(c)(7) = false | **Yes** | Passive losses offset passive income |
+| Non-REP | N/A | **Yes** | All rental income is passive |
+| Territory (PR/GU/VI/AS/MP) | Any | **No** | §1411 does not apply to territories |
+
+### Key Formula
+
+```
+depreciationNiitApplies = doesNIITApply(state) && !(investorTrack === 'rep' && groupingElection)
+niitRate = depreciationNiitApplies ? 3.8 : 0
+effectiveRateBonus = federalRate + niitRate + (stateRate × conformity)
+effectiveRateMACRS = federalRate + niitRate + stateRate
+```
+
+### Files
+
+| File | Change |
+|------|--------|
+| `hooks/taxbenefits/useHDCCalculations.ts` | Unified NIIT logic via `depreciationNiitApplies`, passed to engine |
+| `utils/taxbenefits/calculations.ts` | 3 default-rate locations gated on `params.niitApplies` |
+| `utils/taxbenefits/auditExport/sheets/taxBenefitsSheet.ts` | Excel formulas: `IF(AND(IsREP=1,GroupingElection=1),...)` |
+| `utils/taxbenefits/auditExport/sheets/inputsSheet.ts` | Added `GroupingElection` named range |
+| `utils/taxbenefits/auditExport/sheets/validationSheet.ts` | Default rate gated on `niitApplies` |
+
+### Tests
+
+| File | Tests | Coverage |
+|------|-------|----------|
+| `utils/taxbenefits/__tests__/features/niit-depreciation.test.ts` | 6 | REP+grouped, passive, NJ+NIIT, NJ no-NIIT, territory, engine default path |
+
+---
+
 ## Documented Assumptions Gate (IMPL-118)
 
 Before implementing any IMPL that touches LIHTC credit calculations, deal type, applicable fraction, or occupancy ramp, read `docs/DOCUMENTED_ASSUMPTIONS.md` in full and confirm the implementation does not violate any documented assumption.
@@ -334,3 +374,4 @@ Before implementing any IMPL that touches LIHTC credit calculations, deal type, 
 | 2026-02-18 | Added Exit Tax Engine — Character-Split Recapture | IMPL-094 to IMPL-101 |
 | 2026-03-02 | Timing Clock Precision — Hold Period vs Model Duration Split | Timing Handoff v3.0 |
 | 2026-03-04 | Added Documented Assumptions Gate | IMPL-118 |
+| 2026-03-06 | Added NIIT-Aware Depreciation Benefit Calculation | IMPL-119 |

@@ -258,10 +258,11 @@ function extractPlatformValues(
   // Non-REP investors: WITH NIIT (3.8% Net Investment Income Tax)
   // These rates are computed by useHDCCalculations based on investor track
   const federalRate = params.federalTaxRate || 37;
-  const niitRate = params.niitRate || 3.8;
+  // IMPL-119: Gate NIIT on niitApplies (false for REP+grouped and territories)
+  const niitRate = (params.niitApplies !== false) ? (params.niitRate || 3.8) : 0;
   const stateRate = params.stateTaxRate || 0;
   const conformity = params.bonusConformityRate ?? 1;
-  // Use track-aware rate from params if available, otherwise compute default (with NIIT for backward compat)
+  // Use track-aware rate from params if available, otherwise compute default
   const defaultRateBonus = federalRate + niitRate + (stateRate * conformity);
   const defaultRateMACRS = federalRate + niitRate + stateRate;
   const effectiveRateBonus = (params.effectiveTaxRateForBonus ?? defaultRateBonus) / 100;

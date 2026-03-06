@@ -9,7 +9,7 @@
 
 | Version | Date | Changes |
 |---------|------|---------|
-| **4.0** | **2026-03-06** | **Major update: Timing architecture + XIRR + LIHTC fraction. Total: 118 IMPLs through IMPL-118. Test count: 1,817 (90 suites, 0 failures). Timing architecture rewire deployed (IMPL-108-117): computeTimeline() engine, XIRR with Newton-Raphson, investment date UI, exit extension slider, 42(f)(1) election toggle, bulk test migration removing deprecated timing fields. IMPL-118: First-year LIHTC applicable fraction with documented assumptions gate. 8 unpushed commits identified and pushed. IMPLEMENTATION_TRACKER.md updated to v10.0 (was stale at v9.0/IMPL-083).** |
+| **4.0** | **2026-03-06** | **Major update: Timing architecture + XIRR + LIHTC fraction + NIIT depreciation. Total: 119 IMPLs through IMPL-119. Test count: 1,824 (91 suites, 0 failures). Timing architecture rewire deployed (IMPL-108-117): computeTimeline() engine, XIRR with Newton-Raphson, investment date UI, exit extension slider, 42(f)(1) election toggle, bulk test migration removing deprecated timing fields. IMPL-118: First-year LIHTC applicable fraction with documented assumptions gate. IMPL-119: NIIT-aware depreciation — gate on niitApplies for REP+grouped vs passive. 8 unpushed commits identified and pushed. IMPLEMENTATION_TRACKER.md updated to v10.0 (was stale at v9.0/IMPL-083).** |
 
 ---
 
@@ -28,6 +28,7 @@
 | IMPL-116 | Bulk test migration -- remove taxBenefitDelayMonths, add investmentDate to defaults | Deployed | 2026-03-04 |
 | IMPL-117 | Production cleanup -- remove deprecated timing fields, delete computeHoldPeriod.ts | Deployed | 2026-03-04 |
 | IMPL-118 | First-Year LIHTC Applicable Fraction -- deal type + occupancy ramp + Documented Assumptions Gate | Deployed | 2026-03-05 |
+| IMPL-119 | NIIT-Aware Depreciation Benefit -- gate depreciation effective rate on niitApplies; 37%+3.8% passive, 37% REP+grouped | Deployed | 2026-03-06 |
 
 ---
 
@@ -46,7 +47,8 @@
 | IMPL-102-107 | Phase B3 Investor Fit & Archetype Classification + Sizing | Deployed (2026-02-17) |
 | IMPL-108-117 | Timing Architecture Rewire | Deployed (2026-03-03 to 2026-03-04) |
 | IMPL-118 | First-Year LIHTC Applicable Fraction | Deployed (2026-03-05) |
-| IMPL-119+ | *Unassigned -- available for future work* | -- |
+| IMPL-119 | NIIT-Aware Depreciation Benefit Calculation | Deployed (2026-03-06) |
+| IMPL-120+ | *Unassigned -- available for future work* | -- |
 
 ---
 
@@ -62,6 +64,7 @@
 | Investor Fit & Archetype Classification | v1.0 | Phase B3 | IMPL-102-107 | 2026-02-17 | cae4566 |
 | Timing Architecture Rewire | v1.0 | Timing | IMPL-108-117 | 2026-03-03 to 2026-03-04 | 6d6897c-94bc376 |
 | First-Year LIHTC Applicable Fraction | v1.0 | LIHTC | IMPL-118 | 2026-03-05 | fff6177, 18da3e2 |
+| NIIT-Aware Depreciation Benefit | v1.0 | Tax Engine | IMPL-119 | 2026-03-06 | TBD (this commit) |
 
 ---
 
@@ -69,7 +72,7 @@
 
 | Date | Spec Version | Tracker Version | Registry Version | Notes |
 |------|-------------|-----------------|-----------------|-------|
-| **2026-03-06** | **v6.0** | **v10.0** | **v4.0** | **35 IMPLs added (084-118). 1,817 tests (90 suites, 0 failures). Timing architecture complete. XIRR deployed. LIHTC applicable fraction deployed. Both tracker and registry current.** |
+| **2026-03-06** | **v6.0** | **v10.0** | **v4.0** | **36 IMPLs added (084-119). 1,824 tests (91 suites, 0 failures). Timing architecture complete. XIRR deployed. LIHTC applicable fraction deployed. NIIT-aware depreciation deployed. Both tracker and registry current.** |
 
 ---
 
@@ -115,17 +118,22 @@
 **IMPLs:** IMPL-118 (commits fff6177, 18da3e2, 2026-03-05)
 **Notes:** Deal type (acquisition vs new construction) and occupancy ramp logic in lihtcCreditCalculations.ts. DOCUMENTED_ASSUMPTIONS.md gate created. Section added to CALCULATION_ARCHITECTURE.md. 7 files, 807 insertions. lihtcCreditCalculations.test.ts expanded by 453 lines.
 
+### NIIT-Aware Depreciation Benefit (IMPL-119)
+**Status:** Deployed
+**IMPLs:** IMPL-119 (2026-03-06)
+**Notes:** Gate depreciation effective rate on niitApplies: REP+grouped (§469(c)(7)) = 37% only (Section 1411(c)(1)(A) active income exception), REP ungrouped / non-REP = 37%+3.8% (passive income), territories = no NIIT. calculations.ts (3 default-rate locations), useHDCCalculations.ts (unified depreciationNiitApplies logic), taxBenefitsSheet.ts (Excel IF(AND(IsREP,GroupingElection)) formulas), inputsSheet.ts (GroupingElection named range), validationSheet.ts. 7 files changed. niit-depreciation.test.ts with 6 scenarios. 1,824 tests pass.
+
 ---
 
 ## 3g. Appendix Update
 
 **Current codebase baseline (2026-03-06):**
 - Branch: main
-- Latest IMPL: IMPL-118
-- Latest commit: 18da3e2
-- Test suites: 90 passing
-- Tests: 1,817 passing, 0 failing
-- Unpushed commits: 8 (to be pushed with this update)
+- Latest IMPL: IMPL-119
+- Latest commit: TBD (this commit)
+- Test suites: 91 passing
+- Tests: 1,824 passing, 0 failing
+- Unpushed commits: 0
 
 **Next implementation priorities:**
 1. Push unpushed commits to origin/main
@@ -161,4 +169,5 @@
 | IMPL-116 | c992327 | 2026-03-04 | 35 | 44 | 1,319 |
 | IMPL-117 | 94bc376, 7c1cfb1 | 2026-03-04 | 29 | 205 | 709 |
 | IMPL-118 | fff6177, 18da3e2 | 2026-03-05 | 7 | 807 | 57 |
-| **Totals (084-118)** | **18 commits** | **Feb 14 - Mar 5** | **— ** | **~12,934** | **~2,909** |
+| IMPL-119 | TBD (this commit) | 2026-03-06 | 7 | ~126 | ~60 |
+| **Totals (084-119)** | **19 commits** | **Feb 14 - Mar 6** | **— ** | **~13,060** | **~2,969** |

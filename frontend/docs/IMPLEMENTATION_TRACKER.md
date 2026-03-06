@@ -479,8 +479,11 @@ This caused impossible 275% IRR. Fix: Year 0 syndication proceeds are netted in 
 | IMPL | Description | Status | Date |
 |------|-------------|--------|------|
 | IMPL-118 | First-Year LIHTC Applicable Fraction — deal type + occupancy ramp + Documented Assumptions Gate | ✅ Complete | 2026-03-05 |
+| IMPL-119 | NIIT-Aware Depreciation Benefit Calculation | ✅ Complete | 2026-03-06 |
 
 **IMPL-118 Details:** Added deal type (acquisition vs new construction) and occupancy ramp logic to first-year LIHTC applicable fraction in lihtcCreditCalculations.ts (255 lines of changes). Created DOCUMENTED_ASSUMPTIONS.md gate. Added section to CALCULATION_ARCHITECTURE.md. 7 files changed, 807 insertions. lihtcCreditCalculations.test.ts expanded by 453 lines with deal type + ramp scenarios.
+
+**IMPL-119 Details:** Fixed depreciation tax savings to conditionally include NIIT (3.8%) based on investor type. REP + grouped (§469(c)(7) grouping election) = no NIIT (Section 1411(c)(1)(A) active income exception). REP ungrouped / non-REP = NIIT applies (passive income). Territories (PR/GU/VI/AS/MP) = no NIIT regardless. Updated useHDCCalculations.ts hook (unified NIIT logic via `depreciationNiitApplies`), calculations.ts engine (3 default-rate locations gated on `niitApplies`), taxBenefitsSheet.ts Excel formulas (IF(AND(IsREP=1,GroupingElection=1),...)), inputsSheet.ts (added GroupingElection named range), validationSheet.ts. 7 files changed. 6 new feature tests + 5 existing test updates. 1,824 tests pass, 0 regressions.
 
 ---
 
@@ -547,6 +550,7 @@ This caused impossible 275% IRR. Fix: Year 0 syndication proceeds are netted in 
 
 | Date | Test Count | Notes |
 |------|------------|-------|
+| 2026-03-06 | 1,824 | Post IMPL-119 (91 suites, 6 new NIIT tests, 0 failures) |
 | 2026-03-06 | 1,817 | Post IMPL-118 (90 suites, 0 failures) |
 | 2026-03-05 | ~1,817 | Post IMPL-118 (LIHTC applicable fraction, 453 new test lines) |
 | 2026-03-04 | ~1,841 | Post IMPL-115-117 (timing exports, bulk test migration, deprecated field cleanup) |

@@ -158,6 +158,7 @@ export function buildInputsSheet(params: CalculationParams, rawTimeline?: Comput
     { label: 'State Conforms to Federal', rangeName: 'StateConforms', value: params.bonusConformityRate === 1 ? 1 : 0, units: '0/1' },
     { label: 'Investor Track', rangeName: 'InvestorTrack', value: params.investorTrack || 'rep', units: '' },
     { label: 'Is REP', rangeName: 'IsREP', value: params.investorTrack === 'rep' ? 1 : 0, units: '0/1' },
+    { label: 'Grouping Election', rangeName: 'GroupingElection', value: params.groupingElection ? 1 : 0, units: '0/1' },
     { label: 'Passive Gain Type', rangeName: 'PassiveGainType', value: params.passiveGainType || 'short-term', units: '' },
     { label: 'Investor Type', rangeName: 'InvestorType', value: params.investorType || 'ordinary', units: '' },
 
