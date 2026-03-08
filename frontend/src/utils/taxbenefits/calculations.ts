@@ -2096,9 +2096,15 @@ export const calculateFullInvestorAnalysis = (
     ozDeferralNPV = ozDeferredGains * capitalGainsTaxRateDecimal * npvFactor;
 
     // C) Exit Appreciation: Tax-free appreciation for 10+ year holds
-    // Use investor's actual exit proceeds vs their investment (not total property value)
-    const investorAppreciation = Math.max(0, exitProceeds - investorEquity);
-    ozExitAppreciation = investorAppreciation * capitalGainsTaxRateDecimal;
+    // IMPL-120: Use adjusted basis (equity minus depreciation) to compute residual gain,
+    // matching the engine's calculateExitTax() remainingGainTax calculation
+    const _ozDepBasis = paramProjectCost + paramPredevelopmentCosts - paramLandValue;
+    const _ozCum1245 = _ozDepBasis * (paramYearOneDepreciationPct / 100);
+    const _ozCum1250 = _ozDepBasis - _ozCum1245;
+    const _ozAdjBasis = Math.max(0, investorEquity - (_ozCum1245 + _ozCum1250));
+    const _ozTotalGain = Math.max(0, exitProceeds - _ozAdjBasis);
+    const _ozResidualGain = Math.max(0, _ozTotalGain - _ozCum1245 - _ozCum1250);
+    ozExitAppreciation = _ozResidualGain * capitalGainsTaxRateDecimal;
   }
 
   // IMPL-048: Sum up annual recapture avoided from cash flows
@@ -2382,6 +2388,13 @@ export const calculateFullInvestorAnalysis = (
     // IMPL-099: Subtract netExitTax from IRR terminal cash flow and totalReturns
     // For OZ 10+ year holds, netExitTax = $0 (no change)
     const netExitTaxAmount = exitTaxAnalysis.netExitTax;
+
+    // Sync ozExitAppreciation to the engine's remainingGainTax (single source of truth)
+    // Computed before IRR recalc so the terminal cash flow uses the engine-derived value
+    const engineOzExitAppreciation = (params.ozEnabled && totalInvestmentYears >= 10)
+      ? exitTaxAnalysis.remainingGainTax
+      : 0;
+
     let adjustedTotalReturns = baseResults.totalReturns;
     let adjustedIRR = baseResults.irr;
     let adjustedMultiple = baseResults.multiple;
@@ -2396,15 +2409,10 @@ export const calculateFullInvestorAnalysis = (
       // Recompute IRR with exit tax subtracted from terminal cash flow
       const irrCashFlows = baseResults.investorCashFlows.map(cf => cf.totalCashFlow);
       irrCashFlows[irrCashFlows.length - 1] += baseResults.exitProceeds + (baseResults.investorSubDebtAtExit || 0) +
-        (baseResults.remainingLIHTCCredits || 0) + (baseResults.ozDeferralNPV || 0) + (baseResults.ozExitAppreciation || 0) -
+        (baseResults.remainingLIHTCCredits || 0) + (baseResults.ozDeferralNPV || 0) + (engineOzExitAppreciation || 0) -
         netExitTaxAmount;
       adjustedIRR = calculateIRR(irrCashFlows, adjustedInvestment, totalInvestmentYears);
     }
-
-    // Sync ozExitAppreciation to the engine's remainingGainTax (single source of truth)
-    const engineOzExitAppreciation = (params.ozEnabled && totalInvestmentYears >= 10)
-      ? exitTaxAnalysis.remainingGainTax
-      : 0;
 
     const results: InvestorAnalysisResults = {
       ...baseResults,

@@ -29,6 +29,7 @@
 | IMPL-117 | Production cleanup -- remove deprecated timing fields, delete computeHoldPeriod.ts | Deployed | 2026-03-04 |
 | IMPL-118 | First-Year LIHTC Applicable Fraction -- deal type + occupancy ramp + Documented Assumptions Gate | Deployed | 2026-03-05 |
 | IMPL-119 | NIIT-Aware Depreciation Benefit -- gate depreciation effective rate on niitApplies; 37%+3.8% passive, 37% REP+grouped | Deployed | 2026-03-06 |
+| IMPL-120 | Exit Tax appreciationGain & ozExitAppreciation Sync | Complete | 2026-03-08 | calculations.ts | Fix ozExitAppreciation to use adjusted-basis residual gain logic matching calculateExitTax(); sync IRR terminal cash flow to engine-derived value. 1,824 tests pass. |
 
 ---
 
@@ -48,7 +49,8 @@
 | IMPL-108-117 | Timing Architecture Rewire | Deployed (2026-03-03 to 2026-03-04) |
 | IMPL-118 | First-Year LIHTC Applicable Fraction | Deployed (2026-03-05) |
 | IMPL-119 | NIIT-Aware Depreciation Benefit Calculation | Deployed (2026-03-06) |
-| IMPL-120+ | *Unassigned -- available for future work* | -- |
+| IMPL-120 | Exit Tax appreciationGain & ozExitAppreciation Sync | Deployed (2026-03-08) |
+| IMPL-121+ | *Unassigned -- available for future work* | -- |
 
 ---
 
@@ -64,7 +66,8 @@
 | Investor Fit & Archetype Classification | v1.0 | Phase B3 | IMPL-102-107 | 2026-02-17 | cae4566 |
 | Timing Architecture Rewire | v1.0 | Timing | IMPL-108-117 | 2026-03-03 to 2026-03-04 | 6d6897c-94bc376 |
 | First-Year LIHTC Applicable Fraction | v1.0 | LIHTC | IMPL-118 | 2026-03-05 | fff6177, 18da3e2 |
-| NIIT-Aware Depreciation Benefit | v1.0 | Tax Engine | IMPL-119 | 2026-03-06 | TBD (this commit) |
+| NIIT-Aware Depreciation Benefit | v1.0 | Tax Engine | IMPL-119 | 2026-03-06 | ae1a519 |
+| Exit Tax appreciationGain Sync | v1.0 | Tax Engine | IMPL-120 | 2026-03-08 | TBD (this commit) |
 
 ---
 
@@ -72,7 +75,7 @@
 
 | Date | Spec Version | Tracker Version | Registry Version | Notes |
 |------|-------------|-----------------|-----------------|-------|
-| **2026-03-06** | **v6.0** | **v10.0** | **v4.0** | **36 IMPLs added (084-119). 1,824 tests (91 suites, 0 failures). Timing architecture complete. XIRR deployed. LIHTC applicable fraction deployed. NIIT-aware depreciation deployed. Both tracker and registry current.** |
+| **2026-03-08** | **v6.0** | **v10.0** | **v4.0** | **37 IMPLs added (084-120). 1,824 tests (91 suites, 0 failures). Timing architecture complete. XIRR deployed. LIHTC applicable fraction deployed. NIIT-aware depreciation deployed. Exit tax ozExitAppreciation synced to engine. Both tracker and registry current.** |
 
 ---
 
@@ -123,13 +126,18 @@
 **IMPLs:** IMPL-119 (2026-03-06)
 **Notes:** Gate depreciation effective rate on niitApplies: REP+grouped (§469(c)(7)) = 37% only (Section 1411(c)(1)(A) active income exception), REP ungrouped / non-REP = 37%+3.8% (passive income), territories = no NIIT. calculations.ts (3 default-rate locations), useHDCCalculations.ts (unified depreciationNiitApplies logic), taxBenefitsSheet.ts (Excel IF(AND(IsREP,GroupingElection)) formulas), inputsSheet.ts (GroupingElection named range), validationSheet.ts. 7 files changed. niit-depreciation.test.ts with 6 scenarios. 1,824 tests pass.
 
+### Exit Tax appreciationGain & ozExitAppreciation Sync (IMPL-120)
+**Status:** Deployed
+**IMPLs:** IMPL-120 (2026-03-08)
+**Notes:** Fixed ozExitAppreciation to use adjusted-basis residual gain logic matching calculateExitTax(). Previously used raw `exitProceeds - investorEquity` which overstated appreciation by ignoring depreciation's basis reduction. Now computes depreciable basis inline (`projectCost + predevelopmentCosts - landValue`), splits §1245/§1250, derives adjusted basis and residual gain. Moved `engineOzExitAppreciation` computation before IRR recalc block so terminal cash flow uses engine-derived value instead of stale `baseResults.ozExitAppreciation`. DoD: `ozExitAppreciation == remainingGainTax` within $0.001M. 1 file changed (calculations.ts). 1,824 tests pass.
+
 ---
 
 ## 3g. Appendix Update
 
 **Current codebase baseline (2026-03-06):**
 - Branch: main
-- Latest IMPL: IMPL-119
+- Latest IMPL: IMPL-120
 - Latest commit: TBD (this commit)
 - Test suites: 91 passing
 - Tests: 1,824 passing, 0 failing
@@ -169,5 +177,6 @@
 | IMPL-116 | c992327 | 2026-03-04 | 35 | 44 | 1,319 |
 | IMPL-117 | 94bc376, 7c1cfb1 | 2026-03-04 | 29 | 205 | 709 |
 | IMPL-118 | fff6177, 18da3e2 | 2026-03-05 | 7 | 807 | 57 |
-| IMPL-119 | TBD (this commit) | 2026-03-06 | 7 | ~126 | ~60 |
-| **Totals (084-119)** | **19 commits** | **Feb 14 - Mar 6** | **— ** | **~13,060** | **~2,969** |
+| IMPL-119 | ae1a519 | 2026-03-06 | 7 | ~126 | ~60 |
+| IMPL-120 | TBD (this commit) | 2026-03-08 | 1 | ~19 | ~10 |
+| **Totals (084-120)** | **20 commits** | **Feb 14 - Mar 8** | **— ** | **~13,079** | **~2,979** |
