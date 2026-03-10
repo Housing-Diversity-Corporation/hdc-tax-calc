@@ -1,0 +1,76 @@
+============================================================
+TAX EFFICIENCY MAPPING — SUMMARY REPORT
+Deal: Trace 260303 65M | Equity: $16.05M
+Date: 2026-03-09T21:09:00.719Z
+============================================================
+
+1. Total combinations tested: 1,064,448
+   Errors: 0
+   Runtime: 8.3s (sizing: 1.8s, sweep: 6.6s)
+
+2. Archetype distribution:
+   B: 863,632 (81.1%)
+   C: 110,880 (10.4%)
+   A: 67,760 (6.4%)
+   E: 22,176 (2.1%)
+
+3. Binding constraint distribution:
+   None — full utilization achievable: 1,005,312 (94.4%)
+   §38(c) General Business Credit Floor: 36,960 (3.5%)
+   §469(a) No Passive Income: 22,176 (2.1%)
+
+4. High utilization (>95%): 403,984 (38.0%)
+5. Low utilization (<50%):  104,048 (9.8%)
+
+6. Average optimal investment by income level:
+   $250K income → $3014K optimal
+   $500K income → $2258K optimal
+   $750K income → $2213K optimal
+   $1000K income → $2196K optimal
+   $1500K income → $2298K optimal
+   $2000K income → $2452K optimal
+   $3000K income → $2690K optimal
+   $5000K income → $3218K optimal
+   $10000K income → $4275K optimal
+   $25000K income → $5212K optimal
+   $50000K income → $5314K optimal
+   $100000K income → $5314K optimal
+
+7. Average effective Roth conversion rate by income level:
+   $250K income → 8.5% effective rate
+   $500K income → 14.9% effective rate
+   $750K income → 20.3% effective rate
+   $1000K income → 22.9% effective rate
+   $1500K income → 27.3% effective rate
+   $2000K income → 29.1% effective rate
+   $3000K income → 33.0% effective rate
+   $5000K income → 34.7% effective rate
+   $10000K income → 37.0% effective rate
+   $25000K income → 37.0% effective rate
+   $50000K income → 37.0% effective rate
+   $100000K income → 37.0% effective rate
+
+8. Top 10 states by utilization (REP grouped, $1M income, $500K invest, MFJ):
+   AL: 100.0%
+   AK: 100.0%
+   AZ: 100.0%
+   AR: 100.0%
+   CA: 100.0%
+   CO: 100.0%
+   CT: 100.0%
+   DE: 100.0%
+   FL: 100.0%
+   GA: 100.0%
+
+9. Bottom 10 states by utilization (same reference):
+   AS: 100.0%
+   MP: 100.0%
+   GU: 100.0%
+   VI: 100.0%
+   PR: 100.0%
+   DC: 100.0%
+   WY: 100.0%
+   WI: 100.0%
+   WV: 100.0%
+   WA: 100.0%
+
