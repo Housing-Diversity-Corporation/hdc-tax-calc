@@ -112,7 +112,7 @@ const LIHTCStructureSection: React.FC<LIHTCStructureSectionProps> = ({
     try {
       const result = calculateLIHTCSchedule({
         eligibleBasis: lihtcEligibleBasis,
-        applicableFraction: applicableFraction / 100,
+        stabilizedApplicableFraction: applicableFraction / 100,
         ddaQctBoost,
         pisMonth: placedInServiceMonth,
         creditRate,

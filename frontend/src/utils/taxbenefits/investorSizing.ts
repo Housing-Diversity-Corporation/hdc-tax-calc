@@ -90,6 +90,7 @@ export function computeOptimalSizing(
       maximumEffective: 0,
       utilizationCurve: [],
       constraintBinding: 'None — deal has no equity',
+      peakType: 'plateau',
     };
   }
 
