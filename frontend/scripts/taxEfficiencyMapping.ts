@@ -543,13 +543,13 @@ async function main() {
 
               for (const rothConversion of rothList) {
                 try {
+                  // IMPL-120: Use rothAnnualConversion field — engine handles Years 1-10 only
                   let currentProfile = profile;
                   if (rothConversion > 0) {
-                    // Roth adds ordinary income for Years 1-10
-                    // We approximate by adding annual Roth to ordinary income
                     currentProfile = {
                       ...profile,
                       annualOrdinaryIncome: profile.annualOrdinaryIncome + rothConversion,
+                      rothAnnualConversion: rothConversion,
                     };
                   }
 

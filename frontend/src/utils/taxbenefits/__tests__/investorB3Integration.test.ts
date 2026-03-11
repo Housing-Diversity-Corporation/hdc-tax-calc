@@ -295,9 +295,9 @@ describe('B3 Sizing vs Fund Sizing coexistence', () => {
     expect(fundResult.optimalCommitment).toBeGreaterThan(0);
     expect(investorResult.optimalCommitment).toBeGreaterThan(0);
 
-    // Types don't collide
+    // Types don't collide — both now have peakType (IMPL-120)
     expect('peakType' in fundResult).toBe(true);
-    expect('peakType' in investorResult).toBe(false);
+    expect('peakType' in investorResult).toBe(true);
     expect('constraintBinding' in investorResult).toBe(true);
     expect('constraintBinding' in fundResult).toBe(false);
   });

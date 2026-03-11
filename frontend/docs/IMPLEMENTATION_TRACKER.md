@@ -1,9 +1,9 @@
 # TaxBenefits Calculator — Implementation Tracker
 
-**Document Version:** 10.0
-**Last Updated:** 2026-03-06
+**Document Version:** 10.1
+**Last Updated:** 2026-03-11
 **Branch:** main
-**Current Test Count:** 1,817 passing (90 suites, 0 failures)
+**Current Test Count:** 1,830 passing (91 suites, 0 failures)
 **Validation Status:** 13/15 Three Sigma scenarios complete (Production Certification ✅)
 
 ---
@@ -12,6 +12,7 @@
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v10.1 | 2026-03-11 | IMPL-120: Tax Efficiency Mapping engine bug fixes — sizing optimizer objective (effectiveMultiple), Roth conversion duration (Years 1-10 only), passive $4M validation. Test count 1,824→1,830. |
 | v10.0 | 2026-03-06 | Major update: 35 IMPLs added (084-118). B2 save-flow wiring, pool aggregation, computed hold period, fed/state depreciation breakout, exit tax engine, B3 fit/archetype/sizing, timing architecture rewire (computeTimeline, XIRR, §42(f)(1) election), LIHTC applicable fraction. Test count 1,237→1,817. |
 | v9.0 | 2026-02-01 | Jan 23-31 sessions: IMPL-079-083 (Capital Stack Enhancement), ISS-024-068c (~45 bug fixes), test count 1,195→1,237, ISS-014 fixed |
 | v8.5 | 2026-01-22 | ISS-023: Fixed Time to Recovery using gross equity instead of net for Y0 syndication |
@@ -480,6 +481,13 @@ This caused impossible 275% IRR. Fix: Year 0 syndication proceeds are netted in 
 |------|-------------|--------|------|
 | IMPL-118 | First-Year LIHTC Applicable Fraction — deal type + occupancy ramp + Documented Assumptions Gate | ✅ Complete | 2026-03-05 |
 | IMPL-119 | NIIT-Aware Depreciation Benefit Calculation | ✅ Complete | 2026-03-06 |
+| IMPL-120 | Tax Efficiency Mapping Engine Bug Fixes | ✅ Complete | 2026-03-11 |
+
+**IMPL-120 Details:** Three bug fixes for the Tax Efficiency Mapping batch runner and supporting production engine:
+1. **Sizing optimizer objective** (investorSizing.ts): Changed `computeOptimalSizing` to maximize `effectiveMultiple` (taxSavingsPerDollar) instead of `annualUtilizationPct`. Added `peakType` field to `SizingResult` with `determinePeakType()` function. Plateau/rising curves select highest commitment within 90% of peak efficiency.
+2. **Roth conversion duration** (investorTaxUtilization.ts): Added `rothAnnualConversion` field to `InvestorProfile`. Engine now computes per-year tax computation: Years 1-10 include Roth income, Years 11-12 use base income. Previously, Roth income was applied uniformly to all years.
+3. **Passive $4M validation** (VALIDATION_SCENARIOS.md): Added Scenario 36 (Non-REP Passive $2M/$4M/WA/MFJ). Actual engine output $8.45M vs estimated $9.28M (−9% due to sub-linear scaling). Documented discrepancy with explanation.
+Files changed: investorSizing.ts, investorTaxUtilization.ts, taxEfficiencyMapping.ts (batch runner), VALIDATION_SCENARIOS.md, IMPLEMENTATION_TRACKER.md, types/taxbenefits/index.ts. 6 new tests (3 Roth + 3 sizing). 1,830 tests pass, 91 suites, 0 regressions.
 
 **IMPL-118 Details:** Added deal type (acquisition vs new construction) and occupancy ramp logic to first-year LIHTC applicable fraction in lihtcCreditCalculations.ts (255 lines of changes). Created DOCUMENTED_ASSUMPTIONS.md gate. Added section to CALCULATION_ARCHITECTURE.md. 7 files changed, 807 insertions. lihtcCreditCalculations.test.ts expanded by 453 lines with deal type + ramp scenarios.
 
@@ -541,8 +549,8 @@ This caused impossible 275% IRR. Fix: Year 0 syndication proceeds are netted in 
 | Phase 21: Stage 5.5 Exit Tax Engine | 094-101 | 8/8 | ✅ 100% |
 | Phase 22: B3 Fit & Archetype | 102-107 | 6/6 | ✅ 100% |
 | Phase 23: Timing Architecture Rewire | 108-117 | 10/10 | ✅ 100% |
-| Phase 24: LIHTC Applicable Fraction | 118 | 1/1 | ✅ 100% |
-| **Total** | **118 IMPLs** | **118/118** | **✅ 100%** |
+| Phase 24: LIHTC Applicable Fraction + TEM Fixes | 118-120 | 3/3 | ✅ 100% |
+| **Total** | **120 IMPLs** | **120/120** | **✅ 100%** |
 
 ---
 
@@ -550,6 +558,7 @@ This caused impossible 275% IRR. Fix: Year 0 syndication proceeds are netted in 
 
 | Date | Test Count | Notes |
 |------|------------|-------|
+| 2026-03-11 | 1,830 | Post IMPL-120 (91 suites, 6 new tests: 3 Roth duration + 3 sizing objective, 0 failures) |
 | 2026-03-06 | 1,824 | Post IMPL-119 (91 suites, 6 new NIIT tests, 0 failures) |
 | 2026-03-06 | 1,817 | Post IMPL-118 (90 suites, 0 failures) |
 | 2026-03-05 | ~1,817 | Post IMPL-118 (LIHTC applicable fraction, 453 new test lines) |

@@ -1,12 +1,12 @@
 ============================================================
 TAX EFFICIENCY MAPPING — SUMMARY REPORT
 Deal: Trace 260303 65M | Equity: $16.05M
-Date: 2026-03-09T21:09:00.719Z
+Date: 2026-03-11T19:20:54.027Z
 ============================================================
 
 1. Total combinations tested: 1,064,448
    Errors: 0
-   Runtime: 8.3s (sizing: 1.8s, sweep: 6.6s)
+   Runtime: 8.5s (sizing: 1.8s, sweep: 6.7s)
 
 2. Archetype distribution:
    B: 863,632 (81.1%)
@@ -15,8 +15,8 @@ Date: 2026-03-09T21:09:00.719Z
    E: 22,176 (2.1%)
 
 3. Binding constraint distribution:
-   None — full utilization achievable: 1,005,312 (94.4%)
-   §38(c) General Business Credit Floor: 36,960 (3.5%)
+   None — full utilization achievable: 990,528 (93.1%)
+   §38(c) General Business Credit Floor: 51,744 (4.9%)
    §469(a) No Passive Income: 22,176 (2.1%)
 
 4. High utilization (>95%): 403,984 (38.0%)

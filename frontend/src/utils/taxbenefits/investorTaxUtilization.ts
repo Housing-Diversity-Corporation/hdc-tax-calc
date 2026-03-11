@@ -63,6 +63,7 @@ export interface InvestorProfile {
   stateOrdinaryRate: number;
   stateCapGainsRate: number;
   investorEquity: number;            // $ committed (gross)
+  rothAnnualConversion?: number;     // IMPL-120: Annual Roth conversion (Years 1-10 only, $0 in Years 11-12)
 }
 
 /**
@@ -609,6 +610,8 @@ export function calculateTaxUtilization(
   );
 
   // Step 2: Compute federal tax (if income composition provided)
+  // IMPL-120: Roth conversion income applies only in Years 1-10
+  const rothConversion = investorProfile.rothAnnualConversion ?? 0;
   const hasIncomeComposition =
     investorProfile.annualPassiveIncome > 0 ||
     investorProfile.annualOrdinaryIncome > 0 ||
@@ -621,9 +624,12 @@ export function calculateTaxUtilization(
     passiveTaxLiability: 0,
     marginalRate: investorProfile.federalOrdinaryRate / 100
   };
+  // IMPL-120: Base tax computation without Roth (for Years 11-12)
+  let baseTaxComputation = taxComputation;
   let incomeComputationUsed = false;
 
   if (hasIncomeComposition) {
+    // Tax computation includes Roth conversion income (used for Years 1-10)
     taxComputation = computeFederalTax(
       investorProfile.annualPassiveIncome,
       investorProfile.annualOrdinaryIncome,
@@ -631,9 +637,22 @@ export function calculateTaxUtilization(
       investorProfile.filingStatus
     );
     incomeComputationUsed = true;
+
+    // IMPL-120: Compute base tax without Roth for Years 11-12
+    if (rothConversion > 0) {
+      baseTaxComputation = computeFederalTax(
+        investorProfile.annualPassiveIncome,
+        investorProfile.annualOrdinaryIncome - rothConversion,
+        investorProfile.annualPortfolioIncome,
+        investorProfile.filingStatus
+      );
+    } else {
+      baseTaxComputation = taxComputation;
+    }
   } else if (investorProfile.federalOrdinaryRate > 0) {
     // Fallback to flat rate (backward compatibility)
     taxComputation.marginalRate = investorProfile.federalOrdinaryRate / 100;
+    baseTaxComputation = taxComputation;
   }
 
   const marginalRate = taxComputation.marginalRate;
@@ -658,6 +677,12 @@ export function calculateTaxUtilization(
     const depreciation = benefitStream.annualDepreciation[yearIndex] || 0;
     const lihtcGenerated = benefitStream.annualLIHTC[yearIndex] || 0;
 
+    // IMPL-120: Use Roth-inclusive tax for Years 1-10, base tax for Years 11+
+    const yearTax = (rothConversion > 0 && yearIndex >= 10)
+      ? baseTaxComputation
+      : taxComputation;
+    const yearMarginalRate = yearTax.marginalRate;
+
     let depResult: ReturnType<typeof computeDepreciationNonpassive | typeof computeDepreciationPassive>;
     let lihtcResult: ReturnType<typeof computeLIHTCNonpassive | typeof computeLIHTCPassive>;
     let residualPassiveIncome = 0;
@@ -670,9 +695,9 @@ export function calculateTaxUtilization(
       const depNonpassive = computeDepreciationNonpassive(
         depreciation,
         investorProfile.filingStatus,
-        marginalRate,
+        yearMarginalRate,
         nolPool,
-        taxComputation.taxableIncome
+        yearTax.taxableIncome
       );
       depResult = depNonpassive;
       nolGenerated = depNonpassive.nolGenerated;
@@ -681,7 +706,7 @@ export function calculateTaxUtilization(
 
       lihtcResult = computeLIHTCNonpassive(
         lihtcGenerated,
-        taxComputation.federalTaxLiability,
+        yearTax.federalTaxLiability,
         depNonpassive.depreciationTaxSavings,
         cumulativeCarriedCredits
       );
@@ -693,7 +718,7 @@ export function calculateTaxUtilization(
       const depPassive = computeDepreciationPassive(
         depreciation,
         passiveIncomeInMillions,
-        marginalRate,
+        yearMarginalRate,
         cumulativeSuspendedLoss
       );
       depResult = depPassive;
@@ -710,7 +735,7 @@ export function calculateTaxUtilization(
     }
 
     // Compute benefits
-    const depreciationValue = depreciation * marginalRate;
+    const depreciationValue = depreciation * yearMarginalRate;
     const benefitGenerated = depreciationValue + lihtcGenerated;
     const benefitUsable = depResult.depreciationTaxSavings + lihtcResult.lihtcUsable;
     const utilizationRate = benefitGenerated > 0 ? benefitUsable / benefitGenerated : 0;

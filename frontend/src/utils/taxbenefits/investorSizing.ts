@@ -29,6 +29,8 @@ export interface SizingPoint {
   effectiveMultiple: number;
 }
 
+export type PeakType = 'peak' | 'plateau' | 'rising';
+
 export interface SizingResult {
   optimalCommitment: number;
   optimalUtilizationPct: number;
@@ -36,6 +38,7 @@ export interface SizingResult {
   maximumEffective: number;     // highest commitment before util drops below 80%
   utilizationCurve: SizingPoint[];
   constraintBinding: string;
+  peakType: PeakType;           // IMPL-120: curve shape at optimal point
 }
 
 export interface InvestorSizingConfig {
@@ -99,7 +102,7 @@ export function computeOptimalSizing(
   const stepSize = samplePoints > 1 ? (maxCommitment - effectiveMin) / (samplePoints - 1) : 0;
 
   const curve: SizingPoint[] = [];
-  let bestUtilization = -1;
+  let bestEfficiency = -1;
   let bestIndex = 0;
   let bestUtilResult: TaxUtilizationResult | null = null;
 
@@ -149,8 +152,9 @@ export function computeOptimalSizing(
     };
     curve.push(point);
 
-    if (annualUtilizationPct > bestUtilization) {
-      bestUtilization = annualUtilizationPct;
+    // IMPL-120: Select by peak effectiveMultiple (taxSavingsPerDollar), not utilization %
+    if (effectiveMultiple > bestEfficiency) {
+      bestEfficiency = effectiveMultiple;
       bestIndex = i;
       bestUtilResult = utilResult;
     }
@@ -165,19 +169,69 @@ export function computeOptimalSizing(
     ? effectivePoints[effectivePoints.length - 1].commitmentAmount
     : curve[bestIndex]?.commitmentAmount ?? 0;
 
+  // IMPL-120: Determine peak type from efficiency curve shape
+  const peakType = determinePeakType(curve, bestIndex);
+
+  // IMPL-120: For plateau/rising curves, use highest commitment in the plateau
+  let optimalIndex = bestIndex;
+  if (peakType === 'plateau' || peakType === 'rising') {
+    // Walk from the end of the curve back to find the highest commitment
+    // still within 90% of peak efficiency
+    const peakEfficiency = curve[bestIndex]?.effectiveMultiple ?? 0;
+    const threshold = peakEfficiency * 0.90;
+    for (let i = curve.length - 1; i >= bestIndex; i--) {
+      if (curve[i].effectiveMultiple >= threshold) {
+        optimalIndex = i;
+        break;
+      }
+    }
+  }
+
+  // Recompute utilization result at the actual optimal index if it changed
+  if (optimalIndex !== bestIndex && bestUtilResult) {
+    const commitment = curve[optimalIndex].commitmentAmount;
+    const proRataShare = commitment / dealTotalEquity;
+    const scaledStream = scaleStreamByProRata(poolBenefitStream, proRataShare);
+    const millionStream = scaleBenefitStreamToMillions(scaledStream);
+    bestUtilResult = calculateTaxUtilization(millionStream, profile);
+  }
+
   // Identify binding constraint
   const constraintBinding = bestUtilResult
     ? identifyBindingConstraint(profile, bestUtilResult)
     : 'None — full utilization achievable';
 
   return {
-    optimalCommitment: curve[bestIndex]?.commitmentAmount ?? 0,
-    optimalUtilizationPct: bestUtilization,
+    optimalCommitment: curve[optimalIndex]?.commitmentAmount ?? 0,
+    optimalUtilizationPct: curve[optimalIndex]?.annualUtilizationPct ?? 0,
     minimumEffective,
     maximumEffective,
     utilizationCurve: curve,
     constraintBinding,
+    peakType,
   };
+}
+
+/**
+ * IMPL-120: Determine curve shape at the peak efficiency point.
+ *
+ * - 'peak': efficiency rises then declines by >5% from best
+ * - 'plateau': efficiency stays within 5% of best across most of curve
+ * - 'rising': efficiency still climbing at the end (best at/near end)
+ */
+export function determinePeakType(curve: SizingPoint[], bestIndex: number): PeakType {
+  if (curve.length === 0) return 'peak';
+
+  const bestEff = curve[bestIndex].effectiveMultiple;
+  if (bestEff <= 0) return 'peak';
+
+  const lastEff = curve[curve.length - 1].effectiveMultiple;
+  const declineFromPeak = (bestEff - lastEff) / bestEff;
+  const isAtEnd = bestIndex >= curve.length - 3;
+
+  if (declineFromPeak > 0.05) return 'peak';
+  if (isAtEnd && lastEff > curve[0].effectiveMultiple * 1.05) return 'rising';
+  return 'plateau';
 }
 
 /**

@@ -5,7 +5,7 @@ import { TaxUtilizationResult } from '../../utils/taxbenefits/investorTaxUtiliza
 
 // Re-export B3 types for convenience
 export type { InvestorFitResult, FitWarning, Archetype, FitRating, BenefitTimingProfile } from '../../utils/taxbenefits/investorFit';
-export type { SizingResult, SizingPoint } from '../../utils/taxbenefits/investorSizing';
+export type { SizingResult, SizingPoint, PeakType } from '../../utils/taxbenefits/investorSizing';
 
 // IMPL-094: Exit Tax Result — §5.12 character-split recapture engine output
 export interface ExitTaxResult {
