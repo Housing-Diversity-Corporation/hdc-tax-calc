@@ -10,6 +10,8 @@
  * an InvestorProfile, producing year-by-year utilization analysis and recapture coverage.
  */
 
+import { doesNIITApply } from './stateProfiles';
+
 // =============================================================================
 // Core Input Interfaces
 // =============================================================================
@@ -657,6 +659,14 @@ export function calculateTaxUtilization(
 
   const marginalRate = taxComputation.marginalRate;
 
+  // IMPL-121: NIIT-aware marginal rate for passive depreciation
+  // IRC §1411: 3.8% surcharge applies to passive investors (rep_ungrouped, non-rep)
+  // but not REP+grouped (nonpassive) or territory residents (PR, GU, VI, AS, MP)
+  const niitSurcharge = (treatment === 'passive' && doesNIITApply(investorProfile.investorState))
+    ? 0.038
+    : 0;
+  const passiveMarginalRate = marginalRate + niitSurcharge;
+
   // Step 3-5: Year-by-year utilization
   const annualUtilization: AnnualUtilization[] = [];
   const holdPeriod = benefitStream.annualDepreciation.length;
@@ -682,6 +692,8 @@ export function calculateTaxUtilization(
       ? baseTaxComputation
       : taxComputation;
     const yearMarginalRate = yearTax.marginalRate;
+    // IMPL-121: NIIT-aware rate for passive depreciation path
+    const yearPassiveMarginalRate = yearMarginalRate + niitSurcharge;
 
     let depResult: ReturnType<typeof computeDepreciationNonpassive | typeof computeDepreciationPassive>;
     let lihtcResult: ReturnType<typeof computeLIHTCNonpassive | typeof computeLIHTCPassive>;
@@ -718,7 +730,7 @@ export function calculateTaxUtilization(
       const depPassive = computeDepreciationPassive(
         depreciation,
         passiveIncomeInMillions,
-        yearMarginalRate,
+        yearPassiveMarginalRate,
         cumulativeSuspendedLoss
       );
       depResult = depPassive;
@@ -734,8 +746,9 @@ export function calculateTaxUtilization(
       cumulativeSuspendedCredits = lihtcResult.cumulativeSuspendedCredits;
     }
 
-    // Compute benefits
-    const depreciationValue = depreciation * yearMarginalRate;
+    // Compute benefits (use NIIT-aware rate for passive to keep denominator consistent)
+    const effectiveRate = treatment === 'passive' ? yearPassiveMarginalRate : yearMarginalRate;
+    const depreciationValue = depreciation * effectiveRate;
     const benefitGenerated = depreciationValue + lihtcGenerated;
     const benefitUsable = depResult.depreciationTaxSavings + lihtcResult.lihtcUsable;
     const utilizationRate = benefitGenerated > 0 ? benefitUsable / benefitGenerated : 0;
@@ -777,7 +790,7 @@ export function calculateTaxUtilization(
     cumulativeCarriedCredits,
     cumulativeSuspendedCredits,
     nolPool,
-    marginalRate,
+    treatment === 'passive' ? passiveMarginalRate : marginalRate,
     investorProfile.federalCapGainsRate
   );
 
