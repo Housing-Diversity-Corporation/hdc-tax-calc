@@ -203,16 +203,19 @@ This document tracks all validated scenarios for the TaxBenefits Calculator. It 
 - Deal: Trace 260303 65M ($16.05M equity)
 
 **Expected Results:**
-- totalTaxSavings: ≈ $8.45M (actual engine output)
+- totalTaxSavings: ≈ $8.71M (±3%, post-IMPL-121 NIIT-aware engine output)
 - utilizationRate: ≈ 94.4%
 - archetype: C (Non-REP passive income sufficient)
 - bindingConstraint: None — passive income sufficient to absorb full dep + credits at $4M
 
-**Discrepancy Note (IMPL-120):**
-- Initial estimate was $9.28M (4× the $1M/$2M/$1M result of $2.32M). Actual is $8.45M (−9%).
+**Discrepancy Note (IMPL-120, updated post-IMPL-121):**
+- Initial estimate was $9.28M (4× the $1M/$2M/$1M result of $2.32M). Pre-NIIT engine output was $8.45M (−9%).
 - The sub-linear scaling is expected: at $4M commitment the pro-rata share is larger, but
   credit/depreciation utilization doesn't scale linearly due to §469 passive income ceiling and
-  marginal rate effects. The $8.45M value is the verified engine output.
+  marginal rate effects.
+- Updated post-IMPL-121: NIIT uplift on passive depreciation at 40.8% (37% + 3.8%) adds ~$0.318M
+  vs flat 37% baseline. $8.45M was the pre-NIIT estimate from the IMPL-120 calibration session.
+  Post-NIIT verified engine output: $8.713M.
 
 **Notes:**
 - IMPL-119 (NIIT-aware) applies — depreciation savings computed at 40.8% (37% + 3.8% NIIT), not flat 37%.
