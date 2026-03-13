@@ -1,6 +1,6 @@
 # TaxBenefits Calculator — Implementation Tracker
 
-**Document Version:** 10.4
+**Document Version:** 10.5
 **Last Updated:** 2026-03-13
 **Branch:** main
 **Current Test Count:** 1,844 passing (94 suites, 0 failures)
@@ -12,6 +12,7 @@
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v10.5 | 2026-03-13 | IMPL-124: Wire pool navigation — fund-detail view reachable via AvailableInvestments onViewPool. 2 files modified. Test count unchanged at 1,844. |
 | v10.4 | 2026-03-13 | IMPL-123: Tax Efficiency Map platform integration — real engine replaces artifact simplified calculation layer. 3 new files, 1 modified. Test count 1,838→1,844. |
 | v10.3 | 2026-03-12 | IMPL-122: Fix §38(c) unit mismatch in calculateTaxUtilization() — REP+grouped LIHTC ceiling and dep savings cap now use consistent units. Batch runner workaround removed. Test count 1,834→1,838. |
 | v10.2 | 2026-03-12 | IMPL-121: NIIT-aware depreciation rate in calculateTaxUtilization() — passive investors now use 40.8% (37% + 3.8% NIIT). Territory exemption respected. Test count 1,830→1,834. |
@@ -488,6 +489,10 @@ This caused impossible 275% IRR. Fix: Year 0 syndication proceeds are netted in 
 | IMPL-121 | NIIT-Aware Rate in calculateTaxUtilization() | ✅ Complete | 2026-03-12 |
 | IMPL-122 | Fix §38(c) Unit Mismatch in calculateTaxUtilization() | ✅ Complete | 2026-03-12 |
 | IMPL-123 | Tax Efficiency Map Platform Integration | ✅ Complete | 2026-03-13 |
+| IMPL-124 | Wire Pool Navigation to Fund Detail View | ✅ Complete | 2026-03-13 |
+
+**IMPL-124 Details:** Connected the existing `fund-detail` view to the platform UI. Added `onViewPool` prop to `AvailableInvestments`, loads pools via `poolService.getAll()` in parallel with deal loading, renders fund cards with "View Fund Details" button above the deal grid. Wired `onViewPool` in `App.tsx` to set `selectedPoolId` + `currentView('fund-detail')`. No new routes or screens — purely connects existing state that was declared but never triggered.
+Files changed: `AvailableInvestments.tsx` (modified), `App.tsx` (modified), `IMPLEMENTATION_TRACKER.md`. 1,844 tests pass, 94 suites, 0 regressions.
 
 **IMPL-123 Details:** Replaced the Tax Efficiency Map artifact's simplified engine with direct calls to `calculateTaxUtilization()`. Two-layer architecture: Layer 1 (`useTaxEfficiencyMap.ts`) computes 360 cells (12 incomes × 10 investments × 3 investor types) using real `BenefitStream` rates from the pool aggregation pipeline. Layer 2 (`TaxEfficiencyMapPanel.tsx`) renders a heatmap with investor type tabs, metric selector (MOIC/Utilization/Savings-per-dollar), fund ceiling slider, OPT markers, and click-to-detail panel. Placed in FundDetail view after the Sizing Optimizer. All 3 reference cells match batch CSV within 0.00% (vs ±1% threshold). W-2 track correctly shows $0 for all cells (§469 blocks all benefits). Fund ceiling slider correctly dims cells above concentration limit.
 Files changed: `useTaxEfficiencyMap.ts` (new), `TaxEfficiencyMapPanel.tsx` (new), `FundDetail.tsx` (modified), `useTaxEfficiencyMap.test.ts` (new, 6 tests). 1,844 tests pass, 94 suites, 0 regressions.

@@ -118,6 +118,10 @@ const App: React.FC = () => {
                         setSelectedDealId(dealId);
                         setCurrentView('investor-analysis');
                       }}
+                      onViewPool={(poolId) => {
+                        setSelectedPoolId(poolId);
+                        setCurrentView('fund-detail');
+                      }}
                     />
                   ) : currentView === 'investor-analysis' ? (
                     <InvestorAnalysis

@@ -8,14 +8,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Badge } from '../../ui/badge';
 import { Skeleton } from '../../ui/skeleton';
 import { calculatorService, CalculatorConfiguration } from '../../../services/taxbenefits/calculatorService';
+import { poolService } from '../../../services/poolService';
+import type { InvestmentPool } from '../../../types/dealBenefitProfile';
 
 interface InvestmentsStandalonePageProps {
   onViewDeal?: (dealId: string | number) => void;
+  onViewPool?: (poolId: number) => void;
 }
 
-const InvestmentsStandalonePage: React.FC<InvestmentsStandalonePageProps> = ({ onViewDeal }) => {
+const InvestmentsStandalonePage: React.FC<InvestmentsStandalonePageProps> = ({ onViewDeal, onViewPool }) => {
   const [loading, setLoading] = useState(true);
   const [deals, setDeals] = useState<CalculatorConfiguration[]>([]);
+  const [pools, setPools] = useState<InvestmentPool[]>([]);
 
   useEffect(() => {
     loadDeals();
@@ -25,8 +29,11 @@ const InvestmentsStandalonePage: React.FC<InvestmentsStandalonePageProps> = ({ o
     try {
       setLoading(true);
 
-      // Get all configurations from all users (with owner info for collaboration)
-      const allConfigurations = await calculatorService.getAllConfigurationsWithOwners();
+      // Load deals and pools in parallel
+      const [allConfigurations, allPools] = await Promise.all([
+        calculatorService.getAllConfigurationsWithOwners(),
+        poolService.getAll().catch(() => [] as InvestmentPool[]),
+      ]);
 
       // Filter for complete configurations that are investor-facing
       const completeDeals = allConfigurations
@@ -37,6 +44,7 @@ const InvestmentsStandalonePage: React.FC<InvestmentsStandalonePageProps> = ({ o
         .map(item => item.configuration);
 
       setDeals(completeDeals);
+      setPools(allPools);
     } catch (error) {
       console.error('Failed to load investment opportunities:', error);
       setDeals([]);
@@ -119,6 +127,48 @@ const InvestmentsStandalonePage: React.FC<InvestmentsStandalonePageProps> = ({ o
           {deals.length} Active
         </Badge>
       </div>
+
+      {/* Fund Cards */}
+      {pools.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-[var(--hdc-faded-jade)] mb-4">Funds</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {pools.map(pool => (
+              <Card key={pool.id} className="hover:shadow-lg transition-shadow border-[var(--hdc-faded-jade)]/30">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg text-[var(--hdc-faded-jade)]">
+                      {pool.poolName}
+                    </CardTitle>
+                    <Badge
+                      variant={pool.status === 'funded' ? 'default' : 'secondary'}
+                      className="uppercase text-xs"
+                    >
+                      {pool.status}
+                    </Badge>
+                  </div>
+                  {pool.description && (
+                    <CardDescription className="mt-1">{pool.description}</CardDescription>
+                  )}
+                </CardHeader>
+                <CardContent>
+                  <Badge
+                    variant="default"
+                    className="w-full justify-center py-2 cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => {
+                      if (onViewPool && pool.id) {
+                        onViewPool(pool.id);
+                      }
+                    }}
+                  >
+                    View Fund Details
+                  </Badge>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Deal Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
