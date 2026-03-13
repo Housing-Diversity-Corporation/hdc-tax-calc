@@ -13,6 +13,8 @@ import EfficiencyCurveChart from './EfficiencyCurveChart';
 import CapacityWarning from './CapacityWarning';
 import FitSummaryPanel from './FitSummaryPanel';
 import SizingOptimizerPanel from './SizingOptimizerPanel';
+import TaxEfficiencyMapPanel from '../../taxbenefits/TaxEfficiencyMapPanel';
+import { useTaxEfficiencyMap } from '../../../hooks/taxbenefits/useTaxEfficiencyMap';
 import { aggregatePoolToBenefitStream, buildInvestorProfileFromTaxInfo } from '../../../utils/taxbenefits/poolAggregation';
 import { optimizeFundCommitment } from '../../../utils/taxbenefits/fundSizingOptimizer';
 import { useInvestorFit } from '../../../hooks/useInvestorFit';
@@ -131,6 +133,15 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
     aggregationMeta?.totalGrossEquity ?? 0,
     sliderCommitment ?? sizingResult?.optimalCommitment ?? 0
   );
+
+  // IMPL-123: Tax Efficiency Map
+  const efficiencyMap = useTaxEfficiencyMap({
+    benefitStream: poolBenefitStream,
+    fundEquity: aggregationMeta?.totalGrossEquity ?? 0,
+    concentrationLimit: 0.20,
+    defaultFilingStatus: 'MFJ',
+    defaultState: taxProfile?.selectedState || 'WA',
+  });
 
   const holdPeriod = useMemo(() => {
     if (deals.length === 0) return 10;
@@ -284,6 +295,14 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
             minSlider={100_000}
             maxSlider={aggregationMeta.totalGrossEquity}
             formatCurrency={formatDollarCurrency}
+          />
+        )}
+
+        {/* IMPL-123: Tax Efficiency Map */}
+        {efficiencyMap && aggregationMeta && (
+          <TaxEfficiencyMapPanel
+            result={efficiencyMap}
+            fundEquity={aggregationMeta.totalGrossEquity}
           />
         )}
 

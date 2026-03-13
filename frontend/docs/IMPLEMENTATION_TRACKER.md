@@ -1,9 +1,9 @@
 # TaxBenefits Calculator — Implementation Tracker
 
-**Document Version:** 10.3
-**Last Updated:** 2026-03-12
+**Document Version:** 10.4
+**Last Updated:** 2026-03-13
 **Branch:** main
-**Current Test Count:** 1,838 passing (93 suites, 0 failures)
+**Current Test Count:** 1,844 passing (94 suites, 0 failures)
 **Validation Status:** 13/15 Three Sigma scenarios complete (Production Certification ✅)
 
 ---
@@ -12,6 +12,7 @@
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v10.4 | 2026-03-13 | IMPL-123: Tax Efficiency Map platform integration — real engine replaces artifact simplified calculation layer. 3 new files, 1 modified. Test count 1,838→1,844. |
 | v10.3 | 2026-03-12 | IMPL-122: Fix §38(c) unit mismatch in calculateTaxUtilization() — REP+grouped LIHTC ceiling and dep savings cap now use consistent units. Batch runner workaround removed. Test count 1,834→1,838. |
 | v10.2 | 2026-03-12 | IMPL-121: NIIT-aware depreciation rate in calculateTaxUtilization() — passive investors now use 40.8% (37% + 3.8% NIIT). Territory exemption respected. Test count 1,830→1,834. |
 | v10.1 | 2026-03-11 | IMPL-120: Tax Efficiency Mapping engine bug fixes — sizing optimizer objective (effectiveMultiple), Roth conversion duration (Years 1-10 only), passive $4M validation. Test count 1,824→1,830. |
@@ -486,6 +487,10 @@ This caused impossible 275% IRR. Fix: Year 0 syndication proceeds are netted in 
 | IMPL-120 | Tax Efficiency Mapping Engine Bug Fixes | ✅ Complete | 2026-03-11 |
 | IMPL-121 | NIIT-Aware Rate in calculateTaxUtilization() | ✅ Complete | 2026-03-12 |
 | IMPL-122 | Fix §38(c) Unit Mismatch in calculateTaxUtilization() | ✅ Complete | 2026-03-12 |
+| IMPL-123 | Tax Efficiency Map Platform Integration | ✅ Complete | 2026-03-13 |
+
+**IMPL-123 Details:** Replaced the Tax Efficiency Map artifact's simplified engine with direct calls to `calculateTaxUtilization()`. Two-layer architecture: Layer 1 (`useTaxEfficiencyMap.ts`) computes 360 cells (12 incomes × 10 investments × 3 investor types) using real `BenefitStream` rates from the pool aggregation pipeline. Layer 2 (`TaxEfficiencyMapPanel.tsx`) renders a heatmap with investor type tabs, metric selector (MOIC/Utilization/Savings-per-dollar), fund ceiling slider, OPT markers, and click-to-detail panel. Placed in FundDetail view after the Sizing Optimizer. All 3 reference cells match batch CSV within 0.00% (vs ±1% threshold). W-2 track correctly shows $0 for all cells (§469 blocks all benefits). Fund ceiling slider correctly dims cells above concentration limit.
+Files changed: `useTaxEfficiencyMap.ts` (new), `TaxEfficiencyMapPanel.tsx` (new), `FundDetail.tsx` (modified), `useTaxEfficiencyMap.test.ts` (new, 6 tests). 1,844 tests pass, 94 suites, 0 regressions.
 
 **IMPL-122 Details:** Fixed two unit mismatch bugs in `calculateTaxUtilization()` for REP+grouped (nonpassive) investors: (1) `computeLIHTCNonpassive()` compared `federalTaxLiability` in dollars against `depreciationTaxSavings`/`lihtcGenerated` in millions — §38(c) ceiling never bound. Fixed by converting tax liability to millions. (2) `computeDepreciationNonpassive()` counted `depreciationAllowed × marginalRate` as savings even when it exceeded the actual tax owed — overcounted by $22.9K for $750K income. Fixed by capping at `federalTaxLiability / 1e6`. Removed the `computeNetTaxPerYear()` workaround from the batch runner's `extractMetrics()` — engine values now used directly.
 Files changed: investorTaxUtilization.ts, taxEfficiencyMapping.ts (batch runner workaround removal), impl-121-niit-utilization.test.ts (updated baseline), IMPLEMENTATION_TRACKER.md. 1 new test suite (impl-122-sec38c-unit-fix.test.ts) with 4 tests. 1,838 tests pass, 93 suites, 0 regressions.
@@ -568,6 +573,7 @@ Files changed: investorSizing.ts, investorTaxUtilization.ts, taxEfficiencyMappin
 
 | Date | Test Count | Notes |
 |------|------------|-------|
+| 2026-03-13 | 1,844 | Post IMPL-123 (94 suites, 6 new efficiency map tests, 0 failures) |
 | 2026-03-12 | 1,838 | Post IMPL-122 (93 suites, 4 new §38(c) unit tests, 0 failures) |
 | 2026-03-12 | 1,834 | Post IMPL-121 (92 suites, 4 new NIIT-utilization tests, 0 failures) |
 | 2026-03-11 | 1,830 | Post IMPL-120 (91 suites, 6 new tests: 3 Roth duration + 3 sizing objective, 0 failures) |
