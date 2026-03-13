@@ -179,17 +179,14 @@ function isRothEligible(track: typeof TRACKS[0]): boolean {
 }
 
 /**
- * Compute actual net tax per year using correct §38(c) floor in consistent dollar units.
+ * Compute net tax per year in consistent dollar units.
  *
- * The production engine has a unit mismatch bug: federalTaxLiability is in dollars but
- * depreciationTaxSavings/lihtcGenerated are in millions. This causes the §38(c) limit
- * (~$119K in dollars) to always exceed available credits (~0.146 in millions), effectively
- * disabling the floor. The batch runner corrects this by recomputing in dollars.
+ * Used by Roth effective rate calculations to determine the incremental tax cost
+ * of Roth conversions by comparing net tax with and without conversion income.
  *
- *   taxAfterDep = grossTax - depSavings (both dollars)
- *   sec38cLimit = 0.75 × taxAfterDep + $6,250
- *   creditsUsed = min(creditsAvailable, sec38cLimit)
- *   netTax = taxAfterDep - creditsUsed
+ * Note: The §38(c) unit mismatch that originally motivated this function was fixed
+ * in the production engine by IMPL-122. The nonpassive totalTaxSavings workaround
+ * in extractMetrics() has been removed — the engine's values are now correct.
  */
 function computeNetTaxPerYear(
   grossFederalTax: number,           // dollars (from computeFederalTax)
@@ -246,23 +243,10 @@ function extractMetrics(
   const years = annuals.length;
   const isNonpassiveProfile = profile.investorTrack === 'rep' && profile.groupingElection;
 
-  // For REP+grouped profiles, recompute tax savings with corrected §38(c) floor
-  // (the engine's totalLIHTCUsed is inflated due to dollar/millions unit mismatch)
-  let totalTaxSavings: number;
-  let totalCreditsUsed: number;
+  // IMPL-122: Engine now has correct §38(c) units — use engine values directly
+  const totalTaxSavings = result.totalDepreciationSavings + result.totalLIHTCUsed;
+  const totalCreditsUsed = result.totalLIHTCUsed;
   const totalCreditsGenerated = annuals.reduce((s, yr) => s + yr.lihtcGenerated, 0);
-
-  if (isNonpassiveProfile) {
-    const netTaxPerYear = computeNetTaxPerYear(result.computedFederalTax, result, true);
-    const grossTaxTotal = result.computedFederalTax * years;
-    const netTaxTotal = netTaxPerYear.reduce((s, t) => s + t, 0);
-    totalTaxSavings = (grossTaxTotal - netTaxTotal) / 1e6; // back to millions for CSV
-    // Corrected credits used = total savings minus depreciation savings
-    totalCreditsUsed = totalTaxSavings - result.totalDepreciationSavings;
-  } else {
-    totalTaxSavings = result.totalDepreciationSavings + result.totalLIHTCUsed;
-    totalCreditsUsed = result.totalLIHTCUsed;
-  }
   const creditUtilizationRate = totalCreditsGenerated > 0 ? totalCreditsUsed / totalCreditsGenerated : 0;
 
   // Depreciation

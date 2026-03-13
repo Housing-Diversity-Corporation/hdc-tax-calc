@@ -1,9 +1,9 @@
 # TaxBenefits Calculator — Implementation Tracker
 
-**Document Version:** 10.2
+**Document Version:** 10.3
 **Last Updated:** 2026-03-12
 **Branch:** main
-**Current Test Count:** 1,834 passing (92 suites, 0 failures)
+**Current Test Count:** 1,838 passing (93 suites, 0 failures)
 **Validation Status:** 13/15 Three Sigma scenarios complete (Production Certification ✅)
 
 ---
@@ -12,6 +12,7 @@
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v10.3 | 2026-03-12 | IMPL-122: Fix §38(c) unit mismatch in calculateTaxUtilization() — REP+grouped LIHTC ceiling and dep savings cap now use consistent units. Batch runner workaround removed. Test count 1,834→1,838. |
 | v10.2 | 2026-03-12 | IMPL-121: NIIT-aware depreciation rate in calculateTaxUtilization() — passive investors now use 40.8% (37% + 3.8% NIIT). Territory exemption respected. Test count 1,830→1,834. |
 | v10.1 | 2026-03-11 | IMPL-120: Tax Efficiency Mapping engine bug fixes — sizing optimizer objective (effectiveMultiple), Roth conversion duration (Years 1-10 only), passive $4M validation. Test count 1,824→1,830. |
 | v10.0 | 2026-03-06 | Major update: 35 IMPLs added (084-118). B2 save-flow wiring, pool aggregation, computed hold period, fed/state depreciation breakout, exit tax engine, B3 fit/archetype/sizing, timing architecture rewire (computeTimeline, XIRR, §42(f)(1) election), LIHTC applicable fraction. Test count 1,237→1,817. |
@@ -484,6 +485,10 @@ This caused impossible 275% IRR. Fix: Year 0 syndication proceeds are netted in 
 | IMPL-119 | NIIT-Aware Depreciation Benefit Calculation | ✅ Complete | 2026-03-06 |
 | IMPL-120 | Tax Efficiency Mapping Engine Bug Fixes | ✅ Complete | 2026-03-11 |
 | IMPL-121 | NIIT-Aware Rate in calculateTaxUtilization() | ✅ Complete | 2026-03-12 |
+| IMPL-122 | Fix §38(c) Unit Mismatch in calculateTaxUtilization() | ✅ Complete | 2026-03-12 |
+
+**IMPL-122 Details:** Fixed two unit mismatch bugs in `calculateTaxUtilization()` for REP+grouped (nonpassive) investors: (1) `computeLIHTCNonpassive()` compared `federalTaxLiability` in dollars against `depreciationTaxSavings`/`lihtcGenerated` in millions — §38(c) ceiling never bound. Fixed by converting tax liability to millions. (2) `computeDepreciationNonpassive()` counted `depreciationAllowed × marginalRate` as savings even when it exceeded the actual tax owed — overcounted by $22.9K for $750K income. Fixed by capping at `federalTaxLiability / 1e6`. Removed the `computeNetTaxPerYear()` workaround from the batch runner's `extractMetrics()` — engine values now used directly.
+Files changed: investorTaxUtilization.ts, taxEfficiencyMapping.ts (batch runner workaround removal), impl-121-niit-utilization.test.ts (updated baseline), IMPLEMENTATION_TRACKER.md. 1 new test suite (impl-122-sec38c-unit-fix.test.ts) with 4 tests. 1,838 tests pass, 93 suites, 0 regressions.
 
 **IMPL-121 Details:** Fixed `calculateTaxUtilization()` to apply 3.8% NIIT surcharge on depreciation tax savings for passive investors (non-rep, rep_ungrouped). Previously used flat 37% marginal rate for all tracks; now uses 40.8% (37% + 3.8%) for passive treatment when `doesNIITApply(state)` is true. Territory residents (PR, GU, VI, AS, MP) remain exempt. Nonpassive path (REP+grouped) unchanged. Also applied NIIT-aware rate to recapture coverage `releasedLossValue` and `benefitGenerated` denominator for consistent utilization ratios.
 Files changed: investorTaxUtilization.ts (import + 4 lines), IMPLEMENTATION_TRACKER.md. 1 new test suite (impl-121-niit-utilization.test.ts) with 4 tests. 1,834 tests pass, 92 suites, 0 regressions.
@@ -554,8 +559,8 @@ Files changed: investorSizing.ts, investorTaxUtilization.ts, taxEfficiencyMappin
 | Phase 21: Stage 5.5 Exit Tax Engine | 094-101 | 8/8 | ✅ 100% |
 | Phase 22: B3 Fit & Archetype | 102-107 | 6/6 | ✅ 100% |
 | Phase 23: Timing Architecture Rewire | 108-117 | 10/10 | ✅ 100% |
-| Phase 24: LIHTC Applicable Fraction + TEM Fixes | 118-121 | 4/4 | ✅ 100% |
-| **Total** | **121 IMPLs** | **121/121** | **✅ 100%** |
+| Phase 24: LIHTC Applicable Fraction + TEM Fixes | 118-122 | 5/5 | ✅ 100% |
+| **Total** | **122 IMPLs** | **122/122** | **✅ 100%** |
 
 ---
 
@@ -563,6 +568,7 @@ Files changed: investorSizing.ts, investorTaxUtilization.ts, taxEfficiencyMappin
 
 | Date | Test Count | Notes |
 |------|------------|-------|
+| 2026-03-12 | 1,838 | Post IMPL-122 (93 suites, 4 new §38(c) unit tests, 0 failures) |
 | 2026-03-12 | 1,834 | Post IMPL-121 (92 suites, 4 new NIIT-utilization tests, 0 failures) |
 | 2026-03-11 | 1,830 | Post IMPL-120 (91 suites, 6 new tests: 3 Roth duration + 3 sizing objective, 0 failures) |
 | 2026-03-06 | 1,824 | Post IMPL-119 (91 suites, 6 new NIIT tests, 0 failures) |

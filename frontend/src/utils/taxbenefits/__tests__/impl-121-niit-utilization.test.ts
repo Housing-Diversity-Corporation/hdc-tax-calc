@@ -90,10 +90,10 @@ describe('IMPL-121: NIIT-aware depreciation in calculateTaxUtilization', () => {
     });
 
     const result = calculateTaxUtilization(scaledStream, profile);
-    // Nonpassive path: raw engine output is $2.120M (dep savings + LIHTC used)
-    // NIIT surcharge must NOT be applied — value must not change from pre-IMPL-121
+    // Nonpassive path: IMPL-122 corrected §38(c) + dep savings cap → $1.948M
+    // NIIT surcharge must NOT be applied (nonpassive is exempt)
     const totalSavings = result.totalDepreciationSavings + result.totalLIHTCUsed;
-    expect(totalSavings).toBeCloseTo(2.120, 2);
+    expect(totalSavings).toBeCloseTo(1.948, 2);
   });
 
   test('rep_ungrouped passive: NIIT applies — matches non-rep passive result', () => {

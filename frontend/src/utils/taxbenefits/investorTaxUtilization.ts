@@ -366,7 +366,8 @@ function computeDepreciationNonpassive(
   filingStatus: 'MFJ' | 'Single' | 'HoH',
   marginalRate: number,
   previousNolPool: number,
-  taxableIncome: number
+  taxableIncome: number,
+  federalTaxLiability: number
 ): {
   depreciationAllowed: number;
   depreciationSuspended: number;
@@ -385,8 +386,10 @@ function computeDepreciationNonpassive(
   // Excess becomes NOL (carried forward)
   const nolGenerated = excessBusinessLoss;
 
-  // Tax savings from allowed depreciation
-  const depreciationTaxSavings = depreciationAllowed * marginalRate;
+  // Tax savings from allowed depreciation, capped at actual tax liability
+  // IMPL-122: Cannot save more tax than owed — cap at federalTaxLiability (converted to millions)
+  const rawDepSavings = depreciationAllowed * marginalRate;
+  const depreciationTaxSavings = Math.min(rawDepSavings, federalTaxLiability / 1_000_000);
 
   // NOL utilization: 80% of remaining taxable income after deduction
   // Convert taxableIncome from dollars to millions to match depreciation units
@@ -474,11 +477,15 @@ function computeLIHTCNonpassive(
   lihtcCarried: number;
   cumulativeCarriedCredits: number;
 } {
-  // Tax remaining after depreciation deduction
-  const taxAfterDepreciation = Math.max(0, federalTaxLiability - depreciationTaxSavings);
+  // IMPL-122: Convert federalTaxLiability (dollars) to millions for consistent units
+  // lihtcGenerated and depreciationTaxSavings are already in millions
+  const taxLiabilityInMillions = federalTaxLiability / 1_000_000;
 
-  // §38(c) limitation: 75% of net income tax + $6,250
-  const sec38cLimit = 0.75 * taxAfterDepreciation + 6_250;
+  // Tax remaining after depreciation deduction (both in millions)
+  const taxAfterDepreciation = Math.max(0, taxLiabilityInMillions - depreciationTaxSavings);
+
+  // §38(c) limitation: 75% of net income tax + $6,250 (converted to millions)
+  const sec38cLimit = 0.75 * taxAfterDepreciation + 6_250 / 1_000_000;
 
   // Available credits = generated + carryforward
   const totalAvailable = lihtcGenerated + previousCarriedCredits;
@@ -709,7 +716,8 @@ export function calculateTaxUtilization(
         investorProfile.filingStatus,
         yearMarginalRate,
         nolPool,
-        yearTax.taxableIncome
+        yearTax.taxableIncome,
+        yearTax.federalTaxLiability
       );
       depResult = depNonpassive;
       nolGenerated = depNonpassive.nolGenerated;
