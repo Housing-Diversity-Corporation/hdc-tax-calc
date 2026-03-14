@@ -12,6 +12,7 @@
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v10.6 | 2026-03-14 | IMPL-125: Move Tax Efficiency Map to deal view — renders from individual deal BenefitStream instead of pool aggregation. 4 files modified. Test count unchanged at 1,844. |
 | v10.5 | 2026-03-13 | IMPL-124: Wire pool navigation — fund-detail view reachable via AvailableInvestments onViewPool. 2 files modified. Test count unchanged at 1,844. |
 | v10.4 | 2026-03-13 | IMPL-123: Tax Efficiency Map platform integration — real engine replaces artifact simplified calculation layer. 3 new files, 1 modified. Test count 1,838→1,844. |
 | v10.3 | 2026-03-12 | IMPL-122: Fix §38(c) unit mismatch in calculateTaxUtilization() — REP+grouped LIHTC ceiling and dep savings cap now use consistent units. Batch runner workaround removed. Test count 1,834→1,838. |
@@ -490,6 +491,10 @@ This caused impossible 275% IRR. Fix: Year 0 syndication proceeds are netted in 
 | IMPL-122 | Fix §38(c) Unit Mismatch in calculateTaxUtilization() | ✅ Complete | 2026-03-12 |
 | IMPL-123 | Tax Efficiency Map Platform Integration | ✅ Complete | 2026-03-13 |
 | IMPL-124 | Wire Pool Navigation to Fund Detail View | ✅ Complete | 2026-03-13 |
+| IMPL-125 | Move Tax Efficiency Map to Deal View | ✅ Complete | 2026-03-14 |
+
+**IMPL-125 Details:** Moved TaxEfficiencyMapPanel from FundDetail (pool view) to InvestorAnalysisCalculator (deal view). Surfaced BenefitStream from the calculation engine by adding it to `InvestorAnalysisResults` and `calculations.ts` return. The engine BenefitStream (millions) is converted to dollars via useMemo before passing to `useTaxEfficiencyMap`. Panel renders after LocationAnalysisSection using the individual deal's BenefitStream and investorEquity. Guard condition prevents render when benefitStream or investorEquity is absent.
+Files changed: `InvestorAnalysisCalculator.tsx` (modified), `FundDetail.tsx` (modified), `calculations.ts` (modified), `types/taxbenefits/index.ts` (modified), `IMPLEMENTATION_TRACKER.md`. 1,844 tests pass, 94 suites, 0 regressions.
 
 **IMPL-124 Details:** Connected the existing `fund-detail` view to the platform UI. Added `onViewPool` prop to `AvailableInvestments`, loads pools via `poolService.getAll()` in parallel with deal loading, renders fund cards with "View Fund Details" button above the deal grid. Wired `onViewPool` in `App.tsx` to set `selectedPoolId` + `currentView('fund-detail')`. No new routes or screens — purely connects existing state that was declared but never triggered.
 Files changed: `AvailableInvestments.tsx` (modified), `App.tsx` (modified), `IMPLEMENTATION_TRACKER.md`. 1,844 tests pass, 94 suites, 0 regressions.

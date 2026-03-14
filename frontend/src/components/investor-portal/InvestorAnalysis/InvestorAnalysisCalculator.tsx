@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useHDCState } from '../../../hooks/taxbenefits/useHDCState';
 import { useHDCCalculations } from '../../../hooks/taxbenefits/useHDCCalculations';
 import { CONFORMING_STATES } from '../../../utils/taxbenefits/constants';
 import { formatCurrencyMillions } from '../../../utils/taxbenefits/formatters';
 import HDCInputsComponent from '../../taxbenefits/HDCInputsComponent';
 import HDCResultsComponent from '../../taxbenefits/HDCResultsComponent';
+import TaxEfficiencyMapPanel from '../../taxbenefits/TaxEfficiencyMapPanel';
+import { useTaxEfficiencyMap } from '../../../hooks/taxbenefits/useTaxEfficiencyMap';
+import type { BenefitStream } from '../../../utils/taxbenefits/investorTaxUtilization';
 import type { InvestorTaxInfo } from '../../../types/investorTaxInfo';
 import type { InvestorAnalysisResults, CalculationParams } from '../../../types/taxbenefits';
 
@@ -584,6 +587,41 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
     }
   }, [calculations, onCalculationComplete]);
 
+  // IMPL-125: Convert engine BenefitStream (millions) to dollars for Tax Efficiency Map
+  const benefitStreamDollars = useMemo<BenefitStream | null>(() => {
+    const stream = calculations.mainAnalysisResults?.benefitStream;
+    if (!stream) return null;
+    const S = 1_000_000;
+    return {
+      annualDepreciation: stream.annualDepreciation.map(v => v * S),
+      annualLIHTC: stream.annualLIHTC.map(v => v * S),
+      annualStateLIHTC: stream.annualStateLIHTC.map(v => v * S),
+      annualOperatingCF: stream.annualOperatingCF.map(v => v * S),
+      exitEvents: stream.exitEvents.map(e => ({
+        ...e,
+        exitProceeds: e.exitProceeds * S,
+        cumulativeDepreciation: e.cumulativeDepreciation * S,
+        recaptureExposure: e.recaptureExposure * S,
+        appreciationGain: e.appreciationGain * S,
+        ...(e.sec1245Recapture !== undefined && { sec1245Recapture: e.sec1245Recapture * S }),
+        ...(e.sec1250Recapture !== undefined && { sec1250Recapture: e.sec1250Recapture * S }),
+      })),
+      grossEquity: stream.grossEquity * S,
+      netEquity: stream.netEquity * S,
+      syndicationOffset: stream.syndicationOffset * S,
+    };
+  }, [calculations.mainAnalysisResults?.benefitStream]);
+
+  const investorEquityDollars = (calculations.investorEquity || 0) * 1_000_000;
+
+  const efficiencyMap = useTaxEfficiencyMap({
+    benefitStream: benefitStreamDollars,
+    fundEquity: investorEquityDollars,
+    concentrationLimit: 0.20,
+    defaultFilingStatus: 'MFJ',
+    defaultState: selectedState || 'WA',
+  });
+
   return (
     <div className="font-sans min-h-screen flex flex-col px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 py-4 sm:py-6 md:py-8 box-border w-full max-w-full m-0">
 
@@ -691,6 +729,14 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
           dealLocation={dealLocation}
           dealLatitude={dealLatitude}
           dealLongitude={dealLongitude}
+        />
+      )}
+
+      {/* IMPL-125: Tax Efficiency Map */}
+      {efficiencyMap && investorEquityDollars > 0 && (
+        <TaxEfficiencyMapPanel
+          result={efficiencyMap}
+          fundEquity={investorEquityDollars}
         />
       )}
 

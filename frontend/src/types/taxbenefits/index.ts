@@ -1,7 +1,7 @@
 // HDC Calculator Types and Interfaces
 
 import { PreferredEquityResult } from '../../utils/taxbenefits/preferredEquityCalculations';
-import { TaxUtilizationResult } from '../../utils/taxbenefits/investorTaxUtilization';
+import { TaxUtilizationResult, BenefitStream } from '../../utils/taxbenefits/investorTaxUtilization';
 
 // Re-export B3 types for convenience
 export type { InvestorFitResult, FitWarning, Archetype, FitRating, BenefitTimingProfile } from '../../utils/taxbenefits/investorFit';
@@ -213,6 +213,7 @@ export interface InvestorAnalysisResults {
   iraConversionPlan?: IRAConversionPlan;
   assetSaleAnalysis?: AssetSaleAnalysis;
   taxUtilization?: TaxUtilizationResult;  // Phase A1: Tax utilization analysis (when income composition provided)
+  benefitStream?: BenefitStream;           // IMPL-125: Surfaced for Tax Efficiency Map in deal view
   exitTaxAnalysis?: ExitTaxResult;         // IMPL-094: Character-split exit tax (§5.12)
 
   // IMPL-111: Day-precise XIRR (when investmentDate provided)

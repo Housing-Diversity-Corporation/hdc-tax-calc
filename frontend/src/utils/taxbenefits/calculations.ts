@@ -2503,6 +2503,9 @@ export const calculateFullInvestorAnalysis = (
 
       // Calculate tax utilization
       results.taxUtilization = calculateTaxUtilization(benefitStream, investorProfile);
+
+      // IMPL-125: Surface BenefitStream for Tax Efficiency Map in deal view
+      results.benefitStream = benefitStream;
     }
 
     return results;
