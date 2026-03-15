@@ -102,4 +102,4 @@ coverage/
 *credentials*.json 2
 
 *.md
-dev.sh
+dev.shfrontend/scripts/output/
