@@ -1,6 +1,6 @@
 # TaxBenefits Calculator — Implementation Tracker
 
-**Document Version:** 10.7
+**Document Version:** 10.8
 **Last Updated:** 2026-03-15
 **Branch:** main
 **Current Test Count:** 1,844 passing (94 suites, 0 failures)
@@ -12,6 +12,7 @@
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v10.8 | 2026-03-15 | IMPL-127: Fix recaptureExposure misuse as exit proceeds in Tax Efficiency Map MOIC — recaptureExposure is a tax liability, not a return. MOIC now correctly shows tax-benefit-only multiple: (investment + taxSavings) / investment. Dead extractExitValues() helper removed. 1 file modified. Test count unchanged at 1,844. |
 | v10.7 | 2026-03-15 | IMPL-126: Rebuild Tax_Utilization sheet with live Excel formulas — zero hardcoded calculation results. Input cells link to Inputs/Capital_Stack named ranges; derived calculations, year-by-year table, summary, and cross-check rows all use FormulaCell pattern. §38(c) ceiling approximation with note. §461(l) filing-status-aware cap (MFJ key fix). Cross-checks use upper-bound comparison with validity row. Accurate fallback values for pre-recalculation display. 2 files modified. Test count unchanged at 1,844. |
 | v10.6 | 2026-03-14 | IMPL-125: Move Tax Efficiency Map to deal view — renders from individual deal BenefitStream instead of pool aggregation. 4 files modified. Test count unchanged at 1,844. |
 | v10.5 | 2026-03-13 | IMPL-124: Wire pool navigation — fund-detail view reachable via AvailableInvestments onViewPool. 2 files modified. Test count unchanged at 1,844. |

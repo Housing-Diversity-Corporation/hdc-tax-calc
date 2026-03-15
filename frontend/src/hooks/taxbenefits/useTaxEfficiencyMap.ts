@@ -147,18 +147,9 @@ function buildCellProfile(
   }
 }
 
-/**
- * Extract exit proceeds and OZ benefits from a TaxUtilizationResult for MOIC.
- * Returns values in millions (matching engine output).
- */
-function extractExitValues(result: TaxUtilizationResult): { exitProceeds: number; ozBenefits: number } {
-  let exitProceeds = 0;
-  let ozBenefits = 0;
-  for (const rc of result.recaptureCoverage) {
-    exitProceeds += rc.recaptureExposure; // Gross exit value before tax
-  }
-  return { exitProceeds, ozBenefits };
-}
+// IMPL-127: extractExitValues removed — recaptureExposure is a tax liability, not exit proceeds.
+// Tax Efficiency Map shows tax-benefit MOIC only. Full MOIC including exit equity
+// proceeds is shown on the main deal analysis screen (Investor_Returns sheet).
 
 /**
  * Determine binding constraint label from the TaxUtilizationResult.
@@ -230,12 +221,11 @@ export function computeEfficiencyMap(
         const totalTaxSavings = totalTaxSavingsM * 1_000_000;
         const taxSavingsPerDollar = investment > 0 ? totalTaxSavings / investment : 0;
 
-        // MOIC: use exit proceeds from recapture coverage
-        const exitProceedsM = result.recaptureCoverage.reduce(
-          (sum, rc) => sum + (rc.recaptureExposure > 0 ? rc.recaptureExposure : 0), 0
-        );
+        // IMPL-127: Tax-benefit-only MOIC — (investment + tax savings) / investment
+        // Exit equity proceeds are excluded — recaptureExposure is a liability, not a return.
+        // Full MOIC including exit proceeds is shown on the main deal analysis screen.
         const moic = investment > 0
-          ? (totalTaxSavingsM + exitProceedsM) * 1_000_000 / investment
+          ? (investment + totalTaxSavings) / investment
           : 0;
 
         allCells.push({
