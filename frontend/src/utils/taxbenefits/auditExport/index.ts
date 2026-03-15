@@ -350,7 +350,7 @@ export function generateLiveExcelModel(data: LiveExcelParams): XLSX.WorkBook {
     const investorSubDebt = params.projectCost * (params.investorSubDebtPct || 0) / 100;
     const totalInvestmentForUtil = (syndicationYear === 0 ? investorEquityNet : investorEquityGross) + investorSubDebt;
 
-    const taxUtilizationResult = buildTaxUtilizationSheet(investorResults, totalInvestmentForUtil);
+    const taxUtilizationResult = buildTaxUtilizationSheet(investorResults, totalInvestmentForUtil, params);
     XLSX.utils.book_append_sheet(wb, taxUtilizationResult.sheet, 'Tax_Utilization');
     allNamedRanges.push(...taxUtilizationResult.namedRanges);
   }

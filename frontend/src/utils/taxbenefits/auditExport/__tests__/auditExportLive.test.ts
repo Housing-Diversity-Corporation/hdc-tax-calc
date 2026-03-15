@@ -839,7 +839,7 @@ describe('IMPL-056: Live Calculation Excel Model', () => {
       // Verify the sheet has content
       const taxUtilSheet = workbook.Sheets['Tax_Utilization'];
       expect(taxUtilSheet).toBeDefined();
-      expect(taxUtilSheet['A1']?.v).toBe('TAX UTILIZATION ANALYSIS');
+      expect(taxUtilSheet['A1']?.v).toBe('TAX UTILIZATION ANALYSIS \u2014 LIVE FORMULAS');
     });
   });
 });
