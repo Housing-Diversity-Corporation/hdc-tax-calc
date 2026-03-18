@@ -101,5 +101,6 @@ coverage/
 *.key 2
 *credentials*.json 2
 
-*.md
-dev.shfrontend/scripts/output/
+# Ignore generated analysis output markdown (not documentation)
+frontend/scripts/output/**/*.md
+frontend/scripts/output/*.md
