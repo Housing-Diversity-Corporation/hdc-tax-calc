@@ -96,8 +96,8 @@ and blocked items. Replaces manual Registry update document uploads.
 | OZ 2.0 Addendum | v9.3 | Claude Chat project knowledge |
 | Tax Benefits Spec | v6.0 | Claude Chat project knowledge |
 | Tax Benefits Program Spec | v1.4 | Claude Chat project knowledge |
-| Tax Efficiency Mapping Spec | v1.1 | Claude Chat project knowledge |
-| HDC Strategy & Execution Plan | v3.0 | Claude Chat project knowledge |
+| Tax Efficiency Mapping Spec | v1.2 | Claude Chat project knowledge |
+| HDC Strategy & Execution Plan | v3.1 | Claude Chat project knowledge |
 | Implementation Tracker | v10.8 | frontend/docs/IMPLEMENTATION_TRACKER.md |
 | This file | v1.0 | frontend/docs/SPEC_REGISTRY_NOTES.md |
 

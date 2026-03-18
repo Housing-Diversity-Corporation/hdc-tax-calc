@@ -375,3 +375,6 @@ Before implementing any IMPL that touches LIHTC credit calculations, deal type, 
 | 2026-03-02 | Timing Clock Precision — Hold Period vs Model Duration Split | Timing Handoff v3.0 |
 | 2026-03-04 | Added Documented Assumptions Gate | IMPL-118 |
 | 2026-03-06 | Added NIIT-Aware Depreciation Benefit Calculation | IMPL-119 |
+| 2026-03-12 | §38(c) Unit Mismatch — implicit units are a design smell; dollars vs millions is the canonical bug vector; branded TypeScript types are the long-term fix | IMPL-122 |
+| 2026-03-13 | Tax Efficiency Map enforces single source of truth — artifact simplified calc layer replaced with direct calculations.ts engine calls | IMPL-123 |
+| 2026-03-15 | Tax_Utilization Excel sheet rebuilt with live formulas — zero hardcoded results; enables independent audit without platform access | IMPL-126 |
