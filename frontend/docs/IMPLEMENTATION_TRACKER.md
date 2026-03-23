@@ -528,6 +528,7 @@ Files changed: investorSizing.ts, investorTaxUtilization.ts, taxEfficiencyMappin
 |-----|-------------|----------|-------|
 | ISS-018 | Returns Buildup LIHTC catch-up allocation display | Low | Cosmetic - catch-up shows in Federal row instead of split |
 | ISS-069 | Excel export: PlacedInServiceMonth named range removed in IMPL-117 but still referenced in LIHTC/Depreciation/Tax Benefits formula strings — causes #NAME? errors on Excel recalculation | Medium | Pre-existing since IMPL-117; pre-calc v: values are correct so cached display is accurate; fix requires either restoring the named range or rewriting affected formula strings |
+| ISS-070 | Live Excel export key metrics don't match UI — MOIC (3.794x vs 3.83x), IRR (33.58% vs 31.98%), Investor Equity ($15.782M vs $16.048M). Root cause: HDCResultsComponent.tsx manually constructs export params with different values than useHDCCalculations renders in the UI. Same class of issue as IMPL-128/129 prop wiring gaps. | High | Confirmed on Trace 4001 $65M — exported simultaneously from same deal state |
 
 ---
 
