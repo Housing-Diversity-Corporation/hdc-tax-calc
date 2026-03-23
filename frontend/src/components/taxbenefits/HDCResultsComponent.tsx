@@ -429,6 +429,8 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
 
                 // IMPL-064: Add missing LIHTC params (metadata uses decimals, params expect percentages)
                 lihtcEnabled: props.lihtcResult != null,
+                // IMPL-129: Pass pre-computed LIHTC credit schedule for cash flow calculation
+                federalLIHTCCredits: props.lihtcResult?.yearlyBreakdown?.map(y => y.creditAmount) || [],
                 applicableFraction: props.lihtcResult?.metadata?.stabilizedApplicableFraction != null
                   ? props.lihtcResult.metadata.stabilizedApplicableFraction * 100 : undefined,
                 creditRate: props.lihtcResult?.metadata?.creditRate != null
@@ -484,6 +486,9 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
                 aumFeeRate: props.aumFeeRate,
                 aumCurrentPayEnabled: props.aumCurrentPayEnabled,
                 aumCurrentPayPct: props.aumCurrentPayPct,
+
+                // IMPL-129: Enable exit tax analysis for OZ recapture avoided calculation
+                includeDepreciationSchedule: true,
 
                 // Legacy/Computed fields
                 investorUpfrontCash: 0,

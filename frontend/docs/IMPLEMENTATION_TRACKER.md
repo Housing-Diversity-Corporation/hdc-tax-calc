@@ -527,6 +527,7 @@ Files changed: investorSizing.ts, investorTaxUtilization.ts, taxEfficiencyMappin
 | ISS | Description | Priority | Notes |
 |-----|-------------|----------|-------|
 | ISS-018 | Returns Buildup LIHTC catch-up allocation display | Low | Cosmetic - catch-up shows in Federal row instead of split |
+| ISS-069 | Excel export: PlacedInServiceMonth named range removed in IMPL-117 but still referenced in LIHTC/Depreciation/Tax Benefits formula strings — causes #NAME? errors on Excel recalculation | Medium | Pre-existing since IMPL-117; pre-calc v: values are correct so cached display is accurate; fix requires either restoring the named range or rewriting affected formula strings |
 
 ---
 

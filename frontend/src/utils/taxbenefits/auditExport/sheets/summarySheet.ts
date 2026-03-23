@@ -123,8 +123,13 @@ export function buildSummarySheet(
   ws[`B${currentRow}`] = { t: 'n', v: investorResults.investorTaxBenefits, f: 'TotalTaxBenefits' } as FormulaCell;
   currentRow++;
 
+  // IMPL-129: Compute total LIHTC from cash flows + remaining credits (matches TotalLIHTC formula)
+  const cfArray = investorResults.investorCashFlows || [];
+  const totalLIHTCPreCalc = cfArray.reduce((sum, cf) => sum + (cf.federalLIHTCCredit || 0) + (cf.stateLIHTCCredit || 0), 0)
+    + (investorResults.remainingLIHTCCredits || 0)
+    + (investorResults.remainingStateLIHTCCredits || 0);
   ws[`A${currentRow}`] = { t: 's', v: 'Total LIHTC Credits' };
-  ws[`B${currentRow}`] = { t: 'n', v: 0, f: 'TotalLIHTC' } as FormulaCell;
+  ws[`B${currentRow}`] = { t: 'n', v: totalLIHTCPreCalc, f: 'TotalLIHTC' } as FormulaCell;
   currentRow += 2;
 
   // === DEBT METRICS ===

@@ -15,7 +15,7 @@ and blocked items. Replaces manual Registry update document uploads.
 | Branch | main |
 | Latest IMPL deployed | IMPL-127 |
 | IMPL-128 | In progress on impl-128-wip branch — not yet merged |
-| Next available after 128 | IMPL-129 |
+| Next available after 129 | IMPL-130 |
 | Test count | 1,844 (94 suites, 0 failures) |
 | Last updated | 2026-03-17 |
 
@@ -45,7 +45,8 @@ and blocked items. Replaces manual Registry update document uploads.
 | 126 | Tax_Utilization Excel sheet rebuilt with live formulas | ✅ Deployed 2026-03-15 |
 | 127 | recaptureExposure misuse fix in Tax Efficiency Map MOIC | ✅ Deployed 2026-03-15 |
 | 128 | Full hold-period MOIC with §469(g) exit release | 🔄 In progress (impl-128-wip) |
-| 129+ | Unassigned — available | — |
+| 129 | Fix Excel export: LIHTC credits + OZ benefits missing | ✅ Deployed 2026-03-23 |
+| 130+ | Unassigned — available | — |
 
 ---
 
