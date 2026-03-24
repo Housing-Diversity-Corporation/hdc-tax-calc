@@ -4,6 +4,7 @@
 **Last Updated:** 2026-03-15
 **Branch:** main
 **Current Test Count:** 1,844 passing (94 suites, 0 failures)
+**Canonical Test Runner:** Jest (`npx jest --config jest.config.ts --watchAll=false`)
 **Validation Status:** 13/15 Three Sigma scenarios complete (Production Certification ✅)
 
 ---

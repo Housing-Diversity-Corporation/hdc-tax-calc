@@ -39,8 +39,9 @@ Verify all layers are in sync:
 ### 2. Test Pass Rate
 
 - 100% test pass rate required
-- Run: `npx jest --config jest.config.ts --watchAll=false`
-- Current baseline: 1,167 tests
+- Run: `cd frontend && npx jest --config jest.config.ts --watchAll=false 2>&1 | tail -5`
+- Current baseline: 1,844 tests (94 suites)
+- Canonical runner: **Jest** (not vitest — vitest is not configured for this project)
 
 ### 3. Grep Audit for Consistency
 
