@@ -46,9 +46,11 @@ export function buildLIHTCSheet(params: CalculationParams): SheetResult {
   const stateCatchUpYear = stateCreditDuration + 1;
 
   // Year 1 proration factor: (13 - closing month) / 12
-  const year1Factor = (13 - pisMonth) / 12;
+  // §42(f)(1) election: defer credit start → Year 1 gets full credit, no catch-up
+  const electDefer = params.electDeferCreditPeriod ?? false;
+  const year1Factor = electDefer ? 1.0 : (13 - pisMonth) / 12;
   const year1FedCredit = annualFedCredit * year1Factor;
-  const year11FedCredit = annualFedCredit - year1FedCredit; // Federal catch-up always Year 11
+  const year11FedCredit = electDefer ? 0 : annualFedCredit - year1FedCredit;
   const year1StateCredit = annualStateCredit * year1Factor;
   const stateCatchUpCredit = annualStateCredit - year1StateCredit; // State catch-up in year (duration+1)
 

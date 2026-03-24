@@ -1105,5 +1105,115 @@ describe('LIHTC Credit Calculations', () => {
         })).not.toThrow();
       });
     });
+
+    // --------------------------------------------------------------------------
+    // §42(f)(1) election threading (IMPL-130)
+    // --------------------------------------------------------------------------
+
+    describe('electDeferCreditPeriod threading', () => {
+      it('Sept PIS (month 9), election ON → year1ProrationFactor = 1.0, no penalty risk', () => {
+        const schedule = calculateLIHTCSchedule({
+          eligibleBasis: 50,
+          stabilizedApplicableFraction: 1.0,
+          ddaQctBoost: false,
+          pisMonth: 9,
+          creditRate: 0.04,
+          electDeferCreditPeriod: true,
+        });
+
+        expect(schedule.metadata.year1ProrationFactor).toBe(1.0);
+        expect(schedule.year1Credit).toBe(schedule.annualCredit);
+        expect(schedule.year11Credit).toBeCloseTo(0, 6);
+        expect(schedule.section42f3PenaltyRisk).toBe(false);
+      });
+
+      it('Sept PIS (month 9), election OFF → year1ProrationFactor ≈ 0.333', () => {
+        const schedule = calculateLIHTCSchedule({
+          eligibleBasis: 50,
+          stabilizedApplicableFraction: 1.0,
+          ddaQctBoost: false,
+          pisMonth: 9,
+          creditRate: 0.04,
+          electDeferCreditPeriod: false,
+        });
+
+        // (13 - 9) / 12 = 4/12 ≈ 0.3333
+        expect(schedule.metadata.year1ProrationFactor).toBeCloseTo(4 / 12, 4);
+        expect(schedule.year1Credit).toBeCloseTo(schedule.annualCredit * (4 / 12), 6);
+        expect(schedule.year11Credit).toBeCloseTo(schedule.annualCredit * (1 - 4 / 12), 6);
+      });
+
+      it('Sept PIS (month 9), election OFF, new_construction with leaseUp > 4 → penalty risk true', () => {
+        const schedule = calculateLIHTCSchedule({
+          eligibleBasis: 50,
+          stabilizedApplicableFraction: 1.0,
+          ddaQctBoost: false,
+          pisMonth: 9,
+          creditRate: 0.04,
+          electDeferCreditPeriod: false,
+          dealType: 'new_construction',
+          leaseUpRampInput: { leaseUpMonths: 6 }, // 6 > 4 months in service
+        });
+
+        expect(schedule.section42f3PenaltyRisk).toBe(true);
+      });
+
+      it('Sept PIS (month 9), election ON, new_construction with leaseUp > 4 → penalty risk suppressed', () => {
+        const schedule = calculateLIHTCSchedule({
+          eligibleBasis: 50,
+          stabilizedApplicableFraction: 1.0,
+          ddaQctBoost: false,
+          pisMonth: 9,
+          creditRate: 0.04,
+          electDeferCreditPeriod: true,
+          dealType: 'new_construction',
+          leaseUpRampInput: { leaseUpMonths: 6 },
+        });
+
+        expect(schedule.section42f3PenaltyRisk).toBe(false);
+        expect(schedule.metadata.year1ProrationFactor).toBe(1.0);
+      });
+
+      it('Jan PIS (month 1), election ON → no effect, proration already 1.0 by normal calc', () => {
+        const scheduleWithElection = calculateLIHTCSchedule({
+          eligibleBasis: 50,
+          stabilizedApplicableFraction: 1.0,
+          ddaQctBoost: false,
+          pisMonth: 1,
+          creditRate: 0.04,
+          electDeferCreditPeriod: true,
+        });
+
+        const scheduleWithout = calculateLIHTCSchedule({
+          eligibleBasis: 50,
+          stabilizedApplicableFraction: 1.0,
+          ddaQctBoost: false,
+          pisMonth: 1,
+          creditRate: 0.04,
+          electDeferCreditPeriod: false,
+        });
+
+        // Both should yield 1.0 proration — January already gets 12/12
+        expect(scheduleWithElection.metadata.year1ProrationFactor).toBe(1.0);
+        expect(scheduleWithout.metadata.year1ProrationFactor).toBe(1.0);
+        expect(scheduleWithElection.year1Credit).toBe(scheduleWithout.year1Credit);
+        expect(scheduleWithElection.year11Credit).toBeCloseTo(0, 6);
+        expect(scheduleWithout.year11Credit).toBeCloseTo(0, 6);
+      });
+
+      it('total credits invariant holds with election ON', () => {
+        const schedule = calculateLIHTCSchedule({
+          eligibleBasis: 50,
+          stabilizedApplicableFraction: 1.0,
+          ddaQctBoost: true,
+          pisMonth: 7,
+          creditRate: 0.04,
+          electDeferCreditPeriod: true,
+        });
+
+        const total = schedule.year1Credit + (schedule.years2to10Credit * 9) + schedule.year11Credit;
+        expect(total).toBeCloseTo(schedule.annualCredit * 10, 3);
+      });
+    });
   });
 });

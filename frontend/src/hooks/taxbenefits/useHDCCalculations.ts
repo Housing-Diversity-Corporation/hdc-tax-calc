@@ -498,7 +498,8 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
         stabilizedApplicableFraction: (props.applicableFraction || 100) / 100,
         ddaQctBoost: props.ddaQctBoost || false,
         pisMonth,
-        creditRate: props.creditRate || 0.04
+        creditRate: props.creditRate || 0.04,
+        electDeferCreditPeriod: (props.electDeferCreditPeriod ?? false) && pisMonth !== 1,
       });
     } catch (error) {
       console.error('LIHTC calculation error:', error);
@@ -510,7 +511,8 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     props.applicableFraction,
     props.ddaQctBoost,
     pisMonth,
-    props.creditRate
+    props.creditRate,
+    props.electDeferCreditPeriod
   ]);
 
   // Calculate State LIHTC (v7.0.14)
@@ -737,6 +739,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     props.annualOrdinaryIncome,
     props.annualPassiveIncome,
     props.annualPortfolioIncome,
+    props.investorTrack,
     props.groupingElection,
     props.filingStatus,
     // Timing Architecture (IMPL-112+113)

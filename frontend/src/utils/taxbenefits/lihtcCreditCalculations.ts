@@ -206,6 +206,13 @@ export interface LIHTCCalculationParams {
    * Defaults to { leaseUpMonths: 6 } if dealType is 'new_construction' and this is omitted.
    */
   leaseUpRampInput?: LeaseUpRampInput;
+
+  /**
+   * §42(f)(1) election — defer credit period start to year after PIS.
+   * When true, Year 1 proration = 1.0 (full year) and §42(f)(3) penalty risk is suppressed.
+   * Defaults to false if not provided.
+   */
+  electDeferCreditPeriod?: boolean;
 }
 
 /**
@@ -475,7 +482,7 @@ export function calculateLIHTCSchedule(
 
   // Step 5: Calculate Year 1 proration and effective applicable fraction
   const monthsInServiceYear1 = getMonthsInServiceYear1(pisMonth);
-  const year1ProrationFactor = getYear1ProrationFactor(pisMonth);
+  const year1ProrationFactor = getYear1ProrationFactor(pisMonth, params.electDeferCreditPeriod ?? false);
 
   const effectiveYear1AF = computeEffectiveYear1AF(
     dealType,
@@ -560,7 +567,9 @@ export function calculateLIHTCSchedule(
     ? rampInput.leaseUpMonths
     : rampInput.monthlyOccupancyFractions.length;
   const section42f3PenaltyRisk =
-    dealType === 'new_construction' && leaseUpLength > monthsInServiceYear1;
+    dealType === 'new_construction' &&
+    leaseUpLength > monthsInServiceYear1 &&
+    !(params.electDeferCreditPeriod ?? false);
 
   return {
     annualCredit,
