@@ -13,11 +13,11 @@ and blocked items. Replaces manual Registry update document uploads.
 | Field | Value |
 |-------|-------|
 | Branch | main |
-| Latest IMPL deployed | IMPL-127 |
+| Latest IMPL deployed | IMPL-130 |
 | IMPL-128 | In progress on impl-128-wip branch — not yet merged |
-| Next available after 129 | IMPL-130 |
-| Test count | 1,844 (94 suites, 0 failures) |
-| Last updated | 2026-03-17 |
+| Next available | IMPL-131 |
+| Test count | 1,850 (94 suites, 0 failures) |
+| Last updated | 2026-03-24 |
 
 ---
 
@@ -46,7 +46,8 @@ and blocked items. Replaces manual Registry update document uploads.
 | 127 | recaptureExposure misuse fix in Tax Efficiency Map MOIC | ✅ Deployed 2026-03-15 |
 | 128 | Full hold-period MOIC with §469(g) exit release | 🔄 In progress (impl-128-wip) |
 | 129 | Fix Excel export: LIHTC credits + OZ benefits missing | ✅ Deployed 2026-03-23 |
-| 130+ | Unassigned — available | — |
+| 130 | §42(f)(1) election threading fix + January guard at LIHTC call site | ✅ Deployed 2026-03-24 |
+| 131+ | Unassigned — available | — |
 
 ---
 

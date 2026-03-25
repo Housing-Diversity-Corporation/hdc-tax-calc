@@ -30,6 +30,7 @@
 | IMPL-118 | First-Year LIHTC Applicable Fraction -- deal type + occupancy ramp + Documented Assumptions Gate | Deployed | 2026-03-05 |
 | IMPL-119 | NIIT-Aware Depreciation Benefit -- gate depreciation effective rate on niitApplies; 37%+3.8% passive, 37% REP+grouped | Deployed | 2026-03-06 |
 | IMPL-120 | Exit Tax appreciationGain & ozExitAppreciation Sync | Complete | 2026-03-08 | calculations.ts | Fix ozExitAppreciation to use adjusted-basis residual gain logic matching calculateExitTax(); sync IRR terminal cash flow to engine-derived value. 1,824 tests pass. |
+| IMPL-130 | §42(f)(1) election threading fix — electDeferCreditPeriod added to LIHTCCalculationParams, threaded into getYear1ProrationFactor(), section42f3PenaltyRisk gated on election, lihtcSheet.ts election-aware proration, January guard at LIHTC call site | Deployed | 2026-03-24 | lihtcCreditCalculations.ts, useHDCCalculations.ts, lihtcSheet.ts, lihtcCreditCalculations.test.ts | 1,850 tests (94 suites, 0 failures). |
 
 ---
 
@@ -50,7 +51,17 @@
 | IMPL-118 | First-Year LIHTC Applicable Fraction | Deployed (2026-03-05) |
 | IMPL-119 | NIIT-Aware Depreciation Benefit Calculation | Deployed (2026-03-06) |
 | IMPL-120 | Exit Tax appreciationGain & ozExitAppreciation Sync | Deployed (2026-03-08) |
-| IMPL-121+ | *Unassigned -- available for future work* | -- |
+| IMPL-121 | NIIT-aware rate in calculateTaxUtilization() | Deployed (2026-03-12) |
+| IMPL-122 | §38(c) unit mismatch fix | Deployed (2026-03-12) |
+| IMPL-123 | Tax Efficiency Map platform integration | Deployed (2026-03-13) |
+| IMPL-124 | Pool navigation wiring | Deployed (2026-03-13) |
+| IMPL-125 | Tax Efficiency Map moved to deal view | Deployed (2026-03-14) |
+| IMPL-126 | Tax_Utilization Excel sheet rebuilt with live formulas | Deployed (2026-03-15) |
+| IMPL-127 | recaptureExposure misuse fix in Tax Efficiency Map MOIC | Deployed (2026-03-15) |
+| IMPL-128 | Full hold-period MOIC with §469(g) exit release | In progress (impl-128-wip) |
+| IMPL-129 | Fix Excel export: LIHTC credits + OZ benefits missing | Deployed (2026-03-23) |
+| IMPL-130 | §42(f)(1) election threading fix + January guard at LIHTC call site | Deployed (2026-03-24) |
+| IMPL-131+ | *Unassigned -- available for future work* | -- |
 
 ---
 
