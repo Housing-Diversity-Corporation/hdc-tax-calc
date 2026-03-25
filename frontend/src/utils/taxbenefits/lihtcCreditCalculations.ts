@@ -398,28 +398,37 @@ export function computeEffectiveYear1AF(
   dealType: DealType = 'acquisition',
   stabilizedAF: number,
   monthsInServiceYear1: number,
-  rampInput: LeaseUpRampInput = { leaseUpMonths: 6 }
+  rampInput: LeaseUpRampInput = { leaseUpMonths: 6 },
+  electDeferCreditPeriod: boolean = false,
+  pisMonth: number = 7,
 ): number {
   // Acquisition and acquisition_rehab: units already occupied, bypass ramp
   if (dealType === 'acquisition' || dealType === 'acquisition_rehab') {
     return stabilizedAF;
   }
 
+  // When §42(f)(1) election is active, credit Year 1 is a full 12-month year
+  // starting January after PIS. The ramp months that correspond to credit Year 1
+  // are offset by the months elapsed between PIS and January 1.
+  const rampStartMonth = electDeferCreditPeriod ? (13 - pisMonth) : 0;
+  const creditYear1Months = electDeferCreditPeriod ? 12 : monthsInServiceYear1;
+
   // New construction — discriminate on ramp input type
   if ('monthlyOccupancyFractions' in rampInput) {
     // Caller-supplied array path (future proforma engine hookup)
-    const fractions = rampInput.monthlyOccupancyFractions.slice(0, monthsInServiceYear1);
+    const fractions = rampInput.monthlyOccupancyFractions.slice(rampStartMonth, rampStartMonth + creditYear1Months);
     if (fractions.length === 0) return stabilizedAF;
-    return fractions.reduce((sum, f) => sum + f, 0) / monthsInServiceYear1;
+    return fractions.reduce((sum, f) => sum + f, 0) / creditYear1Months;
   }
 
   // Linear ramp path (Fund 1 implementation)
   const { leaseUpMonths } = rampInput;
   let totalAF = 0;
-  for (let m = 1; m <= monthsInServiceYear1; m++) {
-    totalAF += stabilizedAF * Math.min(m / leaseUpMonths, 1.0);
+  for (let m = 1; m <= creditYear1Months; m++) {
+    const rampMonth = rampStartMonth + m;
+    totalAF += stabilizedAF * Math.min(rampMonth / leaseUpMonths, 1.0);
   }
-  return totalAF / monthsInServiceYear1;
+  return totalAF / creditYear1Months;
 }
 
 /**
@@ -488,7 +497,9 @@ export function calculateLIHTCSchedule(
     dealType,
     stabilizedApplicableFraction,
     monthsInServiceYear1,
-    params.leaseUpRampInput ?? { leaseUpMonths: 6 }
+    params.leaseUpRampInput ?? { leaseUpMonths: 6 },
+    params.electDeferCreditPeriod ?? false,
+    pisMonth,
   );
 
   // Step 6: Calculate Year 1 credit using effective AF

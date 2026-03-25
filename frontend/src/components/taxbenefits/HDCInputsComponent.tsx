@@ -1189,6 +1189,7 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
             setReplacementReserve={props.setReplacementReserve || (() => {})}
             otherExclusions={props.otherExclusions || 0}
             setOtherExclusions={props.setOtherExclusions || (() => {})}
+            interestReserveMonths={props.interestReserveMonths}
             formatCurrency={props.formatCurrency}
             isReadOnly={props.isReadOnly}
           />

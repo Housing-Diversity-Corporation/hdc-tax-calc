@@ -10,7 +10,7 @@ import { getOzBenefits } from '../../utils/taxbenefits/hdcOzStrategy';
 import { ALL_JURISDICTIONS, getEffectiveTaxRate, doesNIITApply } from '../../utils/taxbenefits/stateData';
 import { getStateBonusConformityRate, getStateTaxRate } from '../../utils/taxbenefits/stateProfiles';
 import { getOzStepUpPercent } from '../../utils/taxbenefits/constants';
-import { calculateLIHTCSchedule, LIHTCCreditSchedule } from '../../utils/taxbenefits/lihtcCreditCalculations';
+import { calculateLIHTCSchedule, LIHTCCreditSchedule, DealType } from '../../utils/taxbenefits/lihtcCreditCalculations';
 import { calculateStateLIHTC, StateLIHTCCalculationResult } from '../../utils/taxbenefits/stateLIHTCCalculations';
 import { InvestorAnalysisResults, HDCAnalysisResults, StateLIHTCIntegrationResult, ComputedTimeline } from '../../types/taxbenefits';
 
@@ -144,6 +144,7 @@ interface UseHDCCalculationsProps {
   pisDateOverride?: string | null;
   exitExtensionMonths?: number;
   electDeferCreditPeriod?: boolean;
+  dealType?: DealType;
   computedTimeline?: ComputedTimeline | null;
 
   // State LIHTC (v7.0.14)
@@ -500,6 +501,8 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
         pisMonth,
         creditRate: props.creditRate || 0.04,
         electDeferCreditPeriod: (props.electDeferCreditPeriod ?? false) && pisMonth !== 1,
+        dealType: props.dealType ?? 'new_construction',
+        leaseUpRampInput: { leaseUpMonths: props.interestReserveMonths ?? 6 },
       });
     } catch (error) {
       console.error('LIHTC calculation error:', error);
@@ -512,7 +515,9 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     props.ddaQctBoost,
     pisMonth,
     props.creditRate,
-    props.electDeferCreditPeriod
+    props.electDeferCreditPeriod,
+    props.dealType,
+    props.interestReserveMonths
   ]);
 
   // Calculate State LIHTC (v7.0.14)

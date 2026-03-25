@@ -77,6 +77,9 @@ interface TaxCreditsSectionProps {
   stateLIHTCSyndicationYear?: 0 | 1 | 2; // IMPL-073
   setStateLIHTCSyndicationYear?: (value: 0 | 1 | 2) => void;
 
+  // IMPL-132: Lease-up ramp input for LIHTC schedule
+  interestReserveMonths?: number;
+
   // Formatting
   formatCurrency: (value: number) => string;
 
@@ -160,6 +163,8 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
   setStateLIHTCUserAmount,
   stateLIHTCSyndicationYear,
   setStateLIHTCSyndicationYear,
+  // IMPL-132
+  interestReserveMonths = 6,
   // Common
   formatCurrency,
   isReadOnly = false,
@@ -206,6 +211,9 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
         ddaQctBoost,
         pisMonth: placedInServiceMonth,
         creditRate,
+        electDeferCreditPeriod: (electDeferCreditPeriod ?? false) && placedInServiceMonth !== 1,
+        dealType: 'new_construction',
+        leaseUpRampInput: { leaseUpMonths: interestReserveMonths ?? 6 },
       });
 
       return {
@@ -216,7 +224,7 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
     } catch {
       return null;
     }
-  }, [lihtcEnabled, lihtcEligibleBasis, applicableFraction, ddaQctBoost, placedInServiceMonth, creditRate]);
+  }, [lihtcEnabled, lihtcEligibleBasis, applicableFraction, ddaQctBoost, placedInServiceMonth, creditRate, electDeferCreditPeriod, interestReserveMonths]);
 
   // ========== State LIHTC Logic ==========
 

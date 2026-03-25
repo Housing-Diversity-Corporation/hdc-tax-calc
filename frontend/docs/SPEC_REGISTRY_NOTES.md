@@ -13,10 +13,10 @@ and blocked items. Replaces manual Registry update document uploads.
 | Field | Value |
 |-------|-------|
 | Branch | main |
-| Latest IMPL deployed | IMPL-130 |
+| Latest IMPL deployed | IMPL-133 |
 | IMPL-128 | In progress on impl-128-wip branch — not yet merged |
-| Next available | IMPL-131 |
-| Test count | 1,850 (94 suites, 0 failures) |
+| Next available | IMPL-134 |
+| Test count | 1,854 (94 suites, 0 failures) |
 | Last updated | 2026-03-24 |
 
 ---
@@ -47,7 +47,10 @@ and blocked items. Replaces manual Registry update document uploads.
 | 128 | Full hold-period MOIC with §469(g) exit release | 🔄 In progress (impl-128-wip) |
 | 129 | Fix Excel export: LIHTC credits + OZ benefits missing | ✅ Deployed 2026-03-23 |
 | 130 | §42(f)(1) election threading fix + January guard at LIHTC call site | ✅ Deployed 2026-03-24 |
-| 131+ | Unassigned — available | — |
+| 131 | Fix TaxCreditsSection election preview — input panel matches results | ✅ Deployed 2026-03-24 |
+| 132 | Default dealType to new_construction + wire interestReserveMonths as ramp | ✅ Deployed 2026-03-24 |
+| 133 | Fix computeEffectiveYear1AF election-aware ramp offset | ✅ Deployed 2026-03-24 |
+| 134+ | Unassigned — available | — |
 
 ---
 

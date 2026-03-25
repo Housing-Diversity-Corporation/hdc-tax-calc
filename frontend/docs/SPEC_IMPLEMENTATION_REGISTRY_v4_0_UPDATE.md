@@ -31,6 +31,9 @@
 | IMPL-119 | NIIT-Aware Depreciation Benefit -- gate depreciation effective rate on niitApplies; 37%+3.8% passive, 37% REP+grouped | Deployed | 2026-03-06 |
 | IMPL-120 | Exit Tax appreciationGain & ozExitAppreciation Sync | Complete | 2026-03-08 | calculations.ts | Fix ozExitAppreciation to use adjusted-basis residual gain logic matching calculateExitTax(); sync IRR terminal cash flow to engine-derived value. 1,824 tests pass. |
 | IMPL-130 | §42(f)(1) election threading fix — electDeferCreditPeriod added to LIHTCCalculationParams, threaded into getYear1ProrationFactor(), section42f3PenaltyRisk gated on election, lihtcSheet.ts election-aware proration, January guard at LIHTC call site | Deployed | 2026-03-24 | lihtcCreditCalculations.ts, useHDCCalculations.ts, lihtcSheet.ts, lihtcCreditCalculations.test.ts | 1,850 tests (94 suites, 0 failures). |
+| IMPL-131 | Fix TaxCreditsSection input panel preview — pass electDeferCreditPeriod, dealType, leaseUpRampInput to calculateLIHTCSchedule() preview call; input panel Year 1 Credit now matches results section when election active | Deployed | 2026-03-24 | TaxCreditsSection.tsx, HDCInputsComponent.tsx | 1,850 tests (94 suites, 0 failures). |
+| IMPL-132 | Default dealType to new_construction; wire interestReserveMonths as leaseUpRampInput replacing hardcoded 6-month default. DealType prop added to UseHDCCalculationsProps for future use | Deployed | 2026-03-24 | useHDCCalculations.ts | 1,850 tests (94 suites, 0 failures). |
+| IMPL-133 | Fix computeEffectiveYear1AF election-aware ramp offset — when §42(f)(1) election active, ramp averaged over months (13-pisMonth) through (13-pisMonth+11) from PIS, not months 1-monthsInServiceYear1. Add electDeferCreditPeriod and pisMonth params. 4 new test scenarios | Deployed | 2026-03-24 | lihtcCreditCalculations.ts, lihtcCreditCalculations.test.ts | 1,854 tests (94 suites, 0 failures). |
 
 ---
 
@@ -61,7 +64,10 @@
 | IMPL-128 | Full hold-period MOIC with §469(g) exit release | In progress (impl-128-wip) |
 | IMPL-129 | Fix Excel export: LIHTC credits + OZ benefits missing | Deployed (2026-03-23) |
 | IMPL-130 | §42(f)(1) election threading fix + January guard at LIHTC call site | Deployed (2026-03-24) |
-| IMPL-131+ | *Unassigned -- available for future work* | -- |
+| IMPL-131 | Fix TaxCreditsSection election preview | Deployed (2026-03-24) |
+| IMPL-132 | Default dealType to new_construction + wire interestReserveMonths | Deployed (2026-03-24) |
+| IMPL-133 | Fix computeEffectiveYear1AF election-aware ramp offset | Deployed (2026-03-24) |
+| IMPL-134+ | *Unassigned -- available for future work* | -- |
 
 ---
 

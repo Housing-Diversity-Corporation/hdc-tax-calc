@@ -808,6 +808,62 @@ describe('LIHTC Credit Calculations', () => {
           expect(result).toBeCloseTo(expected, 6);
         });
       });
+
+      describe('§42(f)(1) election-aware ramp offset', () => {
+        it('July PIS, 12-month ramp, election ON → ramp months 7-18 averaged over 12', () => {
+          // rampStartMonth = 13 - 7 = 6, creditYear1Months = 12
+          // rampMonths: 7,8,9,10,11,12 (capped at 12 for months 7-12)
+          // then 12,12,12,12,12,12 (months 13-18 all capped at leaseUpMonths=12)
+          // = (7+8+9+10+11+12+12+12+12+12+12+12) / (12*12) = 129/144
+          // Wait — rampMonth = rampStartMonth + m where m=1..12
+          // = 6+1=7, 6+2=8, ..., 6+6=12, 6+7=13>12→capped
+          // AF per month: 7/12, 8/12, 9/12, 10/12, 11/12, 12/12, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+          // sum = (7+8+9+10+11+12)/12 + 6*1.0 = 57/12 + 6 = 4.75 + 6 = 10.75
+          // effective = 10.75 / 12 = 0.8958
+          const result = computeEffectiveYear1AF(
+            'new_construction', 1.0, 6, { leaseUpMonths: 12 },
+            true, 7
+          );
+          expect(result).toBeCloseTo(0.8958, 3);
+        });
+
+        it('July PIS, 12-month ramp, election OFF → ramp months 1-6', () => {
+          // rampStartMonth = 0, creditYear1Months = 6
+          // rampMonths: 1,2,3,4,5,6 → AFs: 1/12,2/12,...,6/12
+          // sum = 21/12 = 1.75, effective = 1.75/6 = 0.2917
+          const result = computeEffectiveYear1AF(
+            'new_construction', 1.0, 6, { leaseUpMonths: 12 },
+            false, 7
+          );
+          expect(result).toBeCloseTo(0.2917, 3);
+        });
+
+        it('Sept PIS, 12-month ramp, election ON → ramp months 5-16 averaged', () => {
+          // rampStartMonth = 13 - 9 = 4, creditYear1Months = 12
+          // rampMonths: 5,6,7,8,9,10,11,12,13>12→cap,...
+          // AFs: 5/12,6/12,7/12,8/12,9/12,10/12,11/12,12/12,1,1,1,1
+          // sum = (5+6+7+8+9+10+11+12)/12 + 4*1.0 = 68/12 + 4 = 5.667+4 = 9.667
+          // effective = 9.667/12 = 0.8056
+          const result = computeEffectiveYear1AF(
+            'new_construction', 1.0, 4, { leaseUpMonths: 12 },
+            true, 9
+          );
+          expect(result).toBeCloseTo(0.8056, 3);
+        });
+
+        it('Dec PIS, 12-month ramp, election ON → ramp months 2-13 averaged', () => {
+          // rampStartMonth = 13 - 12 = 1, creditYear1Months = 12
+          // rampMonths: 2,3,4,5,6,7,8,9,10,11,12,13>12→cap
+          // AFs: 2/12,3/12,...,12/12,1.0
+          // sum = (2+3+4+5+6+7+8+9+10+11+12)/12 + 1.0 = 77/12 + 1 = 6.417+1 = 7.417
+          // effective = 7.417/12 = 0.6181
+          const result = computeEffectiveYear1AF(
+            'new_construction', 1.0, 1, { leaseUpMonths: 12 },
+            true, 12
+          );
+          expect(result).toBeCloseTo(0.6181, 3);
+        });
+      });
     });
 
     // --------------------------------------------------------------------------
