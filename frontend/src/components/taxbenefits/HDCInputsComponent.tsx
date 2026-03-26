@@ -314,6 +314,8 @@ interface HDCInputsComponentProps {
   // Preset handlers
   onPresetSelect?: (presetId: string) => void;
   onSaveConfiguration?: (configName: string) => void;
+  // IMPL-135: Notify parent of loaded deal name for strip headers
+  onDealNameChange?: (name: string) => void;
 
   // Calculated results for display
   calculatedCashFlows?: CashFlowItem[];
@@ -603,7 +605,9 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
 
       // Save snapshot for dirty detection
       setLoadedPresetId(presetId);
-      setLoadedPresetName(config.configurationName || config.dealName || 'Configuration');
+      const resolvedName = config.configurationName || config.dealName || 'Configuration';
+      setLoadedPresetName(resolvedName);
+      props.onDealNameChange?.(resolvedName);
       setLoadedConfigOwnerId(config.userId ?? null);
       setInputSnapshot(JSON.stringify({
         pc: config.projectCost ?? 10, pd: config.predevelopmentCosts ?? 0, lv: config.landValue ?? 0,

@@ -59,6 +59,8 @@ interface ReturnsBuiltupStripProps {
   mainAnalysisResults: InvestorAnalysisResults;
   /** Per-year cash flow data */
   cashFlows: CashFlowItem[];
+  /** IMPL-135: Deal/configuration name for header display */
+  dealName?: string;
 }
 
 /** IMPL-060/061/092: Sub-component for dropdown breakdown (OZ Benefits, Depreciation) */
@@ -787,7 +789,8 @@ const ComponentRow: React.FC<ComponentRowProps> = ({
 
 const ReturnsBuiltupStrip: React.FC<ReturnsBuiltupStripProps> = ({
   mainAnalysisResults,
-  cashFlows
+  cashFlows,
+  dealName
 }) => {
   // ─────────────────────────────────────────────────────────────────────────
   // State: Collapse persistence
@@ -845,6 +848,18 @@ const ReturnsBuiltupStrip: React.FC<ReturnsBuiltupStripProps> = ({
         whiteSpace: 'nowrap'
       }}>
         Returns Buildup
+        {dealName && (
+          <span style={{
+            fontWeight: 500,
+            fontSize: '0.7rem',
+            color: 'var(--hdc-viridian-green)',
+            textTransform: 'none',
+            letterSpacing: 'normal',
+            marginLeft: '0.5rem'
+          }}>
+            {dealName}
+          </span>
+        )}
       </div>
 
       {/* Summary KPIs */}

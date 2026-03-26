@@ -1,7 +1,7 @@
 # TaxBenefits Calculator — Implementation Tracker
 
-**Document Version:** 10.9
-**Last Updated:** 2026-03-24
+**Document Version:** 10.10
+**Last Updated:** 2026-03-25
 **Branch:** main
 **Current Test Count:** 1,854 passing (94 suites, 0 failures)
 **Canonical Test Runner:** Jest (`npx jest --config jest.config.ts --watchAll=false`)
@@ -13,6 +13,7 @@
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v10.10 | 2026-03-25 | IMPL-135: Add deal name to KPI strip and Returns Buildup strip headers — thread loadedConfigName through HDCResultsComponent to both strips. Inline suffix on section title (fontWeight 500, 0.7rem, viridian-green). 6 component files modified. Test count unchanged at 1,854. |
 | v10.9 | 2026-03-24 | IMPL-134: OZ double-count fix in extended calculation path — for OZ 10+ year holds, subtract explicit ozRecaptureAvoided + ozExitAppreciation from adjustedTotalReturns (already captured by netExitTax=0). IRR rebuilt without double-counted OZ values. ozDeferralNPV retained. 1 file modified (calculations.ts, +22 lines). Test count unchanged at 1,854. |
 | v10.8 | 2026-03-15 | IMPL-127: Fix recaptureExposure misuse as exit proceeds in Tax Efficiency Map MOIC — recaptureExposure is a tax liability, not a return. MOIC now correctly shows tax-benefit-only multiple: (investment + taxSavings) / investment. Dead extractExitValues() helper removed. 1 file modified. Test count unchanged at 1,844. |
 | v10.7 | 2026-03-15 | IMPL-126: Rebuild Tax_Utilization sheet with live Excel formulas — zero hardcoded calculation results. Input cells link to Inputs/Capital_Stack named ranges; derived calculations, year-by-year table, summary, and cross-check rows all use FormulaCell pattern. §38(c) ceiling approximation with note. §461(l) filing-status-aware cap (MFJ key fix). Cross-checks use upper-bound comparison with validity row. Accurate fallback values for pre-recalculation display. 2 files modified. Test count unchanged at 1,844. |

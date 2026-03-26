@@ -198,6 +198,9 @@ interface HDCResultsComponentProps {
 
   // State LIHTC Integration (IMPL-018)
   stateLIHTCIntegration?: StateLIHTCIntegrationResult | null;
+
+  // IMPL-135: Deal name for KPI and Returns Buildup strip headers
+  dealName?: string;
 }
 
 const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
@@ -515,6 +518,7 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
               investorEquity={props.investorEquity}
               totalProjectCost={props.projectCost + (props.predevelopmentCosts || 0)}
               stateLIHTCIntegration={props.stateLIHTCIntegration}
+              dealName={props.dealName}
             />
           )}
 
@@ -523,6 +527,7 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
             <ReturnsBuiltupStrip
               mainAnalysisResults={props.mainAnalysisResults}
               cashFlows={props.investorCashFlows}
+              dealName={props.dealName}
             />
           )}
         </div>

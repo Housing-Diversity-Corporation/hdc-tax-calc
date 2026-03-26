@@ -1076,6 +1076,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
           formatCurrency={formatCurrencyMillions}
           CONFORMING_STATES={CONFORMING_STATES}
           isConformingState={!!calculations.isConformingState}
+          dealName={loadedConfigName}
           />
             </div>
           </div>

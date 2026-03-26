@@ -52,6 +52,8 @@ interface KPIStripProps {
   totalProjectCost: number;
   /** State LIHTC integration result */
   stateLIHTCIntegration?: StateLIHTCIntegrationResult | null;
+  /** IMPL-135: Deal/configuration name for header display */
+  dealName?: string;
 }
 
 // ============================================================================
@@ -263,6 +265,7 @@ const KPIStrip: React.FC<KPIStripProps> = ({
   mainAnalysisResults,
   cashFlows,
   investorEquity,
+  dealName,
   totalProjectCost,
   stateLIHTCIntegration
 }) => {
@@ -374,6 +377,18 @@ const KPIStrip: React.FC<KPIStripProps> = ({
         whiteSpace: 'nowrap'
       }}>
         Investor KPIs
+        {dealName && (
+          <span style={{
+            fontWeight: 500,
+            fontSize: '0.7rem',
+            color: 'var(--hdc-viridian-green)',
+            textTransform: 'none',
+            letterSpacing: 'normal',
+            marginLeft: '0.5rem'
+          }}>
+            {dealName}
+          </span>
+        )}
       </div>
 
       {/* Summary KPIs */}

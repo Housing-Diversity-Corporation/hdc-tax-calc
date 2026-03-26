@@ -194,6 +194,9 @@ const HDCCalculatorMain = () => {
     computedTimeline,
   } = useHDCState();
 
+  // IMPL-135: Track loaded deal name for strip headers
+  const [dealName, setDealName] = useState('');
+
   // Helper function for percentage inputs
   const handlePercentageChange = (setter: (value: number) => void, value: number) => {
     if (setter === setHdcSubDebtPct && value === 1) {
@@ -654,6 +657,7 @@ const HDCCalculatorMain = () => {
           setDealImageUrl={setDealImageUrl}
           startConfigLoading={startConfigLoading}
           endConfigLoading={endConfigLoading}
+          onDealNameChange={setDealName}
           startDebtEditing={startDebtEditing}
           endDebtEditing={endDebtEditing}
           // Timing Architecture (IMPL-114)
@@ -817,6 +821,7 @@ const HDCCalculatorMain = () => {
           // ISS-065: Removed excessBenefits (Excess Capacity section removed)
           total10YearBenefits={calculations.unifiedBenefitsSummary?.total10YearBenefits}
           benefitMultiple={calculations.unifiedBenefitsSummary?.benefitMultiple}
+          dealName={dealName}
           />
         </div>
       </div>
