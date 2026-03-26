@@ -1,6 +1,6 @@
 # TaxBenefits Calculator — Implementation Tracker
 
-**Document Version:** 10.10
+**Document Version:** 10.11
 **Last Updated:** 2026-03-25
 **Branch:** main
 **Current Test Count:** 1,854 passing (94 suites, 0 failures)
@@ -13,6 +13,7 @@
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v10.11 | 2026-03-25 | IMPL-136: Fix missing investorState + selectedState dependencies in mainAnalysisResults useMemo — investorState was never passed to calculateFullInvestorAnalysis (engine fell back to selectedState), and selectedState was missing from deps. Added investorState pass-through and both as explicit deps. 1 file modified. Test count unchanged at 1,854. Runtime verified: 4/4 tests pass (REP↔Non-REP, WA→NJ, WA→TX, grouping toggle). |
 | v10.10 | 2026-03-25 | IMPL-135: Add deal name to KPI strip and Returns Buildup strip headers — thread loadedConfigName through HDCResultsComponent to both strips. Inline suffix on section title (fontWeight 500, 0.7rem, viridian-green). 6 component files modified. Test count unchanged at 1,854. |
 | v10.9 | 2026-03-24 | IMPL-134: OZ double-count fix in extended calculation path — for OZ 10+ year holds, subtract explicit ozRecaptureAvoided + ozExitAppreciation from adjustedTotalReturns (already captured by netExitTax=0). IRR rebuilt without double-counted OZ values. ozDeferralNPV retained. 1 file modified (calculations.ts, +22 lines). Test count unchanged at 1,854. |
 | v10.8 | 2026-03-15 | IMPL-127: Fix recaptureExposure misuse as exit proceeds in Tax Efficiency Map MOIC — recaptureExposure is a tax liability, not a return. MOIC now correctly shows tax-benefit-only multiple: (investment + taxSavings) / investment. Dead extractExitValues() helper removed. 1 file modified. Test count unchanged at 1,844. |

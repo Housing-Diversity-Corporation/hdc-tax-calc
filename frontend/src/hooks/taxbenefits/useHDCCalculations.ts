@@ -695,6 +695,8 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       niitRate: props.niitRate,
       stateCapitalGainsRate: props.stateCapitalGainsRate,
       selectedState: props.selectedState,
+      // IMPL-136: Pass investorState so engine uses investor's filing state
+      investorState: props.investorState || '',
       // State LIHTC Integration (IMPL-018)
       stateLIHTCIntegration: stateLIHTCIntegration,
       // IMPL-073: State LIHTC syndication year for capital return model
@@ -747,6 +749,9 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     props.investorTrack,
     props.groupingElection,
     props.filingStatus,
+    // IMPL-136: investorState + selectedState must be explicit deps
+    props.investorState,
+    props.selectedState,
     // Timing Architecture (IMPL-112+113)
     props.investmentDate,
     props.pisDateOverride,
