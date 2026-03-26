@@ -2414,6 +2414,28 @@ export const calculateFullInvestorAnalysis = (
       adjustedIRR = calculateIRR(irrCashFlows, adjustedInvestment, totalInvestmentYears);
     }
 
+    // IMPL-134: OZ 10+ year hold double-count fix
+    // Base path adds ozRecaptureAvoided (annual CF) + ozExitAppreciation (exit) as explicit OZ benefits.
+    // The exit tax engine captures the same benefit via netExitTax=0 for OZ 10+ year holds.
+    // Subtract the explicit additions so the benefit is counted exactly once.
+    // ozDeferralNPV is retained — it's a separate time-value benefit not in netExitTax.
+    if (params.ozEnabled && totalInvestmentYears >= 10 && netExitTaxAmount === 0) {
+      const ozDoubleCount = (baseResults.ozRecaptureAvoided || 0) + (baseResults.ozExitAppreciation || 0);
+      adjustedTotalReturns -= ozDoubleCount;
+      const adjustedInvestment = baseResults.totalInvestment || 1;
+      adjustedMultiple = adjustedInvestment > 0 ? adjustedTotalReturns / adjustedInvestment : 0;
+      adjustedEquityMultiple = adjustedMultiple;
+
+      // Rebuild IRR cash flows without double-counted OZ values
+      const irrCashFlows = baseResults.investorCashFlows.map(
+        cf => cf.totalCashFlow - (cf.ozRecaptureAvoided || 0)
+      );
+      irrCashFlows[irrCashFlows.length - 1] += baseResults.exitProceeds + (baseResults.investorSubDebtAtExit || 0) +
+        (baseResults.remainingLIHTCCredits || 0) + (baseResults.ozDeferralNPV || 0);
+      // Note: ozExitAppreciation excluded from terminal CF — benefit captured by netExitTax=0
+      adjustedIRR = calculateIRR(irrCashFlows, adjustedInvestment, totalInvestmentYears);
+    }
+
     const results: InvestorAnalysisResults = {
       ...baseResults,
       depreciationSchedule,

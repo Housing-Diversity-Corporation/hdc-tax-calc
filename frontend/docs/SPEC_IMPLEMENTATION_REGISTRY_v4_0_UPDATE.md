@@ -34,6 +34,7 @@
 | IMPL-131 | Fix TaxCreditsSection input panel preview — pass electDeferCreditPeriod, dealType, leaseUpRampInput to calculateLIHTCSchedule() preview call; input panel Year 1 Credit now matches results section when election active | Deployed | 2026-03-24 | TaxCreditsSection.tsx, HDCInputsComponent.tsx | 1,850 tests (94 suites, 0 failures). |
 | IMPL-132 | Default dealType to new_construction; wire interestReserveMonths as leaseUpRampInput replacing hardcoded 6-month default. DealType prop added to UseHDCCalculationsProps for future use | Deployed | 2026-03-24 | useHDCCalculations.ts | 1,850 tests (94 suites, 0 failures). |
 | IMPL-133 | Fix computeEffectiveYear1AF election-aware ramp offset — when §42(f)(1) election active, ramp averaged over months (13-pisMonth) through (13-pisMonth+11) from PIS, not months 1-monthsInServiceYear1. Add electDeferCreditPeriod and pisMonth params. 4 new test scenarios | Deployed | 2026-03-24 | lihtcCreditCalculations.ts, lihtcCreditCalculations.test.ts | 1,854 tests (94 suites, 0 failures). |
+| IMPL-134 | OZ double-count fix in extended calculation path — for OZ 10+ year holds, base path adds ozRecaptureAvoided (annual) + ozExitAppreciation (exit) as explicit benefits, but exit tax engine also captures via netExitTax=0. Fix subtracts explicit OZ additions from adjustedTotalReturns and rebuilds IRR without double-counted values. ozDeferralNPV retained (separate time-value benefit). | Deployed | 2026-03-24 | calculations.ts | 1,854 tests (94 suites, 0 failures). |
 
 ---
 
@@ -67,7 +68,8 @@
 | IMPL-131 | Fix TaxCreditsSection election preview | Deployed (2026-03-24) |
 | IMPL-132 | Default dealType to new_construction + wire interestReserveMonths | Deployed (2026-03-24) |
 | IMPL-133 | Fix computeEffectiveYear1AF election-aware ramp offset | Deployed (2026-03-24) |
-| IMPL-134+ | *Unassigned -- available for future work* | -- |
+| IMPL-134 | OZ double-count fix in extended path (calculations.ts) | Deployed (2026-03-24) |
+| IMPL-135+ | *Unassigned -- available for future work* | -- |
 
 ---
 
