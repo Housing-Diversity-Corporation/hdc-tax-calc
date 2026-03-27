@@ -289,15 +289,77 @@ function deriveReturnComponents(
     });
   }
 
-  // IMPL-092 + IMPL-061: Depreciation Benefits with two-tier sub-rows
-  // Tier 1: Federal/State split (only when state benefit > 0)
-  // Tier 2: Temporal breakdown (Year 1 Bonus, Year 1 MACRS, Years 2-Exit) — always shown
-  if (depreciationTotal > 0) {
+  // IMPL-139: Net Depreciation Benefit (merges depreciation + exit tax into one row)
+  // When exitTax.netExitTax > 0 (non-OZ or OZ < 10yr): show "Net Depreciation Benefit"
+  // When netExitTax = 0 (OZ 10+ year hold): keep existing "Depreciation Benefits" unchanged
+  const exitTax = results.exitTaxAnalysis;
+  const hasExitTax = exitTax && exitTax.netExitTax > 0;
+
+  if (depreciationTotal > 0 && hasExitTax) {
+    // IMPL-139: Merged "Net Depreciation Benefit" row
+    const netDepreciationValue = depreciationTotal - exitTax.netExitTax;
+    const netDepSubComponents: SubComponent[] = [];
+
+    // Sub 1: Gross Benefit
+    netDepSubComponents.push({
+      label: 'Gross Benefit (at 37%)',
+      value: depreciationTotal,
+      multiple: depreciationTotal / totalInvestment,
+      dividerBefore: false,
+    });
+
+    // Sub 2: Exit Tax Cost (with divider)
+    netDepSubComponents.push({
+      label: 'Exit Tax Cost',
+      value: -exitTax.netExitTax,
+      multiple: -exitTax.netExitTax / totalInvestment,
+      dividerBefore: true,
+    });
+
+    // Sub 3-6: Exit tax breakdown (indented via label prefix, only if > 0)
+    if (exitTax.sec1245Tax > 0) {
+      netDepSubComponents.push({
+        label: `  §1245 Recapture @ ${(exitTax.sec1245Rate * 100).toFixed(0)}%`,
+        value: -exitTax.sec1245Tax,
+        multiple: -exitTax.sec1245Tax / totalInvestment,
+      });
+    }
+    if (exitTax.sec1250Tax > 0) {
+      netDepSubComponents.push({
+        label: `  §1250 Gain @ ${(exitTax.sec1250Rate * 100).toFixed(0)}%`,
+        value: -exitTax.sec1250Tax,
+        multiple: -exitTax.sec1250Tax / totalInvestment,
+      });
+    }
+    if (exitTax.niitTax > 0) {
+      netDepSubComponents.push({
+        label: '  NIIT (3.8%)',
+        value: -exitTax.niitTax,
+        multiple: -exitTax.niitTax / totalInvestment,
+      });
+    }
+    if (exitTax.stateExitTax > 0) {
+      netDepSubComponents.push({
+        label: '  State Exit Tax',
+        value: -exitTax.stateExitTax,
+        multiple: -exitTax.stateExitTax / totalInvestment,
+      });
+    }
+
+    components.push({
+      label: 'Net Depreciation Benefit',
+      value: netDepreciationValue,
+      multiple: netDepreciationValue / totalInvestment,
+      color: COMPONENT_COLORS.depreciation,
+      category: 'tax',
+      subComponents: netDepSubComponents,
+    });
+  } else if (depreciationTotal > 0) {
+    // OZ 10+ year hold path: keep existing "Depreciation Benefits" unchanged
     const depreciationSubComponents: SubComponent[] = [];
     const federalTotal = results.federalDepreciationBenefitTotal || 0;
     const stateTotal = results.stateDepreciationBenefitTotal || 0;
 
-    // Tier 1: Federal/State (only when investor has state tax)
     if (stateTotal > 0) {
       if (federalTotal > 0) {
         depreciationSubComponents.push({
@@ -314,11 +376,9 @@ function deriveReturnComponents(
       });
     }
 
-    // Tier 2: Temporal breakdown (restored from IMPL-061)
     const year1Bonus = results.year1BonusTaxBenefit || 0;
     const year1Macrs = results.year1MacrsTaxBenefit || 0;
     const years2Exit = results.years2ExitMacrsTaxBenefit || 0;
-    // Show divider before first temporal row when federal/state group is present
     const needsDivider = stateTotal > 0;
 
     if (year1Bonus > 0) {
@@ -329,17 +389,14 @@ function deriveReturnComponents(
         dividerBefore: needsDivider,
       });
     }
-
     if (year1Macrs > 0) {
       depreciationSubComponents.push({
         label: 'Year 1 MACRS Depreciation',
         value: year1Macrs,
         multiple: year1Macrs / totalInvestment,
-        // Divider only on the first temporal row (if bonus was 0, this becomes it)
         dividerBefore: needsDivider && year1Bonus === 0,
       });
     }
-
     if (years2Exit > 0) {
       depreciationSubComponents.push({
         label: 'Years 2-Exit MACRS',
@@ -363,7 +420,6 @@ function deriveReturnComponents(
   // IMPL-060: Add sub-components for dropdown breakdown
   // IMPL-099: Update recapture avoidance to use character-split values from exitTaxAnalysis
   if (totalOzBenefits > 0) {
-    // Build sub-components array (only non-zero values)
     const ozSubComponents: SubComponent[] = [];
 
     if (ozStepUpSavings > 0) {
@@ -373,7 +429,6 @@ function deriveReturnComponents(
         multiple: ozStepUpSavings / totalInvestment,
       });
     }
-
     if (ozExitAppreciation > 0) {
       ozSubComponents.push({
         label: 'Exclusion of Appreciation',
@@ -381,7 +436,6 @@ function deriveReturnComponents(
         multiple: ozExitAppreciation / totalInvestment,
       });
     }
-
     if (ozDeferralNPV > 0) {
       ozSubComponents.push({
         label: 'Deferral NPV',
@@ -389,7 +443,6 @@ function deriveReturnComponents(
         multiple: ozDeferralNPV / totalInvestment,
       });
     }
-
     if (ozRecaptureAvoided > 0) {
       ozSubComponents.push({
         label: 'Recapture Avoided',
@@ -405,58 +458,6 @@ function deriveReturnComponents(
       color: COMPONENT_COLORS.ozBenefits,
       category: 'tax',
       subComponents: ozSubComponents.length > 0 ? ozSubComponents : undefined,
-    });
-  }
-
-  // IMPL-099: Exit Tax Cost row (non-OZ investors only)
-  // For OZ 10+ year holds, netExitTax = $0, so this row won't appear
-  const exitTax = results.exitTaxAnalysis;
-  if (exitTax && exitTax.netExitTax > 0) {
-    const exitTaxSubComponents: SubComponent[] = [];
-
-    if (exitTax.sec1245Tax > 0) {
-      exitTaxSubComponents.push({
-        label: `§1245 Ordinary Recapture @ ${(exitTax.sec1245Rate * 100).toFixed(0)}%`,
-        value: -exitTax.sec1245Tax,
-        multiple: -exitTax.sec1245Tax / totalInvestment,
-      });
-    }
-    if (exitTax.sec1250Tax > 0) {
-      exitTaxSubComponents.push({
-        label: `§1250 Unrecaptured Gain @ ${(exitTax.sec1250Rate * 100).toFixed(0)}%`,
-        value: -exitTax.sec1250Tax,
-        multiple: -exitTax.sec1250Tax / totalInvestment,
-      });
-    }
-    if (exitTax.remainingGainTax > 0) {
-      exitTaxSubComponents.push({
-        label: `LTCG @ ${(exitTax.remainingGainRate * 100).toFixed(0)}%`,
-        value: -exitTax.remainingGainTax,
-        multiple: -exitTax.remainingGainTax / totalInvestment,
-      });
-    }
-    if (exitTax.niitTax > 0) {
-      exitTaxSubComponents.push({
-        label: 'NIIT (3.8%)',
-        value: -exitTax.niitTax,
-        multiple: -exitTax.niitTax / totalInvestment,
-      });
-    }
-    if (exitTax.stateExitTax > 0) {
-      exitTaxSubComponents.push({
-        label: 'State Exit Tax',
-        value: -exitTax.stateExitTax,
-        multiple: -exitTax.stateExitTax / totalInvestment,
-      });
-    }
-
-    components.push({
-      label: 'Exit Tax Cost',
-      value: -exitTax.netExitTax,
-      multiple: -exitTax.netExitTax / totalInvestment,
-      color: COMPONENT_COLORS.negative,
-      category: 'exit',
-      subComponents: exitTaxSubComponents.length > 0 ? exitTaxSubComponents : undefined,
     });
   }
 
