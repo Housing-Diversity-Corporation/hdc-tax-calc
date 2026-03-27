@@ -513,6 +513,11 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
 
       // Timing parameters
       props.setConstructionDelayMonths?.(config.constructionDelayMonths ?? 0);
+      // IMPL-140: Date-driven timing architecture
+      props.setInvestmentDate?.(config.investmentDate ?? '');
+      props.setElectDeferCreditPeriod?.(config.electDeferCreditPeriod ?? false);
+      props.setPisDateOverride?.(config.pisDateOverride ?? null);
+      props.setExitExtensionMonths?.(config.exitExtensionMonths ?? 0);
 
       // Opportunity Zone parameters - only update if not in read-only mode
       if (!props.taxSectionReadOnly) {
@@ -681,7 +686,8 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
         // ISS-068c: Single NOI growth rate
         noiGrowthRate: props.noiGrowthRate,
         exitCapRate: props.exitCapRate,
-        holdPeriod: props.totalInvestmentYears, // Read-only snapshot for historical comparison
+        // IMPL-140: Save month-precise hold period when timeline available, else legacy years
+        holdPeriod: props.computedTimeline?.totalHoldMonths ?? props.totalInvestmentYears,
         // exitMonth removed (IMPL-117) — now engine-internal, auto-derived from timeline
         investorEquityPct: props.investorEquityPct,
         philanthropicEquityPct: props.philanthropicEquityPct,
@@ -731,6 +737,11 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
         aumCurrentPayPct: props.aumCurrentPayPct,
         investorPromoteShare: props.investorPromoteShare,
         constructionDelayMonths: props.constructionDelayMonths,
+        // IMPL-140: Date-driven timing architecture
+        investmentDate: props.investmentDate || undefined,
+        electDeferCreditPeriod: props.electDeferCreditPeriod || false,
+        pisDateOverride: props.pisDateOverride || undefined,
+        exitExtensionMonths: props.exitExtensionMonths || 0,
         ozType: props.ozType,
         ozVersion: props.ozVersion,  // ISS-043
         ozEnabled: props.ozEnabled,  // ISS-043

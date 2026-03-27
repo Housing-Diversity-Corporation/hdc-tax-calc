@@ -85,7 +85,7 @@ const ProjectionsSection: React.FC<ProjectionsSectionProps> = ({
               <div style={{ padding: '0.5rem', background: '#f0f7f7', borderRadius: '4px' }}>
                 <div style={{ fontSize: '0.875rem', fontWeight: 600 }}>
                   {computedTimeline
-                    ? `${computedTimeline.totalInvestmentYears} years total (${(computedTimeline.totalHoldMonths / 12).toFixed(1)} yr precise)`
+                    ? `${computedTimeline.totalHoldMonths} months (${(computedTimeline.totalHoldMonths / 12).toFixed(1)} years)`
                     : `${totalInvestmentYears} years total investment (includes disposition year)`
                   }
                 </div>

@@ -32,6 +32,19 @@ public class InputProjections {
     @Column(name = "tax_benefit_delay_months")
     private Integer taxBenefitDelayMonths;
 
+    // IMPL-140: Date-driven timing architecture fields
+    @Column(name = "investment_date")
+    private String investmentDate;
+
+    @Column(name = "elect_defer_credit_period")
+    private Boolean electDeferCreditPeriod;
+
+    @Column(name = "pis_date_override")
+    private String pisDateOverride;
+
+    @Column(name = "exit_extension_months")
+    private Integer exitExtensionMonths;
+
     // ISS-068c: Single NOI growth rate (replaces legacy revenue_growth, expense_growth, opex_ratio)
     @Column(name = "noi_growth_rate")
     private Double noiGrowthRate;
@@ -134,5 +147,38 @@ public class InputProjections {
 
     public void setNoiGrowthRate(Double noiGrowthRate) {
         this.noiGrowthRate = noiGrowthRate;
+    }
+
+    // IMPL-140: Timing architecture getters/setters
+    public String getInvestmentDate() {
+        return investmentDate;
+    }
+
+    public void setInvestmentDate(String investmentDate) {
+        this.investmentDate = investmentDate;
+    }
+
+    public Boolean getElectDeferCreditPeriod() {
+        return electDeferCreditPeriod;
+    }
+
+    public void setElectDeferCreditPeriod(Boolean electDeferCreditPeriod) {
+        this.electDeferCreditPeriod = electDeferCreditPeriod;
+    }
+
+    public String getPisDateOverride() {
+        return pisDateOverride;
+    }
+
+    public void setPisDateOverride(String pisDateOverride) {
+        this.pisDateOverride = pisDateOverride;
+    }
+
+    public Integer getExitExtensionMonths() {
+        return exitExtensionMonths;
+    }
+
+    public void setExitExtensionMonths(Integer exitExtensionMonths) {
+        this.exitExtensionMonths = exitExtensionMonths;
     }
 }

@@ -57,6 +57,11 @@ export interface CalculatorConfiguration {
   aumCurrentPayPct?: number;
   investorPromoteShare: number;
   constructionDelayMonths?: number;
+  // IMPL-140: Date-driven timing architecture
+  investmentDate?: string;
+  electDeferCreditPeriod?: boolean;
+  pisDateOverride?: string;
+  exitExtensionMonths?: number;
   ozEnabled?: boolean;
   ozType?: 'standard' | 'rural';
   ozVersion?: '1.0' | '2.0';  // ISS-043: OZ legislation version
