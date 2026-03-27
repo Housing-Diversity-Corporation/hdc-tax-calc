@@ -36,8 +36,10 @@ export function buildInputsSheet(params: CalculationParams, rawTimeline?: Comput
     { label: 'Predevelopment Costs ($M)', rangeName: 'PredevelopmentCosts', value: params.predevelopmentCosts || 0, units: '$M' },
     { label: 'Project Location', rangeName: 'ProjectLocation', value: params.projectLocation || '', units: '' },
     { label: 'Number of Units', rangeName: 'Units', value: 100, units: 'units' },
-    // IMPL-117: placedInServiceMonth removed from UI-facing inputs — now engine-internal
-    // Date-driven timing section below shows PISCalendarMonth from ComputedTimeline
+    // IMPL-137/ISS-069: Restore PlacedInServiceMonth as named range — formula strings in
+    // depreciationSheet, lihtcSheet, taxBenefitsSheet reference it. Value is engine-internal
+    // (normalized to 1 for export, or from timeline when date-driven).
+    { label: 'PIS Month', rangeName: 'PlacedInServiceMonth', value: params.placedInServiceMonth || 7, units: 'month' },
     { label: 'Property State', rangeName: 'PropertyState', value: params.selectedState || 'CA', units: '' },
     { label: 'Hold Period (years)', rangeName: 'HoldPeriod', value: params.holdPeriod || 10, units: 'years' },
     { label: 'Stabilized NOI ($M)', rangeName: 'YearOneNOI', value: params.yearOneNOI, units: '$M' },

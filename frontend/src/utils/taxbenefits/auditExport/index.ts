@@ -34,8 +34,6 @@ import {
   HDCCashFlowItem,
 } from '../../../types/taxbenefits';
 
-// ISS-070f: Import calculation functions to recalculate fresh results at export time
-import { calculateFullInvestorAnalysis } from '../calculations';
 import { calculateHDCAnalysis } from '../hdcAnalysis';
 // IMPL-115: Import computeTimeline for rawParams-based timing (not affected by normalization)
 import { computeTimeline } from '../computeTimeline';
@@ -132,88 +130,13 @@ export function generateLiveExcelModel(data: LiveExcelParams): XLSX.WorkBook {
     holdPeriod: params.holdPeriod,
   });
 
-  // ISS-070f: Recalculate fresh results from params to avoid stale React state
-  // This ensures Column B (Excel formulas) and Column C (Platform values) match
-  // ISS-070N: Log params immediately before calculation to compare with inputsSheet
-  console.log('[EXPORT ISS-070N] Params going to calculateFullInvestorAnalysis:', {
-    projectCost: params.projectCost,
-    yearOneNOI: params.yearOneNOI,
-    seniorDebtPct: params.seniorDebtPct,
-    noiGrowthRate: params.noiGrowthRate,
-  });
-  // ISS-070Q: Pass isExport flag to enable export-only logging
-  const recalculatedResults = calculateFullInvestorAnalysis(params, { isExport: true });
-
-  // Phase A2: Preserve taxUtilization from the original passed-in results
-  // The recalculation doesn't have income composition params, so taxUtilization is not computed.
-  // Use the pre-computed taxUtilization from the UI which has the correct income data.
-  const investorResults = {
-    ...recalculatedResults,
-    taxUtilization: data.investorResults?.taxUtilization || recalculatedResults.taxUtilization,
-  };
+  // IMPL-137/ISS-070: Use the passed-in engine results (mainAnalysisResults) directly.
+  // Previous approach recalculated from normalized params (placedInServiceMonth=1,
+  // constructionDelayMonths=0) which diverged from the UI's actual engine output.
+  // The passed-in results ARE the live engine output — single source of truth.
+  const investorResults = data.investorResults;
   const cashFlows = investorResults.investorCashFlows || [];
-  // ISS-070N: Log what we got back from calculation
-  // ISS-070P: Verify calculation used correct params by checking results
-  const expectedSeniorDebt = params.projectCost * (params.seniorDebtPct || 0) / 100;
-  const expectedInvestorEquity = params.projectCost * (params.investorEquityPct || 0) / 100;
-  console.log('[EXPORT ISS-070P] Verification - params vs results:', {
-    // What we passed in
-    'params.projectCost': params.projectCost,
-    'params.seniorDebtPct': params.seniorDebtPct,
-    'params.investorEquityPct': params.investorEquityPct,
-    'params.yearOneNOI': params.yearOneNOI,
-    // What we expect based on params
-    expectedSeniorDebt,
-    expectedInvestorEquity,
-    // What the calculation returned
-    'results.investorEquity': investorResults.investorEquity,
-    'cashFlows[0].noi': cashFlows[0]?.noi,
-    'cashFlows[0].hardDebtService': cashFlows[0]?.hardDebtService,
-    // Mismatch detection
-    equityMatches: Math.abs((investorResults.investorEquity || 0) - expectedInvestorEquity) < 0.01,
-    noiMatches: Math.abs((cashFlows[0]?.noi || 0) - params.yearOneNOI) < 0.01,
-  });
-
-  // ISS-070i: Comprehensive structure logging to investigate property names
-  console.log('[ISS-070i] investorResults top-level keys:', Object.keys(investorResults).sort());
-  console.log('[ISS-070i] cashFlows array length:', cashFlows.length);
-
-  const cf0 = cashFlows[0];
-  if (cf0) {
-    console.log('[ISS-070i] cashFlows[0] keys:', Object.keys(cf0).sort());
-    console.log('[ISS-070i] cashFlows[0] FULL object:', cf0);
-  } else {
-    console.log('[ISS-070i] WARNING: cashFlows[0] is undefined!');
-  }
-
-  // ISS-070g/h: Log calculation results for comparison
   const holdPeriod = params.holdPeriod || 10;
-  const y10NOI = cashFlows[holdPeriod - 1]?.noi || 0;
-  console.log('[ISS-070g] Calculation results:', {
-    exitValue: investorResults.exitValue,
-    y10NOI,
-    y1NOI: cashFlows[0]?.noi,
-    impliedGrowth: cashFlows[0]?.noi ? ((y10NOI / cashFlows[0].noi) ** (1 / (holdPeriod - 1)) - 1) * 100 : 'N/A',
-  });
-
-  // ISS-070h: Log cash flow properties that extractPlatformValues reads
-  console.log('[ISS-070h] Cash flow Y1 properties:', {
-    dscr: cashFlows[0]?.dscr,
-    hardDebtService: cashFlows[0]?.hardDebtService,
-    noi: cashFlows[0]?.noi,
-    taxBenefit: cashFlows[0]?.taxBenefit,
-    totalCashFlow: cashFlows[0]?.totalCashFlow,
-  });
-  console.log('[ISS-070h] InvestorResults key properties:', {
-    investorEquity: investorResults.investorEquity,
-    exitValue: investorResults.exitValue,
-    exitProceeds: investorResults.exitProceeds,
-    remainingDebtAtExit: investorResults.remainingDebtAtExit,
-    totalInvestment: investorResults.totalInvestment,
-    totalReturns: investorResults.totalReturns,
-    multiple: investorResults.multiple,
-    irr: investorResults.irr,
-  });
 
   // Build HDC results from fresh investor calculation
   const hdcResults = calculateHDCAnalysis({
@@ -339,8 +262,6 @@ export function generateLiveExcelModel(data: LiveExcelParams): XLSX.WorkBook {
   // 14. Tax Utilization (conditional - only when taxUtilization exists)
   // Phase A2: Income-adjusted utilization analysis
   console.log('[TAX_UTIL_EXPORT] taxUtilization exists:', !!investorResults.taxUtilization);
-  console.log('[TAX_UTIL_EXPORT] from original data:', !!data.investorResults?.taxUtilization);
-  console.log('[TAX_UTIL_EXPORT] from recalculated:', !!recalculatedResults.taxUtilization);
   if (investorResults.taxUtilization) {
     // Calculate totalInvestment same as Summary sheet
     const syndicationOffset = investorResults.syndicatedEquityOffset || 0;

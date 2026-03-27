@@ -1,7 +1,7 @@
 # TaxBenefits Calculator — Implementation Tracker
 
-**Document Version:** 10.11
-**Last Updated:** 2026-03-25
+**Document Version:** 10.12
+**Last Updated:** 2026-03-26
 **Branch:** main
 **Current Test Count:** 1,854 passing (94 suites, 0 failures)
 **Canonical Test Runner:** Jest (`npx jest --config jest.config.ts --watchAll=false`)
@@ -13,6 +13,7 @@
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v10.12 | 2026-03-26 | IMPL-137: Live Excel fix — ISS-069 + ISS-070. ISS-069: Restored PlacedInServiceMonth named range in inputsSheet.ts (removed in IMPL-117 but referenced by 4 formula strings in depreciationSheet, lihtcSheet, taxBenefitsSheet → #NAME? errors on Excel recalculation). ISS-070: Replaced export recalculation from normalized params with passed-in engine results (mainAnalysisResults). Fixes MOIC/IRR divergence (was 3.357x/23.34%, now 3.322x/22.20% matching UI). 2 files modified, 86 lines of ISS-070 diagnostic logging removed. Test count unchanged at 1,854. |
 | v10.11 | 2026-03-25 | IMPL-136: Fix missing investorState + selectedState dependencies in mainAnalysisResults useMemo — investorState was never passed to calculateFullInvestorAnalysis (engine fell back to selectedState), and selectedState was missing from deps. Added investorState pass-through and both as explicit deps. 1 file modified. Test count unchanged at 1,854. Runtime verified: 4/4 tests pass (REP↔Non-REP, WA→NJ, WA→TX, grouping toggle). |
 | v10.10 | 2026-03-25 | IMPL-135: Add deal name to KPI strip and Returns Buildup strip headers — thread loadedConfigName through HDCResultsComponent to both strips. Inline suffix on section title (fontWeight 500, 0.7rem, viridian-green). 6 component files modified. Test count unchanged at 1,854. |
 | v10.9 | 2026-03-24 | IMPL-134: OZ double-count fix in extended calculation path — for OZ 10+ year holds, subtract explicit ozRecaptureAvoided + ozExitAppreciation from adjustedTotalReturns (already captured by netExitTax=0). IRR rebuilt without double-counted OZ values. ozDeferralNPV retained. 1 file modified (calculations.ts, +22 lines). Test count unchanged at 1,854. |
@@ -531,8 +532,9 @@ Files changed: investorSizing.ts, investorTaxUtilization.ts, taxEfficiencyMappin
 | ISS | Description | Priority | Notes |
 |-----|-------------|----------|-------|
 | ISS-018 | Returns Buildup LIHTC catch-up allocation display | Low | Cosmetic - catch-up shows in Federal row instead of split |
-| ISS-069 | Excel export: PlacedInServiceMonth named range removed in IMPL-117 but still referenced in LIHTC/Depreciation/Tax Benefits formula strings — causes #NAME? errors on Excel recalculation | Medium | Pre-existing since IMPL-117; pre-calc v: values are correct so cached display is accurate; fix requires either restoring the named range or rewriting affected formula strings |
-| ISS-070 | Live Excel export key metrics don't match UI — MOIC (3.794x vs 3.83x), IRR (33.58% vs 31.98%), Investor Equity ($15.782M vs $16.048M). Root cause: HDCResultsComponent.tsx manually constructs export params with different values than useHDCCalculations renders in the UI. Same class of issue as IMPL-128/129 prop wiring gaps. | High | Confirmed on Trace 4001 $65M — exported simultaneously from same deal state |
+| ISS-069 | ~~Excel export: PlacedInServiceMonth #NAME? errors~~ **CLOSED (IMPL-137)** — Restored PlacedInServiceMonth named range in inputsSheet.ts. 0 error cells in exported workbook. | Medium | Fixed 2026-03-26 |
+| ISS-070 | ~~Live Excel MOIC/IRR divergence~~ **CLOSED (IMPL-137)** — Export now uses passed-in engine results instead of recalculating from normalized params. MOIC/IRR match UI exactly (3.32x/22.20%). Equity still shows gross equity ($15.78M) vs engine equity with interest reserve ($16.05M) — formula model limitation, not a bug. | High | Fixed 2026-03-26 |
+| ISS-075 | Summary sheet InvestorEquity understates by interest reserve share — summarySheet.ts line 26 uses `params.projectCost` instead of `effectiveProjectCost`. Display only: $15.78M shown vs $16.05M correct on Trace 260303 65M ($0.266M delta = 24.28% × $1.097M reserve). MOIC, IRR, Total Returns unaffected. Fix path: write `investorResults.investorEquity` directly to Summary sheet equity row instead of recomputing from formula. | Low | Identified during IMPL-137 audit |
 
 ---
 
