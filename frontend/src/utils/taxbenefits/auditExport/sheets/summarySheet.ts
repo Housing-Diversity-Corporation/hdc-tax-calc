@@ -23,7 +23,8 @@ export function buildSummarySheet(
 
   const holdPeriod = params.holdPeriod || 10;
   const projectCost = params.projectCost;
-  const investorEquityGross = projectCost * params.investorEquityPct / 100;
+  // IMPL-138/ISS-075: Use engine value (includes interest reserve in capital base)
+  const investorEquityGross = investorResults.investorEquity || (projectCost * params.investorEquityPct / 100);
   const investorSubDebt = projectCost * (params.investorSubDebtPct || 0) / 100;
 
   // IMPL-074/077: Get syndication offset and year from engine results

@@ -1,6 +1,6 @@
 # TaxBenefits Calculator — Implementation Tracker
 
-**Document Version:** 10.12
+**Document Version:** 10.13
 **Last Updated:** 2026-03-26
 **Branch:** main
 **Current Test Count:** 1,854 passing (94 suites, 0 failures)
@@ -13,6 +13,7 @@
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v10.13 | 2026-03-26 | IMPL-138: Fix ISS-075 — Summary sheet investor equity understates by interest reserve share. summarySheet.ts line 26 was computing `projectCost × investorEquityPct / 100` ($15.78M) instead of using `investorResults.investorEquity` ($16.05M). 1 file modified, 1 line changed. Test count unchanged at 1,854. |
 | v10.12 | 2026-03-26 | IMPL-137: Live Excel fix — ISS-069 + ISS-070. ISS-069: Restored PlacedInServiceMonth named range in inputsSheet.ts (removed in IMPL-117 but referenced by 4 formula strings in depreciationSheet, lihtcSheet, taxBenefitsSheet → #NAME? errors on Excel recalculation). ISS-070: Replaced export recalculation from normalized params with passed-in engine results (mainAnalysisResults). Fixes MOIC/IRR divergence (was 3.357x/23.34%, now 3.322x/22.20% matching UI). 2 files modified, 86 lines of ISS-070 diagnostic logging removed. Test count unchanged at 1,854. |
 | v10.11 | 2026-03-25 | IMPL-136: Fix missing investorState + selectedState dependencies in mainAnalysisResults useMemo — investorState was never passed to calculateFullInvestorAnalysis (engine fell back to selectedState), and selectedState was missing from deps. Added investorState pass-through and both as explicit deps. 1 file modified. Test count unchanged at 1,854. Runtime verified: 4/4 tests pass (REP↔Non-REP, WA→NJ, WA→TX, grouping toggle). |
 | v10.10 | 2026-03-25 | IMPL-135: Add deal name to KPI strip and Returns Buildup strip headers — thread loadedConfigName through HDCResultsComponent to both strips. Inline suffix on section title (fontWeight 500, 0.7rem, viridian-green). 6 component files modified. Test count unchanged at 1,854. |
@@ -534,7 +535,7 @@ Files changed: investorSizing.ts, investorTaxUtilization.ts, taxEfficiencyMappin
 | ISS-018 | Returns Buildup LIHTC catch-up allocation display | Low | Cosmetic - catch-up shows in Federal row instead of split |
 | ISS-069 | ~~Excel export: PlacedInServiceMonth #NAME? errors~~ **CLOSED (IMPL-137)** — Restored PlacedInServiceMonth named range in inputsSheet.ts. 0 error cells in exported workbook. | Medium | Fixed 2026-03-26 |
 | ISS-070 | ~~Live Excel MOIC/IRR divergence~~ **CLOSED (IMPL-137)** — Export now uses passed-in engine results instead of recalculating from normalized params. MOIC/IRR match UI exactly (3.32x/22.20%). Equity still shows gross equity ($15.78M) vs engine equity with interest reserve ($16.05M) — formula model limitation, not a bug. | High | Fixed 2026-03-26 |
-| ISS-075 | Summary sheet InvestorEquity understates by interest reserve share — summarySheet.ts line 26 uses `params.projectCost` instead of `effectiveProjectCost`. Display only: $15.78M shown vs $16.05M correct on Trace 260303 65M ($0.266M delta = 24.28% × $1.097M reserve). MOIC, IRR, Total Returns unaffected. Fix path: write `investorResults.investorEquity` directly to Summary sheet equity row instead of recomputing from formula. | Low | Identified during IMPL-137 audit |
+| ISS-075 | ~~Summary sheet InvestorEquity understates by interest reserve share~~ **CLOSED (IMPL-138)** — summarySheet.ts now uses `investorResults.investorEquity` (engine value) instead of recomputing from `projectCost × pct`. Summary sheet shows $16.05M matching UI. | Low | Fixed 2026-03-26 |
 
 ---
 
