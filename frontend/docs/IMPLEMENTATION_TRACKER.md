@@ -1,6 +1,6 @@
 # TaxBenefits Calculator — Implementation Tracker
 
-**Document Version:** 10.13
+**Document Version:** 10.14
 **Last Updated:** 2026-03-26
 **Branch:** main
 **Current Test Count:** 1,854 passing (94 suites, 0 failures)
@@ -13,6 +13,7 @@
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v10.14 | 2026-03-26 | IMPL-139: Net Depreciation Benefit row — collapse "Depreciation Benefits" + "Exit Tax Cost" into single expandable "Net Depreciation Benefit" row for non-OZ investors (exitTax.netExitTax > 0). Parent shows net value ($2.42M); sub-rows: Gross Benefit (at 37%), Exit Tax Cost with §1245/§1250/NIIT/State breakdown. OZ 10+ year path unchanged. 1 file modified (ReturnsBuiltupStrip.tsx, 67 ins, 66 del). Test count unchanged at 1,854. Runtime verified: 4/4 checks pass. |
 | v10.13 | 2026-03-26 | IMPL-138: Fix ISS-075 — Summary sheet investor equity understates by interest reserve share. summarySheet.ts line 26 was computing `projectCost × investorEquityPct / 100` ($15.78M) instead of using `investorResults.investorEquity` ($16.05M). 1 file modified, 1 line changed. Test count unchanged at 1,854. |
 | v10.12 | 2026-03-26 | IMPL-137: Live Excel fix — ISS-069 + ISS-070. ISS-069: Restored PlacedInServiceMonth named range in inputsSheet.ts (removed in IMPL-117 but referenced by 4 formula strings in depreciationSheet, lihtcSheet, taxBenefitsSheet → #NAME? errors on Excel recalculation). ISS-070: Replaced export recalculation from normalized params with passed-in engine results (mainAnalysisResults). Fixes MOIC/IRR divergence (was 3.357x/23.34%, now 3.322x/22.20% matching UI). 2 files modified, 86 lines of ISS-070 diagnostic logging removed. Test count unchanged at 1,854. |
 | v10.11 | 2026-03-25 | IMPL-136: Fix missing investorState + selectedState dependencies in mainAnalysisResults useMemo — investorState was never passed to calculateFullInvestorAnalysis (engine fell back to selectedState), and selectedState was missing from deps. Added investorState pass-through and both as explicit deps. 1 file modified. Test count unchanged at 1,854. Runtime verified: 4/4 tests pass (REP↔Non-REP, WA→NJ, WA→TX, grouping toggle). |

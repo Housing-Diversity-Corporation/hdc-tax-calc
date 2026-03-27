@@ -155,6 +155,11 @@
 **IMPLs:** IMPL-120 (2026-03-08)
 **Notes:** Fixed ozExitAppreciation to use adjusted-basis residual gain logic matching calculateExitTax(). Previously used raw `exitProceeds - investorEquity` which overstated appreciation by ignoring depreciation's basis reduction. Now computes depreciable basis inline (`projectCost + predevelopmentCosts - landValue`), splits §1245/§1250, derives adjusted basis and residual gain. Moved `engineOzExitAppreciation` computation before IRR recalc block so terminal cash flow uses engine-derived value instead of stale `baseResults.ozExitAppreciation`. DoD: `ozExitAppreciation == remainingGainTax` within $0.001M. 1 file changed (calculations.ts). 1,824 tests pass.
 
+### Net Depreciation Benefit Row (IMPL-139)
+**Status:** Deployed
+**IMPLs:** IMPL-139 (commit dd7da02, 2026-03-26)
+**Notes:** Collapse separate "Depreciation Benefits" and "Exit Tax Cost" rows into single expandable "Net Depreciation Benefit" row for non-OZ investors (when exitTax.netExitTax > 0). Parent row shows net value (depreciationTotal - netExitTax). Sub-components: Gross Benefit (at 37%), divider, Exit Tax Cost with §1245/§1250/NIIT/State breakdown (indented, only if > 0). OZ 10+ year hold path unchanged ("Depreciation Benefits" with temporal breakdown preserved). Component count decreases by 1 for non-OZ. componentSum validation algebraically equivalent. 1 file changed (ReturnsBuiltupStrip.tsx), 67 insertions, 66 deletions. 1,854 tests pass.
+
 ---
 
 ## 3g. Appendix Update
@@ -203,4 +208,5 @@
 | IMPL-118 | fff6177, 18da3e2 | 2026-03-05 | 7 | 807 | 57 |
 | IMPL-119 | ae1a519 | 2026-03-06 | 7 | ~126 | ~60 |
 | IMPL-120 | TBD (this commit) | 2026-03-08 | 1 | ~19 | ~10 |
-| **Totals (084-120)** | **20 commits** | **Feb 14 - Mar 8** | **— ** | **~13,079** | **~2,979** |
+| IMPL-139 | dd7da02 | 2026-03-26 | 1 | 67 | 66 |
+| **Totals (084-139)** | **21 commits** | **Feb 14 - Mar 26** | **— ** | **~13,146** | **~3,045** |
