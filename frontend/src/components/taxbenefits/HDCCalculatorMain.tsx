@@ -822,6 +822,17 @@ const HDCCalculatorMain = () => {
           total10YearBenefits={calculations.unifiedBenefitsSummary?.total10YearBenefits}
           benefitMultiple={calculations.unifiedBenefitsSummary?.benefitMultiple}
           dealName={dealName}
+          // IMPL-143: Timing Architecture for export
+          investmentDate={investmentDate}
+          pisDateOverride={pisDateOverride}
+          electDeferCreditPeriod={electDeferCreditPeriod}
+          exitExtensionMonths={exitExtensionMonths}
+          // IMPL-143: Income Composition for export
+          filingStatus={filingStatus}
+          annualOrdinaryIncome={annualOrdinaryIncome}
+          annualPassiveIncome={annualPassiveIncome}
+          annualPortfolioIncome={annualPortfolioIncome}
+          groupingElection={groupingElection}
           />
         </div>
       </div>

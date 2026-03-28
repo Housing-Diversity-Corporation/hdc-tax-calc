@@ -77,7 +77,7 @@ export function generateLiveExcelModel(data: LiveExcelParams): XLSX.WorkBook {
   const params: CalculationParams = {
     ...rawParams,
     // Apply the same defaults that inputsSheet.ts uses (see lines 28-35)
-    noiGrowthRate: rawParams.noiGrowthRate || 3,
+    noiGrowthRate: rawParams.noiGrowthRate ?? 3,
     holdPeriod: rawParams.holdPeriod || 10,
     // ISS-070L: Force immediate stabilization for export to match Excel formulas
     // The Excel model represents investor's 10-year hold period starting from stabilized operations

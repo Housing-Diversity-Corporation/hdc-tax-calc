@@ -7,6 +7,7 @@
 
 import * as XLSX from 'xlsx';
 import { CalculationParams, ComputedTimeline } from '../../../../types/taxbenefits';
+import { monthsBetween } from '../../computeTimeline';
 import { SheetResult, NamedRangeDefinition, InputRow } from '../types';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -39,16 +40,16 @@ export function buildInputsSheet(params: CalculationParams, rawTimeline?: Comput
     // IMPL-137/ISS-069: Restore PlacedInServiceMonth as named range — formula strings in
     // depreciationSheet, lihtcSheet, taxBenefitsSheet reference it. Value is engine-internal
     // (normalized to 1 for export, or from timeline when date-driven).
-    { label: 'PIS Month', rangeName: 'PlacedInServiceMonth', value: params.placedInServiceMonth || 7, units: 'month' },
+    { label: 'PIS Month', rangeName: 'PlacedInServiceMonth', value: rawTimeline?.pisCalendarMonth ?? params.placedInServiceMonth ?? 7, units: 'month' },
     { label: 'Property State', rangeName: 'PropertyState', value: params.selectedState || 'CA', units: '' },
     { label: 'Hold Period (years)', rangeName: 'HoldPeriod', value: params.holdPeriod || 10, units: 'years' },
     { label: 'Stabilized NOI ($M)', rangeName: 'YearOneNOI', value: params.yearOneNOI, units: '$M' },
     // ISS-068c: Single NOI growth rate replaces Revenue Growth, Expense Growth, OpEx Ratio
-    { label: 'NOI Growth Rate (%)', rangeName: 'NoiGrowthRate', value: params.noiGrowthRate || 3, units: '%' },
+    { label: 'NOI Growth Rate (%)', rangeName: 'NoiGrowthRate', value: params.noiGrowthRate ?? 3, units: '%' },
     { label: 'Exit Cap Rate (%)', rangeName: 'ExitCapRate', value: params.exitCapRate, units: '%' },
     { label: 'Stabilized Occupancy (%)', rangeName: 'StabilizedOccupancy', value: 95, units: '%' },
-    { label: 'Lease-Up Months', rangeName: 'LeaseUpMonths', value: 18, units: 'months' },
-    { label: 'Construction Delay (months)', rangeName: 'ConstructionDelayMonths', value: params.constructionDelayMonths || 0, units: 'months' },
+    { label: 'Lease-Up Months', rangeName: 'LeaseUpMonths', value: params.interestReserveMonths ?? 18, units: 'months' },
+    { label: 'Construction Delay (months)', rangeName: 'ConstructionDelayMonths', value: rawTimeline ? monthsBetween(rawTimeline.investmentDate, rawTimeline.pisDate) : (params.constructionDelayMonths ?? 0), units: 'months' },
 
     // IMPL-115: Date-driven timing (when investmentDate provided)
     ...(rawTimeline ? [
@@ -57,7 +58,7 @@ export function buildInputsSheet(params: CalculationParams, rawTimeline?: Comput
       { label: 'Investment Date', rangeName: 'InvestmentDate', value: formatDate(rawTimeline.investmentDate), units: 'date' },
       { label: 'PIS Date', rangeName: 'PISDate', value: formatDate(rawTimeline.pisDate) + (rawTimeline.pisIsOverridden ? ' (OVERRIDDEN)' : ''), units: 'date' },
       { label: 'PIS Calendar Month', rangeName: 'PISCalendarMonth', value: rawTimeline.pisCalendarMonth, units: 'month' },
-      { label: 'Construction Months (actual)', rangeName: 'ConstructionMonthsActual', value: params.constructionDelayMonths || 0, units: 'months' },
+      { label: 'Construction Months (actual)', rangeName: 'ConstructionMonthsActual', value: monthsBetween(rawTimeline.investmentDate, rawTimeline.pisDate), units: 'months' },
       { label: '§42(f)(1) Election', rangeName: 'ElectDeferCredit', value: rawTimeline.electDeferCreditPeriod ? 'Yes' : 'No', units: '' },
       { label: 'Credit Start Year', rangeName: 'CreditStartYear', value: rawTimeline.creditStartYear, units: 'year' },
       { label: 'Credit Period (years)', rangeName: 'CreditPeriodYears', value: rawTimeline.lihtcCreditYears, units: 'years' },

@@ -201,6 +201,19 @@ interface HDCResultsComponentProps {
 
   // IMPL-135: Deal name for KPI and Returns Buildup strip headers
   dealName?: string;
+
+  // IMPL-143: Timing Architecture fields for export
+  investmentDate?: string;
+  pisDateOverride?: string | null;
+  electDeferCreditPeriod?: boolean;
+  exitExtensionMonths?: number;
+
+  // IMPL-143: Income Composition fields for export
+  filingStatus?: 'single' | 'married' | 'HoH';
+  annualOrdinaryIncome?: number;
+  annualPassiveIncome?: number;
+  annualPortfolioIncome?: number;
+  groupingElection?: boolean;
 }
 
 const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
@@ -358,6 +371,7 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
                 predevelopmentCosts: props.predevelopmentCosts || 0,
                 landValue: props.landValue,
                 yearOneNOI: props.yearOneNOI,
+                projectLocation: props.projectLocation,
 
                 // Tax Parameters
                 yearOneDepreciationPct: props.yearOneDepreciationPct,
@@ -422,6 +436,12 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
                 exitCapRate: props.exitCapRate,
                 investorPromoteShare: props.investorPromoteShare,
                 constructionDelayMonths: props.constructionDelayMonths,
+
+                // IMPL-143: Timing Architecture
+                investmentDate: props.investmentDate || undefined,
+                pisDateOverride: props.pisDateOverride || undefined,
+                electDeferCreditPeriod: props.electDeferCreditPeriod || undefined,
+                exitExtensionMonths: props.exitExtensionMonths || undefined,
 
                 // Opportunity Zone
                 ozEnabled: props.ozEnabled || (props.ozType !== undefined && props.deferredCapitalGains > 0),
@@ -492,6 +512,16 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
 
                 // IMPL-129: Enable exit tax analysis for OZ recapture avoided calculation
                 includeDepreciationSchedule: true,
+
+                // IMPL-143: Income Composition for Tax Utilization sheet
+                filingStatus: props.filingStatus,
+                annualOrdinaryIncome: props.annualOrdinaryIncome,
+                annualPassiveIncome: props.annualPassiveIncome,
+                annualPortfolioIncome: props.annualPortfolioIncome,
+                groupingElection: props.groupingElection,
+                w2Income: props.w2Income,
+                businessIncome: props.businessIncome,
+                passiveIncome: props.passiveIncome,
 
                 // Legacy/Computed fields
                 investorUpfrontCash: 0,
