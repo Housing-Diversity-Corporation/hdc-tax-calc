@@ -13,6 +13,7 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedOrigins(
                         "http://localhost:3000", // React dev server
                         "http://localhost:5173", // Vite dev server
+                        "http://localhost:5174", // Proforma engine frontend
                         "http://127.0.0.1:3000", // Alternative localhost
                         "http://localhost:8080", // Backend server
                         "http://127.0.0.1:8080", // Alternative backend server
