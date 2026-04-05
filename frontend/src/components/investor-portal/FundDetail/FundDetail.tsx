@@ -4,7 +4,7 @@ import { poolService } from '../../../services/poolService';
 import { Alert, AlertDescription } from '../../ui/alert';
 import { Button } from '../../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
-import { Edit } from 'lucide-react';
+import { Edit, Download } from 'lucide-react';
 import TaxUtilizationSection from '../../taxbenefits/results/TaxUtilizationSection';
 import FundDetailHeader from './FundDetailHeader';
 import FundDealList from './FundDealList';
@@ -23,6 +23,8 @@ import {
   generateIRAConversionRecommendations
 } from '../../../utils/taxbenefits/iraConversion';
 import { SECTION_461L_LIMITS } from '../../../utils/taxbenefits/investorTaxUtilization';
+import { exportWealthManagerSummary } from '../../../utils/exportWealthManagerSummary';
+import type { WealthManagerExportData } from '../../../utils/exportWealthManagerSummary';
 import type { CalculationParams, REPTaxCapacityModel } from '../../../types/taxbenefits';
 import { optimizeFundCommitment } from '../../../utils/taxbenefits/fundSizingOptimizer';
 import { useInvestorFit } from '../../../hooks/useInvestorFit';
@@ -219,6 +221,41 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
   // Sync slider to optimal when sizing result changes
   const effectiveSliderCommitment = sliderCommitment ?? sizingResult?.optimalCommitment ?? 0;
 
+  // IMPL-151: Wealth Manager Summary Export
+  const handleExportSummary = () => {
+    if (!sizingResult || !taxProfile || !investorSizingResult) return;
+
+    const util = sizingResult.fullUtilizationResult;
+    const yr1 = util.annualUtilization[0];
+
+    const exportData: WealthManagerExportData = {
+      fundName: pool?.poolName || 'Fund',
+      investorName: taxProfile.profileName || `Profile #${taxProfile.id}`,
+      optimalCommitment: investorSizingResult.sec461lOptimalCommitment ?? investorSizingResult.optimalCommitment,
+      constraintBinding: investorSizingResult.constraintBinding,
+      holdPeriod,
+      savingsPerDollar: sizingResult.optimalSavingsPerDollar,
+      utilizationRate: util.overallUtilizationRate,
+      year1Depreciation: yr1?.depreciationGenerated ?? 0,
+      year1TaxSavings: yr1?.depreciationTaxSavings ?? 0,
+      preHDCRate: iraConversionData?.preHDCRate ?? ((taxProfile.federalOrdinaryRate || 37) + (taxProfile.stateOrdinaryRate || 0)),
+      postHDCRate: iraConversionData?.postHDCRate ?? ((taxProfile.federalOrdinaryRate || 37) + (taxProfile.stateOrdinaryRate || 0)),
+      treatment: util.treatmentLabel,
+      annualUtilization: util.annualUtilization,
+      isNonpassive: util.treatment === 'nonpassive',
+      rothConversion: iraConversionData ? {
+        iraBalance: iraConversionData.iraBalance,
+        optimalConversion: iraConversionData.plan.totalConverted,
+        conversionWindow: iraConversionData.plan.schedule.length,
+        effectiveRate: iraConversionData.postHDCRate,
+        year30RothValue: iraConversionData.plan.year30RothValue,
+        lifetimeAdvantage: iraConversionData.lifetimeValue?.lifetimeAdvantage ?? 0,
+      } : undefined,
+    };
+
+    exportWealthManagerSummary(exportData);
+  };
+
   // Dollar-based currency formatter for B3 panels
   const formatDollarCurrency = (value: number) => {
     if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
@@ -317,6 +354,18 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
               >
                 <Edit className="mr-2 h-4 w-4" />
                 Edit Profile
+              </Button>
+            )}
+            {/* IMPL-151: Wealth Manager Summary Export */}
+            {sizingResult && investorSizingResult && (
+              <Button
+                variant="outline"
+                onClick={handleExportSummary}
+                className="min-w-[140px] h-10 whitespace-nowrap border-[#7fbd45] text-[#7fbd45] font-medium hover:bg-[#7fbd45]/10 hover:text-[#474a44]"
+                title="Download one-page investment summary PDF"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Export Summary
               </Button>
             )}
           </div>
