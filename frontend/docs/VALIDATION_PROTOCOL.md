@@ -126,3 +126,22 @@ Update this protocol when:
 Item 11: CC must include `git status` + `git diff --stat` in completion report before commit.
 Item 12: CC must update SPEC_IMPLEMENTATION_REGISTRY with IMPL entry.
 Item 13: For any IMPL that touches UI components — CC must complete a full end-to-end user workflow in the running dev server and report actual screen values before committing. "Tests pass" and "component exists" are not sufficient. A feature that exists in the engine but is invisible to the user is not done.
+
+---
+
+## Runtime UI Verification — Standing Prerequisites
+
+Before performing any runtime UI verification via AppleScript/osascript:
+
+1. **Read UI_NAVIGATION_MAP.md first:**
+   ```bash
+   cat frontend/docs/UI_NAVIGATION_MAP.md
+   ```
+   This file contains the app structure, known routes, deal IDs, component
+   selectors, combobox indices, and timing requirements. Do not rediscover
+   what is already documented.
+
+2. **Update UI_NAVIGATION_MAP.md after every session:**
+   Add any new selectors, routes, deal IDs, timing discoveries, or
+   blockers encountered. Every session must leave the map more complete
+   than it started. Include map updates in the IMPL commit.
