@@ -11,7 +11,7 @@
  */
 
 import type { BenefitStream, InvestorProfile, TaxUtilizationResult } from './investorTaxUtilization';
-import { calculateTaxUtilization, SECTION_461L_LIMITS } from './investorTaxUtilization';
+import { calculateTaxUtilization, SECTION_461L_LIMITS, computeFederalTax } from './investorTaxUtilization';
 import { scaleStreamByProRata } from './fundSizingOptimizer';
 import { scaleBenefitStreamToMillions } from './poolAggregation';
 import { classifyInvestorFit } from './investorFit';
@@ -316,6 +316,234 @@ function findSec461lTargetCommitment(
 
   // Return the midpoint rounded to nearest $1K
   return Math.round((lo + hi) / 2 / 1000) * 1000;
+}
+
+// =============================================================================
+// IMPL-152: Lifetime Coverage Mode
+// =============================================================================
+
+export interface CarryforwardBalance {
+  year: number;
+  nolPool: number;                    // NOL balance (nonpassive)
+  creditCarryforward: number;         // carried credits (nonpassive §39) or suspended credits (passive §469)
+  suspendedLoss: number;              // suspended passive loss (passive only)
+  totalSavingsAccountBalance: number; // combined economic value in dollars
+}
+
+export interface LifetimeCoverageScenario {
+  label: string;                      // 'Conservative' | 'Moderate' | 'Optimistic'
+  incomeWeight: number;               // fraction of time at low vs high
+  totalBenefitCaptured: number;       // lifetime total in dollars
+  carryforwardPeakBalance: number;    // max savings account balance
+  coverageYears: number;              // how many peak-income years the carryforward covers
+  carryforwardByYear: CarryforwardBalance[];
+}
+
+export interface LifetimeCoverageResult {
+  optimalCommitment: number;
+  scenarios: LifetimeCoverageScenario[];
+  moderateCarryforward: CarryforwardBalance[];  // the moderate scenario's yearly balances
+  coverageMetric: number;                        // moderate scenario coverage years
+}
+
+/**
+ * IMPL-152: Lifetime Coverage Mode — find the commitment that maximizes
+ * total benefit capture across a range of income scenarios over the full hold period.
+ *
+ * Strategy: For each commitment level, run calculateTaxUtilization() at the low
+ * and high income points, then blend results according to the scenario weights.
+ * In low-income years benefits accumulate as carryforward; in high-income years
+ * the carryforward draws down. The optimal commitment maximizes total lifetime
+ * benefit capture across the moderate scenario.
+ */
+export function findLifetimeCoverageCommitment(
+  poolBenefitStream: BenefitStream,
+  baseProfile: InvestorProfile,
+  dealTotalEquity: number,
+  lowIncome: number,
+  highIncome: number,
+  distribution: 'conservative' | 'moderate' | 'optimistic' = 'moderate'
+): LifetimeCoverageResult {
+  if (dealTotalEquity <= 0 || lowIncome <= 0 || highIncome <= 0) {
+    return {
+      optimalCommitment: 0,
+      scenarios: [],
+      moderateCarryforward: [],
+      coverageMetric: 0,
+    };
+  }
+
+  // Scenario weights: fraction of years at low income
+  const scenarioWeights: Record<string, { label: string; lowFrac: number }> = {
+    conservative: { label: 'Conservative', lowFrac: 0.75 },
+    moderate:     { label: 'Moderate',     lowFrac: 0.50 },
+    optimistic:   { label: 'Optimistic',   lowFrac: 0.25 },
+  };
+
+  const samplePoints = 15;
+  const minCommitment = 100_000;
+  const maxCommitment = Math.min(dealTotalEquity, dealTotalEquity);
+  const effectiveMin = Math.min(minCommitment, maxCommitment);
+  const stepSize = samplePoints > 1 ? (maxCommitment - effectiveMin) / (samplePoints - 1) : 0;
+
+  // Build low-income and high-income profiles
+  // Income split: ordinary income changes proportionally
+  const baseTotal = baseProfile.annualOrdinaryIncome + baseProfile.annualPassiveIncome + baseProfile.annualPortfolioIncome;
+  const ordinaryFrac = baseTotal > 0 ? baseProfile.annualOrdinaryIncome / baseTotal : 1;
+  const passiveFrac = baseTotal > 0 ? baseProfile.annualPassiveIncome / baseTotal : 0;
+  const portfolioFrac = baseTotal > 0 ? baseProfile.annualPortfolioIncome / baseTotal : 0;
+
+  const lowProfile: InvestorProfile = {
+    ...baseProfile,
+    annualOrdinaryIncome: lowIncome * ordinaryFrac,
+    annualPassiveIncome: lowIncome * passiveFrac,
+    annualPortfolioIncome: lowIncome * portfolioFrac,
+  };
+  const highProfile: InvestorProfile = {
+    ...baseProfile,
+    annualOrdinaryIncome: highIncome * ordinaryFrac,
+    annualPassiveIncome: highIncome * passiveFrac,
+    annualPortfolioIncome: highIncome * portfolioFrac,
+  };
+
+  // For each commitment level, evaluate the moderate scenario to find optimal
+  let bestCommitment = effectiveMin;
+  let bestModerateCapture = -1;
+
+  const commitmentResults: Array<{
+    commitment: number;
+    lowUtil: TaxUtilizationResult;
+    highUtil: TaxUtilizationResult;
+  }> = [];
+
+  for (let i = 0; i < samplePoints; i++) {
+    const commitment = effectiveMin + i * stepSize;
+    const proRata = commitment / dealTotalEquity;
+    const scaled = scaleStreamByProRata(poolBenefitStream, proRata);
+    const millioned = scaleBenefitStreamToMillions(scaled);
+
+    const lowUtil = calculateTaxUtilization(millioned, lowProfile);
+    const highUtil = calculateTaxUtilization(millioned, highProfile);
+
+    commitmentResults.push({ commitment, lowUtil, highUtil });
+
+    // Moderate scenario: blend 50/50
+    const moderateCapture = blendedBenefitCapture(lowUtil, highUtil, 0.50);
+    if (moderateCapture > bestModerateCapture) {
+      bestModerateCapture = moderateCapture;
+      bestCommitment = commitment;
+    }
+  }
+
+  // Now build the 3 scenarios at the optimal commitment
+  const best = commitmentResults.find(r => r.commitment === bestCommitment)
+    || commitmentResults[0];
+
+  const scenarios: LifetimeCoverageScenario[] = ['conservative', 'moderate', 'optimistic'].map(key => {
+    const { label, lowFrac } = scenarioWeights[key];
+    const totalCapture = blendedBenefitCapture(best.lowUtil, best.highUtil, lowFrac);
+    const cfByYear = buildCarryforwardTimeline(best.lowUtil, best.highUtil, lowFrac, baseProfile);
+    const peakBalance = Math.max(...cfByYear.map(c => c.totalSavingsAccountBalance), 0);
+
+    // Coverage metric: peak carryforward balance / annual tax liability at high income
+    // The denominator is the investor's actual high-income-year tax bill (federal + state),
+    // NOT the HDC benefit amount. This answers "how many peak-income years does the
+    // carryforward savings account cover?"
+    const highTaxComp = computeFederalTax(
+      highProfile.annualPassiveIncome,
+      highProfile.annualOrdinaryIncome,
+      highProfile.annualPortfolioIncome,
+      highProfile.filingStatus
+    );
+    const highAnnualTax = highTaxComp.federalTaxLiability
+      + (highProfile.annualOrdinaryIncome + highProfile.annualPassiveIncome + highProfile.annualPortfolioIncome)
+        * highProfile.stateOrdinaryRate;
+    const coverageYears = highAnnualTax > 0 ? peakBalance / highAnnualTax : 0;
+
+    return {
+      label,
+      incomeWeight: lowFrac,
+      totalBenefitCaptured: totalCapture,
+      carryforwardPeakBalance: peakBalance,
+      coverageYears: Math.round(coverageYears * 10) / 10,
+      carryforwardByYear: cfByYear,
+    };
+  });
+
+  const moderateScenario = scenarios.find(s => s.label === 'Moderate') || scenarios[1];
+
+  return {
+    optimalCommitment: Math.round(bestCommitment / 1000) * 1000,
+    scenarios,
+    moderateCarryforward: moderateScenario?.carryforwardByYear ?? [],
+    coverageMetric: moderateScenario?.coverageYears ?? 0,
+  };
+}
+
+/**
+ * Compute total lifetime benefit capture as a blended average of low and high scenarios.
+ */
+function blendedBenefitCapture(
+  lowUtil: TaxUtilizationResult,
+  highUtil: TaxUtilizationResult,
+  lowFraction: number
+): number {
+  const lowCapture = lowUtil.totalBenefitUsable * 1_000_000;
+  const highCapture = highUtil.totalBenefitUsable * 1_000_000;
+  return lowCapture * lowFraction + highCapture * (1 - lowFraction);
+}
+
+/**
+ * Build year-by-year carryforward balance timeline by blending low/high utilization results.
+ *
+ * In low-income years, carryforward grows (more benefits generated than used).
+ * In high-income years, carryforward is consumed.
+ */
+function buildCarryforwardTimeline(
+  lowUtil: TaxUtilizationResult,
+  highUtil: TaxUtilizationResult,
+  lowFraction: number,
+  profile: InvestorProfile,
+): CarryforwardBalance[] {
+  const isNonpassive = lowUtil.treatment === 'nonpassive';
+  const years = Math.max(lowUtil.annualUtilization.length, highUtil.annualUtilization.length);
+  const timeline: CarryforwardBalance[] = [];
+
+  // Marginal rate for economic value conversion
+  const marginalRate = (profile.federalOrdinaryRate + profile.stateOrdinaryRate * 100) / 100;
+
+  for (let i = 0; i < years; i++) {
+    const lowYr = lowUtil.annualUtilization[i];
+    const highYr = highUtil.annualUtilization[i];
+    if (!lowYr && !highYr) break;
+
+    // Blend the carryforward balances by income distribution weight
+    const nolPool = (lowYr?.nolPool ?? 0) * lowFraction
+      + (highYr?.nolPool ?? 0) * (1 - lowFraction);
+    const creditCF = isNonpassive
+      ? (lowYr?.cumulativeCarriedCredits ?? 0) * lowFraction
+        + (highYr?.cumulativeCarriedCredits ?? 0) * (1 - lowFraction)
+      : (lowYr?.cumulativeSuspendedCredits ?? 0) * lowFraction
+        + (highYr?.cumulativeSuspendedCredits ?? 0) * (1 - lowFraction);
+    const suspLoss = (lowYr?.cumulativeSuspendedLoss ?? 0) * lowFraction
+      + (highYr?.cumulativeSuspendedLoss ?? 0) * (1 - lowFraction);
+
+    // Economic value: NOL × marginal rate + credits at face value + suspended loss × marginal rate
+    // All values in millions from the engine
+    const nolValue = nolPool * marginalRate * 1_000_000;
+    const creditValue = creditCF * 1_000_000; // credits are dollar-for-dollar
+    const suspLossValue = suspLoss * marginalRate * 1_000_000;
+
+    timeline.push({
+      year: i + 1,
+      nolPool: nolPool * 1_000_000,
+      creditCarryforward: creditCF * 1_000_000,
+      suspendedLoss: suspLoss * 1_000_000,
+      totalSavingsAccountBalance: nolValue + creditValue + suspLossValue,
+    });
+  }
+
+  return timeline;
 }
 
 /**

@@ -66,6 +66,12 @@ export interface InvestorProfile {
   stateCapGainsRate: number;
   investorEquity: number;            // $ committed (gross)
   rothAnnualConversion?: number;     // IMPL-120: Annual Roth conversion (Years 1-10 only, $0 in Years 11-12)
+
+  // IMPL-152: Lifetime Coverage Mode inputs
+  incomeMode?: 'annual' | 'lifetime';            // default 'annual' — preserves existing behavior
+  lowIncomeEstimate?: number;                     // expected total income in a slow year ($)
+  highIncomeEstimate?: number;                    // expected total income in a peak year ($)
+  incomeDistribution?: 'conservative' | 'moderate' | 'optimistic'; // weights low vs high years
 }
 
 /**

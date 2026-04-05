@@ -23,6 +23,8 @@ import {
   generateIRAConversionRecommendations
 } from '../../../utils/taxbenefits/iraConversion';
 import { SECTION_461L_LIMITS } from '../../../utils/taxbenefits/investorTaxUtilization';
+import { findLifetimeCoverageCommitment } from '../../../utils/taxbenefits/investorSizing';
+import type { LifetimeCoverageResult } from '../../../utils/taxbenefits/investorSizing';
 import { exportWealthManagerSummary } from '../../../utils/exportWealthManagerSummary';
 import type { WealthManagerExportData } from '../../../utils/exportWealthManagerSummary';
 import type { CalculationParams, REPTaxCapacityModel } from '../../../types/taxbenefits';
@@ -148,6 +150,23 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
     if (deals.length === 0) return 10;
     return Math.max(...deals.map(d => d.holdPeriod));
   }, [deals]);
+
+  // IMPL-152: Lifetime Coverage Mode
+  const [lifetimeCoverageResult, setLifetimeCoverageResult] = useState<LifetimeCoverageResult | null>(null);
+  const isNonpassive = sizingResult?.fullUtilizationResult?.treatment === 'nonpassive';
+
+  const handleLifetimeCoverageRequest = (low: number, high: number, dist: 'conservative' | 'moderate' | 'optimistic') => {
+    if (!poolBenefitStream || !investorProfile || !aggregationMeta) return;
+    const result = findLifetimeCoverageCommitment(
+      poolBenefitStream,
+      investorProfile,
+      aggregationMeta.totalGrossEquity,
+      low,
+      high,
+      dist
+    );
+    setLifetimeCoverageResult(result);
+  };
 
   // IMPL-147 + IMPL-150: IRA Conversion Plan for REP investors with IRA balance
   const iraConversionData = useMemo(() => {
@@ -412,6 +431,9 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
             minSlider={100_000}
             maxSlider={aggregationMeta.totalGrossEquity}
             formatCurrency={formatDollarCurrency}
+            isNonpassive={isNonpassive}
+            lifetimeCoverageResult={lifetimeCoverageResult}
+            onLifetimeCoverageRequest={handleLifetimeCoverageRequest}
           />
         )}
 

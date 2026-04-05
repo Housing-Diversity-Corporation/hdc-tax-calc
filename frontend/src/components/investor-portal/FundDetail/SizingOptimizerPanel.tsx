@@ -8,7 +8,7 @@
  * Uses recharts for the utilization curve visualization.
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   LineChart,
   Line,
@@ -19,9 +19,13 @@ import {
   ReferenceLine,
   ReferenceArea,
   ResponsiveContainer,
+  BarChart,
+  Bar,
 } from 'recharts';
 import type { InvestorFitResult, Archetype } from '../../../utils/taxbenefits/investorFit';
-import type { SizingResult, SizingPoint } from '../../../utils/taxbenefits/investorSizing';
+import type { SizingResult, SizingPoint, LifetimeCoverageResult } from '../../../utils/taxbenefits/investorSizing';
+
+type SizingMode = 'annual' | 'lifetime';
 
 interface SizingOptimizerPanelProps {
   sizingResult: SizingResult;
@@ -31,6 +35,10 @@ interface SizingOptimizerPanelProps {
   minSlider: number;
   maxSlider: number;
   formatCurrency: (value: number) => string;
+  // IMPL-152: Lifetime Coverage Mode
+  isNonpassive?: boolean;
+  lifetimeCoverageResult?: LifetimeCoverageResult | null;
+  onLifetimeCoverageRequest?: (low: number, high: number, dist: 'conservative' | 'moderate' | 'optimistic') => void;
 }
 
 // =============================================================================
@@ -131,7 +139,16 @@ const SizingOptimizerPanel: React.FC<SizingOptimizerPanelProps> = ({
   minSlider,
   maxSlider,
   formatCurrency,
+  isNonpassive,
+  lifetimeCoverageResult,
+  onLifetimeCoverageRequest,
 }) => {
+  // IMPL-152: Lifetime Coverage Mode state
+  const [sizingMode, setSizingMode] = useState<SizingMode>('annual');
+  const [lowIncome, setLowIncome] = useState<string>('200000');
+  const [highIncome, setHighIncome] = useState<string>('800000');
+  const [incomeDist, setIncomeDist] = useState<'conservative' | 'moderate' | 'optimistic'>('moderate');
+
   // For Archetype E, show the modified display
   if (fitResult.archetype === 'E') {
     return <ArchetypeEDisplay fitResult={fitResult} formatCurrency={formatCurrency} />;
@@ -153,6 +170,15 @@ const SizingOptimizerPanel: React.FC<SizingOptimizerPanelProps> = ({
   // Current point from curve
   const currentPoint = findClosestPoint(sizingResult.utilizationCurve, currentCommitment);
 
+  // IMPL-152: Handle mode switch to Lifetime Coverage
+  const handleLifetimeCoverageRun = () => {
+    const low = Number(lowIncome) || 200_000;
+    const high = Number(highIncome) || 800_000;
+    if (onLifetimeCoverageRequest) {
+      onLifetimeCoverageRequest(low, high, incomeDist);
+    }
+  };
+
   return (
     <div className="mb-6 border border-gray-200 rounded-lg p-5 bg-white">
       {/* Header */}
@@ -168,6 +194,35 @@ const SizingOptimizerPanel: React.FC<SizingOptimizerPanelProps> = ({
           Constraint: {sizingResult.constraintBinding}
         </span>
       </div>
+
+      {/* IMPL-152: Mode Toggle — REP (nonpassive) only */}
+      {isNonpassive && onLifetimeCoverageRequest && (
+        <div className="flex gap-1 mb-4 p-0.5 bg-gray-100 rounded-md w-fit">
+          <button
+            onClick={() => setSizingMode('annual')}
+            className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+              sizingMode === 'annual'
+                ? 'bg-white text-[#407f7f] shadow-sm'
+                : 'text-[#474a44]/60 hover:text-[#474a44]'
+            }`}
+          >
+            Annual Efficiency
+          </button>
+          <button
+            onClick={() => { setSizingMode('lifetime'); handleLifetimeCoverageRun(); }}
+            className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+              sizingMode === 'lifetime'
+                ? 'bg-white text-[#407f7f] shadow-sm'
+                : 'text-[#474a44]/60 hover:text-[#474a44]'
+            }`}
+          >
+            Lifetime Coverage
+          </button>
+        </div>
+      )}
+
+      {/* ═══ Annual Efficiency mode content ═══ */}
+      {sizingMode === 'annual' && <>
 
       {/* Commitment Slider */}
       <div className="mb-4">
@@ -306,8 +361,11 @@ const SizingOptimizerPanel: React.FC<SizingOptimizerPanelProps> = ({
         </div>
       )}
 
-      {/* Metrics at Current Commitment */}
-      {currentPoint && (
+      </>}
+      {/* ═══ End Annual Efficiency mode content ═══ */}
+
+      {/* Metrics at Current Commitment — Annual Efficiency mode */}
+      {sizingMode === 'annual' && currentPoint && (
         <div className="grid grid-cols-5 gap-3">
           <div>
             <div className="text-xs text-[#474a44]/60 mb-1">Annual Utilization</div>
@@ -339,6 +397,138 @@ const SizingOptimizerPanel: React.FC<SizingOptimizerPanelProps> = ({
               {fitResult.utilizationAdjustedIRR.toFixed(1)}%
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          IMPL-152: Lifetime Coverage Mode Display
+      ═══════════════════════════════════════════════════════════════════════ */}
+      {sizingMode === 'lifetime' && isNonpassive && (
+        <div className="mt-2">
+          {/* Income Range Inputs */}
+          <div className="grid grid-cols-3 gap-3 mb-4 p-3 bg-[#f0f7f7] rounded-md">
+            <div>
+              <label className="block text-xs text-[#474a44]/60 mb-1">Low-income year estimate</label>
+              <div className="relative">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[#474a44]/40">$</span>
+                <input
+                  type="number"
+                  value={lowIncome}
+                  onChange={(e) => setLowIncome(e.target.value)}
+                  onBlur={handleLifetimeCoverageRun}
+                  className="w-full pl-5 pr-2 py-1.5 text-sm border border-gray-200 rounded focus:border-[#407f7f] focus:outline-none"
+                  placeholder="200000"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-[#474a44]/60 mb-1">High-income year estimate</label>
+              <div className="relative">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[#474a44]/40">$</span>
+                <input
+                  type="number"
+                  value={highIncome}
+                  onChange={(e) => setHighIncome(e.target.value)}
+                  onBlur={handleLifetimeCoverageRun}
+                  className="w-full pl-5 pr-2 py-1.5 text-sm border border-gray-200 rounded focus:border-[#407f7f] focus:outline-none"
+                  placeholder="800000"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-[#474a44]/60 mb-1">Income distribution</label>
+              <select
+                value={incomeDist}
+                onChange={(e) => { setIncomeDist(e.target.value as any); setTimeout(handleLifetimeCoverageRun, 0); }}
+                className="w-full py-1.5 px-2 text-sm border border-gray-200 rounded focus:border-[#407f7f] focus:outline-none"
+              >
+                <option value="conservative">Conservative (75% low)</option>
+                <option value="moderate">Moderate (50/50)</option>
+                <option value="optimistic">Optimistic (75% high)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Lifetime Coverage Results */}
+          {lifetimeCoverageResult && lifetimeCoverageResult.scenarios.length > 0 && (
+            <>
+              {/* Optimal Commitment */}
+              <div className="mb-4 p-3 bg-white border border-[#7fbd45] rounded-md">
+                <div className="text-xs text-[#474a44]/60 mb-1">Optimal Commitment (Lifetime Coverage)</div>
+                <div className="text-xl font-bold text-[#7fbd45]">
+                  {formatCompactCurrency(lifetimeCoverageResult.optimalCommitment)}
+                </div>
+                <div className="text-xs text-[#474a44]/50 mt-1">
+                  Carryforward covers {lifetimeCoverageResult.coverageMetric > 20 ? '>20' : `~${lifetimeCoverageResult.coverageMetric.toFixed(1)}`} peak-income years of tax liability
+                </div>
+              </div>
+
+              {/* Savings Account Balance Chart */}
+              {lifetimeCoverageResult.moderateCarryforward.length > 0 && (
+                <div className="mb-4">
+                  <div className="text-xs font-semibold text-[#474a44]/70 mb-2">
+                    Tax Benefits Savings Account Balance
+                  </div>
+                  <ResponsiveContainer width="100%" height={180}>
+                    <BarChart data={lifetimeCoverageResult.moderateCarryforward} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis
+                        dataKey="year"
+                        tick={{ fontSize: 10, fill: '#474a44' }}
+                        label={{ value: 'Year', position: 'insideBottom', offset: -2, fontSize: 10 }}
+                      />
+                      <YAxis
+                        tickFormatter={(v) => formatCompactCurrency(v)}
+                        tick={{ fontSize: 10, fill: '#474a44' }}
+                      />
+                      <Tooltip
+                        formatter={(value: any) => [formatCompactCurrency(Number(value) || 0), 'Balance']}
+                        labelFormatter={(label: any) => `Year ${label}`}
+                      />
+                      <Bar dataKey="totalSavingsAccountBalance" fill="#407f7f" radius={[2, 2, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              {/* Scenario Comparison Table */}
+              <div className="mb-2">
+                <div className="text-xs font-semibold text-[#474a44]/70 mb-2">Scenario Comparison</div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-[#f0f7f7]">
+                        <th className="text-left p-2 border-b border-gray-200" />
+                        {lifetimeCoverageResult.scenarios.map(s => (
+                          <th key={s.label} className="text-right p-2 border-b border-gray-200">{s.label}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-gray-100">
+                        <td className="p-2 text-[#474a44]/70">Total benefit captured</td>
+                        {lifetimeCoverageResult.scenarios.map(s => (
+                          <td key={s.label} className="p-2 text-right font-medium text-[#7fbd45]">{formatCompactCurrency(s.totalBenefitCaptured)}</td>
+                        ))}
+                      </tr>
+                      <tr className="border-b border-gray-100">
+                        <td className="p-2 text-[#474a44]/70">Carryforward peak balance</td>
+                        {lifetimeCoverageResult.scenarios.map(s => (
+                          <td key={s.label} className="p-2 text-right font-medium">{formatCompactCurrency(s.carryforwardPeakBalance)}</td>
+                        ))}
+                      </tr>
+                      <tr className="border-b border-gray-100">
+                        <td className="p-2 text-[#474a44]/70">Coverage metric</td>
+                        {lifetimeCoverageResult.scenarios.map(s => (
+                          <td key={s.label} className="p-2 text-right font-medium">{s.coverageYears > 20 ? '>20' : s.coverageYears.toFixed(1)} yrs</td>
+                        ))}
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
