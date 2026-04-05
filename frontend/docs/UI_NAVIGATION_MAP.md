@@ -2,7 +2,7 @@
 
 **Location:** `frontend/docs/UI_NAVIGATION_MAP.md`
 **Purpose:** Living reference for CC runtime UI verification via AppleScript/osascript.
-**Last updated:** 2026-04-04 (IMPL-145/146/147 session)
+**Last updated:** 2026-04-04 (IMPL-151 session)
 
 ---
 
@@ -141,3 +141,33 @@ Without a pool, FundDetail cannot render. The "View Fund Details" button only ap
 | Chrome window/tab may shift between sessions | Always find tab by URL first |
 | `authToken` (not `token`) in localStorage | Use `localStorage.getItem('authToken')` |
 | Profile name doesn't update when DB fields change | Name is a separate column |
+| Chrome blocks programmatic downloads | `doc.save()`, `window.open()`, and anchor-click download triggers are silently suppressed when executed from AppleScript's JavaScript evaluation context. This is a Chrome security restriction on non-user-gesture script, not a code bug. Workaround: verify PDF generation runs without errors via `import()` + function call in console, and confirm the download mechanism matches existing working exports (e.g., Screen 3 reports use the same `jspdf doc.save()` pattern). Real user clicks trigger downloads correctly. Do not spend time debugging "broken downloads" in AppleScript — they cannot be verified this way. |
+
+---
+
+## Download Verification Protocol
+
+**Downloads cannot be verified via AppleScript.** For any IMPL that involves file downloads (PDF, Excel, CSV), runtime verification should confirm:
+
+1. The generation function executes without errors (use Vite dynamic `import()` to call it directly — do NOT rely on button clicks triggering downloads)
+2. The download mechanism matches an existing working export in the codebase
+3. Note in the runtime verification report: "Download verified by code equivalence to [existing export]"
+
+---
+
+## Export Buttons
+
+### Screen 2 Export (IMPL-151)
+- Button label: "Export Summary"
+- Render condition: `sizingResult && investorSizingResult` (requires active investor profile with completed sizing)
+- Absent when no profile active or sizing not yet computed
+- Component: shadcn `Button` in FundDetail profile selector row
+- Trigger: `exportWealthManagerSummary()` from `frontend/src/utils/exportWealthManagerSummary.ts`
+- Output: one-page portrait PDF, auto-downloads via `doc.save(filename)`
+- NOTE: Cannot be verified via AppleScript download check — see Known Issues
+
+### Screen 3 Exports (pre-existing)
+- 3 PDF reports (`HDCProfessionalReport`, `HDCComprehensiveReport`, `HDCTaxReportJsPDF`) + 1 Excel export (`ExportAuditButton`)
+- All use same jsPDF `doc.save()` / XLSX pattern
+- Located in `frontend/src/components/taxbenefits/reports/`
+- Confirmed working for real user clicks

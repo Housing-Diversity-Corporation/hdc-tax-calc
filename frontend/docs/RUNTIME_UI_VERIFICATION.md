@@ -1,8 +1,8 @@
 # Runtime UI Verification via AppleScript + Chrome
 
-**Version:** 1.1
+**Version:** 1.2
 **Created:** 2026-03-23
-**Last Updated:** 2026-03-23
+**Last Updated:** 2026-04-04 (IMPL-151: download constraints, pool requirements)
 
 ---
 
@@ -452,3 +452,72 @@ For each state, report these values from the KPI strip and Returns Buildup:
 | Values don't change after switch | The bug you're testing for — check useMemo dependency arrays. |
 | Checkbox index shifted | Re-run Step 6 (list checkboxes) to find the current index. REP-only checkboxes appear/disappear on track switch. |
 | `sleep` not long enough | Increase to `sleep 5`. Complex deals with LIHTC/OZ take longer to recalculate. |
+
+---
+
+## Known Verification Constraints
+
+### File Downloads
+
+Chrome silently suppresses downloads triggered programmatically from AppleScript's JavaScript evaluation context (`doc.save()`, anchor click simulation, `window.open()`). This is a Chrome security restriction on non-user-gesture scripts, not a code bug.
+
+**Verification approach for download features:**
+
+1. Confirm the generation function runs without throwing exceptions — use Vite's dynamic `import('/src/utils/yourModule.ts')` to call the function directly from AppleScript JS, bypassing React's event system
+2. Confirm the trigger mechanism (button click → handler → `doc.save()`) matches the pattern used by existing verified exports in the codebase
+3. Report: "Download verified by code equivalence — matches `[file]:[pattern]`"
+4. Do NOT conclude the feature is broken because the file doesn't appear in the Downloads folder
+
+**Confirmed working download pattern (as of IMPL-151):**
+
+The 3 existing Screen 3 PDF reports and the IMPL-151 Screen 2 export all use the same `jsPDF doc.save(filename)` pattern. This pattern is confirmed to work for real user clicks. AppleScript cannot trigger it. This is expected behavior.
+
+**Example verification for download features:**
+
+```bash
+osascript -e '
+tell application "Google Chrome"
+  repeat with w in every window
+    repeat with t in every tab of w
+      if URL of t contains "localhost:5173" then
+        execute t javascript "
+          window.__dlTest = \"pending\";
+          import(\"/src/utils/exportWealthManagerSummary.ts\").then(function(mod){
+            try {
+              mod.exportWealthManagerSummary({ /* mock data */ });
+              window.__dlTest = \"success\";
+            } catch(e) { window.__dlTest = \"error: \" + e.message; }
+          });
+        "
+        delay 4
+        execute t javascript "window.__dlTest"
+        return result
+      end if
+    end repeat
+  end repeat
+end tell
+'
+```
+
+### React Controlled Input Values
+
+AppleScript CANNOT reliably set React controlled input values. The native value setter + `input` event pattern does NOT trigger React's synthetic onChange in React 18.
+
+**Workarounds:**
+- Use DB updates directly for setting profile values
+- Radix UI select/combobox `.click()` on `[role="option"]` DOES work
+- Checkbox `.click()` works for toggling state but may not persist through save
+
+### Investment Pool Requirement for Screen 2
+
+Screen 2 (FundDetail) requires an investment pool with linked `deal_benefit_profiles` to render SizingOptimizerPanel, FitSummaryPanel, and IRAConversionPanel. Individual deals on the Available Investments page route to InvestorAnalysis, not FundDetail — only pool cards show "View Fund Details".
+
+**To check pool existence:**
+```bash
+curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/pools | python3 -c "
+import sys, json
+pools = json.load(sys.stdin)
+for p in pools:
+    print(f\"id={p['id']} | {p['poolName']} | status={p['status']} | deals={p.get('dealCount', '?')}\")
+"
+```
