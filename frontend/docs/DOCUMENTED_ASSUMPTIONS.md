@@ -90,3 +90,62 @@ Operational requirement — not a calculation parameter.
 **Action required before first acquisition/rehab deal:** Engage Novogradac to confirm
 deal-specific application of tack-back rule and confirm platform implementation approach.
 Pre-assign an IMPL number at that time.
+
+---
+
+## §461(l) EBL Threshold — W-2 Wages Excluded
+*Added: April 2026 validation session | Reverted: IMPL-153 (commit 77a2493)*
+
+**Confirmed:** W-2 wages from employment are NOT included in "aggregate gross
+income attributable to trades or businesses" under §461(l)(3)(A)(i).
+
+**Authority:**
+- CARES Act technical correction (effective tax years beginning 2021+):
+  "Employee wages are excluded from gross trade or business income in computing
+  the overall amount of an EBL."
+- JCT Blue Book (JCS-1-18, December 2018): "The wage income is not taken into
+  account in determining the amount of the deduction limited under section 461(l)."
+
+**Platform implementation:** Flat SECTION_461L_LIMITS[filingStatus] cap is correct.
+Do not add annualOrdinaryIncome offset to the EBL threshold. IMPL-153 attempted
+this and was reverted (commit 77a2493) after counsel research confirmed exclusion.
+
+**Spec cross-reference:** HDC_Tax_Benefits_Spec §5.7 (§461(l) Excess Business Loss Cap)
+should include this note:
+
+> **W-2 Wage Exclusion (confirmed):** W-2 wages from employment are excluded
+> from §461(l) business income per CARES Act technical correction and JCT Blue
+> Book (JCS-1-18). The flat $626K MFJ / $313K Single cap is the correct formula.
+> IMPL-153 (reverted, commit 77a2493) confirmed this via research.
+
+---
+
+## 2025 MFJ Marginal Rate at $500K Gross Income
+*Added: April 2026 validation session | Validated: Scenario C*
+
+**Confirmed:** $500K gross MFJ → $468,500 taxable (after $31,500 standard
+deduction) → 32% marginal bracket. NOT 35% or 37%.
+
+37% bracket begins at $751,600 taxable = ~$783,100 gross MFJ.
+35% bracket begins at $501,050 taxable = ~$532,550 gross MFJ.
+
+Any investor materials referencing "pre-HDC marginal rate" for a $500K MFJ
+example must use 32%, not 37%. Validated by engine (Scenario C, April 2026).
+
+---
+
+## §42(f)(1) Election — Unconditional for December PIS Deals
+*Added: April 2026 validation session | Validated: Scenario A, §38(c) analysis*
+
+**Rationale confirmed by engine validation (April 2026):**
+Year 1 bonus depreciation zeros out tax liability → §38(c) ceiling collapses
+to $6,250 → LIHTC credits generated in Year 1 cannot be used anyway.
+
+Electing §42(f)(1) defers the credit period start to Year 2, when:
+- Depreciation has dropped to recurring level
+- Actual tax liability exists
+- §38(c) ceiling has recovered
+
+The election trades a partial-year credit that would be wasted for a full
+Year 2 credit that can actually be utilized. Should be made unconditionally
+for Trace 4001 and 4448 California (December PIS deals).
