@@ -2,7 +2,7 @@
 
 **Location:** `frontend/docs/UI_NAVIGATION_MAP.md`
 **Purpose:** Living reference for CC runtime UI verification via AppleScript/osascript.
-**Last updated:** 2026-04-04 (IMPL-151 session)
+**Last updated:** 2026-04-05 (IMPL-152: added ui-verify.sh harness)
 
 ---
 
@@ -17,6 +17,7 @@
       if URL of tab j of window i contains "localhost:5173" then ...
   ```
 - **AppleScript JS from Apple Events:** Must be enabled in Chrome: View → Developer → Allow JavaScript from Apple Events. Gets disabled on Chrome restart.
+- **Reusable verification harness:** Source `frontend/scripts/ui-verify.sh` at the start of any runtime verification session. Provides `ui_ensure_fund_detail`, `ui_run_js`, `ui_check_panels`, `ui_select_profile`, `ui_check_text`, `ui_reload`, etc. Always use the harness — do not reinvent AppleScript snippets from scratch.
 
 ---
 
