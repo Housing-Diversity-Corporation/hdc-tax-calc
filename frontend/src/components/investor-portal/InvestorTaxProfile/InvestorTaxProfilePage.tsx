@@ -714,6 +714,36 @@ const InvestorTaxProfilePage: React.FC = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* IMPL-146: Traditional IRA Balance for Roth conversion planning */}
+              <div className="space-y-2">
+                <Label htmlFor="ira-balance">Traditional IRA Balance</Label>
+                <Input
+                  id="ira-balance"
+                  type="number"
+                  value={currentProfile.iraBalance ?? ''}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const numValue = Number(value);
+                    if (value !== '' && numValue < 0) return;
+                    setCurrentProfile({
+                      ...currentProfile,
+                      iraBalance: value === '' ? 0 : numValue
+                    });
+                  }}
+                  placeholder="e.g., 500000"
+                  className="font-mono"
+                  min="0"
+                  onKeyDown={(e) => {
+                    if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                      e.preventDefault();
+                    }
+                  }}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Total balance in Traditional, Rollover, SEP, or SIMPLE IRAs available for Roth conversion. Roth IRA balances are already tax-free and should not be included.
+                </p>
+              </div>
             </div>
 
             {/* STEP 1: Investor Track Selection */}

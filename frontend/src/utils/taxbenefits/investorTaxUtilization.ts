@@ -724,9 +724,14 @@ export function calculateTaxUtilization(
       nolUsed = depNonpassive.nolUsed;
       nolPool = depNonpassive.nolPool;
 
+      // IMPL-144: NOL consumed this year reduces net income tax for §38(c) ceiling
+      // nolUsed is in millions, yearMarginalRate is decimal — convert to dollars
+      const nolTaxReductionDollars = depNonpassive.nolUsed * yearMarginalRate * 1_000_000;
+      const taxLiabilityAfterNOL = Math.max(0, yearTax.federalTaxLiability - nolTaxReductionDollars);
+
       lihtcResult = computeLIHTCNonpassive(
         lihtcGenerated,
-        yearTax.federalTaxLiability,
+        taxLiabilityAfterNOL,
         depNonpassive.depreciationTaxSavings,
         cumulativeCarriedCredits
       );

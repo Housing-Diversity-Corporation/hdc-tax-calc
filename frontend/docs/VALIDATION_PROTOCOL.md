@@ -118,3 +118,11 @@ Update this protocol when:
 - Layer synchronization issues cause bugs
 
 **Location:** `frontend/docs/VALIDATION_PROTOCOL.md`
+
+---
+
+## IMPL Definition of Done — Standard Items
+
+Item 11: CC must include `git status` + `git diff --stat` in completion report before commit.
+Item 12: CC must update SPEC_IMPLEMENTATION_REGISTRY with IMPL entry.
+Item 13: For any IMPL that touches UI components — CC must complete a full end-to-end user workflow in the running dev server and report actual screen values before committing. "Tests pass" and "component exists" are not sufficient. A feature that exists in the engine but is invisible to the user is not done.

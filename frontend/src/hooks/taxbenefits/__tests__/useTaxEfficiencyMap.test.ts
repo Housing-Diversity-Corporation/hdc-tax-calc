@@ -41,13 +41,13 @@ function findCell(investorType: string, income: number, investment: number) {
 }
 
 describe('IMPL-123: useTaxEfficiencyMap', () => {
-  test('REP+grouped $750K/$1M returns $1.948M ±1%', () => {
+  test('REP+grouped $750K/$1M returns $1.912M ±1%', () => {
     const cell = findCell('rep_grouped', 750_000, 1_000_000);
     expect(cell).toBeDefined();
     const savingsM = cell!.totalTaxSavings / 1e6;
-    // Batch value: 1.9477M
-    expect(savingsM).toBeGreaterThanOrEqual(1.9477 * 0.99);
-    expect(savingsM).toBeLessThanOrEqual(1.9477 * 1.01);
+    // IMPL-144: NOL carryforward reduces §38(c) ceiling → $1.912M (was $1.948M)
+    expect(savingsM).toBeGreaterThanOrEqual(1.912 * 0.99);
+    expect(savingsM).toBeLessThanOrEqual(1.912 * 1.01);
     expect(cell!.utilizationRate).toBeGreaterThan(0.5);
   });
 

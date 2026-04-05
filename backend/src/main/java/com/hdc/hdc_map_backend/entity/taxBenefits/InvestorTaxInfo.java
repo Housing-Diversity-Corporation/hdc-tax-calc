@@ -36,6 +36,10 @@ public class InvestorTaxInfo {
     @Column(name = "annual_portfolio_income")
     private Double annualPortfolioIncome;
 
+    // IMPL-146: Traditional IRA balance for Roth conversion planning
+    @Column(name = "ira_balance")
+    private Double iraBalance;
+
     @Column(name = "grouping_election")
     private Boolean groupingElection;
 
@@ -144,6 +148,9 @@ public class InvestorTaxInfo {
 
     public Double getAnnualPortfolioIncome() { return annualPortfolioIncome; }
     public void setAnnualPortfolioIncome(Double annualPortfolioIncome) { this.annualPortfolioIncome = annualPortfolioIncome; }
+
+    public Double getIraBalance() { return iraBalance; }
+    public void setIraBalance(Double iraBalance) { this.iraBalance = iraBalance; }
 
     public Boolean getGroupingElection() { return groupingElection; }
     public void setGroupingElection(Boolean groupingElection) { this.groupingElection = groupingElection; }

@@ -55,7 +55,7 @@ function buildProfile(overrides: Partial<InvestorProfile>): InvestorProfile {
 describe('IMPL-122: §38(c) unit mismatch fix in calculateTaxUtilization', () => {
   const scaledStream = scaleBenefitStream(DEAL_STREAM, OWNERSHIP);
 
-  test('REP+grouped $750K/$1M/WA/MFJ: totalTaxSavings matches batch runner at $1.948M', () => {
+  test('REP+grouped $750K/$1M/WA/MFJ: totalTaxSavings matches corrected value at $1.912M', () => {
     const profile = buildProfile({
       annualOrdinaryIncome: 750_000,
       investorTrack: 'rep',
@@ -65,12 +65,13 @@ describe('IMPL-122: §38(c) unit mismatch fix in calculateTaxUtilization', () =>
     const result = calculateTaxUtilization(scaledStream, profile);
     const totalSavings = result.totalDepreciationSavings + result.totalLIHTCUsed;
 
-    // Batch runner corrected value: $1.9477M
-    // Pre-IMPL-122 engine (inflated): $2.120M — the §38(c) ceiling never bound
-    expect(totalSavings).toBeCloseTo(1.948, 2);
-    // Within ±1% of $1.948M
-    expect(totalSavings).toBeGreaterThan(1.948 * 0.99);
-    expect(totalSavings).toBeLessThan(1.948 * 1.01);
+    // Pre-IMPL-122 engine (inflated): $2.120M — §38(c) ceiling never bound
+    // IMPL-122 corrected: $1.948M — §38(c) unit fix
+    // IMPL-144 corrected: $1.912M — NOL carryforward now reduces §38(c) ceiling
+    expect(totalSavings).toBeCloseTo(1.912, 2);
+    // Within ±1% of $1.912M
+    expect(totalSavings).toBeGreaterThan(1.912 * 0.99);
+    expect(totalSavings).toBeLessThan(1.912 * 1.01);
   });
 
   test('REP+grouped $2M/$1M/WA/MFJ: totalTaxSavings matches batch runner at $2.158M', () => {

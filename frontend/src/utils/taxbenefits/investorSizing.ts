@@ -11,7 +11,7 @@
  */
 
 import type { BenefitStream, InvestorProfile, TaxUtilizationResult } from './investorTaxUtilization';
-import { calculateTaxUtilization } from './investorTaxUtilization';
+import { calculateTaxUtilization, SECTION_461L_LIMITS } from './investorTaxUtilization';
 import { scaleStreamByProRata } from './fundSizingOptimizer';
 import { scaleBenefitStreamToMillions } from './poolAggregation';
 import { classifyInvestorFit } from './investorFit';
@@ -39,6 +39,9 @@ export interface SizingResult {
   utilizationCurve: SizingPoint[];
   constraintBinding: string;
   peakType: PeakType;           // IMPL-120: curve shape at optimal point
+  // IMPL-145: §461(l)-aware REP sizing — commitment where Year 1 depreciation ≈ EBL threshold
+  sec461lOptimalCommitment?: number;
+  sec461lUtilizationPct?: number;
 }
 
 export interface InvestorSizingConfig {
@@ -202,6 +205,31 @@ export function computeOptimalSizing(
     ? identifyBindingConstraint(profile, bestUtilResult)
     : 'None — full utilization achievable';
 
+  // IMPL-145: §461(l)-aware REP sizing target
+  // For REP+grouped investors, find the commitment where Year 1 depreciation
+  // lands at the §461(l) threshold — the point where the investor maximizes
+  // current-year deductions without generating excess business loss / NOL.
+  const isNonpassive = profile.investorTrack === 'rep' && profile.groupingElection;
+  let sec461lOptimalCommitment: number | undefined;
+  let sec461lUtilizationPct: number | undefined;
+
+  if (isNonpassive) {
+    const threshold = SECTION_461L_LIMITS[profile.filingStatus] / 1_000_000; // in millions
+    sec461lOptimalCommitment = findSec461lTargetCommitment(
+      poolBenefitStream, profile, dealTotalEquity, threshold, effectiveMin, maxCommitment
+    );
+    if (sec461lOptimalCommitment !== undefined) {
+      // Compute utilization at the §461(l) target
+      const proRata = sec461lOptimalCommitment / dealTotalEquity;
+      const scaled = scaleStreamByProRata(poolBenefitStream, proRata);
+      const millioned = scaleBenefitStreamToMillions(scaled);
+      const utilAtTarget = calculateTaxUtilization(millioned, profile);
+      const totGen = utilAtTarget.annualUtilization.reduce((s, yr) => s + yr.totalBenefitGenerated, 0);
+      const totUsed = utilAtTarget.annualUtilization.reduce((s, yr) => s + yr.totalBenefitUsable, 0);
+      sec461lUtilizationPct = totGen > 0 ? (totUsed / totGen) * 100 : 0;
+    }
+  }
+
   return {
     optimalCommitment: curve[optimalIndex]?.commitmentAmount ?? 0,
     optimalUtilizationPct: curve[optimalIndex]?.annualUtilizationPct ?? 0,
@@ -210,6 +238,8 @@ export function computeOptimalSizing(
     utilizationCurve: curve,
     constraintBinding,
     peakType,
+    sec461lOptimalCommitment,
+    sec461lUtilizationPct,
   };
 }
 
@@ -233,6 +263,59 @@ export function determinePeakType(curve: SizingPoint[], bestIndex: number): Peak
   if (declineFromPeak > 0.05) return 'peak';
   if (isAtEnd && lastEff > curve[0].effectiveMultiple * 1.05) return 'rising';
   return 'plateau';
+}
+
+/**
+ * IMPL-145: Find the commitment level where Year 1 depreciation lands at the §461(l) threshold.
+ *
+ * Uses binary search across the commitment range. Year 1 depreciation is monotonically
+ * increasing with commitment, so binary search converges quickly.
+ *
+ * Returns undefined if Year 1 depreciation never reaches the threshold (pool too small)
+ * or if even the minimum commitment exceeds the threshold.
+ */
+function findSec461lTargetCommitment(
+  poolBenefitStream: BenefitStream,
+  profile: InvestorProfile,
+  dealTotalEquity: number,
+  thresholdInMillions: number,
+  minCommitment: number,
+  maxCommitment: number,
+): number | undefined {
+  // Helper: compute Year 1 depreciation at a given commitment
+  const year1DeprAt = (commitment: number): number => {
+    const proRata = commitment / dealTotalEquity;
+    const scaled = scaleStreamByProRata(poolBenefitStream, proRata);
+    const millioned = scaleBenefitStreamToMillions(scaled);
+    const util = calculateTaxUtilization(millioned, profile);
+    return util.annualUtilization[0]?.depreciationGenerated ?? 0;
+  };
+
+  // Check bounds: if max commitment still below threshold, no target exists
+  const deprAtMax = year1DeprAt(maxCommitment);
+  if (deprAtMax < thresholdInMillions) return undefined;
+
+  // If min commitment already exceeds threshold, target is at/below min
+  const deprAtMin = year1DeprAt(minCommitment);
+  if (deprAtMin >= thresholdInMillions) return minCommitment;
+
+  // Binary search for the commitment where Year 1 depr ≈ threshold
+  let lo = minCommitment;
+  let hi = maxCommitment;
+  const tolerance = 10_000; // $10K precision
+
+  for (let iter = 0; iter < 30 && (hi - lo) > tolerance; iter++) {
+    const mid = (lo + hi) / 2;
+    const deprAtMid = year1DeprAt(mid);
+    if (deprAtMid < thresholdInMillions) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+
+  // Return the midpoint rounded to nearest $1K
+  return Math.round((lo + hi) / 2 / 1000) * 1000;
 }
 
 /**

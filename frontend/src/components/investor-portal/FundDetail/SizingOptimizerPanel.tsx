@@ -197,13 +197,27 @@ const SizingOptimizerPanel: React.FC<SizingOptimizerPanelProps> = ({
       </div>
 
       {/* Optimal callout */}
-      <div className="flex gap-4 mb-4 text-xs">
+      <div className="flex flex-wrap gap-4 mb-4 text-xs">
         <div>
-          <span className="text-[#474a44]/60">Optimal: </span>
+          <span className="text-[#474a44]/60">Optimal (Efficiency): </span>
           <span className="font-semibold text-[#407f7f]">
             {formatCompactCurrency(sizingResult.optimalCommitment)}
           </span>
         </div>
+        {/* IMPL-145: §461(l) REP optimal — only for nonpassive investors */}
+        {sizingResult.sec461lOptimalCommitment != null && (
+          <div>
+            <span className="text-[#474a44]/60">Optimal (§461(l) REP): </span>
+            <span className="font-semibold text-[#d97706]">
+              {formatCompactCurrency(sizingResult.sec461lOptimalCommitment)}
+            </span>
+            {sizingResult.sec461lUtilizationPct != null && (
+              <span className="text-[#474a44]/50">
+                {' '}({sizingResult.sec461lUtilizationPct.toFixed(0)}% util)
+              </span>
+            )}
+          </div>
+        )}
         {sizingResult.minimumEffective > 0 && sizingResult.maximumEffective > 0 && (
           <div>
             <span className="text-[#474a44]/60">Effective Range: </span>
@@ -254,6 +268,15 @@ const SizingOptimizerPanel: React.FC<SizingOptimizerPanelProps> = ({
                 strokeDasharray="4 4"
                 label={{ value: 'Optimal', position: 'top', fontSize: 10, fill: '#7fbd45' }}
               />
+              {/* IMPL-145: §461(l) REP target line */}
+              {sizingResult.sec461lOptimalCommitment != null && (
+                <ReferenceLine
+                  x={sizingResult.sec461lOptimalCommitment}
+                  stroke="#d97706"
+                  strokeDasharray="4 4"
+                  label={{ value: '§461(l)', position: 'top', fontSize: 10, fill: '#d97706' }}
+                />
+              )}
               {/* Current commitment line */}
               {currentCommitment !== sizingResult.optimalCommitment && (
                 <ReferenceLine

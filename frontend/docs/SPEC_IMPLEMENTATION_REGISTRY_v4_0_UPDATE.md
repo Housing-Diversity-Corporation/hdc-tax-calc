@@ -39,6 +39,10 @@
 | IMPL-136 | Fix missing investorState + selectedState deps in mainAnalysisResults useMemo — investorState was never passed to calculateFullInvestorAnalysis() (engine fell back to selectedState || 'NY'), and selectedState was missing from the dependency array. Added investorState pass-through and both props as explicit deps. Runtime verified: investor state switch (WA→NJ) now triggers immediate MOIC recalculation. | Deployed | 2026-03-25 | useHDCCalculations.ts | 1,854 tests (94 suites, 0 failures). |
 | IMPL-137 | Live Excel fix — ISS-069 (#NAME? errors) + ISS-070 (export params mismatch). ISS-069: Restored PlacedInServiceMonth named range in inputsSheet.ts — removed in IMPL-117 but 4 formula strings in depreciationSheet, lihtcSheet, taxBenefitsSheet still referenced it. ISS-070: Export was re-running engine with normalized params (placedInServiceMonth=1, constructionDelayMonths=0) producing different results than UI. Fix uses passed-in mainAnalysisResults directly. MOIC/IRR now match UI exactly (3.32x/22.20%). ISS-069 CLOSED, ISS-070 CLOSED. | Deployed | 2026-03-26 | auditExport/index.ts, auditExport/sheets/inputsSheet.ts | 1,854 tests (94 suites, 0 failures). |
 | IMPL-138 | Fix ISS-075 — Summary sheet investor equity understates by interest reserve share. summarySheet.ts computed equity as `projectCost × investorEquityPct / 100` ($15.78M) instead of using engine's `investorResults.investorEquity` ($16.05M, computed on effectiveProjectCost which includes interest reserve). ISS-075 CLOSED. | Deployed | 2026-03-26 | auditExport/sheets/summarySheet.ts | 1,854 tests (94 suites, 0 failures). |
+| IMPL-144 | Fix NOL carryforward effect on §38(c) ceiling. In REP (nonpassive) track, NOL consumed in Year 2+ now reduces `federalTaxLiability` before passing to `computeLIHTCNonpassive()` for §38(c) ceiling calculation. Statutory basis: §38(c)(1) GBC ceiling uses "net income tax" computed after all deductions including NOL. Impact: ~$36K reduction in total savings for $750K/$1M REP+MFJ profile (credits shift to later years via §39 carryforward). Updated IMPL-122, IMPL-121, IMPL-123 test expectations. Added 7 new tests: 5 for NOL→§38(c) interaction, 2 for explicit §469(i)(3)(D) ordering. | Deployed | 2026-04-03 | investorTaxUtilization.ts, impl-144-nol-sec38c-ceiling.test.ts, impl-122-sec38c-unit-fix.test.ts, impl-121-niit-utilization.test.ts, useTaxEfficiencyMap.test.ts | 1,787 tests (92 suites, 0 failures). |
+| IMPL-145 | §461(l)-aware explicit sizing target for REP investors. Binary search finds the commitment where Year 1 depreciation lands at the §461(l) threshold ($313K Single / $626K MFJ, 2025 indexed). Adds `sec461lOptimalCommitment` and `sec461lUtilizationPct` to SizingResult. SizingOptimizerPanel displays "Optimal (§461(l) REP)" line and amber chart reference line for nonpassive investors only. | Deployed | 2026-04-04 | investorSizing.ts, SizingOptimizerPanel.tsx | 1,866 tests (96 suites, 0 failures). |
+| IMPL-146 | Screen 3 IRA Balance input field. Adds "Traditional IRA Balance" number input to InvestorTaxProfilePage Step 0 (Investor Information), after Filing Status. Wired to existing `iraBalance` state field and backend persistence path (input_investor_profile.ira_balance column already exists). No backend changes required. | Deployed | 2026-04-04 | InvestorTaxProfilePage.tsx | 1,866 tests (96 suites, 0 failures). |
+| IMPL-147 | IRA Conversion Results Display — IRAConversionPanel component on Screen 2 (FundDetail). Shows pre/post-HDC rate compression, optimal Roth conversion amount, tax savings, 30-year projected Roth value, and annual conversion schedule. Renders only for REP investors with iraBalance > 0. Computes conversion plan via existing optimizeIRAConversion() from iraConversion.ts, building REPTaxCapacityModel from fund-level TaxUtilizationResult. | Deployed | 2026-04-04 | IRAConversionPanel.tsx (new), FundDetail.tsx | 1,866 tests (96 suites, 0 failures). |
 
 ---
 
@@ -74,7 +78,19 @@
 | IMPL-133 | Fix computeEffectiveYear1AF election-aware ramp offset | Deployed (2026-03-24) |
 | IMPL-134 | OZ double-count fix in extended path (calculations.ts) | Deployed (2026-03-24) |
 | IMPL-135 | Add deal name to KPI strip + Returns Buildup headers | Deployed (2026-03-25) |
-| IMPL-136+ | *Unassigned -- available for future work* | -- |
+| IMPL-136 | Fix missing investorState + selectedState deps in mainAnalysisResults useMemo | Deployed (2026-03-25) |
+| IMPL-137 | Live Excel fix — ISS-069 + ISS-070 (#NAME? errors + export params mismatch) | Deployed (2026-03-26) |
+| IMPL-138 | Fix Summary sheet investor equity understatement by interest reserve share | Deployed (2026-03-26) |
+| IMPL-139 | Net Depreciation Benefit row — collapse dep + exit tax for non-OZ investors | Deployed (2026-03-28) |
+| IMPL-140 | Fix 701 S Jackson hold period — timing field persistence + §42(f)(1) election | Deployed (2026-03-29) |
+| IMPL-141-142 | *Reserved -- not used* | -- |
+| IMPL-143 | Comprehensive Live Excel export params sync — timeline fields + income composition | Deployed (2026-04-01) |
+| IMPL-144 | Fix NOL carryforward effect on §38(c) ceiling — nolUsed reduces net income tax for GBC limit | Deployed (2026-04-03) |
+| IMPL-145 | §461(l)-aware explicit sizing target for REP investors | Deployed (2026-04-04) |
+| IMPL-146 | Screen 3 IRA Balance input field | Deployed (2026-04-04) |
+| IMPL-147 | IRA Conversion Results Display — IRAConversionPanel on Screen 2 | Deployed (2026-04-04) |
+| IMPL-148 | DBP Units Normalization — grossEquity stored in millions in deal_benefit_profiles but optimizer expects dollars. Affects §461(l) sizing display (IMPL-145) and optimizer output that reads dealTotalEquity. Fix: multiply by 1,000,000 when reading grossEquity from DBP into optimizer. IMPL-145 §461(l) REP line display deferred until resolved. | Blocked | 2026-04-04 |
+| IMPL-149+ | *Unassigned -- available for future work* | -- |
 
 ---
 

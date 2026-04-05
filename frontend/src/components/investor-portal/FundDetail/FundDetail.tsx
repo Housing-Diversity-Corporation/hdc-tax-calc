@@ -13,7 +13,11 @@ import EfficiencyCurveChart from './EfficiencyCurveChart';
 import CapacityWarning from './CapacityWarning';
 import FitSummaryPanel from './FitSummaryPanel';
 import SizingOptimizerPanel from './SizingOptimizerPanel';
+import IRAConversionPanel from './IRAConversionPanel';
 import { aggregatePoolToBenefitStream, buildInvestorProfileFromTaxInfo } from '../../../utils/taxbenefits/poolAggregation';
+import { optimizeIRAConversion } from '../../../utils/taxbenefits/iraConversion';
+import { SECTION_461L_LIMITS } from '../../../utils/taxbenefits/investorTaxUtilization';
+import type { CalculationParams, REPTaxCapacityModel } from '../../../types/taxbenefits';
 import { optimizeFundCommitment } from '../../../utils/taxbenefits/fundSizingOptimizer';
 import { useInvestorFit } from '../../../hooks/useInvestorFit';
 import { useInvestorSizing } from '../../../hooks/useInvestorSizing';
@@ -136,6 +140,62 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
     if (deals.length === 0) return 10;
     return Math.max(...deals.map(d => d.holdPeriod));
   }, [deals]);
+
+  // IMPL-147: IRA Conversion Plan for REP investors with IRA balance
+  const iraConversionData = useMemo(() => {
+    if (!taxProfile || !sizingResult?.fullUtilizationResult) return null;
+    const iraBalance = (taxProfile as any).iraBalance ?? 0;
+    if (iraBalance <= 0) return null;
+    if (taxProfile.investorTrack !== 'rep') return null;
+
+    // Build a REPTaxCapacityModel from utilization annual data
+    const annuals = sizingResult.fullUtilizationResult.annualUtilization;
+    const filingStatus = taxProfile.filingStatus === 'married' ? 'MFJ'
+      : taxProfile.filingStatus === 'single' ? 'Single' : 'HoH';
+    const eblLimit = SECTION_461L_LIMITS[filingStatus as keyof typeof SECTION_461L_LIMITS];
+
+    const repCapacity: REPTaxCapacityModel = {
+      annualLimitations: annuals.map((yr) => ({
+        year: yr.year,
+        w2Income: (taxProfile.annualOrdinaryIncome || 0),
+        section461lLimit: eblLimit,
+        allowedLoss: yr.depreciationAllowed * 1_000_000, // convert from millions
+        disallowedLoss: yr.depreciationSuspended * 1_000_000,
+        nolGenerated: yr.nolGenerated * 1_000_000,
+        nolCarryforward: yr.nolPool * 1_000_000,
+      })),
+      totalCapacity: {
+        currentYear: eblLimit,
+        nolBank: annuals.reduce((s, yr) => s + yr.nolPool, 0) * 1_000_000,
+        iraConversionCapacity: eblLimit,
+      },
+    };
+
+    const federalRate = taxProfile.federalOrdinaryRate || 37;
+    const stateRate = taxProfile.stateOrdinaryRate || 10.9;
+    const effectiveRate = federalRate + stateRate;
+
+    const params: Partial<CalculationParams> = {
+      iraBalance,
+      effectiveTaxRate: effectiveRate,
+      holdPeriod,
+      investorTrack: 'rep',
+    };
+
+    const plan = optimizeIRAConversion(params as CalculationParams, repCapacity);
+    if (!plan) return null;
+
+    // Pre-HDC rate: marginal rate at the investor's income
+    const preHDCRate = effectiveRate;
+    // Post-HDC: after depreciation offset, the effective conversion rate is lower
+    // Year 1 tax saved / Year 1 conversion amount gives effective rate reduction
+    const yr1 = plan.schedule[0];
+    const postHDCRate = yr1 && yr1.recommendedConversion > 0
+      ? ((yr1.recommendedConversion - yr1.hdcLossOffset) / yr1.recommendedConversion) * effectiveRate
+      : effectiveRate;
+
+    return { plan, preHDCRate, postHDCRate, iraBalance };
+  }, [taxProfile, sizingResult, holdPeriod]);
 
   // Sync slider to optimal when sizing result changes
   const effectiveSliderCommitment = sliderCommitment ?? sizingResult?.optimalCommitment ?? 0;
@@ -284,6 +344,17 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
             minSlider={100_000}
             maxSlider={aggregationMeta.totalGrossEquity}
             formatCurrency={formatDollarCurrency}
+          />
+        )}
+
+        {/* IMPL-147: IRA Conversion Panel — REP investors with IRA balance only */}
+        {iraConversionData && (
+          <IRAConversionPanel
+            conversionPlan={iraConversionData.plan}
+            preHDCRate={iraConversionData.preHDCRate}
+            postHDCRate={iraConversionData.postHDCRate}
+            iraBalance={iraConversionData.iraBalance}
+            holdPeriod={holdPeriod}
           />
         )}
 
