@@ -265,8 +265,8 @@ export const HDCProfessionalReportButton: React.FC<HDCProfessionalReportProps> =
       doc.setFontSize(10);
       doc.setTextColor(...darkText);
       const taxStrategyText = investorTrack === 'rep'
-        ? `As a Real Estate Professional, you can offset up to $626,000 of W-2 income annually under §461(l) limitations.
-Your current W-2 income of ${formatFullMoney(w2Income)} ${w2Income > 626000 ? 'exceeds' : 'is within'} this limit.
+        ? `As a Real Estate Professional, your §461(l) EBL threshold is ${formatFullMoney(w2Income + 626000)} (W-2 income + $626,000 base).
+Your current W-2 income of ${formatFullMoney(w2Income)} ${w2Income > 626000 ? 'exceeds' : 'is within'} the base limit.
 ${businessIncome > 0 ? `Additionally, your business income of ${formatFullMoney(businessIncome)} can be fully offset without limitation.` : ''}
 ${iraBalance > 0 ? `Consider strategic Roth IRA conversions using your ${formatFullMoney(iraBalance)} traditional IRA balance to maximize tax capacity utilization.` : ''}`
         : `As a Passive Investor, you have unlimited capacity to offset passive income and capital gains.

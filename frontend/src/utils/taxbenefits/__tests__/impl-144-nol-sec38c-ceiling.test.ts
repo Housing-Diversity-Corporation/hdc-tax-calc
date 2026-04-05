@@ -63,17 +63,19 @@ describe('IMPL-144: NOL carryforward reduces §38(c) ceiling', () => {
   const scaledStream = scaleBenefitStream(DEAL_STREAM, OWNERSHIP);
 
   test('Year 1 generates NOL when bonus dep exceeds §461(l) cap', () => {
-    const profile = buildProfile({ annualOrdinaryIncome: 750_000 });
+    // IMPL-153: EBL cap = (income + $626K). Use $200K so depr ($838K) > cap ($826K).
+    const profile = buildProfile({ annualOrdinaryIncome: 200_000 });
     const result = calculateTaxUtilization(scaledStream, profile);
     const year1 = result.annualUtilization[0];
 
-    // Year 1 bonus depreciation exceeds §461(l) MFJ cap of $626K
+    // Year 1 bonus depreciation exceeds §461(l) EBL cap ($826K)
     expect(year1.nolGenerated).toBeGreaterThan(0);
     expect(year1.nolPool).toBeGreaterThan(0);
   });
 
   test('Year 2 §38(c) ceiling is reduced by NOL tax effect', () => {
-    const profile = buildProfile({ annualOrdinaryIncome: 750_000 });
+    // IMPL-153: Use $200K to trigger NOL in Year 1
+    const profile = buildProfile({ annualOrdinaryIncome: 200_000 });
     const result = calculateTaxUtilization(scaledStream, profile);
 
     const year1 = result.annualUtilization[0];
@@ -83,8 +85,6 @@ describe('IMPL-144: NOL carryforward reduces §38(c) ceiling', () => {
     expect(year1.nolGenerated).toBeGreaterThan(0);
     expect(year2.nolUsed).toBeGreaterThan(0);
 
-    // The NOL reduction means fewer credits can be used in Year 2
-    // compared to a scenario where no NOL exists
     // Credits should carry forward under §39
     expect(year2.lihtcCarried).toBeGreaterThanOrEqual(0);
   });
@@ -127,10 +127,9 @@ describe('IMPL-144: NOL carryforward reduces §38(c) ceiling', () => {
     const result = calculateTaxUtilization(scaledStream, profile);
     const totalSavings = result.totalDepreciationSavings + result.totalLIHTCUsed;
 
-    // $2M income: NOL drawdown window is short, §38(c) ceiling remains ample
-    // Value should still be close to pre-IMPL-144 ($2.158M)
-    expect(totalSavings).toBeGreaterThan(2.158 * 0.99);
-    expect(totalSavings).toBeLessThan(2.158 * 1.01);
+    // IMPL-153: EBL income offset at $2M eliminates all NOL → $2.236M
+    expect(totalSavings).toBeGreaterThan(2.236 * 0.99);
+    expect(totalSavings).toBeLessThan(2.236 * 1.01);
   });
 });
 

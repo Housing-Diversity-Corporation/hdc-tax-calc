@@ -234,4 +234,11 @@
 | IMPL-119 | ae1a519 | 2026-03-06 | 7 | ~126 | ~60 |
 | IMPL-120 | TBD (this commit) | 2026-03-08 | 1 | ~19 | ~10 |
 | IMPL-139 | dd7da02 | 2026-03-26 | 1 | 67 | 66 |
-| **Totals (084-139)** | **21 commits** | **Feb 14 - Mar 26** | **— ** | **~13,146** | **~3,045** |
+| IMPL-153 | TBD (this commit) | 2026-04-05 | 7 | ~50 | ~30 |
+| **Totals (084-153)** | **22 commits** | **Feb 14 - Apr 05** | **— ** | **~13,196** | **~3,075** |
+
+### IMPL-153: §461(l) EBL Income Offset
+
+**Status:** ✅ Complete — PENDING Sidley Austin (Daniel Altman) confirmation that W-2 wages qualify as "aggregate gross income attributable to trades or businesses" under IRC §461(l)(3)(A)(i).
+
+**Change:** EBL threshold corrected from flat $626K (MFJ) to `(annualOrdinaryIncome + $626K)`. Roth conversion income excluded from EBL offset in Years 11+ to match base tax computation. UI labels updated from static "$626K" to dynamic "EBL threshold: $X". Validation script (`frontend/scripts/validateTaxEngine.test.ts`) confirms MATCH at all tested commitment levels.

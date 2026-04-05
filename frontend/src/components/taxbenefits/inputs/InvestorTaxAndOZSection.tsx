@@ -103,7 +103,7 @@ const InvestorTaxAndOZSection: React.FC<InvestorTaxAndOZSectionProps> = ({
 
   // Constants
   const NIIT_RATE = 3.8; // Net Investment Income Tax for high earners
-  const SECTION_461L_LIMIT = 626000; // Annual limitation for REPs against W-2 income
+  const SECTION_461L_BASE = 626000; // §461(l) base threshold (2025 indexed)
 
   // Sync local state with props when they change
   React.useEffect(() => {
@@ -602,9 +602,9 @@ const InvestorTaxAndOZSection: React.FC<InvestorTaxAndOZSectionProps> = ({
             {localInvestorTrack === 'rep' ? (
               <>
                 <strong>REP Strategy:</strong> Active losses offset ordinary income.
-                {SECTION_461L_LIMIT && (
+                {SECTION_461L_BASE && (
                   <span style={{ color: 'var(--hdc-brown-rust)', marginLeft: '8px' }}>
-                    (§461(l) limit: ${SECTION_461L_LIMIT.toLocaleString()}/yr)
+                    (§461(l) EBL threshold: ${((annualIncome || 0) + SECTION_461L_BASE).toLocaleString()})
                   </span>
                 )}
               </>

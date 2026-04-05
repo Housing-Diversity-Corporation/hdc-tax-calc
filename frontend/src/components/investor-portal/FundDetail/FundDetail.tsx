@@ -179,7 +179,9 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
     const annuals = sizingResult.fullUtilizationResult.annualUtilization;
     const filingStatus = taxProfile.filingStatus === 'married' ? 'MFJ'
       : taxProfile.filingStatus === 'single' ? 'Single' : 'HoH';
-    const eblLimit = SECTION_461L_LIMITS[filingStatus as keyof typeof SECTION_461L_LIMITS];
+    // IMPL-153: EBL threshold includes investor's ordinary income
+    const eblLimit = SECTION_461L_LIMITS[filingStatus as keyof typeof SECTION_461L_LIMITS]
+      + (taxProfile.annualOrdinaryIncome || 0);
 
     const repCapacity: REPTaxCapacityModel = {
       annualLimitations: annuals.map((yr) => ({

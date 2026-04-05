@@ -68,10 +68,11 @@ describe('IMPL-122: §38(c) unit mismatch fix in calculateTaxUtilization', () =>
     // Pre-IMPL-122 engine (inflated): $2.120M — §38(c) ceiling never bound
     // IMPL-122 corrected: $1.948M — §38(c) unit fix
     // IMPL-144 corrected: $1.912M — NOL carryforward now reduces §38(c) ceiling
-    expect(totalSavings).toBeCloseTo(1.912, 2);
-    // Within ±1% of $1.912M
-    expect(totalSavings).toBeGreaterThan(1.912 * 0.99);
-    expect(totalSavings).toBeLessThan(1.912 * 1.01);
+    // IMPL-153 corrected: $1.948M — EBL income offset eliminates NOL at $750K
+    expect(totalSavings).toBeCloseTo(1.948, 2);
+    // Within ±1% of $1.948M
+    expect(totalSavings).toBeGreaterThan(1.948 * 0.99);
+    expect(totalSavings).toBeLessThan(1.948 * 1.01);
   });
 
   test('REP+grouped $2M/$1M/WA/MFJ: totalTaxSavings matches batch runner at $2.158M', () => {
@@ -84,10 +85,10 @@ describe('IMPL-122: §38(c) unit mismatch fix in calculateTaxUtilization', () =>
     const result = calculateTaxUtilization(scaledStream, profile);
     const totalSavings = result.totalDepreciationSavings + result.totalLIHTCUsed;
 
-    // Batch runner value: $2.158M
-    // At $2M income, tax >> dep savings so the cap doesn't bind; §38(c) is the binding fix
-    expect(totalSavings).toBeGreaterThan(2.158 * 0.99);
-    expect(totalSavings).toBeLessThan(2.158 * 1.01);
+    // IMPL-153: EBL income offset at $2M eliminates all NOL → $2.236M
+    // At $2M income, EBL cap = ($2M + $626K) well above Y1 depr
+    expect(totalSavings).toBeGreaterThan(2.236 * 0.99);
+    expect(totalSavings).toBeLessThan(2.236 * 1.01);
   });
 
   test('non-rep passive $2M/$1M/WA/MFJ: unchanged at $2.316M (IMPL-121 value)', () => {

@@ -330,18 +330,18 @@ describe('Case A: REP Grouped (Nonpassive Treatment)', () => {
   });
 
   it('should apply §461(l) excess business loss limitation', () => {
-    // Year 1 depreciation ($16M) exceeds $626K limit
-    // Note: Values are in MILLIONS - $626K = 0.626M
+    // Year 1 depreciation ($16M) exceeds EBL cap
+    // IMPL-153: EBL cap = (annualOrdinaryIncome + $626K) / 1e6 = ($3M + $626K) / 1e6 = 3.626M
     const year1 = result.annualUtilization[0];
-    const eblLimitInMillions = SECTION_461L_LIMITS.MFJ / 1_000_000;
+    const eblLimitInMillions = (SECTION_461L_LIMITS.MFJ + 3_000_000) / 1_000_000;
     expect(year1.depreciationAllowed).toBeCloseTo(eblLimitInMillions, 3);
     expect(year1.nolGenerated).toBeGreaterThan(0);
   });
 
   it('should generate NOL from excess depreciation', () => {
     const year1 = result.annualUtilization[0];
-    // Excess = $16M - $0.626M ≈ $15.4M (all in millions)
-    const eblLimitInMillions = SECTION_461L_LIMITS.MFJ / 1_000_000;
+    // IMPL-153: Excess = $16M - ($3M + $0.626M) = $12.374M (all in millions)
+    const eblLimitInMillions = (SECTION_461L_LIMITS.MFJ + 3_000_000) / 1_000_000;
     expect(year1.nolGenerated).toBeCloseTo(16 - eblLimitInMillions, 1);
   });
 

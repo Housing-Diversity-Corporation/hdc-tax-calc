@@ -45,9 +45,9 @@ describe('IMPL-123: useTaxEfficiencyMap', () => {
     const cell = findCell('rep_grouped', 750_000, 1_000_000);
     expect(cell).toBeDefined();
     const savingsM = cell!.totalTaxSavings / 1e6;
-    // IMPL-144: NOL carryforward reduces §38(c) ceiling → $1.912M (was $1.948M)
-    expect(savingsM).toBeGreaterThanOrEqual(1.912 * 0.99);
-    expect(savingsM).toBeLessThanOrEqual(1.912 * 1.01);
+    // IMPL-153: EBL income offset eliminates NOL at $750K → $1.948M
+    expect(savingsM).toBeGreaterThanOrEqual(1.948 * 0.99);
+    expect(savingsM).toBeLessThanOrEqual(1.948 * 1.01);
     expect(cell!.utilizationRate).toBeGreaterThan(0.5);
   });
 
