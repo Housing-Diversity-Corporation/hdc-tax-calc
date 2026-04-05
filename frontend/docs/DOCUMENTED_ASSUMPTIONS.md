@@ -149,3 +149,41 @@ Electing §42(f)(1) defers the credit period start to Year 2, when:
 The election trades a partial-year credit that would be wasted for a full
 Year 2 credit that can actually be utilized. Should be made unconditionally
 for Trace 4001 and 4448 California (December PIS deals).
+
+---
+
+## §752/OZ Inclusion Basis — Valuation, Not §752 Debt Allocations
+*Added: April 2026 | Confirmed: Brendan/NSCO external counsel review*
+
+**Incorrect claim:** "§752 debt allocations protect investor basis for
+§1400Z-2(b)(1) lesser-of computation."
+
+**Correction:** §752 debt allocations do NOT protect basis for the Dec 31,
+2026 inclusion event. Per 26 CFR §1.1400Z2(b)-1(e)(3), basis for inclusion
+is computed taking into account only §1400Z-2(b)(2)(B). Valuation protection
+(FMV below total debt) is the correct framework — not §752 basis.
+
+**Authority:** 26 CFR §1.1400Z2(b)-1(e)(3); confirmed by Brendan/NSCO
+(April 2026).
+
+**Platform impact:** Any OZ exit modeling that references §752 "basis
+protection" for the inclusion event must be corrected to use the
+FMV-below-debt valuation framework instead.
+
+**Spec cross-references (external documents — update manually):**
+
+HDC_Tax_Benefits_Spec §17.1 "Tax Law Corrections" table — add row:
+
+| §752 debt and OZ inclusion basis | "§752 debt allocations protect investor basis for §1400Z-2(b)(1) lesser-of computation" | §752 debt allocations do NOT protect basis for the Dec 31, 2026 inclusion event. Per 26 CFR §1.1400Z2(b)-1(e)(3), basis for inclusion is computed taking into account only §1400Z-2(b)(2)(B). Valuation protection (FMV below total debt) is the correct framework — not §752 basis. | 26 CFR §1.1400Z2(b)-1(e)(3); confirmed by Brendan/NSCO (April 2026) |
+
+OZ_2_0_Master_Specification Part 5 (Exit Strategy), Dec 31 2026 inclusion
+event section — add correction note:
+
+> **Correction (April 2026):** §752 nonrecourse debt allocations do not protect
+> investor basis for purposes of the §1400Z-2(b)(1) lesser-of rule. Per 26 CFR
+> §1.1400Z2(b)-1(e)(3), the basis used in the inclusion computation is determined
+> taking into account only §1400Z-2(b)(2)(B) — not §752 debt allocations.
+> Protection from inclusion tax comes entirely from valuation: FMV below total
+> debt at the inclusion date. This was confirmed via review by external tax
+> counsel (April 2026). Any prior references to §752 "basis protection" for
+> the inclusion event are incorrect.
