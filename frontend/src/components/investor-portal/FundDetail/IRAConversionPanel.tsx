@@ -1,8 +1,8 @@
 /**
- * IRAConversionPanel (IMPL-147)
+ * IRAConversionPanel (IMPL-147 + IMPL-150)
  *
  * Displays IRA-to-Roth conversion opportunity for REP investors with IRA balances.
- * Shows rate compression from HDC depreciation and optimal conversion amount.
+ * Shows rate compression, strategy comparison, lifetime value, and recommendations.
  *
  * Only renders when: investorTrack === 'rep' && iraBalance > 0 && conversion plan exists.
  */
@@ -14,8 +14,25 @@ interface IRAConversionPanelProps {
   conversionPlan: IRAConversionPlan;
   preHDCRate: number;       // Marginal rate before HDC losses (%)
   postHDCRate: number;      // Effective rate after HDC losses in Year 1 (%)
+  year1TaxSavings?: number; // IMPL-150: Absolute dollar savings in Year 1
   iraBalance: number;
   holdPeriod: number;
+  // IMPL-150: Strategy comparison
+  strategies?: {
+    aggressive: IRAConversionPlan | undefined;
+    balanced: IRAConversionPlan | undefined;
+    conservative: IRAConversionPlan | undefined;
+    recommendation: string;
+  };
+  // IMPL-150: Lifetime value analysis
+  lifetimeValue?: {
+    immediateValue: number;
+    futureValue: number;
+    breakEvenYear: number;
+    lifetimeAdvantage: number;
+  };
+  // IMPL-150: Text recommendations
+  recommendations?: string[];
 }
 
 function formatCompactCurrency(value: number): string {
@@ -28,8 +45,12 @@ const IRAConversionPanel: React.FC<IRAConversionPanelProps> = ({
   conversionPlan,
   preHDCRate,
   postHDCRate,
+  year1TaxSavings,
   iraBalance,
   holdPeriod,
+  strategies,
+  lifetimeValue,
+  recommendations,
 }) => {
   const rateCompression = preHDCRate - postHDCRate;
   const conversionYears = conversionPlan.schedule.length;
@@ -49,8 +70,8 @@ const IRAConversionPanel: React.FC<IRAConversionPanelProps> = ({
         Conversion income is offset by §461(l)-allowed losses during the hold period.
       </p>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+      {/* Section 1: Rate Compression */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-4">
         <div>
           <div className="text-xs text-[#474a44]/60 mb-1">Pre-HDC Marginal Rate</div>
           <div className="text-lg font-bold text-[#474a44]">{preHDCRate.toFixed(1)}%</div>
@@ -67,6 +88,12 @@ const IRAConversionPanel: React.FC<IRAConversionPanelProps> = ({
           <div className="text-xs text-[#474a44]/60 mb-1">Conversion Window</div>
           <div className="text-lg font-bold text-[#474a44]">{conversionYears} years</div>
         </div>
+        {year1TaxSavings != null && year1TaxSavings > 0 && (
+          <div>
+            <div className="text-xs text-[#474a44]/60 mb-1">Year 1 Tax Savings</div>
+            <div className="text-lg font-bold text-[#7fbd45]">{formatCompactCurrency(year1TaxSavings)}</div>
+          </div>
+        )}
       </div>
 
       {/* Conversion Summary */}
@@ -100,6 +127,82 @@ const IRAConversionPanel: React.FC<IRAConversionPanelProps> = ({
         </div>
       </div>
 
+      {/* Section 2: Strategy Comparison (IMPL-150) */}
+      {strategies && (strategies.aggressive || strategies.balanced || strategies.conservative) && (
+        <div className="mb-4">
+          <div className="text-xs font-semibold text-[#474a44]/70 mb-2">Conversion Strategy Comparison</div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="bg-[#f0f7f7]">
+                  <th className="text-left p-2 border-b border-gray-200" />
+                  <th className="text-right p-2 border-b border-gray-200">Aggressive (3 yr)</th>
+                  <th className="text-right p-2 border-b border-gray-200">Balanced (5 yr)</th>
+                  <th className="text-right p-2 border-b border-gray-200">Conservative (7 yr)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-gray-100">
+                  <td className="p-2 text-[#474a44]/70">Total Converted</td>
+                  <td className="p-2 text-right font-medium">{strategies.aggressive ? formatCompactCurrency(strategies.aggressive.totalConverted) : '--'}</td>
+                  <td className="p-2 text-right font-medium">{strategies.balanced ? formatCompactCurrency(strategies.balanced.totalConverted) : '--'}</td>
+                  <td className="p-2 text-right font-medium">{strategies.conservative ? formatCompactCurrency(strategies.conservative.totalConverted) : '--'}</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="p-2 text-[#474a44]/70">Tax Saved</td>
+                  <td className="p-2 text-right font-medium text-[#7fbd45]">{strategies.aggressive ? formatCompactCurrency(strategies.aggressive.totalTaxSaved) : '--'}</td>
+                  <td className="p-2 text-right font-medium text-[#7fbd45]">{strategies.balanced ? formatCompactCurrency(strategies.balanced.totalTaxSaved) : '--'}</td>
+                  <td className="p-2 text-right font-medium text-[#7fbd45]">{strategies.conservative ? formatCompactCurrency(strategies.conservative.totalTaxSaved) : '--'}</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="p-2 text-[#474a44]/70">Yr 30 Roth Value</td>
+                  <td className="p-2 text-right font-medium">{strategies.aggressive ? formatCompactCurrency(strategies.aggressive.year30RothValue) : '--'}</td>
+                  <td className="p-2 text-right font-medium">{strategies.balanced ? formatCompactCurrency(strategies.balanced.year30RothValue) : '--'}</td>
+                  <td className="p-2 text-right font-medium">{strategies.conservative ? formatCompactCurrency(strategies.conservative.year30RothValue) : '--'}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-2 text-xs text-[#407f7f] font-medium">
+            {strategies.recommendation}
+          </div>
+        </div>
+      )}
+
+      {/* Section 3: Lifetime Value (IMPL-150) */}
+      {lifetimeValue && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-3 bg-[#f8faf5] rounded-md mb-4">
+          <div>
+            <div className="text-xs text-[#474a44]/60 mb-1">Immediate Value</div>
+            <div className="text-base font-bold text-[#7fbd45]">
+              {formatCompactCurrency(lifetimeValue.immediateValue)}
+            </div>
+            <div className="text-xs text-[#474a44]/50">tax saved on conversion</div>
+          </div>
+          <div>
+            <div className="text-xs text-[#474a44]/60 mb-1">Future Value</div>
+            <div className="text-base font-bold text-[#407f7f]">
+              {formatCompactCurrency(lifetimeValue.futureValue)}
+            </div>
+            <div className="text-xs text-[#474a44]/50">tax-free growth to Yr 30</div>
+          </div>
+          <div>
+            <div className="text-xs text-[#474a44]/60 mb-1">Break-Even Year</div>
+            <div className="text-base font-bold text-[#474a44]">
+              Year {lifetimeValue.breakEvenYear}
+            </div>
+            <div className="text-xs text-[#474a44]/50">Roth outperforms Traditional</div>
+          </div>
+          <div>
+            <div className="text-xs text-[#474a44]/60 mb-1">Lifetime Advantage</div>
+            <div className="text-base font-bold text-[#7fbd45]">
+              {formatCompactCurrency(lifetimeValue.lifetimeAdvantage)}
+            </div>
+            <div className="text-xs text-[#474a44]/50">vs. no conversion</div>
+          </div>
+        </div>
+      )}
+
       {/* Conversion Schedule */}
       {conversionPlan.schedule.length > 0 && (
         <div className="mb-3">
@@ -128,9 +231,17 @@ const IRAConversionPanel: React.FC<IRAConversionPanelProps> = ({
         </div>
       )}
 
-      <p className="text-xs text-[#474a44]/50 italic">
-        Full modeling of multi-year conversion trajectories is on the HDC platform roadmap.
-      </p>
+      {/* Section 4: Recommendations (IMPL-150) */}
+      {recommendations && recommendations.length > 0 && (
+        <div className="mb-3 p-3 bg-[#f9fafb] rounded-md border border-gray-100">
+          <div className="text-xs font-semibold text-[#474a44]/70 mb-2">Recommendations</div>
+          <ul className="list-disc list-inside space-y-1">
+            {recommendations.map((rec, idx) => (
+              <li key={idx} className="text-xs text-[#474a44]/80">{rec}</li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 };

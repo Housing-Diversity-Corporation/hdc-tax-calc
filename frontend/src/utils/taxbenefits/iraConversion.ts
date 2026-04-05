@@ -107,6 +107,41 @@ export function optimizeIRAConversion(
 }
 
 /**
+ * IMPL-150: Compute Year 1 rate compression from HDC depreciation
+ *
+ * Moved from FundDetail.tsx:193-195 into the engine for reusability.
+ * Shows how HDC losses compress the investor's effective tax rate on IRA conversions.
+ */
+export function computeRateCompression(
+  conversionPlan: IRAConversionPlan,
+  effectiveTaxRate: number // Federal + State combined (%)
+): {
+  preHDCRate: number;        // Marginal rate before HDC losses (%)
+  postHDCRate: number;       // Effective rate after Year 1 depreciation offset (%)
+  compressionPoints: number; // preHDCRate - postHDCRate
+  year1TaxSavings: number;   // Absolute dollar savings in Year 1
+} {
+  const preHDCRate = effectiveTaxRate;
+  const yr1 = conversionPlan.schedule[0];
+
+  let postHDCRate = effectiveTaxRate;
+  let year1TaxSavings = 0;
+
+  if (yr1 && yr1.recommendedConversion > 0) {
+    // Taxable portion after HDC loss offset / total conversion × marginal rate
+    postHDCRate = ((yr1.recommendedConversion - yr1.hdcLossOffset) / yr1.recommendedConversion) * effectiveTaxRate;
+    year1TaxSavings = yr1.taxSaved;
+  }
+
+  return {
+    preHDCRate,
+    postHDCRate,
+    compressionPoints: preHDCRate - postHDCRate,
+    year1TaxSavings
+  };
+}
+
+/**
  * Calculate the lifetime value of Roth conversion
  */
 export function calculateRothConversionValue(

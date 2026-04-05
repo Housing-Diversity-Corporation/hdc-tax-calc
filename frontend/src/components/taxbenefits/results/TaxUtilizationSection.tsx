@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import '../../../styles/taxbenefits/hdcCalculator.css';
 import CollapsibleSection from './CollapsibleSection';
-import type { TaxUtilizationResult } from '../../../utils/taxbenefits/investorTaxUtilization';
+import type { TaxUtilizationResult, AnnualUtilization } from '../../../utils/taxbenefits/investorTaxUtilization';
 
 /**
- * Phase A2: Tax Utilization Section
+ * Phase A2 + IMPL-149: Tax Utilization Section
  *
  * Displays detailed tax utilization analysis when income composition is provided.
  * Conditionally replaces InvestmentRecoverySection when taxUtilization is computed.
@@ -12,7 +12,8 @@ import type { TaxUtilizationResult } from '../../../utils/taxbenefits/investorTa
  * Display sections:
  * 1. Treatment Banner: treatmentLabel (e.g., "Non-REP — Passive Treatment")
  * 2. Summary Strip: totalDepreciationSavings, totalLIHTCUsed, overallUtilizationRate, fitIndicator
- * 3. Year-by-Year Table (collapsible, default collapsed): annualUtilization array
+ * 3. Year-by-Year Table (collapsible, default collapsed): all 18 AnnualUtilization fields
+ *    - Columns conditional on treatment: NOL for nonpassive, passive columns for passive
  * 4. Recapture Coverage: recaptureCoverage array (exit tax, offsets, coverage ratio)
  * 5. NOL Drawdown (nonpassive only): nolDrawdownSchedule if entries exist
  */
@@ -42,6 +43,16 @@ const TaxUtilizationSection: React.FC<TaxUtilizationSectionProps> = ({
 
   // Helper to format percentage
   const formatPercent = (value: number) => `${(value * 100).toFixed(1)}%`;
+
+  // IMPL-149: Determine track for conditional column rendering
+  const isNonpassive = taxUtilization.treatment === 'nonpassive';
+
+  // Table cell styles
+  const thGroupStyle: React.CSSProperties = { padding: '0.25rem 0.5rem', fontSize: '0.65rem', fontWeight: 600, color: 'var(--hdc-faded-jade)', textTransform: 'uppercase', letterSpacing: '0.03em', borderBottom: '1px solid rgba(146, 195, 194, 0.2)' };
+  const thStyle: React.CSSProperties = { padding: '0.4rem 0.5rem', borderBottom: '1px solid rgba(146, 195, 194, 0.3)', whiteSpace: 'nowrap' };
+  const thStyleRight: React.CSSProperties = { ...thStyle, textAlign: 'right' };
+  const tdStyle: React.CSSProperties = { padding: '0.35rem 0.5rem', whiteSpace: 'nowrap' };
+  const tdStyleRight: React.CSSProperties = { ...tdStyle, textAlign: 'right' };
 
   return (
     <CollapsibleSection title="Tax Utilization Analysis">
@@ -139,7 +150,7 @@ const TaxUtilizationSection: React.FC<TaxUtilizationSectionProps> = ({
         </div>
 
         {/* ═══════════════════════════════════════════════════════════════════════
-            YEAR-BY-YEAR TABLE (Collapsible)
+            YEAR-BY-YEAR TABLE (Collapsible) — IMPL-149: All 18 AnnualUtilization fields
         ═══════════════════════════════════════════════════════════════════════ */}
         <div style={{ marginBottom: '1.5rem' }}>
           <div
@@ -161,30 +172,83 @@ const TaxUtilizationSection: React.FC<TaxUtilizationSectionProps> = ({
 
           {showYearlyDetail && (
             <div style={{ overflowX: 'auto', marginTop: '0.5rem' }}>
-              <table style={{ width: '100%', fontSize: '0.75rem', borderCollapse: 'collapse' }}>
+              <table style={{ width: '100%', fontSize: '0.7rem', borderCollapse: 'collapse', minWidth: isNonpassive ? '1000px' : '1000px' }}>
                 <thead>
-                  <tr style={{ backgroundColor: 'rgba(146, 195, 194, 0.1)', textAlign: 'left' }}>
-                    <th style={{ padding: '0.5rem', borderBottom: '1px solid rgba(146, 195, 194, 0.3)' }}>Year</th>
-                    <th style={{ padding: '0.5rem', borderBottom: '1px solid rgba(146, 195, 194, 0.3)', textAlign: 'right' }}>Depr Generated</th>
-                    <th style={{ padding: '0.5rem', borderBottom: '1px solid rgba(146, 195, 194, 0.3)', textAlign: 'right' }}>Depr Allowed</th>
-                    <th style={{ padding: '0.5rem', borderBottom: '1px solid rgba(146, 195, 194, 0.3)', textAlign: 'right' }}>Tax Savings</th>
-                    <th style={{ padding: '0.5rem', borderBottom: '1px solid rgba(146, 195, 194, 0.3)', textAlign: 'right' }}>LIHTC</th>
-                    <th style={{ padding: '0.5rem', borderBottom: '1px solid rgba(146, 195, 194, 0.3)', textAlign: 'right' }}>Utilization</th>
+                  {/* Column group headers */}
+                  <tr style={{ backgroundColor: 'rgba(146, 195, 194, 0.15)' }}>
+                    <th style={thGroupStyle} />
+                    <th colSpan={4} style={{ ...thGroupStyle, textAlign: 'center', borderLeft: '1px solid rgba(146, 195, 194, 0.3)' }}>Depreciation</th>
+                    <th colSpan={3} style={{ ...thGroupStyle, textAlign: 'center', borderLeft: '1px solid rgba(146, 195, 194, 0.3)' }}>LIHTC Credits</th>
+                    {isNonpassive ? (
+                      <th colSpan={3} style={{ ...thGroupStyle, textAlign: 'center', borderLeft: '1px solid rgba(146, 195, 194, 0.3)' }}>NOL Tracking</th>
+                    ) : (
+                      <th colSpan={3} style={{ ...thGroupStyle, textAlign: 'center', borderLeft: '1px solid rgba(146, 195, 194, 0.3)' }}>Passive Tracking</th>
+                    )}
+                    <th colSpan={3} style={{ ...thGroupStyle, textAlign: 'center', borderLeft: '1px solid rgba(146, 195, 194, 0.3)' }}>Summary</th>
+                  </tr>
+                  {/* Individual column headers */}
+                  <tr style={{ backgroundColor: 'rgba(146, 195, 194, 0.08)', textAlign: 'left' }}>
+                    <th style={thStyle}>Year</th>
+                    {/* Depreciation */}
+                    <th style={{ ...thStyleRight, borderLeft: '1px solid rgba(146, 195, 194, 0.3)' }}>Generated</th>
+                    <th style={thStyleRight}>Allowed</th>
+                    <th style={thStyleRight}>Suspended</th>
+                    <th style={thStyleRight}>Tax Savings</th>
+                    {/* LIHTC */}
+                    <th style={{ ...thStyleRight, borderLeft: '1px solid rgba(146, 195, 194, 0.3)' }}>Generated</th>
+                    <th style={thStyleRight}>Usable</th>
+                    <th style={thStyleRight}>Carried</th>
+                    {/* Track-specific */}
+                    {isNonpassive ? (
+                      <>
+                        <th style={{ ...thStyleRight, borderLeft: '1px solid rgba(146, 195, 194, 0.3)' }}>NOL Gen</th>
+                        <th style={thStyleRight}>NOL Used</th>
+                        <th style={thStyleRight}>NOL Pool</th>
+                      </>
+                    ) : (
+                      <>
+                        <th style={{ ...thStyleRight, borderLeft: '1px solid rgba(146, 195, 194, 0.3)' }}>Passive Inc Offset</th>
+                        <th style={thStyleRight}>Suspended Loss</th>
+                        <th style={thStyleRight}>Suspended Credits</th>
+                      </>
+                    )}
+                    {/* Summary */}
+                    <th style={{ ...thStyleRight, borderLeft: '1px solid rgba(146, 195, 194, 0.3)' }}>Benefit Gen</th>
+                    <th style={thStyleRight}>Benefit Used</th>
+                    <th style={thStyleRight}>Util %</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {taxUtilization.annualUtilization.map((year) => (
-                    <tr key={year.year} style={{ borderBottom: '1px solid rgba(146, 195, 194, 0.15)' }}>
-                      <td style={{ padding: '0.5rem' }}>{year.year}</td>
-                      <td style={{ padding: '0.5rem', textAlign: 'right' }}>{formatCurrency(year.depreciationGenerated)}</td>
-                      <td style={{ padding: '0.5rem', textAlign: 'right' }}>{formatCurrency(year.depreciationAllowed)}</td>
-                      <td style={{ padding: '0.5rem', textAlign: 'right', color: 'var(--hdc-cabbage-pont)' }}>
-                        {formatCurrency(year.depreciationTaxSavings)}
-                      </td>
-                      <td style={{ padding: '0.5rem', textAlign: 'right' }}>{formatCurrency(year.lihtcUsable)}</td>
-                      <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 500 }}>
-                        {formatPercent(year.utilizationRate)}
-                      </td>
+                  {taxUtilization.annualUtilization.map((yr) => (
+                    <tr key={yr.year} style={{ borderBottom: '1px solid rgba(146, 195, 194, 0.15)' }}>
+                      <td style={tdStyle}>{yr.year}</td>
+                      {/* Depreciation */}
+                      <td style={{ ...tdStyleRight, borderLeft: '1px solid rgba(146, 195, 194, 0.15)' }}>{formatCurrency(yr.depreciationGenerated)}</td>
+                      <td style={tdStyleRight}>{formatCurrency(yr.depreciationAllowed)}</td>
+                      <td style={{ ...tdStyleRight, color: yr.depreciationSuspended > 0 ? '#ef4444' : undefined }}>{formatCurrency(yr.depreciationSuspended)}</td>
+                      <td style={{ ...tdStyleRight, color: 'var(--hdc-cabbage-pont)' }}>{formatCurrency(yr.depreciationTaxSavings)}</td>
+                      {/* LIHTC */}
+                      <td style={{ ...tdStyleRight, borderLeft: '1px solid rgba(146, 195, 194, 0.15)' }}>{formatCurrency(yr.lihtcGenerated)}</td>
+                      <td style={tdStyleRight}>{formatCurrency(yr.lihtcUsable)}</td>
+                      <td style={{ ...tdStyleRight, color: yr.lihtcCarried > 0 ? '#eab308' : undefined }}>{formatCurrency(yr.lihtcCarried)}</td>
+                      {/* Track-specific */}
+                      {isNonpassive ? (
+                        <>
+                          <td style={{ ...tdStyleRight, borderLeft: '1px solid rgba(146, 195, 194, 0.15)' }}>{formatCurrency(yr.nolGenerated)}</td>
+                          <td style={tdStyleRight}>{formatCurrency(yr.nolUsed)}</td>
+                          <td style={{ ...tdStyleRight, fontWeight: yr.nolPool > 0 ? 500 : undefined }}>{formatCurrency(yr.nolPool)}</td>
+                        </>
+                      ) : (
+                        <>
+                          <td style={{ ...tdStyleRight, borderLeft: '1px solid rgba(146, 195, 194, 0.15)' }}>{formatCurrency(yr.residualPassiveIncome)}</td>
+                          <td style={{ ...tdStyleRight, color: yr.cumulativeSuspendedLoss > 0 ? '#ef4444' : undefined }}>{formatCurrency(yr.cumulativeSuspendedLoss)}</td>
+                          <td style={{ ...tdStyleRight, color: yr.cumulativeSuspendedCredits > 0 ? '#eab308' : undefined }}>{formatCurrency(yr.cumulativeSuspendedCredits)}</td>
+                        </>
+                      )}
+                      {/* Summary */}
+                      <td style={{ ...tdStyleRight, borderLeft: '1px solid rgba(146, 195, 194, 0.15)' }}>{formatCurrency(yr.totalBenefitGenerated)}</td>
+                      <td style={{ ...tdStyleRight, fontWeight: 500 }}>{formatCurrency(yr.totalBenefitUsable)}</td>
+                      <td style={{ ...tdStyleRight, fontWeight: 500 }}>{formatPercent(yr.utilizationRate)}</td>
                     </tr>
                   ))}
                 </tbody>

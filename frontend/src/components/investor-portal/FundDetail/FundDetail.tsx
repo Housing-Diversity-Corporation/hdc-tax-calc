@@ -15,7 +15,13 @@ import FitSummaryPanel from './FitSummaryPanel';
 import SizingOptimizerPanel from './SizingOptimizerPanel';
 import IRAConversionPanel from './IRAConversionPanel';
 import { aggregatePoolToBenefitStream, buildInvestorProfileFromTaxInfo } from '../../../utils/taxbenefits/poolAggregation';
-import { optimizeIRAConversion } from '../../../utils/taxbenefits/iraConversion';
+import {
+  optimizeIRAConversion,
+  computeRateCompression,
+  compareConversionStrategies,
+  calculateRothConversionValue,
+  generateIRAConversionRecommendations
+} from '../../../utils/taxbenefits/iraConversion';
 import { SECTION_461L_LIMITS } from '../../../utils/taxbenefits/investorTaxUtilization';
 import type { CalculationParams, REPTaxCapacityModel } from '../../../types/taxbenefits';
 import { optimizeFundCommitment } from '../../../utils/taxbenefits/fundSizingOptimizer';
@@ -141,7 +147,7 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
     return Math.max(...deals.map(d => d.holdPeriod));
   }, [deals]);
 
-  // IMPL-147: IRA Conversion Plan for REP investors with IRA balance
+  // IMPL-147 + IMPL-150: IRA Conversion Plan for REP investors with IRA balance
   const iraConversionData = useMemo(() => {
     if (!taxProfile || !sizingResult?.fullUtilizationResult) return null;
     const iraBalance = (taxProfile as any).iraBalance ?? 0;
@@ -159,7 +165,7 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
         year: yr.year,
         w2Income: (taxProfile.annualOrdinaryIncome || 0),
         section461lLimit: eblLimit,
-        allowedLoss: yr.depreciationAllowed * 1_000_000, // convert from millions
+        allowedLoss: yr.depreciationAllowed * 1_000_000,
         disallowedLoss: yr.depreciationSuspended * 1_000_000,
         nolGenerated: yr.nolGenerated * 1_000_000,
         nolCarryforward: yr.nolPool * 1_000_000,
@@ -180,21 +186,34 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
       effectiveTaxRate: effectiveRate,
       holdPeriod,
       investorTrack: 'rep',
+      federalTaxRate: federalRate,
     };
 
     const plan = optimizeIRAConversion(params as CalculationParams, repCapacity);
     if (!plan) return null;
 
-    // Pre-HDC rate: marginal rate at the investor's income
-    const preHDCRate = effectiveRate;
-    // Post-HDC: after depreciation offset, the effective conversion rate is lower
-    // Year 1 tax saved / Year 1 conversion amount gives effective rate reduction
-    const yr1 = plan.schedule[0];
-    const postHDCRate = yr1 && yr1.recommendedConversion > 0
-      ? ((yr1.recommendedConversion - yr1.hdcLossOffset) / yr1.recommendedConversion) * effectiveRate
-      : effectiveRate;
+    // IMPL-150: Use engine function for rate compression (moved from inline calc)
+    const rateCompression = computeRateCompression(plan, effectiveRate);
 
-    return { plan, preHDCRate, postHDCRate, iraBalance };
+    // IMPL-150: Strategy comparison (aggressive/balanced/conservative)
+    const strategies = compareConversionStrategies(params as CalculationParams, repCapacity);
+
+    // IMPL-150: Lifetime value analysis
+    const lifetimeValue = calculateRothConversionValue(plan, params as CalculationParams);
+
+    // IMPL-150: Text recommendations
+    const recommendations = generateIRAConversionRecommendations(plan, params as CalculationParams);
+
+    return {
+      plan,
+      preHDCRate: rateCompression.preHDCRate,
+      postHDCRate: rateCompression.postHDCRate,
+      year1TaxSavings: rateCompression.year1TaxSavings,
+      iraBalance,
+      strategies,
+      lifetimeValue,
+      recommendations
+    };
   }, [taxProfile, sizingResult, holdPeriod]);
 
   // Sync slider to optimal when sizing result changes
@@ -347,14 +366,18 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
           />
         )}
 
-        {/* IMPL-147: IRA Conversion Panel — REP investors with IRA balance only */}
+        {/* IMPL-147 + IMPL-150: IRA Conversion Panel — REP investors with IRA balance only */}
         {iraConversionData && (
           <IRAConversionPanel
             conversionPlan={iraConversionData.plan}
             preHDCRate={iraConversionData.preHDCRate}
             postHDCRate={iraConversionData.postHDCRate}
+            year1TaxSavings={iraConversionData.year1TaxSavings}
             iraBalance={iraConversionData.iraBalance}
             holdPeriod={holdPeriod}
+            strategies={iraConversionData.strategies}
+            lifetimeValue={iraConversionData.lifetimeValue}
+            recommendations={iraConversionData.recommendations}
           />
         )}
 
