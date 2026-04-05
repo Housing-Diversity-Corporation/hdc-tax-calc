@@ -103,18 +103,23 @@ export function aggregatePoolToBenefitStream(
   let totalSyndicationOffset = 0;
   const dealSummaries: PoolAggregationMeta['dealSummaries'] = [];
 
+  // IMPL-148: DBP stores all dollar values in millions (engine convention).
+  // Convert to dollars here so the BenefitStream contract ("in DOLLARS") is honored
+  // and all downstream consumers (optimizer, utilization engine) receive correct units.
+  const M = 1_000_000;
+
   // Step 3: For each deal, offset schedules by calendar position
   for (const deal of deals) {
     const offset = deal.fundYear - poolStartYear;
 
-    // Sum schedules into consolidated arrays
+    // Sum schedules into consolidated arrays (DBP values in millions → dollars)
     for (let i = 0; i < deal.depreciationSchedule.length; i++) {
       const calendarIndex = offset + i;
       if (calendarIndex < horizon) {
-        consolidatedDepreciation[calendarIndex] += deal.depreciationSchedule[i] || 0;
-        consolidatedLIHTC[calendarIndex] += deal.lihtcSchedule[i] || 0;
-        consolidatedStateLIHTC[calendarIndex] += deal.stateLihtcSchedule[i] || 0;
-        consolidatedOperatingCF[calendarIndex] += deal.operatingCashFlow[i] || 0;
+        consolidatedDepreciation[calendarIndex] += (deal.depreciationSchedule[i] || 0) * M;
+        consolidatedLIHTC[calendarIndex] += (deal.lihtcSchedule[i] || 0) * M;
+        consolidatedStateLIHTC[calendarIndex] += (deal.stateLihtcSchedule[i] || 0) * M;
+        consolidatedOperatingCF[calendarIndex] += (deal.operatingCashFlow[i] || 0) * M;
       }
     }
 
@@ -122,23 +127,23 @@ export function aggregatePoolToBenefitStream(
     exitEvents.push({
       year: offset + deal.holdPeriod,
       dealId: deal.dealName || `deal-${deal.id || 'unknown'}`,
-      exitProceeds: deal.exitProceeds,
-      cumulativeDepreciation: deal.cumulativeDepreciation,
-      recaptureExposure: deal.recaptureExposure,
-      appreciationGain: deal.projectedAppreciation,
+      exitProceeds: deal.exitProceeds * M,
+      cumulativeDepreciation: deal.cumulativeDepreciation * M,
+      recaptureExposure: deal.recaptureExposure * M,
+      appreciationGain: deal.projectedAppreciation * M,
       ozEnabled: deal.ozEnabled,
     });
 
-    totalGrossEquity += deal.grossEquity;
-    totalNetEquity += deal.netEquity;
-    totalSyndicationOffset += deal.syndicationProceeds;
+    totalGrossEquity += deal.grossEquity * M;
+    totalNetEquity += deal.netEquity * M;
+    totalSyndicationOffset += deal.syndicationProceeds * M;
 
     dealSummaries.push({
       dealName: deal.dealName,
       fundYear: deal.fundYear,
       calendarOffset: offset,
       holdPeriod: deal.holdPeriod,
-      grossEquity: deal.grossEquity,
+      grossEquity: deal.grossEquity * M,
     });
   }
 

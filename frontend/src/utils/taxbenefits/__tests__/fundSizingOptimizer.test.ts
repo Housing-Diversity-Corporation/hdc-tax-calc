@@ -16,8 +16,8 @@ import { optimizeFundCommitment, scaleStreamByProRata } from '../fundSizingOptim
 
 function createMockDBP(overrides: Partial<DealBenefitProfile> = {}): DealBenefitProfile {
   const holdPeriod = overrides.holdPeriod || 10;
-  const yearOneDepr = 16_000_000;
-  const annualDepr = 2_000_000;
+  const yearOneDepr = 16;
+  const annualDepr = 2;
   const depreciationSchedule = [yearOneDepr, ...new Array(holdPeriod - 1).fill(annualDepr)];
   const cumulativeDepreciation = depreciationSchedule.reduce((s, v) => s + v, 0);
 
@@ -26,23 +26,23 @@ function createMockDBP(overrides: Partial<DealBenefitProfile> = {}): DealBenefit
     dealName: 'Test Deal',
     propertyState: 'WA',
     fundYear: 2024,
-    projectCost: 100_000_000,
-    grossEquity: 5_000_000,
-    netEquity: 4_500_000,
-    syndicationProceeds: 500_000,
+    projectCost: 100,
+    grossEquity: 5,
+    netEquity: 4.5,
+    syndicationProceeds: 0.5,
     costSegregationPercent: 20,
     depreciableBasis: cumulativeDepreciation,
     depreciationSchedule,
-    lihtcSchedule: new Array(holdPeriod).fill(700_000),
-    stateLihtcSchedule: new Array(holdPeriod).fill(300_000),
-    operatingCashFlow: new Array(holdPeriod).fill(500_000),
+    lihtcSchedule: new Array(holdPeriod).fill(0.7),
+    stateLihtcSchedule: new Array(holdPeriod).fill(0.3),
+    operatingCashFlow: new Array(holdPeriod).fill(0.5),
     holdPeriod,
     projectedExitYear: (overrides.fundYear || 2024) + holdPeriod,
-    exitProceeds: 15_000_000,
+    exitProceeds: 15,
     cumulativeDepreciation,
     recaptureExposure: cumulativeDepreciation * 0.25,
-    projectedAppreciation: 5_000_000,
-    capitalGainsTax: 1_190_000,
+    projectedAppreciation: 5,
+    capitalGainsTax: 1.19,
     ozEnabled: false,
     pisMonth: 1,
     pisYear: 2024,
@@ -61,20 +61,20 @@ function createDealB(): DealBenefitProfile {
     dealConduitId: 2,
     dealName: '701 S Jackson',
     fundYear: 2025,
-    projectCost: 60_000_000,
-    grossEquity: 3_000_000,
-    netEquity: 2_700_000,
-    syndicationProceeds: 300_000,
+    projectCost: 60,
+    grossEquity: 3,
+    netEquity: 2.7,
+    syndicationProceeds: 0.3,
     holdPeriod: 10,
-    depreciationSchedule: [12_000_000, 3_000_000, 3_000_000, 3_000_000, 3_000_000, 3_000_000, 3_000_000, 3_000_000, 3_000_000, 3_000_000],
-    lihtcSchedule: new Array(10).fill(500_000),
-    stateLihtcSchedule: new Array(10).fill(200_000),
-    operatingCashFlow: new Array(10).fill(400_000),
-    exitProceeds: 10_000_000,
-    cumulativeDepreciation: 39_000_000,
-    recaptureExposure: 39_000_000 * 0.25,
-    projectedAppreciation: 3_000_000,
-    capitalGainsTax: 714_000,
+    depreciationSchedule: [12, 3, 3, 3, 3, 3, 3, 3, 3, 3],
+    lihtcSchedule: new Array(10).fill(0.5),
+    stateLihtcSchedule: new Array(10).fill(0.2),
+    operatingCashFlow: new Array(10).fill(0.4),
+    exitProceeds: 10,
+    cumulativeDepreciation: 39,
+    recaptureExposure: 39 * 0.25,
+    projectedAppreciation: 3,
+    capitalGainsTax: 0.714,
   });
 }
 

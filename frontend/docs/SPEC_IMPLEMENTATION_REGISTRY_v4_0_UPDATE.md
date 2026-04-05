@@ -89,7 +89,7 @@
 | IMPL-145 | §461(l)-aware explicit sizing target for REP investors | Deployed (2026-04-04) |
 | IMPL-146 | Screen 3 IRA Balance input field | Deployed (2026-04-04) |
 | IMPL-147 | IRA Conversion Results Display — IRAConversionPanel on Screen 2 | Deployed (2026-04-04) |
-| IMPL-148 | DBP Units Normalization — grossEquity stored in millions in deal_benefit_profiles but optimizer expects dollars. Affects §461(l) sizing display (IMPL-145) and optimizer output that reads dealTotalEquity. Fix: multiply by 1,000,000 when reading grossEquity from DBP into optimizer. IMPL-145 §461(l) REP line display deferred until resolved. | Blocked | 2026-04-04 |
+| IMPL-148 | DBP Units Normalization — all dollar fields in deal_benefit_profiles stored in millions (engine convention). aggregatePoolToBenefitStream() now converts to dollars (×1M) at ingestion. Unblocks IMPL-145 §461(l) REP sizing display. 4 test files updated with millions-scale fixtures. Runtime verified: Total Equity shows $16.1M, §461(l) REP optimal at $798K, IRA conversion at $173K/$83K savings. | Deployed | 2026-04-04 | poolAggregation.ts, poolAggregation.test.ts, impl085-runtime-verification.test.ts, investorB3Integration.test.ts, fundSizingOptimizer.test.ts | 1,866 tests (96 suites, 0 failures). |
 | IMPL-149+ | *Unassigned -- available for future work* | -- |
 
 ---

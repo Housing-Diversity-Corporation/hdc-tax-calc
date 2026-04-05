@@ -26,8 +26,8 @@ import type { FundSizingResult } from '../fundSizingOptimizer';
 
 function createMockDBP(overrides: Partial<DealBenefitProfile> = {}): DealBenefitProfile {
   const holdPeriod = overrides.holdPeriod || 10;
-  const yearOneDepr = 16_000_000;
-  const annualDepr = 2_000_000;
+  const yearOneDepr = 16;       // was 16_000_000 — now millions-scale (IMPL-148)
+  const annualDepr = 2;         // was 2_000_000
   const depreciationSchedule = [yearOneDepr, ...new Array(holdPeriod - 1).fill(annualDepr)];
   const cumulativeDepreciation = depreciationSchedule.reduce((s, v) => s + v, 0);
 
@@ -36,23 +36,23 @@ function createMockDBP(overrides: Partial<DealBenefitProfile> = {}): DealBenefit
     dealName: 'Test Deal',
     propertyState: 'WA',
     fundYear: 2024,
-    projectCost: 100_000_000,
-    grossEquity: 5_000_000,
-    netEquity: 4_500_000,
-    syndicationProceeds: 500_000,
+    projectCost: 100,                                          // was 100_000_000
+    grossEquity: 5,                                            // was 5_000_000
+    netEquity: 4.5,                                            // was 4_500_000
+    syndicationProceeds: 0.5,                                  // was 500_000
     costSegregationPercent: 20,
     depreciableBasis: cumulativeDepreciation,
     depreciationSchedule,
-    lihtcSchedule: new Array(holdPeriod).fill(700_000),
-    stateLihtcSchedule: new Array(holdPeriod).fill(300_000),
-    operatingCashFlow: new Array(holdPeriod).fill(500_000),
+    lihtcSchedule: new Array(holdPeriod).fill(0.7),            // was 700_000
+    stateLihtcSchedule: new Array(holdPeriod).fill(0.3),       // was 300_000
+    operatingCashFlow: new Array(holdPeriod).fill(0.5),        // was 500_000
     holdPeriod,
     projectedExitYear: (overrides.fundYear || 2024) + holdPeriod,
-    exitProceeds: 15_000_000,
+    exitProceeds: 15,                                          // was 15_000_000
     cumulativeDepreciation,
     recaptureExposure: cumulativeDepreciation * 0.25,
-    projectedAppreciation: 5_000_000,
-    capitalGainsTax: 1_190_000,
+    projectedAppreciation: 5,                                  // was 5_000_000
+    capitalGainsTax: 1.19,                                     // was 1_190_000
     ozEnabled: false,
     pisMonth: 1,
     pisYear: 2024,

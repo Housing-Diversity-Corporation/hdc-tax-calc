@@ -136,7 +136,7 @@ Without a pool, FundDetail cannot render. The "View Fund Details" button only ap
 
 | Issue | Workaround |
 |---|---|
-| `deal_benefit_profiles.gross_equity` stored in millions, optimizer expects dollars | IMPL-148 (pending) |
+| DBP units | All dollar fields in `deal_benefit_profiles` are stored in millions. `aggregatePoolToBenefitStream()` in `poolAggregation.ts` converts to dollars (×1M). Any new code reading DBP values must go through this layer. Fixed in IMPL-148. |
 | Page reload goes to calculator (default view) | Must re-navigate via navbar |
 | Chrome window/tab may shift between sessions | Always find tab by URL first |
 | `authToken` (not `token`) in localStorage | Use `localStorage.getItem('authToken')` |

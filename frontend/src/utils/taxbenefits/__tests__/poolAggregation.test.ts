@@ -20,11 +20,14 @@ import { calculateTaxUtilization } from '../investorTaxUtilization';
 // Test Fixtures
 // =============================================================================
 
+// IMPL-148: DBP stores all dollar values in MILLIONS (engine convention).
+// aggregatePoolToBenefitStream converts to dollars (×1M).
+// Test fixtures use millions to match production data.
 function createMockDBP(overrides: Partial<DealBenefitProfile> = {}): DealBenefitProfile {
   const holdPeriod = overrides.holdPeriod || 10;
-  // Year 1 bonus + straight-line remainder (values in DOLLARS)
-  const yearOneDepr = 16_000_000;
-  const annualDepr = 2_000_000;
+  // Year 1 bonus + straight-line remainder (values in MILLIONS, matching production DBP)
+  const yearOneDepr = 16;       // $16M
+  const annualDepr = 2;         // $2M
   const depreciationSchedule = [yearOneDepr, ...new Array(holdPeriod - 1).fill(annualDepr)];
   const cumulativeDepreciation = depreciationSchedule.reduce((s, v) => s + v, 0);
 
@@ -33,23 +36,23 @@ function createMockDBP(overrides: Partial<DealBenefitProfile> = {}): DealBenefit
     dealName: 'Test Deal',
     propertyState: 'WA',
     fundYear: 2024,
-    projectCost: 100_000_000,
-    grossEquity: 5_000_000,
-    netEquity: 4_500_000,
-    syndicationProceeds: 500_000,
+    projectCost: 100,           // $100M
+    grossEquity: 5,             // $5M
+    netEquity: 4.5,             // $4.5M
+    syndicationProceeds: 0.5,   // $500K
     costSegregationPercent: 20,
     depreciableBasis: cumulativeDepreciation,
     depreciationSchedule,
-    lihtcSchedule: new Array(holdPeriod).fill(700_000),
-    stateLihtcSchedule: new Array(holdPeriod).fill(300_000),
-    operatingCashFlow: new Array(holdPeriod).fill(500_000),
+    lihtcSchedule: new Array(holdPeriod).fill(0.7),        // $700K/yr
+    stateLihtcSchedule: new Array(holdPeriod).fill(0.3),   // $300K/yr
+    operatingCashFlow: new Array(holdPeriod).fill(0.5),    // $500K/yr
     holdPeriod,
     projectedExitYear: (overrides.fundYear || 2024) + holdPeriod,
-    exitProceeds: 15_000_000,
+    exitProceeds: 15,           // $15M
     cumulativeDepreciation,
     recaptureExposure: cumulativeDepreciation * 0.25,
-    projectedAppreciation: 5_000_000,
-    capitalGainsTax: 1_190_000,
+    projectedAppreciation: 5,   // $5M
+    capitalGainsTax: 1.19,      // $1.19M
     ozEnabled: false,
     pisMonth: 1,
     pisYear: 2024,
@@ -69,20 +72,20 @@ function createDealB(): DealBenefitProfile {
     dealConduitId: 2,
     dealName: '701 S Jackson',
     fundYear: 2025,
-    projectCost: 60_000_000,
-    grossEquity: 3_000_000,
-    netEquity: 2_700_000,
-    syndicationProceeds: 300_000,
+    projectCost: 60,            // $60M
+    grossEquity: 3,             // $3M
+    netEquity: 2.7,             // $2.7M
+    syndicationProceeds: 0.3,   // $300K
     holdPeriod: 10,
-    depreciationSchedule: [12_000_000, 3_000_000, 3_000_000, 3_000_000, 3_000_000, 3_000_000, 3_000_000, 3_000_000, 3_000_000, 3_000_000],
-    lihtcSchedule: new Array(10).fill(500_000),
-    stateLihtcSchedule: new Array(10).fill(200_000),
-    operatingCashFlow: new Array(10).fill(400_000),
-    exitProceeds: 10_000_000,
-    cumulativeDepreciation: 39_000_000,
-    recaptureExposure: 39_000_000 * 0.25,
-    projectedAppreciation: 3_000_000,
-    capitalGainsTax: 714_000,
+    depreciationSchedule: [12, 3, 3, 3, 3, 3, 3, 3, 3, 3], // $M
+    lihtcSchedule: new Array(10).fill(0.5),       // $500K/yr
+    stateLihtcSchedule: new Array(10).fill(0.2),  // $200K/yr
+    operatingCashFlow: new Array(10).fill(0.4),   // $400K/yr
+    exitProceeds: 10,           // $10M
+    cumulativeDepreciation: 39, // $39M
+    recaptureExposure: 39 * 0.25,
+    projectedAppreciation: 3,   // $3M
+    capitalGainsTax: 0.714,     // $714K
   });
 }
 
@@ -115,26 +118,27 @@ describe('aggregatePoolToBenefitStream', () => {
   });
 
   describe('single deal', () => {
-    it('should produce BenefitStream matching dealToBenefitStream output', () => {
+    it('should produce BenefitStream with DBP values converted from millions to dollars', () => {
       const dbp = createMockDBP();
       const poolResult = aggregatePoolToBenefitStream([dbp]);
-      const directStream = dealToBenefitStream(dbp);
+      const M = 1_000_000;
 
-      // Schedule arrays should match
-      expect(poolResult.benefitStream.annualDepreciation).toEqual(directStream.annualDepreciation);
-      expect(poolResult.benefitStream.annualLIHTC).toEqual(directStream.annualLIHTC);
-      expect(poolResult.benefitStream.annualStateLIHTC).toEqual(directStream.annualStateLIHTC);
-      expect(poolResult.benefitStream.annualOperatingCF).toEqual(directStream.annualOperatingCF);
+      // IMPL-148: aggregatePoolToBenefitStream converts millions → dollars
+      // Schedule arrays: DBP values × 1M
+      expect(poolResult.benefitStream.annualDepreciation[0]).toBe(dbp.depreciationSchedule[0] * M);
+      expect(poolResult.benefitStream.annualLIHTC[0]).toBe(dbp.lihtcSchedule[0] * M);
+      expect(poolResult.benefitStream.annualStateLIHTC[0]).toBe(dbp.stateLihtcSchedule[0] * M);
+      expect(poolResult.benefitStream.annualOperatingCF[0]).toBe(dbp.operatingCashFlow[0] * M);
 
-      // Equity values should match
-      expect(poolResult.benefitStream.grossEquity).toBe(directStream.grossEquity);
-      expect(poolResult.benefitStream.netEquity).toBe(directStream.netEquity);
-      expect(poolResult.benefitStream.syndicationOffset).toBe(directStream.syndicationOffset);
+      // Equity values: DBP millions → dollars
+      expect(poolResult.benefitStream.grossEquity).toBe(dbp.grossEquity * M);
+      expect(poolResult.benefitStream.netEquity).toBe(dbp.netEquity * M);
+      expect(poolResult.benefitStream.syndicationOffset).toBe(dbp.syndicationProceeds * M);
 
-      // Exit event year and values should match
+      // Exit event year preserved, dollar values converted
       expect(poolResult.benefitStream.exitEvents).toHaveLength(1);
-      expect(poolResult.benefitStream.exitEvents[0].year).toBe(directStream.exitEvents[0].year);
-      expect(poolResult.benefitStream.exitEvents[0].exitProceeds).toBe(directStream.exitEvents[0].exitProceeds);
+      expect(poolResult.benefitStream.exitEvents[0].year).toBe(dbp.holdPeriod);
+      expect(poolResult.benefitStream.exitEvents[0].exitProceeds).toBe(dbp.exitProceeds * M);
     });
 
     it('should set meta correctly for single deal', () => {
@@ -153,30 +157,32 @@ describe('aggregatePoolToBenefitStream', () => {
       const dealA = createMockDBP({ dealName: 'Deal A', fundYear: 2024 });
       const dealB = createMockDBP({ dealName: 'Deal B', fundYear: 2024, holdPeriod: 10 });
       const result = aggregatePoolToBenefitStream([dealA, dealB]);
+      const M = 1_000_000;
 
-      // Year 1: both deals contribute their year-1 depreciation
+      // Year 1: both deals contribute their year-1 depreciation (converted to dollars)
       expect(result.benefitStream.annualDepreciation[0]).toBe(
-        dealA.depreciationSchedule[0] + dealB.depreciationSchedule[0]
+        (dealA.depreciationSchedule[0] + dealB.depreciationSchedule[0]) * M
       );
 
       // Year 2: both deals contribute their year-2 depreciation
       expect(result.benefitStream.annualDepreciation[1]).toBe(
-        dealA.depreciationSchedule[1] + dealB.depreciationSchedule[1]
+        (dealA.depreciationSchedule[1] + dealB.depreciationSchedule[1]) * M
       );
 
       // LIHTC sums
       expect(result.benefitStream.annualLIHTC[0]).toBe(
-        dealA.lihtcSchedule[0] + dealB.lihtcSchedule[0]
+        (dealA.lihtcSchedule[0] + dealB.lihtcSchedule[0]) * M
       );
     });
 
     it('should sum equity values across deals', () => {
-      const dealA = createMockDBP({ grossEquity: 5_000_000, netEquity: 4_500_000, syndicationProceeds: 500_000 });
-      const dealB = createMockDBP({ grossEquity: 3_000_000, netEquity: 2_700_000, syndicationProceeds: 300_000 });
+      const dealA = createMockDBP({ grossEquity: 5, netEquity: 4.5, syndicationProceeds: 0.5 });
+      const dealB = createMockDBP({ grossEquity: 3, netEquity: 2.7, syndicationProceeds: 0.3 });
       const result = aggregatePoolToBenefitStream([dealA, dealB]);
+      const M = 1_000_000;
 
-      expect(result.benefitStream.grossEquity).toBe(8_000_000);
-      expect(result.benefitStream.netEquity).toBe(7_200_000);
+      expect(result.benefitStream.grossEquity).toBe(8 * M);
+      expect(result.benefitStream.netEquity).toBe(7.2 * M);
       expect(result.benefitStream.syndicationOffset).toBe(800_000);
     });
 
@@ -202,17 +208,19 @@ describe('aggregatePoolToBenefitStream', () => {
       expect(result.meta.poolStartYear).toBe(2024);
       expect(result.meta.poolEndYear).toBe(2035);
 
-      // Calendar Year 1 (2024): only Deal A contributes
-      expect(result.benefitStream.annualDepreciation[0]).toBe(dealA.depreciationSchedule[0]);
+      const M = 1_000_000;
+
+      // Calendar Year 1 (2024): only Deal A contributes (converted to dollars)
+      expect(result.benefitStream.annualDepreciation[0]).toBe(dealA.depreciationSchedule[0] * M);
 
       // Calendar Year 2 (2025): Deal A year 2 + Deal B year 1
       expect(result.benefitStream.annualDepreciation[1]).toBe(
-        dealA.depreciationSchedule[1] + dealB.depreciationSchedule[0]
+        (dealA.depreciationSchedule[1] + dealB.depreciationSchedule[0]) * M
       );
 
       // Calendar Year 11 (2034): only Deal B year 10
       expect(result.benefitStream.annualDepreciation[10]).toBe(
-        dealB.depreciationSchedule[9]
+        dealB.depreciationSchedule[9] * M
       );
     });
 
@@ -220,12 +228,13 @@ describe('aggregatePoolToBenefitStream', () => {
       const dealA = createMockDBP({ dealName: 'Trace 4001', fundYear: 2024, holdPeriod: 10 });
       const dealB = createDealB();
       const result = aggregatePoolToBenefitStream([dealA, dealB]);
+      const M = 1_000_000;
 
-      // Calendar Year 1: only Deal A LIHTC
-      expect(result.benefitStream.annualLIHTC[0]).toBe(700_000);
+      // Calendar Year 1: only Deal A LIHTC (0.7M × 1M = $700K)
+      expect(result.benefitStream.annualLIHTC[0]).toBe(0.7 * M);
 
       // Calendar Year 2: Deal A + Deal B LIHTC
-      expect(result.benefitStream.annualLIHTC[1]).toBe(700_000 + 500_000);
+      expect(result.benefitStream.annualLIHTC[1]).toBe((0.7 + 0.5) * M);
     });
 
     it('should produce exit events at different calendar years', () => {
@@ -276,28 +285,29 @@ describe('aggregatePoolToBenefitStream', () => {
         dealName: 'Deal C',
         fundYear: 2026,
         holdPeriod: 8,
-        depreciationSchedule: [8_000_000, 1_500_000, 1_500_000, 1_500_000, 1_500_000, 1_500_000, 1_500_000, 1_500_000],
-        lihtcSchedule: new Array(8).fill(400_000),
-        stateLihtcSchedule: new Array(8).fill(100_000),
-        operatingCashFlow: new Array(8).fill(300_000),
-        grossEquity: 2_000_000,
-        netEquity: 1_800_000,
-        syndicationProceeds: 200_000,
+        depreciationSchedule: [8, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5], // millions
+        lihtcSchedule: new Array(8).fill(0.4),
+        stateLihtcSchedule: new Array(8).fill(0.1),
+        operatingCashFlow: new Array(8).fill(0.3),
+        grossEquity: 2,
+        netEquity: 1.8,
+        syndicationProceeds: 0.2,
       });
       const result = aggregatePoolToBenefitStream([dealA, dealB, dealC]);
+      const M = 1_000_000;
 
       // Horizon: 2024 to max(2034, 2035, 2034) = 2035, so 11 years
       expect(result.meta.consolidatedHorizon).toBe(11);
       expect(result.meta.dealCount).toBe(3);
 
       // Calendar Year 1 (2024): only Deal A
-      expect(result.benefitStream.annualDepreciation[0]).toBe(16_000_000);
+      expect(result.benefitStream.annualDepreciation[0]).toBe(16 * M);
 
       // Calendar Year 2 (2025): Deal A yr2 + Deal B yr1
-      expect(result.benefitStream.annualDepreciation[1]).toBe(2_000_000 + 12_000_000);
+      expect(result.benefitStream.annualDepreciation[1]).toBe((2 + 12) * M);
 
       // Calendar Year 3 (2026): Deal A yr3 + Deal B yr2 + Deal C yr1
-      expect(result.benefitStream.annualDepreciation[2]).toBe(2_000_000 + 3_000_000 + 8_000_000);
+      expect(result.benefitStream.annualDepreciation[2]).toBe((2 + 3 + 8) * M);
 
       // Three exit events
       expect(result.benefitStream.exitEvents).toHaveLength(3);
@@ -324,12 +334,13 @@ describe('aggregatePoolToBenefitStream', () => {
     });
 
     it('should report correct total equity', () => {
-      const dealA = createMockDBP({ grossEquity: 5_000_000, netEquity: 4_500_000 });
-      const dealB = createDealB(); // grossEquity: 3_000_000, netEquity: 2_700_000
+      const dealA = createMockDBP({ grossEquity: 5, netEquity: 4.5 });     // $5M, $4.5M
+      const dealB = createDealB(); // grossEquity: 3, netEquity: 2.7       // $3M, $2.7M
       const result = aggregatePoolToBenefitStream([dealA, dealB]);
+      const M = 1_000_000;
 
-      expect(result.meta.totalGrossEquity).toBe(8_000_000);
-      expect(result.meta.totalNetEquity).toBe(7_200_000);
+      expect(result.meta.totalGrossEquity).toBe(8 * M);
+      expect(result.meta.totalNetEquity).toBe(7.2 * M);
     });
   });
 
@@ -343,8 +354,8 @@ describe('aggregatePoolToBenefitStream', () => {
       expect(result.meta.consolidatedHorizon).toBe(11); // 2035 - 2024
       // Year 1 (2024) has no deal contribution
       expect(result.benefitStream.annualDepreciation[0]).toBe(0);
-      // Year 2 (2025) has the deal's year 1
-      expect(result.benefitStream.annualDepreciation[1]).toBe(deal.depreciationSchedule[0]);
+      // Year 2 (2025) has the deal's year 1 (converted to dollars)
+      expect(result.benefitStream.annualDepreciation[1]).toBe(deal.depreciationSchedule[0] * 1_000_000);
     });
   });
 });
@@ -371,10 +382,10 @@ describe('scaleBenefitStreamToMillions', () => {
     // $5M grossEquity → 5
     expect(scaled.grossEquity).toBe(5);
 
-    // Exit event values scaled
+    // Exit event values scaled (round-trip: millions → dollars → millions)
     expect(scaled.exitEvents[0].exitProceeds).toBe(15);
     expect(scaled.exitEvents[0].recaptureExposure).toBeCloseTo(
-      dbp.recaptureExposure / 1_000_000
+      dbp.recaptureExposure  // DBP value in millions, round-trips back to millions
     );
   });
 
