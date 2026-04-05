@@ -373,8 +373,7 @@ function computeDepreciationNonpassive(
   marginalRate: number,
   previousNolPool: number,
   taxableIncome: number,
-  federalTaxLiability: number,
-  annualOrdinaryIncome: number
+  federalTaxLiability: number
 ): {
   depreciationAllowed: number;
   depreciationSuspended: number;
@@ -383,11 +382,10 @@ function computeDepreciationNonpassive(
   nolUsed: number;
   nolPool: number;
 } {
-  // IMPL-153: §461(l)(3)(A)(i) — EBL threshold includes aggregate gross income
-  // from trades or businesses. Platform assumes investor's ordinary income qualifies.
-  // PENDING: Sidley Austin (Daniel Altman) confirmation that W-2 wages count.
-  const eblThresholdInMillions =
-    (SECTION_461L_LIMITS[filingStatus] + annualOrdinaryIncome) / 1_000_000;
+  // Convert EBL threshold from dollars to millions to match depreciation units
+  // W-2 wages excluded from §461(l)(3)(A)(i) business income per CARES Act
+  // technical correction and JCT Blue Book (JCS-1-18). Flat statutory cap applies.
+  const eblThresholdInMillions = SECTION_461L_LIMITS[filingStatus] / 1_000_000;
 
   // §461(l): Cap deduction at EBL threshold
   const depreciationAllowed = Math.min(depreciation, eblThresholdInMillions);
@@ -721,18 +719,13 @@ export function calculateTaxUtilization(
 
     if (treatment === 'nonpassive') {
       // Nonpassive path: §461(l) + §38(c)
-      // IMPL-153: Use Roth-excluded income for EBL in Years 11+ (matches baseTaxComputation)
-      const yearOrdinaryIncome = (rothConversion > 0 && yearIndex >= 10)
-        ? investorProfile.annualOrdinaryIncome - rothConversion
-        : investorProfile.annualOrdinaryIncome;
       const depNonpassive = computeDepreciationNonpassive(
         depreciation,
         investorProfile.filingStatus,
         yearMarginalRate,
         nolPool,
         yearTax.taxableIncome,
-        yearTax.federalTaxLiability,
-        yearOrdinaryIncome
+        yearTax.federalTaxLiability
       );
       depResult = depNonpassive;
       nolGenerated = depNonpassive.nolGenerated;

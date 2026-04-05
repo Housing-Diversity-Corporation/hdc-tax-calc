@@ -884,7 +884,7 @@ export const HDCTaxReportJsPDFButton: React.FC<HDCTaxReportJsPDFProps> = ({
 
       const recommendations = investorTrack === 'rep'
         ? [
-            `• Your §461(l) EBL threshold: $${(w2Income + 626000).toLocaleString()} (income + $626K base)`,
+            '• Your §461(l) limitation caps W-2 offset at $626,000 annually',
             '• Excess losses will create NOL carryforward for future years',
             iraBalance > 0 ? '• Consider Roth IRA conversions to maximize tax capacity utilization' : null,
           ]

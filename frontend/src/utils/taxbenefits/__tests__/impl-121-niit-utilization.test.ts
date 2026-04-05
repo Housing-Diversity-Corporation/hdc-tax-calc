@@ -91,10 +91,10 @@ describe('IMPL-121: NIIT-aware depreciation in calculateTaxUtilization', () => {
 
     const result = calculateTaxUtilization(scaledStream, profile);
     // Nonpassive path: IMPL-122 corrected §38(c) + dep savings cap
-    // IMPL-153: EBL income offset eliminates NOL at $750K → $1.948M
+    // IMPL-144: NOL carryforward now reduces §38(c) ceiling → $1.912M
     // NIIT surcharge must NOT be applied (nonpassive is exempt)
     const totalSavings = result.totalDepreciationSavings + result.totalLIHTCUsed;
-    expect(totalSavings).toBeCloseTo(1.948, 2);
+    expect(totalSavings).toBeCloseTo(1.912, 2);
   });
 
   test('rep_ungrouped passive: NIIT applies — matches non-rep passive result', () => {
