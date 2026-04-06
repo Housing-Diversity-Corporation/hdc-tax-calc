@@ -14,7 +14,7 @@ import CapacityWarning from './CapacityWarning';
 import FitSummaryPanel from './FitSummaryPanel';
 import SizingOptimizerPanel from './SizingOptimizerPanel';
 import IRAConversionPanel from './IRAConversionPanel';
-import { aggregatePoolToBenefitStream, buildInvestorProfileFromTaxInfo } from '../../../utils/taxbenefits/poolAggregation';
+import { aggregatePoolToBenefitStream, buildInvestorProfileFromTaxInfo, scaleBenefitStreamToMillions } from '../../../utils/taxbenefits/poolAggregation';
 import {
   optimizeIRAConversion,
   computeRateCompression,
@@ -22,7 +22,8 @@ import {
   calculateRothConversionValue,
   generateIRAConversionRecommendations
 } from '../../../utils/taxbenefits/iraConversion';
-import { SECTION_461L_LIMITS } from '../../../utils/taxbenefits/investorTaxUtilization';
+import { SECTION_461L_LIMITS, calculateTaxUtilization } from '../../../utils/taxbenefits/investorTaxUtilization';
+import { scaleStreamByProRata } from '../../../utils/taxbenefits/fundSizingOptimizer';
 import { findLifetimeCoverageCommitment } from '../../../utils/taxbenefits/investorSizing';
 import type { LifetimeCoverageResult } from '../../../utils/taxbenefits/investorSizing';
 import { exportWealthManagerSummary } from '../../../utils/exportWealthManagerSummary';
@@ -155,12 +156,20 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
   const [lifetimeCoverageResult, setLifetimeCoverageResult] = useState<LifetimeCoverageResult | null>(null);
   const isNonpassive = sizingResult?.fullUtilizationResult?.treatment === 'nonpassive';
 
-  // IMPL-153: Year 1 Tax Reduction — combined depreciation savings + LIHTC credits (dollars)
+  // IMPL-153: Year 1 Tax Reduction at current slider commitment (dollars)
   const year1TaxReduction = useMemo(() => {
-    const yr1 = sizingResult?.fullUtilizationResult?.annualUtilization?.[0];
+    if (!poolBenefitStream || !investorProfile || !aggregationMeta) return null;
+    const commitment = effectiveSliderCommitment;
+    const totalEquity = aggregationMeta.totalGrossEquity;
+    if (commitment <= 0 || totalEquity <= 0) return null;
+
+    const proRata = commitment / totalEquity;
+    const scaled = scaleBenefitStreamToMillions(scaleStreamByProRata(poolBenefitStream, proRata));
+    const result = calculateTaxUtilization(scaled, investorProfile);
+    const yr1 = result.annualUtilization[0];
     if (!yr1) return null;
     return (yr1.depreciationTaxSavings + yr1.lihtcUsable) * 1_000_000;
-  }, [sizingResult]);
+  }, [poolBenefitStream, investorProfile, aggregationMeta, effectiveSliderCommitment]);
 
   const handleLifetimeCoverageRequest = (low: number, high: number, dist: 'conservative' | 'moderate' | 'optimistic') => {
     if (!poolBenefitStream || !investorProfile || !aggregationMeta) return;
