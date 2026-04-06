@@ -248,3 +248,10 @@
 1. **Year 1 Tax Reduction** — `depreciationTaxSavings[0] + lihtcUsable[0]` surfaced as named dollar amount in SizingOptimizerPanel KPI strip (green, first position). The single most concrete investor-facing metric.
 2. **AnnualUtilization table completed (21/21 fields)** — `residualPassiveTax` (passive track, red) and `cumulativeCarriedCredits` (nonpassive track, teal) added to TaxUtilizationSection. Track-specific group expanded from 3 to 4 columns.
 3. **Confusing test output fixed** — "Free Investment Test: FAILED" console.log renamed to "Year 1 Recovery Test: ACHIEVED/NOT ACHIEVED" to avoid false alarm in test runner output.
+
+### IMPL-154: Timeline Audit Panel
+
+**Status:** ✅ Complete (2026-04-05)
+
+**Changes:**
+Collapsible read-only panel on Screen 2 showing the full `computeTimeline()` trace for each deal in the pool. Four sections: Inputs, PIS Computation, Credit Schedule, Exit & Hold Period. Computes timeline live from DealBenefitProfile fields (pisMonth/pisYear/ozEnabled with fundYear fallback). Infers §42(f)(1) election from LIHTC schedule. Total Hold Years displayed in HDC blue. Warning dots for unoverridden PIS and January PIS + election edge case. Positioned after FundDealList, before optimization panels.

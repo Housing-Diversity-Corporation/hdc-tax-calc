@@ -14,6 +14,7 @@ import CapacityWarning from './CapacityWarning';
 import FitSummaryPanel from './FitSummaryPanel';
 import SizingOptimizerPanel from './SizingOptimizerPanel';
 import IRAConversionPanel from './IRAConversionPanel';
+import TimelineAuditPanel from './TimelineAuditPanel';
 import { aggregatePoolToBenefitStream, buildInvestorProfileFromTaxInfo, scaleBenefitStreamToMillions } from '../../../utils/taxbenefits/poolAggregation';
 import {
   optimizeIRAConversion,
@@ -156,21 +157,6 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
   const [lifetimeCoverageResult, setLifetimeCoverageResult] = useState<LifetimeCoverageResult | null>(null);
   const isNonpassive = sizingResult?.fullUtilizationResult?.treatment === 'nonpassive';
 
-  // IMPL-153: Year 1 Tax Reduction at current slider commitment (dollars)
-  const year1TaxReduction = useMemo(() => {
-    if (!poolBenefitStream || !investorProfile || !aggregationMeta) return null;
-    const commitment = effectiveSliderCommitment;
-    const totalEquity = aggregationMeta.totalGrossEquity;
-    if (commitment <= 0 || totalEquity <= 0) return null;
-
-    const proRata = commitment / totalEquity;
-    const scaled = scaleBenefitStreamToMillions(scaleStreamByProRata(poolBenefitStream, proRata));
-    const result = calculateTaxUtilization(scaled, investorProfile);
-    const yr1 = result.annualUtilization[0];
-    if (!yr1) return null;
-    return (yr1.depreciationTaxSavings + yr1.lihtcUsable) * 1_000_000;
-  }, [poolBenefitStream, investorProfile, aggregationMeta, effectiveSliderCommitment]);
-
   const handleLifetimeCoverageRequest = (low: number, high: number, dist: 'conservative' | 'moderate' | 'optimistic') => {
     if (!poolBenefitStream || !investorProfile || !aggregationMeta) return;
     const result = findLifetimeCoverageCommitment(
@@ -255,6 +241,21 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
 
   // Sync slider to optimal when sizing result changes
   const effectiveSliderCommitment = sliderCommitment ?? sizingResult?.optimalCommitment ?? 0;
+
+  // IMPL-153: Year 1 Tax Reduction at current slider commitment (dollars)
+  const year1TaxReduction = useMemo(() => {
+    if (!poolBenefitStream || !investorProfile || !aggregationMeta) return null;
+    const commitment = effectiveSliderCommitment;
+    const totalEquity = aggregationMeta.totalGrossEquity;
+    if (commitment <= 0 || totalEquity <= 0) return null;
+
+    const proRata = commitment / totalEquity;
+    const scaled = scaleBenefitStreamToMillions(scaleStreamByProRata(poolBenefitStream, proRata));
+    const result = calculateTaxUtilization(scaled, investorProfile);
+    const yr1 = result.annualUtilization[0];
+    if (!yr1) return null;
+    return (yr1.depreciationTaxSavings + yr1.lihtcUsable) * 1_000_000;
+  }, [poolBenefitStream, investorProfile, aggregationMeta, effectiveSliderCommitment]);
 
   // IMPL-151: Wealth Manager Summary Export
   const handleExportSummary = () => {
@@ -408,6 +409,9 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
 
         {/* Member Deals */}
         <FundDealList deals={deals} poolStartYear={aggregationMeta?.poolStartYear} />
+
+        {/* IMPL-154: Timeline Audit Panel */}
+        {deals.length > 0 && <TimelineAuditPanel deals={deals} />}
 
         {/* Capacity Warning */}
         {sizingResult?.warningMessage && (
