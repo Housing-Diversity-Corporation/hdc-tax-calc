@@ -254,4 +254,6 @@
 **Status:** ✅ Complete (2026-04-05)
 
 **Changes:**
-Collapsible read-only panel on Screen 2 showing the full `computeTimeline()` trace for each deal in the pool. Four sections: Inputs, PIS Computation, Credit Schedule, Exit & Hold Period. Computes timeline live from DealBenefitProfile fields (pisMonth/pisYear/ozEnabled with fundYear fallback). Infers §42(f)(1) election from LIHTC schedule. Total Hold Years displayed in HDC blue. Warning dots for unoverridden PIS and January PIS + election edge case. Positioned after FundDealList, before optimization panels.
+Collapsible read-only panel on Screen 2 showing the full `computeTimeline()` trace for each deal in the pool. Four sections: Inputs, PIS Computation, Credit Schedule, Exit & Hold Period. Total Hold Years displayed in HDC blue. Warning dots for unoverridden PIS and January PIS + election edge case. Positioned after FundDealList, before optimization panels.
+
+**Data source fix:** Panel reads from pre-computed `ComputedTimeline` passed as prop — zero DBP field references in component. FundDetail computes timeline per deal from DBP timing fields (`investmentDate`, `constructionDelayMonths`, `pisDateOverride`, `electDeferCreditPeriod`) added to both backend entity (DDL-auto) and frontend extraction function. Existing deals without these fields fall back to `pisMonth`/`pisYear`/`fundYear` synthesis until re-extracted.

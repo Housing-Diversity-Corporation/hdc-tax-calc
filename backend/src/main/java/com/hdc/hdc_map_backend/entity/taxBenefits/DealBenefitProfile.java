@@ -63,6 +63,19 @@ public class DealBenefitProfile {
     @Column(name = "pis_month")
     private Integer pisMonth;
 
+    // IMPL-154: Timeline config fields — captured at extraction for Timeline Audit Panel
+    @Column(name = "investment_date")
+    private String investmentDate;
+
+    @Column(name = "construction_delay_months")
+    private Integer constructionDelayMonths;
+
+    @Column(name = "pis_date_override")
+    private String pisDateOverride;
+
+    @Column(name = "elect_defer_credit_period")
+    private Boolean electDeferCreditPeriod;
+
     @Column(name = "senior_debt_pct")
     private Double seniorDebtPct;
 
@@ -258,6 +271,38 @@ public class DealBenefitProfile {
 
     public void setPisMonth(Integer pisMonth) {
         this.pisMonth = pisMonth;
+    }
+
+    public String getInvestmentDate() {
+        return investmentDate;
+    }
+
+    public void setInvestmentDate(String investmentDate) {
+        this.investmentDate = investmentDate;
+    }
+
+    public Integer getConstructionDelayMonths() {
+        return constructionDelayMonths;
+    }
+
+    public void setConstructionDelayMonths(Integer constructionDelayMonths) {
+        this.constructionDelayMonths = constructionDelayMonths;
+    }
+
+    public String getPisDateOverride() {
+        return pisDateOverride;
+    }
+
+    public void setPisDateOverride(String pisDateOverride) {
+        this.pisDateOverride = pisDateOverride;
+    }
+
+    public Boolean getElectDeferCreditPeriod() {
+        return electDeferCreditPeriod;
+    }
+
+    public void setElectDeferCreditPeriod(Boolean electDeferCreditPeriod) {
+        this.electDeferCreditPeriod = electDeferCreditPeriod;
     }
 
     public Double getSeniorDebtPct() {

@@ -15,6 +15,8 @@ import FitSummaryPanel from './FitSummaryPanel';
 import SizingOptimizerPanel from './SizingOptimizerPanel';
 import IRAConversionPanel from './IRAConversionPanel';
 import TimelineAuditPanel from './TimelineAuditPanel';
+import type { DealTimelineEntry } from './TimelineAuditPanel';
+import { computeTimeline } from '../../../utils/taxbenefits/computeTimeline';
 import { aggregatePoolToBenefitStream, buildInvestorProfileFromTaxInfo, scaleBenefitStreamToMillions } from '../../../utils/taxbenefits/poolAggregation';
 import {
   optimizeIRAConversion,
@@ -151,6 +153,39 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
   const holdPeriod = useMemo(() => {
     if (deals.length === 0) return 10;
     return Math.max(...deals.map(d => d.holdPeriod));
+  }, [deals]);
+
+  // IMPL-154: Compute timeline for each deal from config fields (live, not persisted)
+  const timelineEntries = useMemo<DealTimelineEntry[]>(() => {
+    return deals.map(deal => {
+      // Use timing fields from DBP when available (new extractions), else synthesize
+      const investmentDate = deal.investmentDate
+        || `${deal.pisYear || deal.fundYear}-${String(deal.pisMonth || 1).padStart(2, '0')}-01`;
+      const constructionDelay = deal.constructionDelayMonths ?? 0;
+      const pisOverride = deal.pisDateOverride ?? null;
+      const election = deal.electDeferCreditPeriod ?? false;
+
+      const timeline = computeTimeline(
+        investmentDate,
+        constructionDelay,
+        pisOverride,
+        deal.ozEnabled,
+        0, // exitExtensionMonths — not stored
+        election
+      );
+
+      return {
+        dealName: deal.dealName,
+        ozEnabled: deal.ozEnabled,
+        timeline,
+        config: {
+          investmentDate,
+          constructionDelayMonths: constructionDelay,
+          pisDateOverride: pisOverride,
+          electDeferCreditPeriod: election,
+        },
+      };
+    });
   }, [deals]);
 
   // IMPL-152: Lifetime Coverage Mode
@@ -411,7 +446,7 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
         <FundDealList deals={deals} poolStartYear={aggregationMeta?.poolStartYear} />
 
         {/* IMPL-154: Timeline Audit Panel */}
-        {deals.length > 0 && <TimelineAuditPanel deals={deals} />}
+        {timelineEntries.length > 0 && <TimelineAuditPanel entries={timelineEntries} />}
 
         {/* Capacity Warning */}
         {sizingResult?.warningMessage && (

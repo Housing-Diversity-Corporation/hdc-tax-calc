@@ -100,6 +100,12 @@ export function extractDealBenefitProfile(
     // OZ
     ozEnabled: inputs.ozEnabled || false,
 
+    // Timeline config (IMPL-154 — for Timeline Audit Panel on Screen 2)
+    investmentDate: inputs.investmentDate || null,
+    constructionDelayMonths: inputs.constructionDelayMonths || 0,
+    pisDateOverride: inputs.pisDateOverride || null,
+    electDeferCreditPeriod: inputs.electDeferCreditPeriod || false,
+
     // Structure
     pisMonth: inputs.placedInServiceMonth || 1,
     pisYear: currentYear,

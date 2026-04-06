@@ -42,6 +42,12 @@ export interface DealBenefitProfile {
   // OZ
   ozEnabled: boolean;
 
+  // Timeline config (IMPL-154 — captured at extraction for Timeline Audit Panel)
+  investmentDate?: string | null;         // ISO 'YYYY-MM-DD'
+  constructionDelayMonths?: number | null;
+  pisDateOverride?: string | null;
+  electDeferCreditPeriod?: boolean | null;
+
   // Structure
   pisMonth: number;
   pisYear: number;
