@@ -197,7 +197,7 @@ describe('Complete 10-Year Integration Test', () => {
 
     // Free investment test
     const freeInvestmentAchieved = year1NetBenefit >= (investorResult.totalInvestment - params.hdcFee);
-    console.log(`  Free Investment Test: ${freeInvestmentAchieved ? 'PASSED' : 'FAILED'}`);
+    console.log(`  Year 1 Recovery Test: ${freeInvestmentAchieved ? 'ACHIEVED' : 'NOT ACHIEVED'}`);
     console.log(`    Year 1 Net Benefit: $${year1NetBenefit.toFixed(2)}M`);
     console.log(`    Investment to Recover: $${(investorResult.totalInvestment - params.hdcFee).toFixed(2)}M`);
 

@@ -180,9 +180,9 @@ const TaxUtilizationSection: React.FC<TaxUtilizationSectionProps> = ({
                     <th colSpan={4} style={{ ...thGroupStyle, textAlign: 'center', borderLeft: '1px solid rgba(146, 195, 194, 0.3)' }}>Depreciation</th>
                     <th colSpan={3} style={{ ...thGroupStyle, textAlign: 'center', borderLeft: '1px solid rgba(146, 195, 194, 0.3)' }}>LIHTC Credits</th>
                     {isNonpassive ? (
-                      <th colSpan={3} style={{ ...thGroupStyle, textAlign: 'center', borderLeft: '1px solid rgba(146, 195, 194, 0.3)' }}>NOL Tracking</th>
+                      <th colSpan={4} style={{ ...thGroupStyle, textAlign: 'center', borderLeft: '1px solid rgba(146, 195, 194, 0.3)' }}>NOL Tracking</th>
                     ) : (
-                      <th colSpan={3} style={{ ...thGroupStyle, textAlign: 'center', borderLeft: '1px solid rgba(146, 195, 194, 0.3)' }}>Passive Tracking</th>
+                      <th colSpan={4} style={{ ...thGroupStyle, textAlign: 'center', borderLeft: '1px solid rgba(146, 195, 194, 0.3)' }}>Passive Tracking</th>
                     )}
                     <th colSpan={3} style={{ ...thGroupStyle, textAlign: 'center', borderLeft: '1px solid rgba(146, 195, 194, 0.3)' }}>Summary</th>
                   </tr>
@@ -204,10 +204,12 @@ const TaxUtilizationSection: React.FC<TaxUtilizationSectionProps> = ({
                         <th style={{ ...thStyleRight, borderLeft: '1px solid rgba(146, 195, 194, 0.3)' }}>NOL Gen</th>
                         <th style={thStyleRight}>NOL Used</th>
                         <th style={thStyleRight}>NOL Pool</th>
+                        <th style={thStyleRight}>Credit Carryforward</th>
                       </>
                     ) : (
                       <>
                         <th style={{ ...thStyleRight, borderLeft: '1px solid rgba(146, 195, 194, 0.3)' }}>Passive Inc Offset</th>
+                        <th style={thStyleRight}>Passive Tax Remaining</th>
                         <th style={thStyleRight}>Suspended Loss</th>
                         <th style={thStyleRight}>Suspended Credits</th>
                       </>
@@ -237,10 +239,12 @@ const TaxUtilizationSection: React.FC<TaxUtilizationSectionProps> = ({
                           <td style={{ ...tdStyleRight, borderLeft: '1px solid rgba(146, 195, 194, 0.15)' }}>{formatCurrency(yr.nolGenerated)}</td>
                           <td style={tdStyleRight}>{formatCurrency(yr.nolUsed)}</td>
                           <td style={{ ...tdStyleRight, fontWeight: yr.nolPool > 0 ? 500 : undefined }}>{formatCurrency(yr.nolPool)}</td>
+                          <td style={{ ...tdStyleRight, color: yr.cumulativeCarriedCredits > 0 ? 'var(--hdc-faded-jade)' : undefined }}>{formatCurrency(yr.cumulativeCarriedCredits)}</td>
                         </>
                       ) : (
                         <>
                           <td style={{ ...tdStyleRight, borderLeft: '1px solid rgba(146, 195, 194, 0.15)' }}>{formatCurrency(yr.residualPassiveIncome)}</td>
+                          <td style={{ ...tdStyleRight, color: yr.residualPassiveTax > 0 ? '#ef4444' : undefined }}>{formatCurrency(yr.residualPassiveTax)}</td>
                           <td style={{ ...tdStyleRight, color: yr.cumulativeSuspendedLoss > 0 ? '#ef4444' : undefined }}>{formatCurrency(yr.cumulativeSuspendedLoss)}</td>
                           <td style={{ ...tdStyleRight, color: yr.cumulativeSuspendedCredits > 0 ? '#eab308' : undefined }}>{formatCurrency(yr.cumulativeSuspendedCredits)}</td>
                         </>

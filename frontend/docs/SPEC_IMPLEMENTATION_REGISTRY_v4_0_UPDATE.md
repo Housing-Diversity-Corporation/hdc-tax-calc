@@ -236,6 +236,15 @@
 | IMPL-139 | dd7da02 | 2026-03-26 | 1 | 67 | 66 |
 | **Totals (084-139)** | **21 commits** | **Feb 14 - Mar 26** | **— ** | **~13,146** | **~3,045** |
 
-### IMPL-153: §461(l) EBL Income Offset — REVERTED
+### IMPL-153 (original): §461(l) EBL Income Offset — REVERTED
 
 **Status:** ❌ Reverted — W-2 wages are explicitly excluded from §461(l)(3)(A)(i) "aggregate gross income attributable to trades or businesses" per CARES Act technical correction and JCT Blue Book (JCS-1-18). The flat statutory cap ($626K MFJ / $313K Single) is correct. Validation script (`frontend/scripts/validateTaxEngine.test.ts`) confirms flat cap MATCH at all tested commitment levels.
+
+### IMPL-153 (reassigned): Year 1 Tax Reduction Display + Table Cleanup
+
+**Status:** ✅ Complete (2026-04-05)
+
+**Changes:**
+1. **Year 1 Tax Reduction** — `depreciationTaxSavings[0] + lihtcUsable[0]` surfaced as named dollar amount in SizingOptimizerPanel KPI strip (green, first position). The single most concrete investor-facing metric.
+2. **AnnualUtilization table completed (21/21 fields)** — `residualPassiveTax` (passive track, red) and `cumulativeCarriedCredits` (nonpassive track, teal) added to TaxUtilizationSection. Track-specific group expanded from 3 to 4 columns.
+3. **Confusing test output fixed** — "Free Investment Test: FAILED" console.log renamed to "Year 1 Recovery Test: ACHIEVED/NOT ACHIEVED" to avoid false alarm in test runner output.

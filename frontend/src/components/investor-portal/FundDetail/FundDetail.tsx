@@ -155,6 +155,13 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
   const [lifetimeCoverageResult, setLifetimeCoverageResult] = useState<LifetimeCoverageResult | null>(null);
   const isNonpassive = sizingResult?.fullUtilizationResult?.treatment === 'nonpassive';
 
+  // IMPL-153: Year 1 Tax Reduction — combined depreciation savings + LIHTC credits (dollars)
+  const year1TaxReduction = useMemo(() => {
+    const yr1 = sizingResult?.fullUtilizationResult?.annualUtilization?.[0];
+    if (!yr1) return null;
+    return (yr1.depreciationTaxSavings + yr1.lihtcUsable) * 1_000_000;
+  }, [sizingResult]);
+
   const handleLifetimeCoverageRequest = (low: number, high: number, dist: 'conservative' | 'moderate' | 'optimistic') => {
     if (!poolBenefitStream || !investorProfile || !aggregationMeta) return;
     const result = findLifetimeCoverageCommitment(
@@ -434,6 +441,7 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
             isNonpassive={isNonpassive}
             lifetimeCoverageResult={lifetimeCoverageResult}
             onLifetimeCoverageRequest={handleLifetimeCoverageRequest}
+            year1TaxReduction={year1TaxReduction}
           />
         )}
 

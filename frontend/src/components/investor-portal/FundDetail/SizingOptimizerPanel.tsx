@@ -29,6 +29,7 @@ type SizingMode = 'annual' | 'lifetime';
 
 interface SizingOptimizerPanelProps {
   sizingResult: SizingResult;
+  year1TaxReduction?: number | null; // IMPL-153: depTaxSavings + lihtcUsable (dollars)
   fitResult: InvestorFitResult;
   currentCommitment: number;
   onCommitmentChange: (value: number) => void;
@@ -142,6 +143,7 @@ const SizingOptimizerPanel: React.FC<SizingOptimizerPanelProps> = ({
   isNonpassive,
   lifetimeCoverageResult,
   onLifetimeCoverageRequest,
+  year1TaxReduction,
 }) => {
   // IMPL-152: Lifetime Coverage Mode state
   const [sizingMode, setSizingMode] = useState<SizingMode>('annual');
@@ -366,7 +368,16 @@ const SizingOptimizerPanel: React.FC<SizingOptimizerPanelProps> = ({
 
       {/* Metrics at Current Commitment — Annual Efficiency mode */}
       {sizingMode === 'annual' && currentPoint && (
-        <div className="grid grid-cols-5 gap-3">
+        <div className="grid grid-cols-6 gap-3">
+          {/* IMPL-153: Year 1 Tax Reduction — most concrete investor-facing metric */}
+          {year1TaxReduction != null && (
+            <div>
+              <div className="text-xs text-[#474a44]/60 mb-1">Year 1 Tax Reduction</div>
+              <div className="text-base font-bold text-[#7fbd45]">
+                {formatCurrency(year1TaxReduction)}
+              </div>
+            </div>
+          )}
           <div>
             <div className="text-xs text-[#474a44]/60 mb-1">Annual Utilization</div>
             <div className="text-base font-bold text-[#474a44]">
