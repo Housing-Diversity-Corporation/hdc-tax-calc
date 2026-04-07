@@ -221,6 +221,8 @@ export function buildInvestorProfileFromTaxInfo(
 
   return {
     annualPassiveIncome: taxInfo.annualPassiveIncome || 0,
+    annualPassiveOrdinaryIncome: taxInfo.annualPassiveOrdinaryIncome || 0,
+    annualPassiveLTCGIncome: taxInfo.annualPassiveLTCGIncome || 0,
     annualOrdinaryIncome: taxInfo.annualOrdinaryIncome || 0,
     annualPortfolioIncome: taxInfo.annualPortfolioIncome || 0,
     filingStatus: mapFilingStatus(taxInfo.filingStatus),

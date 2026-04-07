@@ -54,6 +54,8 @@ export interface BenefitStream {
  */
 export interface InvestorProfile {
   annualPassiveIncome: number;       // K-1 from funds, rental income, partnership business income
+  annualPassiveOrdinaryIncome: number;  // IMPL-154: Ordinary-rate component of passive income
+  annualPassiveLTCGIncome: number;      // IMPL-154: LTCG-rate component of passive income
   annualOrdinaryIncome: number;      // W-2, active business, board fees
   annualPortfolioIncome: number;     // Stock/crypto gains, dividends, interest
   filingStatus: 'MFJ' | 'Single' | 'HoH';
@@ -109,6 +111,13 @@ export interface AnnualUtilization {
   // Passive treatment only
   residualPassiveIncome: number;     // Passive income remaining after depreciation offset
   residualPassiveTax: number;        // Tax on residual passive income
+
+  // IMPL-154: Character-split passive fields (passive track only)
+  passiveOrdinaryIncome: number;     // Ordinary-rate component of passive income (in millions)
+  passiveLTCGIncome: number;         // LTCG-rate component of passive income (in millions)
+  effectivePassiveRate: number;      // Character-weighted effective rate
+  passiveOrdinaryTaxCeiling: number; // Tax ceiling from ordinary passive component
+  passiveLTCGTaxCeiling: number;     // Tax ceiling from LTCG passive component
 
   // Nonpassive treatment only (NOL tracking)
   nolGenerated: number;              // Excess business loss → NOL
@@ -340,12 +349,16 @@ export function computeFederalTax(
   annualPassiveIncome: number,
   annualOrdinaryIncome: number,
   annualPortfolioIncome: number,
-  filingStatus: 'MFJ' | 'Single' | 'HoH'
+  filingStatus: 'MFJ' | 'Single' | 'HoH',
+  annualPassiveOrdinaryIncome: number = 0,
+  annualPassiveLTCGIncome: number = 0
 ): {
   grossIncome: number;
   taxableIncome: number;
   federalTaxLiability: number;
-  passiveTaxLiability: number;      // Tax attributable to passive portion
+  passiveTaxLiability: number;      // Tax attributable to passive portion (sum of both characters)
+  passiveOrdinaryTaxLiability: number;  // IMPL-154: Ordinary-rate passive tax
+  passiveLTCGTaxLiability: number;      // IMPL-154: LTCG-rate passive tax
   marginalRate: number;
 } {
   const grossIncome = annualPassiveIncome + annualOrdinaryIncome + annualPortfolioIncome;
@@ -371,16 +384,35 @@ export function computeFederalTax(
     previousThreshold = bracket.threshold;
   }
 
-  // Compute passive tax liability (proportional allocation)
-  // This is the tax attributable to passive income, used for §469 credit ceiling
-  const passiveProportion = grossIncome > 0 ? annualPassiveIncome / grossIncome : 0;
-  const passiveTaxLiability = federalTaxLiability * passiveProportion;
+  // IMPL-154: Character-split passive tax liability
+  // Backward compat: if both character fields are 0 and annualPassiveIncome > 0,
+  // treat all passive as ordinary (proportional allocation, same as before)
+  const hasCharacterSplit = annualPassiveOrdinaryIncome > 0 || annualPassiveLTCGIncome > 0;
+
+  let passiveOrdinaryTaxLiability: number;
+  let passiveLTCGTaxLiability: number;
+  let passiveTaxLiability: number;
+
+  if (hasCharacterSplit) {
+    // Character-aware: ordinary portion at marginal rate, LTCG at cap gains rate (20%)
+    passiveOrdinaryTaxLiability = annualPassiveOrdinaryIncome * marginalRate;
+    passiveLTCGTaxLiability = annualPassiveLTCGIncome * 0.20; // 20% LTCG rate (NIIT added separately)
+    passiveTaxLiability = passiveOrdinaryTaxLiability + passiveLTCGTaxLiability;
+  } else {
+    // Legacy path: proportional allocation (all passive at blended rate)
+    const passiveProportion = grossIncome > 0 ? annualPassiveIncome / grossIncome : 0;
+    passiveTaxLiability = federalTaxLiability * passiveProportion;
+    passiveOrdinaryTaxLiability = passiveTaxLiability; // All treated as ordinary
+    passiveLTCGTaxLiability = 0;
+  }
 
   return {
     grossIncome,
     taxableIncome,
     federalTaxLiability,
     passiveTaxLiability,
+    passiveOrdinaryTaxLiability,
+    passiveLTCGTaxLiability,
     marginalRate
   };
 }
@@ -455,12 +487,20 @@ function computeDepreciationNonpassive(
  * - §469 passive activity limitation applies
  * - Allowed loss = min(depreciation, passive income)
  * - Excess is suspended (carried forward under §469)
+ *
+ * IMPL-154: Character-weighted effective rate
+ * If passive income has both ordinary and LTCG components, the effective rate
+ * is the weighted average: (ordinary × ordinaryRate + LTCG × ltcgRate) / total.
+ * For backward compat (both character fields = 0), uses marginalRate (= 40.8%).
  */
 function computeDepreciationPassive(
   depreciation: number,
   annualPassiveIncome: number,
   marginalRate: number,
-  previousSuspendedLoss: number
+  previousSuspendedLoss: number,
+  passiveOrdinaryIncome: number = 0,
+  passiveLTCGIncome: number = 0,
+  ltcgRate: number = 0
 ): {
   depreciationAllowed: number;
   depreciationSuspended: number;
@@ -468,17 +508,32 @@ function computeDepreciationPassive(
   residualPassiveIncome: number;
   residualPassiveTax: number;
   cumulativeSuspendedLoss: number;
+  effectivePassiveRate: number;
 } {
   // §469: Passive losses can only offset passive income
   const depreciationAllowed = Math.min(depreciation, annualPassiveIncome);
   const suspendedLoss = Math.max(0, depreciation - annualPassiveIncome);
 
+  // IMPL-154: Character-weighted effective rate
+  const hasCharacterSplit = passiveOrdinaryIncome > 0 || passiveLTCGIncome > 0;
+  let effectivePassiveRate: number;
+
+  if (hasCharacterSplit && annualPassiveIncome > 0) {
+    // Weighted average: (ordinary × ordinaryRate + LTCG × ltcgRate) / total
+    effectivePassiveRate =
+      (passiveOrdinaryIncome * marginalRate + passiveLTCGIncome * ltcgRate)
+      / annualPassiveIncome;
+  } else {
+    // Legacy path: uniform marginalRate (includes NIIT for passive)
+    effectivePassiveRate = marginalRate;
+  }
+
   // Tax savings from allowed depreciation
-  const depreciationTaxSavings = depreciationAllowed * marginalRate;
+  const depreciationTaxSavings = depreciationAllowed * effectivePassiveRate;
 
   // Residual passive income after depreciation offset
   const residualPassiveIncome = Math.max(0, annualPassiveIncome - depreciation);
-  const residualPassiveTax = residualPassiveIncome * marginalRate;
+  const residualPassiveTax = residualPassiveIncome * effectivePassiveRate;
 
   // Cumulative suspended loss
   const cumulativeSuspendedLoss = previousSuspendedLoss + suspendedLoss;
@@ -489,7 +544,8 @@ function computeDepreciationPassive(
     depreciationTaxSavings,
     residualPassiveIncome,
     residualPassiveTax,
-    cumulativeSuspendedLoss
+    cumulativeSuspendedLoss,
+    effectivePassiveRate
   };
 }
 
@@ -669,6 +725,8 @@ export function calculateTaxUtilization(
     taxableIncome: 0,
     federalTaxLiability: 0,
     passiveTaxLiability: 0,
+    passiveOrdinaryTaxLiability: 0,
+    passiveLTCGTaxLiability: 0,
     marginalRate: investorProfile.federalOrdinaryRate / 100
   };
   // IMPL-120: Base tax computation without Roth (for Years 11-12)
@@ -681,7 +739,9 @@ export function calculateTaxUtilization(
       investorProfile.annualPassiveIncome,
       investorProfile.annualOrdinaryIncome,
       investorProfile.annualPortfolioIncome,
-      investorProfile.filingStatus
+      investorProfile.filingStatus,
+      investorProfile.annualPassiveOrdinaryIncome,
+      investorProfile.annualPassiveLTCGIncome
     );
     incomeComputationUsed = true;
 
@@ -691,7 +751,9 @@ export function calculateTaxUtilization(
         investorProfile.annualPassiveIncome,
         investorProfile.annualOrdinaryIncome - rothConversion,
         investorProfile.annualPortfolioIncome,
-        investorProfile.filingStatus
+        investorProfile.filingStatus,
+        investorProfile.annualPassiveOrdinaryIncome,
+        investorProfile.annualPassiveLTCGIncome
       );
     } else {
       baseTaxComputation = taxComputation;
@@ -746,6 +808,12 @@ export function calculateTaxUtilization(
     let residualPassiveTax = 0;
     let nolGenerated = 0;
     let nolUsed = 0;
+    // IMPL-154: Character-split passive fields
+    let yearPassiveOrdinaryIncome = 0;
+    let yearPassiveLTCGIncome = 0;
+    let yearEffectivePassiveRate = 0;
+    let yearPassiveOrdinaryTaxCeiling = 0;
+    let yearPassiveLTCGTaxCeiling = 0;
 
     if (treatment === 'nonpassive') {
       // Nonpassive path: §461(l) + §38(c)
@@ -778,16 +846,31 @@ export function calculateTaxUtilization(
       // Passive path: §469
       // Convert passive income from dollars to millions to match depreciation units
       const passiveIncomeInMillions = investorProfile.annualPassiveIncome / 1_000_000;
+      // IMPL-154: Character-split passive income (in millions)
+      const passiveOrdInMillions = investorProfile.annualPassiveOrdinaryIncome / 1_000_000;
+      const passiveLTCGInMillions = investorProfile.annualPassiveLTCGIncome / 1_000_000;
+      // LTCG rate for passive: 20% cap gains + NIIT surcharge
+      const passiveLTCGRate = 0.20 + niitSurcharge;
       const depPassive = computeDepreciationPassive(
         depreciation,
         passiveIncomeInMillions,
         yearPassiveMarginalRate,
-        cumulativeSuspendedLoss
+        cumulativeSuspendedLoss,
+        passiveOrdInMillions,
+        passiveLTCGInMillions,
+        passiveLTCGRate
       );
       depResult = depPassive;
       cumulativeSuspendedLoss = depPassive.cumulativeSuspendedLoss;
       residualPassiveIncome = depPassive.residualPassiveIncome;
       residualPassiveTax = depPassive.residualPassiveTax;
+
+      // IMPL-154: Populate character-split passive fields
+      yearPassiveOrdinaryIncome = passiveOrdInMillions;
+      yearPassiveLTCGIncome = passiveLTCGInMillions;
+      yearEffectivePassiveRate = depPassive.effectivePassiveRate;
+      yearPassiveOrdinaryTaxCeiling = passiveOrdInMillions * yearPassiveMarginalRate;
+      yearPassiveLTCGTaxCeiling = passiveLTCGInMillions * passiveLTCGRate;
 
       lihtcResult = computeLIHTCPassive(
         lihtcGenerated,
@@ -797,8 +880,10 @@ export function calculateTaxUtilization(
       cumulativeSuspendedCredits = lihtcResult.cumulativeSuspendedCredits;
     }
 
-    // Compute benefits (use NIIT-aware rate for passive to keep denominator consistent)
-    const effectiveRate = treatment === 'passive' ? yearPassiveMarginalRate : yearMarginalRate;
+    // Compute benefits (use character-weighted rate when available, else NIIT-aware rate)
+    const effectiveRate = treatment === 'passive'
+      ? (yearEffectivePassiveRate > 0 ? yearEffectivePassiveRate : yearPassiveMarginalRate)
+      : yearMarginalRate;
     const depreciationValue = depreciation * effectiveRate;
     const benefitGenerated = depreciationValue + lihtcGenerated;
     const benefitUsable = depResult.depreciationTaxSavings + lihtcResult.lihtcUsable;
@@ -821,6 +906,12 @@ export function calculateTaxUtilization(
       lihtcCarried: lihtcResult.lihtcCarried,
       residualPassiveIncome,
       residualPassiveTax,
+      // IMPL-154: Character-split passive fields
+      passiveOrdinaryIncome: yearPassiveOrdinaryIncome,
+      passiveLTCGIncome: yearPassiveLTCGIncome,
+      effectivePassiveRate: yearEffectivePassiveRate,
+      passiveOrdinaryTaxCeiling: yearPassiveOrdinaryTaxCeiling,
+      passiveLTCGTaxCeiling: yearPassiveLTCGTaxCeiling,
       nolGenerated,
       nolUsed,
       nolPool,

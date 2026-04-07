@@ -258,3 +258,20 @@
 Collapsible read-only panel on Screen 2 showing the full `computeTimeline()` trace for each deal in the pool. Four sections: Inputs, PIS Computation, Credit Schedule, Exit & Hold Period. Total Hold Years displayed in HDC blue. Warning dots for unoverridden PIS and January PIS + election edge case. Positioned after FundDealList, before optimization panels.
 
 **Data source fix:** Panel reads from pre-computed `ComputedTimeline` passed as prop — zero DBP field references in component. FundDetail computes timeline per deal from DBP timing fields (`investmentDate`, `constructionDelayMonths`, `pisDateOverride`, `electDeferCreditPeriod`) added to both backend entity (DDL-auto) and frontend extraction function. Existing deals without these fields fall back to `pisMonth`/`pisYear`/`fundYear` synthesis until re-extracted.
+
+### IMPL-158: Passive Income Character Split (Spec §IMPL-154)
+
+**Status:** ✅ Complete (2026-04-06)
+
+**Problem:** Engine treated all passive income as ordinary-rate (40.8% = 37% + 3.8% NIIT). For investors with predominantly LTCG passive income (PE fund distributions, hedge fund gains), the correct rate is 23.8% (20% + 3.8% NIIT). This overstated the §469(a)(2) credit ceiling and depreciation tax savings by up to 71% for a fully LTCG passive investor.
+
+**Changes:**
+1. **InvestorProfile** — added `annualPassiveOrdinaryIncome` and `annualPassiveLTCGIncome` fields (default 0, backward compat)
+2. **computeFederalTax()** — character-split output: `passiveOrdinaryTaxLiability` (ordinary × marginalRate), `passiveLTCGTaxLiability` (LTCG × 20%). Legacy path unchanged when both character fields = 0.
+3. **computeDepreciationPassive()** — character-weighted `effectivePassiveRate`: `(ordinaryIncome × ordinaryRate + ltcgIncome × ltcgRate) / totalPassiveIncome`. For fully ordinary investor: identical to 40.8%. For fully LTCG: 23.8%.
+4. **AnnualUtilization** — 5 new passive-track fields: `passiveOrdinaryIncome`, `passiveLTCGIncome`, `effectivePassiveRate`, `passiveOrdinaryTaxCeiling`, `passiveLTCGTaxCeiling`
+5. Threaded through: `InvestorTaxInfo`, `CalculationParams`, `poolAggregation`, `investorSizing`, `useTaxEfficiencyMap`, `calculations.ts`
+
+**Test count:** 1,874 (97 suites, 0 failures). Added 8 new tests in 1 new suite. All existing tests pass unchanged (backward compat).
+
+**Files modified:** investorTaxUtilization.ts, investorTaxInfo.ts, types/taxbenefits/index.ts, poolAggregation.ts, investorSizing.ts, calculations.ts, useTaxEfficiencyMap.ts, exportParamsSync.test.ts

@@ -2,7 +2,7 @@
 
 **Location:** `frontend/docs/UI_NAVIGATION_MAP.md`
 **Purpose:** Living reference for CC runtime UI verification via AppleScript/osascript.
-**Last updated:** 2026-04-06 (IMPL-157: Screen 3 section map, per-IMPL verification recipes, AMT selector details)
+**Last updated:** 2026-04-06 (IMPL-154: passive character split verification recipe)
 
 ---
 
@@ -223,3 +223,22 @@ Step-by-step runtime verification sequences for specific IMPLs. Each recipe list
 ```javascript
 document.body.innerText.indexOf('AMT Exposure Note') > -1  // true when note visible
 ```
+
+### IMPL-154 — Passive Income Character Split (engine-only)
+
+**No new UI elements in this IMPL.** Screen 3 fields for `annualPassiveOrdinaryIncome` / `annualPassiveLTCGIncome` ship in IMPL-155.
+
+**Engine verification (unit tests):**
+- 8 tests in `impl-154-passive-character-split.test.ts` verify all 5 spec scenarios
+- Backward compat: character fields = 0 → legacy proportional allocation → identical output
+
+**Runtime backward-compat check (Screen 2):**
+1. Navigate: OZ Benefits dropdown → Available Investments → "View Fund Details"
+2. Select any passive investor profile (e.g., "NJ 750-2700-1000 N-REP STPG")
+3. Confirm Sizing panel renders: Year 1 Tax Reduction, Util-Adjusted IRR, Overall Utilization
+4. Values must be identical to pre-IMPL-154 baseline — no change for profiles without character-split fields
+
+**Future runtime verification (after IMPL-155):**
+1. On Screen 3, set `annualPassiveLTCGIncome` > 0 for a profile
+2. Navigate to Screen 2 → Sizing panel
+3. Confirm effectivePassiveRate < 40.8% and §469 ceiling is lower than fully-ordinary baseline

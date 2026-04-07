@@ -103,6 +103,8 @@ function buildCellProfile(
       return {
         annualOrdinaryIncome: income,
         annualPassiveIncome: 0,
+        annualPassiveOrdinaryIncome: 0,
+        annualPassiveLTCGIncome: 0,
         annualPortfolioIncome: 0,
         investorTrack: 'rep',
         groupingElection: true,
@@ -118,6 +120,8 @@ function buildCellProfile(
       return {
         annualOrdinaryIncome: 0,
         annualPassiveIncome: income,
+        annualPassiveOrdinaryIncome: 0,
+        annualPassiveLTCGIncome: 0,
         annualPortfolioIncome: 0,
         investorTrack: 'non-rep',
         groupingElection: false,
@@ -133,6 +137,8 @@ function buildCellProfile(
       return {
         annualOrdinaryIncome: income,
         annualPassiveIncome: 0,
+        annualPassiveOrdinaryIncome: 0,
+        annualPassiveLTCGIncome: 0,
         annualPortfolioIncome: 0,
         investorTrack: 'non-rep',
         groupingElection: false,

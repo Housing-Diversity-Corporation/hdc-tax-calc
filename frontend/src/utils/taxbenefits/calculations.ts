@@ -2510,6 +2510,8 @@ export const calculateFullInvestorAnalysis = (
 
       const investorProfile: InvestorProfile = {
         annualPassiveIncome: params.annualPassiveIncome || 0,
+        annualPassiveOrdinaryIncome: params.annualPassiveOrdinaryIncome || 0,
+        annualPassiveLTCGIncome: params.annualPassiveLTCGIncome || 0,
         annualOrdinaryIncome: params.annualOrdinaryIncome || 0,
         annualPortfolioIncome: params.annualPortfolioIncome || 0,
         filingStatus: mapFilingStatus(params.filingStatus),

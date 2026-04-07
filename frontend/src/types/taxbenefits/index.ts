@@ -478,6 +478,8 @@ export interface CalculationParams {
 
   // Income Composition (Phase 0 - Spec v2.1 Section 4.1)
   annualPassiveIncome?: number;         // K-1 from funds, rental income, partnership business income
+  annualPassiveOrdinaryIncome?: number; // IMPL-154: Ordinary-rate component of passive income
+  annualPassiveLTCGIncome?: number;     // IMPL-154: LTCG-rate component of passive income
   annualOrdinaryIncome?: number;        // W-2, active business, board fees
   annualPortfolioIncome?: number;       // Stock/crypto gains, dividends, interest
   groupingElection?: boolean;           // §469(c)(7)(A)(ii) election, REP only

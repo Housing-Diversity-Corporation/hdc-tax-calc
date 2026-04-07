@@ -393,16 +393,25 @@ export function findLifetimeCoverageCommitment(
   const passiveFrac = baseTotal > 0 ? baseProfile.annualPassiveIncome / baseTotal : 0;
   const portfolioFrac = baseTotal > 0 ? baseProfile.annualPortfolioIncome / baseTotal : 0;
 
+  // IMPL-154: Scale passive character sub-fields proportionally within passive total
+  const passiveTotal = baseProfile.annualPassiveIncome;
+  const passiveOrdFrac = passiveTotal > 0 ? baseProfile.annualPassiveOrdinaryIncome / passiveTotal : 1;
+  const passiveLTCGFrac = passiveTotal > 0 ? baseProfile.annualPassiveLTCGIncome / passiveTotal : 0;
+
   const lowProfile: InvestorProfile = {
     ...baseProfile,
     annualOrdinaryIncome: lowIncome * ordinaryFrac,
     annualPassiveIncome: lowIncome * passiveFrac,
+    annualPassiveOrdinaryIncome: lowIncome * passiveFrac * passiveOrdFrac,
+    annualPassiveLTCGIncome: lowIncome * passiveFrac * passiveLTCGFrac,
     annualPortfolioIncome: lowIncome * portfolioFrac,
   };
   const highProfile: InvestorProfile = {
     ...baseProfile,
     annualOrdinaryIncome: highIncome * ordinaryFrac,
     annualPassiveIncome: highIncome * passiveFrac,
+    annualPassiveOrdinaryIncome: highIncome * passiveFrac * passiveOrdFrac,
+    annualPassiveLTCGIncome: highIncome * passiveFrac * passiveLTCGFrac,
     annualPortfolioIncome: highIncome * portfolioFrac,
   };
 

@@ -65,6 +65,10 @@ const ENGINE_INTERNAL_EXCLUSIONS: Record<string, string> = {
   hdcDeferralInterestRate: 'Engine-internal DSCR parameter',
   subDebtDefaultPremium: 'Engine-internal DSCR parameter',
 
+  // IMPL-154: Passive income character split — engine-internal sub-fields
+  annualPassiveOrdinaryIncome: 'Character split of annualPassiveIncome, not separate user input for export',
+  annualPassiveLTCGIncome: 'Character split of annualPassiveIncome, not separate user input for export',
+
 };
 
 /**
