@@ -828,6 +828,29 @@ const InvestorTaxProfilePage: React.FC = () => {
                   </Select>
                 </div>
               )}
+
+              {/* IMPL-157: Material AMT Exposure flag */}
+              <div className="space-y-2 p-3 border rounded-md bg-muted/30">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="amt-exposure"
+                    checked={currentProfile.hasMaterialAmtExposure || false}
+                    onChange={(e) => setCurrentProfile({
+                      ...currentProfile,
+                      hasMaterialAmtExposure: e.target.checked
+                    })}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <Label htmlFor="amt-exposure" className="text-sm font-medium cursor-pointer">
+                    This investor has material AMT exposure from non-HDC sources
+                  </Label>
+                </div>
+                <p className="text-xs text-muted-foreground ml-7">
+                  ISO exercises, private activity bonds, or other AMT preference items.
+                  If checked, an advisor note will appear in the sizing analysis.
+                </p>
+              </div>
             </div>
 
             {/* STEP 2: Federal Tax Rates */}

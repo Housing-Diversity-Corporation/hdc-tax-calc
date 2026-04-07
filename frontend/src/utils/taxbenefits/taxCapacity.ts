@@ -11,13 +11,7 @@ import {
   NonREPCapacityModel
 } from '../../types/taxbenefits';
 import { DepreciationSchedule } from './depreciationSchedule';
-
-// 2025 Section 461(l) limits (indexed for inflation)
-const SECTION_461L_LIMITS = {
-  single: 313_000,
-  marriedFilingJointly: 626_000,
-  marriedFilingSeparately: 313_000
-};
+import { SECTION_461L_LIMITS } from './investorTaxUtilization';
 
 /**
  * Calculate Real Estate Professional tax capacity with §461(l) limitations
@@ -36,7 +30,7 @@ export function calculateREPCapacity(
   } = params;
 
   // Use MFJ limit as default (most common for high-income investors)
-  const section461lLimit = SECTION_461L_LIMITS.marriedFilingJointly;
+  const section461lLimit = SECTION_461L_LIMITS.MFJ;
 
   const annualLimitations = [];
   let nolCarryforward = 0;

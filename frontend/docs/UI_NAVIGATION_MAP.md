@@ -75,6 +75,7 @@ execute javascript "var vfd = Array.from(document.querySelectorAll('*')).find(fu
 | Profile popover | `[data-radix-popper-content-wrapper]` | Contains Account, Tax Profile, Settings |
 | IRA balance input | `#ira-balance` | Screen 3 Step 0 |
 | Grouping election | `#grouping-election` | Checkbox, Screen 3 Step 1 |
+| AMT exposure checkbox | `#amt-exposure` | Checkbox, Screen 3 Step 1 (IMPL-157). Visible for all investor tracks. Backend column pending (Angel DDL) — field does not round-trip through API until backend column exists. |
 | Update Profile btn | Button with text `Update Profile` | Screen 3 save |
 | View Fund Details | Badge with exact text `View Fund Details` | Investments page, inside pool card |
 
@@ -102,7 +103,8 @@ execute javascript "
     hasIRAPanel: text.indexOf('IRA Conversion Opportunity') > -1,
     hasNonpassive: text.indexOf('Nonpassive') > -1,
     hasPassive: text.indexOf('Passive') > -1,
-    hasTaxUtil: text.indexOf('Tax Utilization') > -1
+    hasTaxUtil: text.indexOf('Tax Utilization') > -1,
+    hasAmtNote: text.indexOf('AMT Exposure Note') > -1
   });
 "
 ```

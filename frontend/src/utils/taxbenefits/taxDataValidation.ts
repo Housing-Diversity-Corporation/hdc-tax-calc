@@ -12,10 +12,11 @@ import { ALL_JURISDICTIONS, JurisdictionData } from './stateData';
 
 // Version control for tax data
 export const TAX_DATA_VERSION = {
-  version: '2024.1.0',
-  lastUpdated: '2024-01-15',
-  taxYear: 2024,
+  version: '2026.1.0',
+  lastUpdated: '2026-04-06',
+  taxYear: 2026,
   changes: [
+    { date: '2026-04-06', description: 'IMPL-157: OBBBA 2026 AMT constants added; §461(l) constants deduplicated' },
     { date: '2024-01-15', description: 'Initial comprehensive state/territory data' },
     { date: '2024-01-01', description: 'Updated federal tax brackets for 2024' }
   ]

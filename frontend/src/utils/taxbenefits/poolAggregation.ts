@@ -232,5 +232,6 @@ export function buildInvestorProfileFromTaxInfo(
     stateOrdinaryRate: (taxInfo.stateOrdinaryRate || 10.9) / 100,
     stateCapGainsRate: (taxInfo.stateCapitalGainsRate || 10.9) / 100,
     investorEquity,
+    hasMaterialAmtExposure: taxInfo.hasMaterialAmtExposure || false,
   };
 }

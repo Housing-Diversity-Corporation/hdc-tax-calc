@@ -40,6 +40,8 @@ interface SizingOptimizerPanelProps {
   isNonpassive?: boolean;
   lifetimeCoverageResult?: LifetimeCoverageResult | null;
   onLifetimeCoverageRequest?: (low: number, high: number, dist: 'conservative' | 'moderate' | 'optimistic') => void;
+  // IMPL-157: AMT exposure advisor note
+  hasMaterialAmtExposure?: boolean;
 }
 
 // =============================================================================
@@ -144,6 +146,7 @@ const SizingOptimizerPanel: React.FC<SizingOptimizerPanelProps> = ({
   lifetimeCoverageResult,
   onLifetimeCoverageRequest,
   year1TaxReduction,
+  hasMaterialAmtExposure,
 }) => {
   // IMPL-152: Lifetime Coverage Mode state
   const [sizingMode, setSizingMode] = useState<SizingMode>('annual');
@@ -408,6 +411,22 @@ const SizingOptimizerPanel: React.FC<SizingOptimizerPanelProps> = ({
               {fitResult.utilizationAdjustedIRR.toFixed(1)}%
             </div>
           </div>
+        </div>
+      )}
+
+      {/* IMPL-157: AMT exposure advisor note */}
+      {hasMaterialAmtExposure && (
+        <div className="mt-3 p-3 rounded-md bg-amber-50 border border-amber-200">
+          <p className="text-xs text-amber-800">
+            <span className="font-semibold">&#x26A0;&#xFE0F; AMT Exposure Note:</span>{' '}
+            This investor has indicated material AMT exposure from sources outside this
+            investment. Note: AMT does not affect utilization of LIHTC credits from this
+            investment — §38(c)(4)(B)(iii) specifically exempts credits from buildings
+            placed in service after December 31, 2007 from the tentative minimum tax
+            limitation, and all HDC properties qualify. AMT may affect the investor's
+            overall tax position and other credits they hold. Investor-specific review
+            by their tax counsel is recommended.
+          </p>
         </div>
       )}
 

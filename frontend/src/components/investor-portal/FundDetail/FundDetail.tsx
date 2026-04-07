@@ -490,6 +490,7 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
             lifetimeCoverageResult={lifetimeCoverageResult}
             onLifetimeCoverageRequest={handleLifetimeCoverageRequest}
             year1TaxReduction={year1TaxReduction}
+            hasMaterialAmtExposure={investorProfile?.hasMaterialAmtExposure}
           />
         )}
 

@@ -72,6 +72,12 @@ export interface InvestorProfile {
   lowIncomeEstimate?: number;                     // expected total income in a slow year ($)
   highIncomeEstimate?: number;                    // expected total income in a peak year ($)
   incomeDistribution?: 'conservative' | 'moderate' | 'optimistic'; // weights low vs high years
+
+  // IMPL-157: AMT exposure flag (display-only — does not modify any calculation)
+  // Set to true for investors with significant ISO exercises, private activity bond
+  // portfolios, or other non-HDC AMT preference items. When true, platform surfaces
+  // advisor note. §168(k) bonus depreciation creates no AMTI adjustment per §168(k)(2)(G).
+  hasMaterialAmtExposure?: boolean;
 }
 
 /**
@@ -250,6 +256,30 @@ export const TAX_BRACKETS_HOH = [
   { threshold: 250_500, rate: 0.35 },
   { threshold: 626_350, rate: 0.37 }
 ] as const;
+
+/**
+ * AMT Constants — OBBBA 2026 (One Big Beautiful Bill Act, effective tax years beginning 2026)
+ *
+ * §38(c)(4)(B)(iii): LIHTC credits from buildings placed in service after December 31, 2007
+ * are "specified credits" — tentative minimum tax is treated as zero by statute. AMT is
+ * irrelevant to the LIHTC credit ceiling for all HDC properties.
+ *
+ * §168(k)(2)(G): Bonus depreciation creates no AMTI adjustment — the depreciation channel
+ * is also unaffected by AMT.
+ *
+ * Currently unused in calculations — added for future AMT-aware analysis only.
+ * These thresholds are relevant only for investors with non-HDC AMT preference items
+ * (ISO exercises, private activity bonds, large SALT deductions).
+ */
+export const AMT_CONSTANTS_2026 = {
+  exemptionMFJ: 137_000,             // Permanent, inflation-indexed
+  exemptionSingle: 88_100,           // Permanent, inflation-indexed
+  phaseoutThresholdMFJ: 1_000_000,   // Reset from $1,252,700 — inflation-indexed forward
+  phaseoutThresholdSingle: 500_000,  // Reset from $626,350 — inflation-indexed forward
+  phaseoutRate: 0.50,                // Doubled from 0.25 — effective 2026
+  rate26PctCeilingMFJ: 239_100,      // Unchanged
+  rate26PctCeilingSingle: 119_550,   // Unchanged
+} as const;
 
 // =============================================================================
 // Treatment Determination (Task 2)

@@ -17,6 +17,9 @@ export interface InvestorTaxInfo {
   annualPortfolioIncome?: number;       // Stock/crypto gains, dividends, interest
   groupingElection?: boolean;           // §469(c)(7)(A)(ii) election, REP only
 
+  // IMPL-157: AMT exposure flag (display-only)
+  hasMaterialAmtExposure?: boolean;     // ISO exercises, private activity bonds, or other non-HDC AMT items
+
   // Backward compatibility: allow additional properties
   [key: string]: any;
 }
