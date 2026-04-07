@@ -2,7 +2,7 @@
 
 **Location:** `frontend/docs/UI_NAVIGATION_MAP.md`
 **Purpose:** Living reference for CC runtime UI verification via AppleScript/osascript.
-**Last updated:** 2026-04-05 (IMPL-152: added ui-verify.sh harness)
+**Last updated:** 2026-04-06 (IMPL-157: Screen 3 section map, per-IMPL verification recipes, AMT selector details)
 
 ---
 
@@ -75,9 +75,29 @@ execute javascript "var vfd = Array.from(document.querySelectorAll('*')).find(fu
 | Profile popover | `[data-radix-popper-content-wrapper]` | Contains Account, Tax Profile, Settings |
 | IRA balance input | `#ira-balance` | Screen 3 Step 0 |
 | Grouping election | `#grouping-election` | Checkbox, Screen 3 Step 1 |
-| AMT exposure checkbox | `#amt-exposure` | Checkbox, Screen 3 Step 1 (IMPL-157). Visible for all investor tracks. Backend column pending (Angel DDL) — field does not round-trip through API until backend column exists. |
+| AMT exposure checkbox | `#amt-exposure` | Checkbox, Screen 3 — `InvestorTaxProfilePage.tsx:835-846`. Inside `div.space-y-2.p-3.border.rounded-md.bg-muted/30`. Label: "This investor has material AMT exposure from non-HDC sources". Visible for all investor tracks. (IMPL-157) |
 | Update Profile btn | Button with text `Update Profile` | Screen 3 save |
 | View Fund Details | Badge with exact text `View Fund Details` | Investments page, inside pool card |
+
+---
+
+## Screen 3 Section Map (InvestorTaxProfilePage)
+
+Screen 3 is a long scrolling form with no URL anchors or tab navigation. All fields render top-to-bottom in a single scroll container. Locate fields by their `id` selector and use `scrollIntoView()`.
+
+| Section | Known Selectors | Approximate Position |
+|---|---|---|
+| IRA balance | `#ira-balance` | Top of form (Step 0) |
+| Investor track / grouping | `#grouping-election` | Mid-form (Step 1) |
+| AMT exposure | `#amt-exposure` | Near bottom of form, inside bordered muted box |
+| Save button | Button with text `Update Profile` | Bottom of form |
+
+**Scroll strategy:** No programmatic scroll anchors exist. To reach a specific field via AppleScript:
+```javascript
+document.querySelector('#amt-exposure').scrollIntoView({block: 'center'});
+```
+
+**Note:** New selectors added to Screen 3 should be documented here with their `id` and approximate form position.
 
 ---
 
@@ -108,6 +128,8 @@ execute javascript "
   });
 "
 ```
+
+**AMT advisor note (IMPL-157):** `hasAmtNote` detects the amber advisory box in `SizingOptimizerPanel.tsx:417-431`. Renders when `hasMaterialAmtExposure === true` (prop from FundDetail → SizingOptimizerPanel). Located below the utilization-adjusted IRR display, above the Lifetime Coverage section. Contains §38(c)(4)(B)(iii) exemption language. The note is informational only — it does not affect sizing metrics.
 
 ---
 
@@ -174,3 +196,30 @@ Without a pool, FundDetail cannot render. The "View Fund Details" button only ap
 - All use same jsPDF `doc.save()` / XLSX pattern
 - Located in `frontend/src/components/taxbenefits/reports/`
 - Confirmed working for real user clicks
+
+---
+
+## Per-IMPL Verification Recipes
+
+Step-by-step runtime verification sequences for specific IMPLs. Each recipe lists the exact navigation path, what to check, and expected behavior.
+
+### IMPL-157 — hasMaterialAmtExposure flag
+
+**Screen 3 (checkbox):**
+1. Navigate: Profile avatar popover → "Tax Profile" (or use direct injection — see RUNTIME_UI_VERIFICATION.md §Direct View Navigation)
+2. Scroll to bottom of form → locate `#amt-exposure` checkbox inside bordered muted box
+3. Toggle ON → confirm label reads "This investor has material AMT exposure from non-HDC sources"
+4. Click "Update Profile" to persist (note: requires backend column — if column doesn't exist yet, field won't round-trip)
+
+**Screen 2 (advisor note):**
+1. Navigate: OZ Benefits dropdown → Available Investments → click "View Fund Details" on a pool card
+2. Scroll to Investment Sizing panel (SizingOptimizerPanel)
+3. With `hasMaterialAmtExposure === true`: confirm amber box appears below utilization-adjusted IRR, above Lifetime Coverage
+4. Verify note text includes "§38(c)(4)(B)(iii) specifically exempts credits"
+5. With `hasMaterialAmtExposure === false`: confirm amber box is absent
+6. **Sizing metrics (MOIC, IRR, Year 1 Tax Reduction) must be identical in both states** — the flag is informational only
+
+**Panel detection check:**
+```javascript
+document.body.innerText.indexOf('AMT Exposure Note') > -1  // true when note visible
+```

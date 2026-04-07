@@ -2,7 +2,7 @@
 
 **Version:** 1.2
 **Created:** 2026-03-23
-**Last Updated:** 2026-04-04 (IMPL-151: download constraints, pool requirements)
+**Last Updated:** 2026-04-06 (IMPL-157: direct view navigation recipe)
 
 ---
 
@@ -155,6 +155,73 @@ end tell
 - Use `\\n` or `String.fromCharCode(10)` for newlines
 - Add `sleep 1` between steps (e.g., open dropdown → select option)
 - **Use `ArrowDown` keyboard dispatch to open Radix dropdowns** — `click()` is unreliable (see Step 4)
+
+---
+
+## Direct View Navigation
+
+The app has no URL routing — all navigation is via React state (`currentView`). Navigating through the navbar popover (avatar → Tax Profile) works but is fragile: Radix popover timing, portal mount delays, and tab/window shifts can all cause failures.
+
+**Canonical approach: inject `setCurrentView` via React fiber root.**
+
+This bypasses all popover/dropdown fragility and is the recommended way to reach any view programmatically.
+
+```bash
+osascript -e '
+tell application "Google Chrome"
+  repeat with w in every window
+    repeat with t in every tab of w
+      if URL of t contains "localhost:5173" then
+        execute t javascript "
+          (function() {
+            var root = document.getElementById(\"root\");
+            var fiberKey = Object.keys(root).find(function(k){ return k.startsWith(\"__reactFiber\"); });
+            if (!fiberKey) return \"ERROR: no React fiber found\";
+            var fiber = root[fiberKey];
+            // Walk up to the App component that owns currentView state
+            var node = fiber;
+            while (node) {
+              if (node.memoizedState && node.memoizedState.queue) {
+                var state = node.memoizedState;
+                // Find the currentView state node (string value matching known views)
+                while (state) {
+                  var val = state.memoizedState;
+                  if (typeof val === \"string\" && [\"calculator\",\"tax-profile\",\"investments\",\"fund-detail\",\"investor-analysis\",\"account\",\"settings\"].indexOf(val) > -1) {
+                    // Dispatch the state update
+                    state.queue.dispatch(\"tax-profile\");
+                    return \"Navigated to: tax-profile (was: \" + val + \")\";
+                  }
+                  state = state.next;
+                }
+              }
+              node = node.return;
+            }
+            return \"ERROR: currentView state not found in fiber tree\";
+          })();
+        "
+        return result
+      end if
+    end repeat
+  end repeat
+end tell
+'
+```
+
+**To navigate to a different view:** Change `\"tax-profile\"` in the `dispatch()` call to any value from the View Map in UI_NAVIGATION_MAP.md (`calculator`, `tax-profile`, `investments`, `fund-detail`, `investor-analysis`, `account`, `settings`).
+
+**Fallback: popover click sequence** (use only if fiber injection fails):
+```bash
+# Step 1: Open avatar popover
+osascript -e '... document.querySelector(".navbar-right button").click(); ...'
+sleep 1
+# Step 2: Click "Tax Profile" button in popover
+osascript -e '... var pop = document.querySelector("[data-radix-popper-content-wrapper]"); ...'
+```
+See UI_NAVIGATION_MAP.md "Profile menu (avatar popover)" for the full AppleScript.
+
+**When to use which:**
+- **Fiber injection** (recommended): Reliable, no timing issues, works regardless of current view
+- **Popover click**: Only if fiber walk breaks after a React upgrade (fiber internals are not a public API)
 
 ---
 
