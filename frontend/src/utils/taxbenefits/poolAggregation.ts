@@ -235,5 +235,7 @@ export function buildInvestorProfileFromTaxInfo(
     stateCapGainsRate: (taxInfo.stateCapitalGainsRate || 10.9) / 100,
     investorEquity,
     hasMaterialAmtExposure: taxInfo.hasMaterialAmtExposure || false,
+    // IMPL-160: NOL discount rate override
+    nolDiscountRate: taxInfo.nolDiscountRate,
   };
 }

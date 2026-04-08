@@ -120,6 +120,9 @@ const InvestorTaxProfilePage: React.FC = () => {
     annualOrdinaryIncome: 750000,
     annualPassiveIncome: 0,
     annualPortfolioIncome: 0,
+    // IMPL-159: Passive income character split
+    annualPassiveOrdinaryIncome: 0,
+    annualPassiveLTCGIncome: 0,
     // Phase B1-4: Grouping Election (REP only)
     groupingElection: false,
   });
@@ -129,6 +132,22 @@ const InvestorTaxProfilePage: React.FC = () => {
   useEffect(() => {
     loadProfiles();
   }, []);
+
+  // IMPL-159: Migrate legacy profiles — if annualPassiveIncome > 0 but both
+  // character fields are 0/absent, treat the total as ordinary (conservative assumption)
+  const migratePassiveCharacterSplit = (profile: InvestorTaxInfo): InvestorTaxInfo => {
+    const hasLegacyPassive = (profile.annualPassiveIncome || 0) > 0;
+    const hasCharacterSplit = (profile.annualPassiveOrdinaryIncome || 0) > 0 ||
+                               (profile.annualPassiveLTCGIncome || 0) > 0;
+    if (hasLegacyPassive && !hasCharacterSplit) {
+      return {
+        ...profile,
+        annualPassiveOrdinaryIncome: profile.annualPassiveIncome || 0,
+        annualPassiveLTCGIncome: 0,
+      };
+    }
+    return profile;
+  };
 
   const loadProfiles = async () => {
     try {
@@ -146,9 +165,9 @@ const InvestorTaxProfilePage: React.FC = () => {
 
       const defaultProfile = data.find(p => p.isDefault);
       if (defaultProfile) {
-        setCurrentProfile(defaultProfile);
+        setCurrentProfile(migratePassiveCharacterSplit(defaultProfile));
       } else if (data.length > 0) {
-        setCurrentProfile(data[0]);
+        setCurrentProfile(migratePassiveCharacterSplit(data[0]));
       }
     } catch (error) {
       console.error('Error loading tax profiles:', error);
@@ -176,13 +195,23 @@ const InvestorTaxProfilePage: React.FC = () => {
     }
   }, [currentProfile.selectedState]);
 
+  // IMPL-159: Compute total passive income from character split fields
+  const computedPassiveTotal = useMemo(() => {
+    return (currentProfile.annualPassiveOrdinaryIncome || 0) +
+           (currentProfile.annualPassiveLTCGIncome || 0);
+  }, [currentProfile.annualPassiveOrdinaryIncome, currentProfile.annualPassiveLTCGIncome]);
+
+  // IMPL-159: Keep annualPassiveIncome in sync with character split total for backward compat
+  // Sync happens on save via handleSave instead of reactive useEffect to avoid render cycles
+
   // Phase B1-3: Compute total annual income from income composition fields
   // This is used for auto-rate calculation and saved for backward compatibility
+  // IMPL-159: annualPassiveIncome is now derived from character split total
   const computedAnnualIncome = useMemo(() => {
     return (currentProfile.annualOrdinaryIncome || 0) +
-           (currentProfile.annualPassiveIncome || 0) +
+           computedPassiveTotal +
            (currentProfile.annualPortfolioIncome || 0);
-  }, [currentProfile.annualOrdinaryIncome, currentProfile.annualPassiveIncome, currentProfile.annualPortfolioIncome]);
+  }, [currentProfile.annualOrdinaryIncome, computedPassiveTotal, currentProfile.annualPortfolioIncome]);
 
   // Auto-update federal tax rates when income composition or filing status changes
   useEffect(() => {
@@ -226,10 +255,15 @@ const InvestorTaxProfilePage: React.FC = () => {
   const handleSave = async () => {
     try {
       setSaving(true);
-      if (currentProfile.id) {
-        await investorTaxInfoService.updateTaxInfo(currentProfile.id, currentProfile);
+      // IMPL-159: Sync annualPassiveIncome from character split before saving
+      const profileToSave = {
+        ...currentProfile,
+        annualPassiveIncome: computedPassiveTotal,
+      };
+      if (profileToSave.id) {
+        await investorTaxInfoService.updateTaxInfo(profileToSave.id, profileToSave);
       } else {
-        await investorTaxInfoService.saveTaxInfo(currentProfile);
+        await investorTaxInfoService.saveTaxInfo(profileToSave);
       }
       await loadProfiles();
       toast.success('Tax profile saved successfully!');
@@ -329,7 +363,7 @@ const InvestorTaxProfilePage: React.FC = () => {
   };
 
   const handleLoadProfile = (profile: InvestorTaxInfo) => {
-    setCurrentProfile(profile);
+    setCurrentProfile(migratePassiveCharacterSplit(profile));
   };
 
   const handleCreateNew = () => {
@@ -352,6 +386,9 @@ const InvestorTaxProfilePage: React.FC = () => {
       annualOrdinaryIncome: 750000,
       annualPassiveIncome: 0,
       annualPortfolioIncome: 0,
+      // IMPL-159: Passive income character split
+      annualPassiveOrdinaryIncome: 0,
+      annualPassiveLTCGIncome: 0,
       // Phase B1-4: Grouping Election (REP only)
       groupingElection: false,
     });
@@ -630,33 +667,83 @@ const InvestorTaxProfilePage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="annual-passive-income">Annual Passive Income</Label>
-                <Input
-                  id="annual-passive-income"
-                  type="number"
-                  value={currentProfile.annualPassiveIncome ?? ''}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    const numValue = Number(value);
-                    if (value !== '' && numValue < 0) return;
-                    setCurrentProfile({
-                      ...currentProfile,
-                      annualPassiveIncome: value === '' ? 0 : numValue
-                    });
-                  }}
-                  placeholder="e.g., 500000"
-                  className="font-mono"
-                  min="0"
-                  onKeyDown={(e) => {
-                    if (e.key === '-' || e.key === 'e' || e.key === 'E') {
-                      e.preventDefault();
-                    }
-                  }}
-                />
-                <p className="text-sm text-muted-foreground">
-                  K-1 income from hedge funds, PE funds, rental properties you don't manage, partnership business income. This is income HDC depreciation can offset without limit.
-                </p>
+              {/* IMPL-159: Passive Income Character Split */}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold">Passive Income</Label>
+
+                <div className="space-y-2 pl-3 border-l-2 border-muted">
+                  <div className="space-y-1">
+                    <Label htmlFor="annual-passive-ordinary-income" className="text-sm">
+                      Ordinary passive income
+                      <span className="text-muted-foreground font-normal ml-1">(partnership business, short-term K-1)</span>
+                    </Label>
+                    <Input
+                      id="annual-passive-ordinary-income"
+                      type="number"
+                      value={currentProfile.annualPassiveOrdinaryIncome ?? ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        const numValue = Number(value);
+                        if (value !== '' && numValue < 0) return;
+                        setCurrentProfile({
+                          ...currentProfile,
+                          annualPassiveOrdinaryIncome: value === '' ? 0 : numValue
+                        });
+                      }}
+                      placeholder="e.g., 500000"
+                      className="font-mono"
+                      min="0"
+                      onKeyDown={(e) => {
+                        if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                          e.preventDefault();
+                        }
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Ordinary passive income includes partnership business income, rental income, and short-term capital gain K-1 distributions taxed at ordinary rates. If unsure, enter total here and leave LTCG at zero — this is the conservative assumption.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="annual-passive-ltcg-income" className="text-sm">
+                      Long-term capital gains passive income
+                      <span className="text-muted-foreground font-normal ml-1">(PE funds, hedge funds)</span>
+                    </Label>
+                    <Input
+                      id="annual-passive-ltcg-income"
+                      type="number"
+                      value={currentProfile.annualPassiveLTCGIncome ?? ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        const numValue = Number(value);
+                        if (value !== '' && numValue < 0) return;
+                        setCurrentProfile({
+                          ...currentProfile,
+                          annualPassiveLTCGIncome: value === '' ? 0 : numValue
+                        });
+                      }}
+                      placeholder="e.g., 500000"
+                      className="font-mono"
+                      min="0"
+                      onKeyDown={(e) => {
+                        if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                          e.preventDefault();
+                        }
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Long-term capital gains passive income includes private equity fund distributions, hedge fund long-term gains, and real estate fund capital gain distributions taxed at preferential rates.
+                    </p>
+                  </div>
+
+                  {/* Computed total — read-only */}
+                  <div className="p-2 bg-muted/50 rounded-md">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Total passive income:</span>
+                      <span className="font-semibold font-mono">${computedPassiveTotal.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -913,7 +1000,7 @@ const InvestorTaxProfilePage: React.FC = () => {
                   <p className="text-sm text-muted-foreground italic">
                     Note: Short-term passive gains are taxed as ordinary income (same as regular income, not capital gains)
                   </p>
-                ) : currentProfile.annualIncome !== undefined ? (
+                ) : currentProfile.annualIncome != null ? (
                   <p className="text-sm text-green-600 flex items-center gap-1">
                     <span>✓</span>
                     <span>Auto-calculated based on ${currentProfile.annualIncome.toLocaleString()} annual income ({currentProfile.filingStatus === 'married' ? 'Married' : 'Single'}). Clear income to edit manually.</span>
@@ -1195,6 +1282,47 @@ const InvestorTaxProfilePage: React.FC = () => {
                     <SelectItem value="rural">Rural OZ / QROF (30% step-up)</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+
+            {/* IMPL-160: Advanced section — advisor-overrideable parameters */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-[var(--hdc-faded-jade)]">Advanced</h3>
+              <div className="space-y-2">
+                <Label htmlFor="nol-discount-rate" className="text-sm">
+                  NOL discount rate (default 7%)
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="nol-discount-rate"
+                    type="number"
+                    value={currentProfile.nolDiscountRate != null ? (currentProfile.nolDiscountRate * 100) : ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '') {
+                        setCurrentProfile({ ...currentProfile, nolDiscountRate: undefined });
+                      } else {
+                        const numValue = Number(value);
+                        if (numValue < 0 || numValue > 100) return;
+                        setCurrentProfile({ ...currentProfile, nolDiscountRate: numValue / 100 });
+                      }
+                    }}
+                    placeholder="7"
+                    className="font-mono w-24"
+                    min="0"
+                    max="100"
+                    step="0.5"
+                    onKeyDown={(e) => {
+                      if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                        e.preventDefault();
+                      }
+                    }}
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Rate used to discount future NOL carryforward tax savings to present value. Leave blank for the default 7%. Lower rates increase the present value of NOL benefits.
+                </p>
               </div>
             </div>
 

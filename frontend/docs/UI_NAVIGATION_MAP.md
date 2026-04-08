@@ -2,7 +2,7 @@
 
 **Location:** `frontend/docs/UI_NAVIGATION_MAP.md`
 **Purpose:** Living reference for CC runtime UI verification via AppleScript/osascript.
-**Last updated:** 2026-04-06 (IMPL-154: passive character split verification recipe)
+**Last updated:** 2026-04-07 (IMPL-159: passive character split UI; IMPL-160: NOL PV in sizing)
 
 ---
 
@@ -88,8 +88,11 @@ Screen 3 is a long scrolling form with no URL anchors or tab navigation. All fie
 | Section | Known Selectors | Approximate Position |
 |---|---|---|
 | IRA balance | `#ira-balance` | Top of form (Step 0) |
+| Passive income — ordinary | `#annual-passive-ordinary-income` | Step 1, Income Composition section (IMPL-159) |
+| Passive income — LTCG | `#annual-passive-ltcg-income` | Step 1, below ordinary passive (IMPL-159) |
 | Investor track / grouping | `#grouping-election` | Mid-form (Step 1) |
 | AMT exposure | `#amt-exposure` | Near bottom of form, inside bordered muted box |
+| NOL discount rate | `#nol-discount-rate` | Advanced section, before Profile Name (IMPL-160) |
 | Save button | Button with text `Update Profile` | Bottom of form |
 
 **Scroll strategy:** No programmatic scroll anchors exist. To reach a specific field via AppleScript:
@@ -242,3 +245,37 @@ document.body.innerText.indexOf('AMT Exposure Note') > -1  // true when note vis
 1. On Screen 3, set `annualPassiveLTCGIncome` > 0 for a profile
 2. Navigate to Screen 2 → Sizing panel
 3. Confirm effectivePassiveRate < 40.8% and §469 ceiling is lower than fully-ordinary baseline
+
+### IMPL-159 — Passive Income Character Split (Screen 3 UI)
+
+**Screen 3 fields:**
+1. Navigate to Screen 3 (Tax Profile) via popover or fiber injection
+2. Confirm old single "Annual Passive Income" field is gone
+3. Confirm "Passive Income" section with two sub-fields:
+   - `#annual-passive-ordinary-income` — "Ordinary passive income"
+   - `#annual-passive-ltcg-income` — "Long-term capital gains passive income"
+4. Confirm computed total "Total passive income: $X" updates reactively
+
+**Legacy migration:**
+- Load a profile with `annualPassiveIncome > 0` but no character split fields
+- Confirm ordinary field = legacy total, LTCG = 0 (conservative assumption)
+
+**Save/load round-trip:**
+- Enter $500K ordinary + $500K LTCG → save → reload → confirm both values persist
+
+### IMPL-160 — NOL Present Value in Sizing Optimizer
+
+**Screen 3 Advanced section:**
+1. Navigate to Screen 3 → scroll to "Advanced" section (before Profile Name)
+2. Confirm `#nol-discount-rate` field present with "NOL discount rate (default 7%)" label
+
+**Screen 2 Sizing panel (REP investor with §461(l) binding):**
+1. Navigate to Fund Detail → Investment Sizing panel
+2. For REP+grouped investor with high commitment (§461(l) binds):
+   - Headline reads: "Effective Multiple (excl. NOL)" (instead of just "Effective Multiple")
+   - Secondary line: "NOL Present Value (absorbed over ~Y years at 7%): $X"
+3. For investor with zero NOL pool: no secondary line, label stays "Effective Multiple"
+
+**Discount rate sensitivity:**
+- Set discount rate to 5% in Screen 3 Advanced → NOL PV increases
+- Set discount rate to 10% → NOL PV decreases

@@ -67,6 +67,16 @@ public class InvestorTaxInfoService {
             taxInfo.setDeferredCapitalGains(updatedTaxInfo.getDeferredCapitalGains());
             taxInfo.setCapitalGainsTaxRate(updatedTaxInfo.getCapitalGainsTaxRate());
 
+            // IMPL-146: IRA Balance
+            taxInfo.setIraBalance(updatedTaxInfo.getIraBalance());
+            // IMPL-157: AMT exposure flag
+            taxInfo.setHasMaterialAmtExposure(updatedTaxInfo.getHasMaterialAmtExposure());
+            // IMPL-159: Passive income character split
+            taxInfo.setAnnualPassiveOrdinaryIncome(updatedTaxInfo.getAnnualPassiveOrdinaryIncome());
+            taxInfo.setAnnualPassiveLTCGIncome(updatedTaxInfo.getAnnualPassiveLTCGIncome());
+            // IMPL-160: NOL discount rate
+            taxInfo.setNolDiscountRate(updatedTaxInfo.getNolDiscountRate());
+
             // Handle default flag
             if (updatedTaxInfo.getIsDefault() != null && updatedTaxInfo.getIsDefault()) {
                 clearUserDefaults(user);

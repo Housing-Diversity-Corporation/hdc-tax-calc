@@ -22,6 +22,9 @@ export interface InvestorTaxInfo {
   // IMPL-157: AMT exposure flag (display-only)
   hasMaterialAmtExposure?: boolean;     // ISO exercises, private activity bonds, or other non-HDC AMT items
 
+  // IMPL-160: NOL discount rate override (decimal, e.g. 0.07 for 7%)
+  nolDiscountRate?: number;
+
   // Backward compatibility: allow additional properties
   [key: string]: any;
 }

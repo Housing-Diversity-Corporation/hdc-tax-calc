@@ -33,6 +33,13 @@ public class InvestorTaxInfo {
     @Column(name = "annual_passive_income")
     private Double annualPassiveIncome;
 
+    // IMPL-159: Passive income character split
+    @Column(name = "annual_passive_ordinary_income")
+    private Double annualPassiveOrdinaryIncome;
+
+    @Column(name = "annual_passive_ltcg_income")
+    private Double annualPassiveLTCGIncome;
+
     @Column(name = "annual_portfolio_income")
     private Double annualPortfolioIncome;
 
@@ -42,6 +49,14 @@ public class InvestorTaxInfo {
 
     @Column(name = "grouping_election")
     private Boolean groupingElection;
+
+    // IMPL-157: Material AMT exposure flag (display-only)
+    @Column(name = "has_material_amt_exposure")
+    private Boolean hasMaterialAmtExposure;
+
+    // IMPL-160: NOL discount rate override (decimal, e.g. 0.07 for 7%)
+    @Column(name = "nol_discount_rate")
+    private Double nolDiscountRate;
 
     @Column(name = "filing_status")
     private String filingStatus; // 'single' or 'married'
@@ -146,6 +161,13 @@ public class InvestorTaxInfo {
     public Double getAnnualPassiveIncome() { return annualPassiveIncome; }
     public void setAnnualPassiveIncome(Double annualPassiveIncome) { this.annualPassiveIncome = annualPassiveIncome; }
 
+    // IMPL-159: Passive income character split
+    public Double getAnnualPassiveOrdinaryIncome() { return annualPassiveOrdinaryIncome; }
+    public void setAnnualPassiveOrdinaryIncome(Double annualPassiveOrdinaryIncome) { this.annualPassiveOrdinaryIncome = annualPassiveOrdinaryIncome; }
+
+    public Double getAnnualPassiveLTCGIncome() { return annualPassiveLTCGIncome; }
+    public void setAnnualPassiveLTCGIncome(Double annualPassiveLTCGIncome) { this.annualPassiveLTCGIncome = annualPassiveLTCGIncome; }
+
     public Double getAnnualPortfolioIncome() { return annualPortfolioIncome; }
     public void setAnnualPortfolioIncome(Double annualPortfolioIncome) { this.annualPortfolioIncome = annualPortfolioIncome; }
 
@@ -154,6 +176,14 @@ public class InvestorTaxInfo {
 
     public Boolean getGroupingElection() { return groupingElection; }
     public void setGroupingElection(Boolean groupingElection) { this.groupingElection = groupingElection; }
+
+    // IMPL-157: AMT exposure flag
+    public Boolean getHasMaterialAmtExposure() { return hasMaterialAmtExposure; }
+    public void setHasMaterialAmtExposure(Boolean hasMaterialAmtExposure) { this.hasMaterialAmtExposure = hasMaterialAmtExposure; }
+
+    // IMPL-160: NOL discount rate
+    public Double getNolDiscountRate() { return nolDiscountRate; }
+    public void setNolDiscountRate(Double nolDiscountRate) { this.nolDiscountRate = nolDiscountRate; }
 
     public String getFilingStatus() {
         return filingStatus;
