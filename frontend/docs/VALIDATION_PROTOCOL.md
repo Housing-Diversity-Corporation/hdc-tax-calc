@@ -126,6 +126,39 @@ Update this protocol when:
 Item 11: CC must include `git status` + `git diff --stat` in completion report before commit.
 Item 12: CC must update SPEC_IMPLEMENTATION_REGISTRY with IMPL entry.
 Item 13: For any IMPL that touches UI components — CC must complete a full end-to-end user workflow in the running dev server and report actual screen values before committing. "Tests pass" and "component exists" are not sufficient. A feature that exists in the engine but is invisible to the user is not done.
+Item 14: For any IMPL touching profile persistence — network inspection must confirm PUT payload includes ALL existing fields plus new ones. No fields dropped.
+
+---
+
+## Crash Investigation Protocol (Added IMPL-159)
+
+When a crash occurs during runtime verification:
+
+1. **Find the FIRST exception in the browser console stack** — not the last visible error message. Open DevTools (Cmd+Option+J), reproduce the crash, read the first red line.
+2. **Identify the exact file, line, and expression that threw** — e.g., `InvestorTaxProfilePage.tsx:1006: Cannot read properties of null (reading 'toLocaleString')`.
+3. **Report that as the candidate cause** before forming any theory about infrastructure, packages, or browser behavior.
+4. **Only investigate infrastructure** (Vite, Chrome, npm packages) **after the application-level cause is ruled out**. Most crashes are null references, missing props, or type mismatches — not toolchain bugs.
+
+---
+
+## Profile Persistence IMPLs (Added IMPL-159)
+
+When any IMPL modifies a save/load payload:
+
+- [ ] Verify all existing fields are present in the PUT payload — not just new ones
+- [ ] Confirm via network inspection (DevTools → Network → request body) that the API request body includes every previously-sent field
+- [ ] Test with a profile that has null values for the new fields (legacy profile) — confirm no crash on load
+- [ ] Test with a profile that has null values for existing fields (API returns null, not undefined) — confirm no crash on render
+
+---
+
+## npm Install During IMPL Sessions (Added IMPL-159)
+
+Any IMPL that runs `npm install` must:
+
+- Report package version changes in the completion report
+- Flag a changed `package-lock.json` explicitly — it must be either committed intentionally or reverted before the IMPL commit
+- Run `npm ci` (not `npm install`) to restore lockfile-exact versions if the lockfile was not intended to change
 
 ---
 

@@ -187,3 +187,33 @@ event section — add correction note:
 > debt at the inclusion date. This was confirmed via review by external tax
 > counsel (April 2026). Any prior references to §752 "basis protection" for
 > the inclusion event are incorrect.
+
+---
+
+## API Null Safety — Formatting Guards
+*Added: April 2026 | Source: IMPL-159 crash investigation*
+
+All numeric values received from the API must be guarded against null and
+undefined before any formatting call (`.toLocaleString()`, `.toFixed()`, etc.).
+
+**Rule:** Use `!= null` (catches both null and undefined) rather than
+`!== undefined` alone. API responses can return `null` for any field; do not
+assume a field that was previously populated will always be present.
+
+**Example (correct):**
+```typescript
+// CORRECT: catches both null and undefined
+currentProfile.annualIncome != null
+  ? `$${currentProfile.annualIncome.toLocaleString()}`
+  : 'N/A'
+
+// WRONG: null passes this check and .toLocaleString() throws
+currentProfile.annualIncome !== undefined
+  ? `$${currentProfile.annualIncome.toLocaleString()}`
+  : 'N/A'
+```
+
+**Context:** The backend entity layer returns `null` (not `undefined`) for
+unset columns. JavaScript `null !== undefined` evaluates to `true`, so a
+`!== undefined` guard passes null through to the formatting call, causing
+`TypeError: Cannot read properties of null (reading 'toLocaleString')`.
