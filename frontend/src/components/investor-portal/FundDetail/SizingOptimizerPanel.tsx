@@ -400,10 +400,20 @@ const SizingOptimizerPanel: React.FC<SizingOptimizerPanelProps> = ({
             </div>
           </div>
           <div>
-            <div className="text-xs text-[#474a44]/60 mb-1">Effective Multiple</div>
+            <div className="text-xs text-[#474a44]/60 mb-1">
+              {sizingResult.nolPoolAtOptimal > 0
+                ? 'Effective Multiple (excl. NOL)'
+                : 'Effective Multiple'}
+            </div>
             <div className="text-base font-bold text-[#474a44]">
               {currentPoint.effectiveMultiple.toFixed(2)}x
             </div>
+            {/* IMPL-160: NOL Present Value secondary line */}
+            {sizingResult.nolPoolAtOptimal > 0 && (
+              <div className="text-xs text-[#474a44]/60 mt-1">
+                NOL Present Value (absorbed over ~{sizingResult.nolAbsorptionYears} years at 7%): {formatCurrency(sizingResult.nolPresentValue)}
+              </div>
+            )}
           </div>
           <div>
             <div className="text-xs text-[#474a44]/60 mb-1">Util-Adjusted IRR</div>

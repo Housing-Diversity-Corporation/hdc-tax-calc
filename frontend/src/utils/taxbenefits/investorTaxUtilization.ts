@@ -80,6 +80,9 @@ export interface InvestorProfile {
   // portfolios, or other non-HDC AMT preference items. When true, platform surfaces
   // advisor note. §168(k) bonus depreciation creates no AMTI adjustment per §168(k)(2)(G).
   hasMaterialAmtExposure?: boolean;
+
+  // IMPL-160: Advisor-overrideable NOL discount rate (default 7%)
+  nolDiscountRate?: number;
 }
 
 /**
@@ -644,15 +647,24 @@ function computeLIHTCPassive(
  */
 export function computeNOLDrawdown(
   nolPoolAtExit: number,
-  annualTaxableIncome: number
+  annualTaxableIncome: number,
+  // IMPL-160: New parameters for NOL present value calculation
+  marginalRate: number = 0,
+  discountRate: number = 0.07,
+  startYear: number = 0
 ): {
   nolDrawdownYears: number;
   nolDrawdownSchedule: NOLDrawdownEntry[];
+  // IMPL-160: New return fields
+  nolPresentValue: number;
+  nolTotalTaxSavings: number;
 } {
   if (nolPoolAtExit <= 0 || annualTaxableIncome <= 0) {
     return {
       nolDrawdownYears: 0,
-      nolDrawdownSchedule: []
+      nolDrawdownSchedule: [],
+      nolPresentValue: 0,
+      nolTotalTaxSavings: 0,
     };
   }
 
@@ -676,9 +688,18 @@ export function computeNOLDrawdown(
     year++;
   }
 
+  // IMPL-160: Compute NOL present value and total tax savings
+  const nolTotalTaxSavings = schedule.reduce((sum, entry) => sum + entry.nolUsed * marginalRate, 0);
+  const nolPresentValue = schedule.reduce((pv, entry, i) => {
+    const taxSavings = entry.nolUsed * marginalRate;
+    return pv + taxSavings / Math.pow(1 + discountRate, startYear + i);
+  }, 0);
+
   return {
     nolDrawdownYears: schedule.length,
-    nolDrawdownSchedule: schedule
+    nolDrawdownSchedule: schedule,
+    nolPresentValue,
+    nolTotalTaxSavings,
   };
 }
 
@@ -941,7 +962,14 @@ export function calculateTaxUtilization(
   let nolDrawdownSchedule: NOLDrawdownEntry[] = [];
 
   if (treatment === 'nonpassive' && nolPool > 0) {
-    const drawdown = computeNOLDrawdown(nolPool, taxComputation.taxableIncome);
+    // IMPL-160: Pass marginal rate, discount rate, and hold period as startYear for PV calculation
+    const drawdown = computeNOLDrawdown(
+      nolPool,
+      taxComputation.taxableIncome,
+      marginalRate,
+      investorProfile.nolDiscountRate ?? 0.07,
+      holdPeriod + 1  // NOL drawdown starts the year after the hold period ends
+    );
     nolDrawdownYears = drawdown.nolDrawdownYears;
     nolDrawdownSchedule = drawdown.nolDrawdownSchedule;
   }

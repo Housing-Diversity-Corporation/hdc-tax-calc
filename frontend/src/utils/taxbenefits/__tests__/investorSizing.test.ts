@@ -381,6 +381,11 @@ describe('type isolation from fund sizing', () => {
       utilizationCurve: [],
       constraintBinding: 'None',
       peakType: 'peak',
+      nolPoolAtOptimal: 0,
+      nolPresentValue: 0,
+      nolAbsorptionYears: 0,
+      effectiveMultipleExNOL: 1.5,
+      effectiveMultipleWithNOL: 1.5,
     };
     expect(sizingResult.optimalCommitment).toBe(1_000_000);
     expect(sizingResult.peakType).toBe('peak');

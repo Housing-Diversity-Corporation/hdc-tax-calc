@@ -84,6 +84,8 @@ function createTestBenefitStream(overrides: Partial<BenefitStream> = {}): Benefi
 function createTestInvestorProfile(overrides: Partial<InvestorProfile> = {}): InvestorProfile {
   return {
     annualPassiveIncome: 2_000_000, // $2M passive income
+    annualPassiveOrdinaryIncome: 0, // IMPL-154: default 0
+    annualPassiveLTCGIncome: 0,     // IMPL-154: default 0
     annualOrdinaryIncome: 1_000_000, // $1M W-2/business income
     annualPortfolioIncome: 500_000, // $500K portfolio income
     filingStatus: 'MFJ',

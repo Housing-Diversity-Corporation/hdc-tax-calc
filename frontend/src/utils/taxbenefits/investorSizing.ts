@@ -11,7 +11,7 @@
  */
 
 import type { BenefitStream, InvestorProfile, TaxUtilizationResult } from './investorTaxUtilization';
-import { calculateTaxUtilization, SECTION_461L_LIMITS, computeFederalTax } from './investorTaxUtilization';
+import { calculateTaxUtilization, SECTION_461L_LIMITS, computeFederalTax, computeNOLDrawdown } from './investorTaxUtilization';
 import { scaleStreamByProRata } from './fundSizingOptimizer';
 import { scaleBenefitStreamToMillions } from './poolAggregation';
 import { classifyInvestorFit } from './investorFit';
@@ -42,6 +42,12 @@ export interface SizingResult {
   // IMPL-145: §461(l)-aware REP sizing — commitment where Year 1 depreciation ≈ EBL threshold
   sec461lOptimalCommitment?: number;
   sec461lUtilizationPct?: number;
+  // IMPL-160: NOL present value fields
+  nolPoolAtOptimal: number;
+  nolPresentValue: number;
+  nolAbsorptionYears: number;
+  effectiveMultipleExNOL: number;    // Headline: "Effective Multiple (excluding NOL carryforward)"
+  effectiveMultipleWithNOL: number;  // Available, not headline
 }
 
 export interface InvestorSizingConfig {
@@ -94,6 +100,11 @@ export function computeOptimalSizing(
       utilizationCurve: [],
       constraintBinding: 'None — deal has no equity',
       peakType: 'plateau',
+      nolPoolAtOptimal: 0,
+      nolPresentValue: 0,
+      nolAbsorptionYears: 0,
+      effectiveMultipleExNOL: 0,
+      effectiveMultipleWithNOL: 0,
     };
   }
 
@@ -230,6 +241,42 @@ export function computeOptimalSizing(
     }
   }
 
+  // IMPL-160: Compute NOL present value at optimal commitment
+  // nolPool at the last year of the hold period represents the cumulative NOL balance
+  const lastYear = bestUtilResult?.annualUtilization[bestUtilResult.annualUtilization.length - 1];
+  const nolPoolAtOptimal = lastYear?.nolPool ?? 0;
+  const effectiveMultipleExNOL = curve[optimalIndex]?.effectiveMultiple ?? 0;
+
+  let nolPresentValue = 0;
+  let nolAbsorptionYears = 0;
+  let effectiveMultipleWithNOL = effectiveMultipleExNOL;
+
+  if (nolPoolAtOptimal > 0 && bestUtilResult) {
+    const holdPeriod = bestUtilResult.annualUtilization.length;
+    const discountRate = profile.nolDiscountRate ?? 0.07;
+    // Use marginal rate from the tax computation
+    const marginalRate = bestUtilResult.computedMarginalRate;
+    // Income for NOL absorption: use investor's ordinary income (in dollars)
+    const taxableIncome = profile.annualOrdinaryIncome;
+
+    const drawdown = computeNOLDrawdown(
+      nolPoolAtOptimal * 1_000_000,  // convert from millions (engine units)
+      taxableIncome,
+      marginalRate,
+      discountRate,
+      holdPeriod + 1  // NOL drawdown starts after hold period
+    );
+
+    nolPresentValue = drawdown.nolPresentValue;
+    nolAbsorptionYears = drawdown.nolDrawdownYears;
+
+    // Effective multiple with NOL: add PV of NOL savings to total value
+    const optimalCommitment = curve[optimalIndex]?.commitmentAmount ?? 0;
+    if (optimalCommitment > 0) {
+      effectiveMultipleWithNOL = effectiveMultipleExNOL + nolPresentValue / optimalCommitment;
+    }
+  }
+
   return {
     optimalCommitment: curve[optimalIndex]?.commitmentAmount ?? 0,
     optimalUtilizationPct: curve[optimalIndex]?.annualUtilizationPct ?? 0,
@@ -240,6 +287,12 @@ export function computeOptimalSizing(
     peakType,
     sec461lOptimalCommitment,
     sec461lUtilizationPct,
+    // IMPL-160: NOL present value fields
+    nolPoolAtOptimal: nolPoolAtOptimal * 1_000_000,  // convert to dollars for UI
+    nolPresentValue,
+    nolAbsorptionYears,
+    effectiveMultipleExNOL,
+    effectiveMultipleWithNOL,
   };
 }
 
