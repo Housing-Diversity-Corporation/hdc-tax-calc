@@ -190,6 +190,62 @@ event section — add correction note:
 
 ---
 
+## §38(c)(4)(B)(iii) — LIHTC Specified Credits AMT Exemption
+*Added: April 2026 | Source: IMPL-157 AMT analysis*
+
+LIHTC credits attributable to buildings placed in service after December 31, 2007 are
+"specified credits" under §38(c)(4)(B)(iii). For specified credits, tentative minimum tax
+is treated as zero by statute. AMT exposure from any source — ISO exercises, private
+activity bonds, or any other preference items — does not reduce an investor's LIHTC credit
+ceiling.
+
+**Platform treatment:** The platform's Prong B-only §38(c) implementation (75% of net
+regular tax above $25,000) is exactly correct for HDC's credits — not a simplification.
+Enacted by the Housing and Economic Recovery Act of 2008 (HERA). Applies to all three
+AHF Fund I properties.
+
+---
+
+## §168(k)(2)(G) — Bonus Depreciation Creates No AMTI Adjustment
+*Added: April 2026 | Source: IMPL-157 AMT analysis*
+
+Under §168(k)(2)(G), bonus depreciation creates zero alternative minimum taxable income
+(AMTI) adjustment. There is no AMT preference item or adjustment for §168(k) bonus
+depreciation. This means the depreciation channel does not increase an investor's AMT
+exposure.
+
+**Platform treatment:** Confirmed — no channel conflict between bonus depreciation and
+AMT for HDC investors. No AMT offset layer is needed in the depreciation tax savings
+calculation.
+
+---
+
+## Passive Income Character — LTCG vs Ordinary Rate
+*Added: April 2026 | Source: IMPL-158 (commit 76ad656)*
+
+The §469(a)(2) credit ceiling and depreciation tax savings for passive investors scale
+with the rate at which passive income is taxed — not just its gross amount.
+
+- **Ordinary-rate passive income** (partnership business income, short-term K-1
+  distributions, rental income): taxed at 37% + 3.8% NIIT = **40.8%** at the top bracket.
+- **Long-term capital gains passive income** (PE fund distributions, hedge fund LTCG,
+  real estate fund capital gain distributions): taxed at 20% + 3.8% NIIT = **23.8%**.
+
+For a fully LTCG passive investor at the top bracket, the correct credit ceiling and
+depreciation savings are **41.7% lower** than the all-ordinary assumption.
+
+**Platform treatment:** The engine computes a character-weighted effective passive rate:
+
+```
+effectivePassiveRate = (ordinaryIncome × 40.8% + ltcgIncome × 23.8%) / totalPassiveIncome
+```
+
+Backward compatible: profiles with character fields = 0 use the legacy proportional
+allocation path and produce identical output. Implemented in IMPL-158 (commit 76ad656).
+Screen 3 UI for character split fields added in IMPL-159.
+
+---
+
 ## API Null Safety — Formatting Guards
 *Added: April 2026 | Source: IMPL-159 crash investigation*
 
