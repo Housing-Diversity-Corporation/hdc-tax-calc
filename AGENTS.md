@@ -4,6 +4,10 @@ Use 'bd' for task tracking. Before starting any work:
 3. Read VALIDATION_PROTOCOL.md, UI_NAVIGATION_MAP.md, and
    RUNTIME_UI_VERIFICATION.md before any implementation or
    runtime verification
+   BACKEND_ENTITY_REGISTRY.md — living schema snapshot of all deployed
+   backend entities, columns, and endpoints. Read before any IMPL that
+   adds backend fields or touches API integration. Update when Angel adds
+   fields to any entity class.
 4. On completion, run `bd close <id> "<summary>"` and update
    SPEC_IMPLEMENTATION_REGISTRY
 5. Do not request commit approval with any DoD item incomplete
