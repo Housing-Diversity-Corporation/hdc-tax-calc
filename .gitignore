@@ -104,3 +104,8 @@ coverage/
 # Ignore generated analysis output markdown (not documentation)
 frontend/scripts/output/**/*.md
 frontend/scripts/output/*.md
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
