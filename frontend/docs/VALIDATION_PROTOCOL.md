@@ -127,6 +127,10 @@ Item 11: CC must include `git status` + `git diff --stat` in completion report b
 Item 12: CC must update SPEC_IMPLEMENTATION_REGISTRY with IMPL entry.
 Item 13: For any IMPL that touches UI components — CC must complete a full end-to-end user workflow in the running dev server and report actual screen values before committing. "Tests pass" and "component exists" are not sufficient. A feature that exists in the engine but is invisible to the user is not done.
 Item 14: For any IMPL touching profile persistence — network inspection must confirm PUT payload includes ALL existing fields plus new ones. No fields dropped.
+Item 15: If the IMPL changes behavior described in any spec in
+`frontend/docs/specs/`, update that spec file in the same commit.
+Include the spec filename in the completion report alongside the
+modified code files.
 
 ---
 

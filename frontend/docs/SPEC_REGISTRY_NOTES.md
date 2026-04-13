@@ -13,11 +13,15 @@ and blocked items. Replaces manual Registry update document uploads.
 | Field | Value |
 |-------|-------|
 | Branch | main |
-| Latest IMPL deployed | IMPL-133 |
-| IMPL-128 | In progress on impl-128-wip branch — not yet merged |
-| Next available | IMPL-134 |
-| Test count | 1,854 (94 suites, 0 failures) |
-| Last updated | 2026-03-24 |
+| Latest IMPL deployed | IMPL-160 |
+| Next available | IMPL-161 |
+| Test count | Run `cd frontend && npx jest --watchAll=false 2>&1 \| tail -3` to confirm |
+| Last updated | 2026-04-12 |
+| Baseline reference | BACKEND_ENTITY_REGISTRY.md (2026-04-08) |
+
+> IMPL-134 through IMPL-160 deployed between 2026-03-24 and 2026-04-08.
+> Full IMPL detail in IMPLEMENTATION_TRACKER.md. Phase tracking requires
+> a catch-up session.
 
 ---
 
@@ -44,13 +48,13 @@ and blocked items. Replaces manual Registry update document uploads.
 | 125 | Tax Efficiency Map moved to deal view | ✅ Deployed 2026-03-14 |
 | 126 | Tax_Utilization Excel sheet rebuilt with live formulas | ✅ Deployed 2026-03-15 |
 | 127 | recaptureExposure misuse fix in Tax Efficiency Map MOIC | ✅ Deployed 2026-03-15 |
-| 128 | Full hold-period MOIC with §469(g) exit release | 🔄 In progress (impl-128-wip) |
+| 128 | Full hold-period MOIC with §469(g) exit release | ✅ Deployed 2026-03-16 |
 | 129 | Fix Excel export: LIHTC credits + OZ benefits missing | ✅ Deployed 2026-03-23 |
 | 130 | §42(f)(1) election threading fix + January guard at LIHTC call site | ✅ Deployed 2026-03-24 |
 | 131 | Fix TaxCreditsSection election preview — input panel matches results | ✅ Deployed 2026-03-24 |
 | 132 | Default dealType to new_construction + wire interestReserveMonths as ramp | ✅ Deployed 2026-03-24 |
 | 133 | Fix computeEffectiveYear1AF election-aware ramp offset | ✅ Deployed 2026-03-24 |
-| 134+ | Unassigned — available | — |
+| 134–160 | See IMPLEMENTATION_TRACKER.md for full detail | ✅ All deployed |
 
 ---
 
@@ -71,7 +75,6 @@ and blocked items. Replaces manual Registry update document uploads.
 
 | Issue | Description | Blocking? |
 |-------|-------------|-----------|
-| IMPL-128 | Full hold-period MOIC — active troubleshooting on impl-128-wip | Holding doc updates |
 | PDF report bug | Conflates gross exit value (~$60M) with net investor returns (~$35M) | No — audit prompt drafted |
 | Trace unit count | Shows 100 instead of correct 195 — corrupted saved DB record, not code | No |
 | OZ Benefits strip | Does not surface state tax and NIIT savings components explicitly | No — pre-existing |
@@ -83,12 +86,12 @@ and blocked items. Replaces manual Registry update document uploads.
 
 | Priority | Item | Status |
 |----------|------|--------|
-| 1 | IMPL-128: Full hold-period MOIC with §469(g) exit release | 🔄 In progress |
+| 1 | Canonical schema build — Angel review of PostgreSQL schema in Canonical Schema Spec v1.0 §8 required before any deal tables created | Ready — awaiting Angel |
 | 2 | PDF report bug fix — CC audit prompt drafted | Ready |
 | 3 | Capital Account Ledger — blocked on 2 pre-implementation audit items | Blocked |
 | 4 | Portfolio Manager Screen 6 — spec v2.1 complete, zero code exists | Ready to spec IMPL |
 | 5 | Phase B4 Annual Tax Capacity Model | Blocked on Angel |
-| 6 | State Tax Conformity backend table | Q1 2026 priority |
+| 6 | State Tax Conformity backend table | Pending |
 | 7 | Tax Efficiency Map Step 3 batch validation | Prompt ready |
 
 ---
@@ -97,14 +100,23 @@ and blocked items. Replaces manual Registry update document uploads.
 
 | Document | Version | Location |
 |----------|---------|----------|
-| OZ 2.0 Master Specification | v11.0 | Claude Chat project knowledge |
-| OZ 2.0 Addendum | v9.3 | Claude Chat project knowledge |
-| Tax Benefits Spec | v6.0 | Claude Chat project knowledge |
-| Tax Benefits Program Spec | v1.4 | Claude Chat project knowledge |
-| Tax Efficiency Mapping Spec | v1.2 | Claude Chat project knowledge |
-| HDC Strategy & Execution Plan | v3.1 | Claude Chat project knowledge |
+| OZ 2.0 Master Specification | v11.0 | Chat project knowledge (pending move to frontend/docs/reference/) |
+| OZ 2.0 Addendum | v9.3 | Chat project knowledge (pending move to frontend/docs/reference/) |
+| Tax Benefits Spec | v6.0 | Chat project knowledge (pending move to frontend/docs/reference/) |
+| Tax Benefits Program Spec | v1.5 | frontend/docs/specs/ |
+| Tax Efficiency Mapping Spec | v1.2 | Chat project knowledge (pending move to frontend/docs/reference/) |
+| HDC Strategy & Execution Plan | v3.1 | Chat project knowledge (pending move to frontend/docs/reference/) |
+| HDC Canonical Deal Schema Spec | v1.0 | frontend/docs/specs/ |
+| HDC Platform Product Roadmap | v2.0 | frontend/docs/specs/ |
+| HDC Deal Snapshot Versioning Spec | v1.0 | frontend/docs/specs/ |
+| HDC Investor Onboarding Spec | v1.0 | frontend/docs/specs/ |
+| HDC Deal Pipeline Screening Spec | v1.0 | frontend/docs/specs/ |
+| HDC Spec Ecosystem Index | v1.0 | frontend/docs/registry/ |
+| HDC Project Knowledge Catalog | v1.3 | frontend/docs/registry/ |
+| Session End Checklist | v1.0 | frontend/docs/registry/ |
 | Implementation Tracker | v10.8 | frontend/docs/IMPLEMENTATION_TRACKER.md |
-| This file | v1.0 | frontend/docs/SPEC_REGISTRY_NOTES.md |
+| Backend Entity Registry | v1.0 | frontend/docs/constitution/BACKEND_ENTITY_REGISTRY.md |
+| This file | v1.1 | frontend/docs/SPEC_REGISTRY_NOTES.md |
 
 ---
 

@@ -8,6 +8,35 @@ Use 'bd' for task tracking. Before starting any work:
    backend entities, columns, and endpoints. Read before any IMPL that
    adds backend fields or touches API integration. Update when Angel adds
    fields to any entity class.
+
+## Specification Documents
+
+All platform specifications live in `frontend/docs/specs/`. Read the
+relevant spec before beginning any IMPL in its domain.
+
+| Spec | Domain | Read When |
+|---|---|---|
+| HDC_Tax_Benefits_Program_Spec_v1_5.md | Platform overview, roadmap, statutory authority | Start of any new workstream |
+| HDC_Canonical_Deal_Schema_Spec_v1_0.md | Deal schema, 112 fields, PostgreSQL DDL | Any deal data or schema work |
+| HDC_Platform_Product_Roadmap_v2_0.md | Seven-track build sequence | Planning or architecture decisions |
+| HDC_Deal_Snapshot_Versioning_Spec_v1_0.md | Snapshot tables, publish transaction | Any snapshot or versioning work |
+| HDC_Investor_Onboarding_Subscription_Spec_v1_0.md | Investor tables, subscription, DocuSign | Any investor-facing work |
+| HDC_Deal_Pipeline_Screening_Spec_v1_0.md | Three-gate pipeline, API contracts | Any pipeline or ingestion work |
+
+### Spec Update Protocol
+If an IMPL changes behavior described in a spec, update the spec
+file in `frontend/docs/specs/` in the same commit. Spec and code
+stay in sync. Never commit a behavior change without updating the
+spec that governs it.
+
+## Registry Documents
+`frontend/docs/registry/` contains index files maintained by
+Brad and Chat — not by CC. Do not modify these files.
+
+- `HDC_Spec_Ecosystem_Index.md` — architectural decisions, open issues, session artifacts
+- `HDC_Project_Knowledge_Catalog_v1_3.md` — description of every document in the ecosystem
+- `SESSION_END_CHECKLIST.md` — seven-question checklist run at end of every session
+
 4. On completion, run `bd close <id> "<summary>"` and update
    SPEC_IMPLEMENTATION_REGISTRY
 5. Do not request commit approval with any DoD item incomplete
