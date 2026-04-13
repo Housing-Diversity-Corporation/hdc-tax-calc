@@ -246,6 +246,18 @@ Screen 3 UI for character split fields added in IMPL-159.
 
 ---
 
+## Fee Structure
+
+### HDC Fee Rate (hdcFeeRate) — April 2026 Decision
+
+The `hdcFeeRate` field was zeroed out in IMPL-7.0-014 ("fee no longer part of business model"). The field remains in the type system, state management, calculations, and backend entity (`hdc_fee_rate` column) but defaults to 0 everywhere and the UI slider is commented out. Decision: leave as-is. Do not remove the field from the schema. Do not restore it. The Canonical Schema Spec §3.11 open item is resolved on this basis.
+
+### AUM Fee (paramAumFeeRate) — Active
+
+The AUM fee on invested equity remains active and is a material parameter in the waterfall calculation. It is not under review. Leave as-is.
+
+---
+
 ## API Null Safety — Formatting Guards
 *Added: April 2026 | Source: IMPL-159 crash investigation*
 
