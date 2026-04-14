@@ -258,6 +258,15 @@ The AUM fee on invested equity remains active and is a material parameter in the
 
 ---
 
+## Role Strings
+*Added: April 2026 | Source: @PreAuthorize audit + commit 2af371c*
+
+### Spring Security Role Strings (April 2026)
+
+The live database uses role values: ADMIN, TEAM, INTERNAL, INVESTOR, USER. The current admin user has role=ADMIN. @PreAuthorize annotations must include ADMIN and INTERNAL alongside TEAM for write endpoints, and all five roles for read endpoints. Using hasRole('TEAM') alone locks out ADMIN users. Commit 2af371c establishes the correct pattern in InvestmentPoolController.java.
+
+---
+
 ## API Null Safety — Formatting Guards
 *Added: April 2026 | Source: IMPL-159 crash investigation*
 
