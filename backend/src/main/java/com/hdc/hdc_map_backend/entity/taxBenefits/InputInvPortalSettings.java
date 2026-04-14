@@ -84,6 +84,9 @@ public class InputInvPortalSettings {
     @Column(name = "minimum_investment")
     private Double minimumInvestment;
 
+    @Column(name = "available_equity")
+    private Double availableEquity;
+
     // Timestamps
     @Column(name = "created_at")
     @com.fasterxml.jackson.annotation.JsonIgnore
@@ -256,6 +259,14 @@ public class InputInvPortalSettings {
 
     public void setMinimumInvestment(Double minimumInvestment) {
         this.minimumInvestment = minimumInvestment;
+    }
+
+    public Double getAvailableEquity() {
+        return availableEquity;
+    }
+
+    public void setAvailableEquity(Double availableEquity) {
+        this.availableEquity = availableEquity;
     }
 
     public Boolean getIsShared() {

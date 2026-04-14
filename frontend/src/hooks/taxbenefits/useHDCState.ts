@@ -220,6 +220,7 @@ export const useHDCState = () => {
   const [affordabilityMix, setAffordabilityMix] = useState('');
   const [projectStatus, setProjectStatus] = useState<'available' | 'funded' | 'pipeline'>('available');
   const [minimumInvestment, setMinimumInvestment] = useState(0);
+  const [availableEquity, setAvailableEquity] = useState<number | undefined>(undefined);
   const [dealImageUrl, setDealImageUrl] = useState('');
 
   // State LIHTC (v7.0.10)
@@ -615,6 +616,7 @@ export const useHDCState = () => {
     affordabilityMix, setAffordabilityMix,
     projectStatus, setProjectStatus,
     minimumInvestment, setMinimumInvestment,
+    availableEquity, setAvailableEquity,
     dealImageUrl, setDealImageUrl,
 
     // State LIHTC (v7.0.10)

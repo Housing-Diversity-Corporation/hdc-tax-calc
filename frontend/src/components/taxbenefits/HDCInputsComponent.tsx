@@ -356,6 +356,8 @@ interface HDCInputsComponentProps {
   setProjectStatus?: (value: 'available' | 'funded' | 'pipeline') => void;
   minimumInvestment?: number;
   setMinimumInvestment?: (value: number) => void;
+  availableEquity?: number;
+  setAvailableEquity?: (value: number | undefined) => void;
   dealImageUrl?: string;
   setDealImageUrl?: (value: string) => void;
 
@@ -560,6 +562,7 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
       props.setAffordabilityMix?.(config.affordabilityMix ?? '');
       props.setProjectStatus?.(config.projectStatus ?? 'available');
       props.setMinimumInvestment?.(config.minimumInvestment ?? 0);
+      props.setAvailableEquity?.(config.availableEquity ?? undefined);
       props.setDealImageUrl?.(config.dealImageUrl ?? '');
       // HDC Platform Mode
       props.setHdcPlatformMode?.(config.hdcPlatformMode ?? 'traditional');
@@ -782,6 +785,7 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
         affordabilityMix: props.affordabilityMix,
         projectStatus: props.projectStatus,
         minimumInvestment: props.minimumInvestment,
+        availableEquity: props.availableEquity,
         dealImageUrl: props.dealImageUrl,
         // ISS-043: HDC Platform Mode
         hdcPlatformMode: props.hdcPlatformMode,
@@ -1321,6 +1325,8 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
             setProjectStatus={props.setProjectStatus || (() => {})}
             minimumInvestment={props.minimumInvestment || 0}
             setMinimumInvestment={props.setMinimumInvestment || (() => {})}
+            availableEquity={props.availableEquity}
+            setAvailableEquity={props.setAvailableEquity}
             dealImageUrl={props.dealImageUrl || ''}
             setDealImageUrl={props.setDealImageUrl || (() => {})}
             isReadOnly={props.isReadOnly}

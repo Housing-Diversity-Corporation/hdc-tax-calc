@@ -262,7 +262,7 @@ postObbbaComponentPct (Double), preObbbaBonusPct (Double)
 #### InputInvPortalSettings — Panel 8
 **Class:** InputInvPortalSettings.java
 **Table:** tax_benefits.input_inv_portal_settings
-**Columns (23):**
+**Columns (24):**
 
 | Java Field | DB Column | Type | Notes |
 |---|---|---|---|
@@ -287,6 +287,7 @@ postObbbaComponentPct (Double), preObbbaBonusPct (Double)
 | affordabilityMix | affordability_mix | String | |
 | projectStatus | project_status | String | |
 | minimumInvestment | minimum_investment | Double | |
+| availableEquity | available_equity | Double | |
 | createdAt | created_at | LocalDateTime | |
 | updatedAt | updated_at | LocalDateTime | |
 

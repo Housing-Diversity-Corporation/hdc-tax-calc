@@ -129,6 +129,7 @@ const HDCCalculatorMain = () => {
     affordabilityMix, setAffordabilityMix,
     projectStatus, setProjectStatus,
     minimumInvestment, setMinimumInvestment,
+    availableEquity, setAvailableEquity,
     dealImageUrl, setDealImageUrl,
 
     // State LIHTC (v7.0.10)
@@ -657,6 +658,8 @@ const HDCCalculatorMain = () => {
           setProjectStatus={setProjectStatus}
           minimumInvestment={minimumInvestment}
           setMinimumInvestment={setMinimumInvestment}
+          availableEquity={availableEquity}
+          setAvailableEquity={setAvailableEquity}
           dealImageUrl={dealImageUrl}
           setDealImageUrl={setDealImageUrl}
           startConfigLoading={startConfigLoading}

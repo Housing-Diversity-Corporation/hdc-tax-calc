@@ -163,6 +163,7 @@ export interface CalculatorConfiguration {
   affordabilityMix?: string;           // "60% AMI" or "50-80% AMI"
   projectStatus?: 'available' | 'funded' | 'pipeline';
   minimumInvestment?: number;          // Minimum investment amount
+  availableEquity?: number;            // Available equity amount ($M)
   dealImageUrl?: string;               // URL to project rendering/photo
 }
 

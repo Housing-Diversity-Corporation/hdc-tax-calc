@@ -258,6 +258,12 @@ const InvestmentsStandalonePage: React.FC<InvestmentsStandalonePageProps> = ({ o
                     ${(deal.minimumInvestment || (deal.projectCost * (deal.investorEquityPct / 100))).toLocaleString()}
                   </span>
                 </div>
+                {deal.availableEquity != null && deal.availableEquity > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Available:</span>
+                    <span className="font-semibold">${deal.availableEquity}M</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Stabilized NOI:</span>
                   <span className="font-semibold">${deal.yearOneNOI.toLocaleString()}</span>

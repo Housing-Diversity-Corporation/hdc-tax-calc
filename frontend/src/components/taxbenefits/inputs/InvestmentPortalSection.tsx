@@ -29,6 +29,8 @@ interface InvestmentPortalSectionProps {
   setProjectStatus: (value: 'available' | 'funded' | 'pipeline') => void;
   minimumInvestment: number;
   setMinimumInvestment: (value: number) => void;
+  availableEquity?: number;
+  setAvailableEquity?: (value: number | undefined) => void;
   dealImageUrl: string;
   setDealImageUrl: (value: string) => void;
   isReadOnly?: boolean;
@@ -49,6 +51,8 @@ const InvestmentPortalSection: React.FC<InvestmentPortalSectionProps> = ({
   setProjectStatus,
   minimumInvestment,
   setMinimumInvestment,
+  availableEquity,
+  setAvailableEquity,
   dealImageUrl,
   setDealImageUrl,
   isReadOnly = false,
@@ -230,6 +234,28 @@ const InvestmentPortalSection: React.FC<InvestmentPortalSectionProps> = ({
             </div>
           </div>
 
+          {/* Available Equity */}
+          <div className="hdc-input-group">
+            <label className="hdc-input-label">
+              Available Equity ($M)
+            </label>
+            <input disabled={isReadOnly}
+              type="number"
+              value={availableEquity ?? ''}
+              onChange={(e) => {
+                const val = e.target.value;
+                setAvailableEquity?.(val === '' ? undefined : Number(val));
+              }}
+              placeholder="0"
+              className="hdc-input"
+              min="0"
+              step="0.1"
+            />
+            <div className="hdc-input-hint">
+              Optional - equity available for investment
+            </div>
+          </div>
+
           {/* Image URL */}
           <div className="hdc-input-group">
             <label className="hdc-input-label">
@@ -276,6 +302,12 @@ const InvestmentPortalSection: React.FC<InvestmentPortalSectionProps> = ({
                   <strong style={{ color: 'var(--hdc-cabbage-pont)' }}>Status:</strong>{' '}
                   {projectStatus.charAt(0).toUpperCase() + projectStatus.slice(1)}
                 </div>
+                {availableEquity != null && availableEquity > 0 && (
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <strong style={{ color: 'var(--hdc-cabbage-pont)' }}>Available:</strong>{' '}
+                    ${availableEquity}M
+                  </div>
+                )}
                 <div style={{ marginTop: '1rem', color: 'var(--hdc-cabbage-pont)' }}>
                   {dealDescription}
                 </div>
