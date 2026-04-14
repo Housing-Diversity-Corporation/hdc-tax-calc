@@ -128,7 +128,7 @@ FK: deal_conduit_id (not nullable, unique)
 #### InputTaxCredits — Panel 3
 **Class:** InputTaxCredits.java
 **Table:** tax_benefits.input_tax_credits
-**Columns (20):**
+**Columns (21):**
 
 | Java Field | DB Column | Type |
 |---|---|---|
@@ -137,6 +137,7 @@ FK: deal_conduit_id (not nullable, unique)
 | creditRate | credit_rate | Double |
 | placedInServiceMonth | placed_in_service_month | Integer |
 | ddaQctBoost | dda_qct_boost | Boolean |
+| commercialBasisPct | commercial_basis_pct | Double |
 | commercialSpaceCosts | commercial_space_costs | Double |
 | syndicationCosts | syndication_costs | Double |
 | marketingCosts | marketing_costs | Double |

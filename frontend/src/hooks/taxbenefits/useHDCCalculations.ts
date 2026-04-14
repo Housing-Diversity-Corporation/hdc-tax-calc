@@ -124,6 +124,7 @@ interface UseHDCCalculationsProps {
   pabIOYears?: number;
 
   // IMPL-083: Eligible Basis Exclusions
+  commercialBasisPct?: number;
   commercialSpaceCosts?: number;
   syndicationCosts?: number;
   marketingCosts?: number;
@@ -454,6 +455,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       landValue: props.landValue,
       interestReserve: interestReserveAmount,
       // IMPL-083: All eligible basis exclusions
+      commercialBasisPct: props.commercialBasisPct,
       commercialSpaceCosts: props.commercialSpaceCosts || 0,
       syndicationCosts: props.syndicationCosts || 0,
       marketingCosts: props.marketingCosts || 0,
@@ -469,6 +471,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
     props.landValue,
     interestReserveAmount,
     // IMPL-083: Dependencies for exclusions
+    props.commercialBasisPct,
     props.commercialSpaceCosts,
     props.syndicationCosts,
     props.marketingCosts,

@@ -43,6 +43,9 @@ interface TaxCreditsSectionProps {
   interestReserve?: number;
 
   // IMPL-083: Eligible Basis Exclusions (editable)
+  commercialBasisPct?: number;
+  setCommercialBasisPct?: (value: number | undefined) => void;
+  projectCostForBasisPct?: number;
   commercialSpaceCosts?: number;
   setCommercialSpaceCosts?: (value: number) => void;
   syndicationCosts?: number;
@@ -131,6 +134,9 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
   landValue,
   interestReserve = 0,
   // IMPL-083: Eligible Basis Exclusions
+  commercialBasisPct,
+  setCommercialBasisPct,
+  projectCostForBasisPct,
   commercialSpaceCosts = 0,
   setCommercialSpaceCosts,
   syndicationCosts = 0,
@@ -178,6 +184,14 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
 
   // IMPL-083: State for collapsible exclusions section
   const [exclusionsExpanded, setExclusionsExpanded] = useState(false);
+
+  // Derive commercialSpaceCosts from commercialBasisPct when provided
+  useEffect(() => {
+    if (commercialBasisPct != null && projectCostForBasisPct != null && projectCostForBasisPct > 0) {
+      const derived = projectCostForBasisPct * (commercialBasisPct / 100);
+      setCommercialSpaceCosts?.(Number(derived.toFixed(4)));
+    }
+  }, [commercialBasisPct, projectCostForBasisPct]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Calculate breakdown if we have the required values
   // IMPL-083: Include all exclusions
@@ -469,6 +483,26 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
                       </p>
 
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                        {/* Commercial Basis % */}
+                        <div className="hdc-input-group" style={{ marginBottom: '0.25rem' }}>
+                          <label className="hdc-input-label" style={{ fontSize: '0.7rem' }}>Commercial Basis %</label>
+                          <input
+                            type="number"
+                            className="hdc-input"
+                            style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                            value={commercialBasisPct ?? ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setCommercialBasisPct?.(val === '' ? undefined : Number(val));
+                            }}
+                            placeholder="0"
+                            disabled={isReadOnly}
+                            min="0"
+                            max="100"
+                            step="1"
+                          />
+                        </div>
+
                         {/* Commercial Space */}
                         <div className="hdc-input-group" style={{ marginBottom: '0.25rem' }}>
                           <label className="hdc-input-label" style={{ fontSize: '0.7rem' }}>Commercial Space ($M)</label>
@@ -479,7 +513,7 @@ const TaxCreditsSection: React.FC<TaxCreditsSectionProps> = ({
                             value={commercialSpaceCosts || ''}
                             onChange={(e) => setCommercialSpaceCosts?.(Number(e.target.value) || 0)}
                             placeholder="0"
-                            disabled={isReadOnly}
+                            disabled={isReadOnly || commercialBasisPct != null}
                             step="0.1"
                           />
                         </div>

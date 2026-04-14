@@ -36,6 +36,9 @@ public class InputTaxCredits {
     private Boolean ddaQctBoost;
 
     // Eligible Basis Exclusions
+    @Column(name = "commercial_basis_pct")
+    private Double commercialBasisPct;
+
     @Column(name = "commercial_space_costs")
     private Double commercialSpaceCosts;
 
@@ -158,6 +161,14 @@ public class InputTaxCredits {
 
     public void setDdaQctBoost(Boolean ddaQctBoost) {
         this.ddaQctBoost = ddaQctBoost;
+    }
+
+    public Double getCommercialBasisPct() {
+        return commercialBasisPct;
+    }
+
+    public void setCommercialBasisPct(Double commercialBasisPct) {
+        this.commercialBasisPct = commercialBasisPct;
     }
 
     public Double getCommercialSpaceCosts() {

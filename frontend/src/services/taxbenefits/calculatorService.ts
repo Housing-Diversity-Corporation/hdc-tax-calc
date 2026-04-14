@@ -110,6 +110,7 @@ export interface CalculatorConfiguration {
   stateLIHTCSyndicationYear?: number;
 
   // ISS-043: Eligible Basis Exclusions
+  commercialBasisPct?: number;
   commercialSpaceCosts?: number;
   syndicationCosts?: number;
   marketingCosts?: number;

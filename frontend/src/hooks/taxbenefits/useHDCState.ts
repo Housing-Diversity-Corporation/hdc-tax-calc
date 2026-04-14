@@ -251,6 +251,7 @@ export const useHDCState = () => {
   const [pabFundingAmount, setPabFundingAmount] = useState(0);
 
   // IMPL-083: Eligible Basis Exclusions (all in millions, default $0)
+  const [commercialBasisPct, setCommercialBasisPct] = useState<number | undefined>(undefined);
   const [commercialSpaceCosts, setCommercialSpaceCosts] = useState(0);
   const [syndicationCosts, setSyndicationCosts] = useState(0);
   const [marketingCosts, setMarketingCosts] = useState(0);
@@ -639,6 +640,7 @@ export const useHDCState = () => {
     // ISS-031: PAB as % of project cost (for display in capital stack)
     pabPctOfProject,
     // IMPL-083: Eligible Basis Exclusions
+    commercialBasisPct, setCommercialBasisPct,
     commercialSpaceCosts, setCommercialSpaceCosts,
     syndicationCosts, setSyndicationCosts,
     marketingCosts, setMarketingCosts,

@@ -285,6 +285,8 @@ interface HDCInputsComponentProps {
   setPabIOYears?: (value: number) => void;
 
   // IMPL-083: Eligible Basis Exclusions
+  commercialBasisPct?: number;
+  setCommercialBasisPct?: (value: number | undefined) => void;
   commercialSpaceCosts?: number;
   setCommercialSpaceCosts?: (value: number) => void;
   syndicationCosts?: number;
@@ -586,6 +588,7 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
       }
       props.setStateLIHTCSyndicationYear?.((config.stateLIHTCSyndicationYear ?? 0) as 0 | 1 | 2);
       // Eligible Basis Exclusions
+      props.setCommercialBasisPct?.(config.commercialBasisPct ?? undefined);
       props.setCommercialSpaceCosts?.(config.commercialSpaceCosts ?? 0);
       props.setSyndicationCosts?.(config.syndicationCosts ?? 0);
       props.setMarketingCosts?.(config.marketingCosts ?? 0);
@@ -803,6 +806,7 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
         stateLIHTCUserAmount: props.stateLIHTCUserAmount,
         stateLIHTCSyndicationYear: props.stateLIHTCSyndicationYear,
         // ISS-043: Eligible Basis Exclusions
+        commercialBasisPct: props.commercialBasisPct,
         commercialSpaceCosts: props.commercialSpaceCosts,
         syndicationCosts: props.syndicationCosts,
         marketingCosts: props.marketingCosts,
@@ -1188,6 +1192,9 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
             stateLIHTCSyndicationYear={props.stateLIHTCSyndicationYear}
             setStateLIHTCSyndicationYear={props.setStateLIHTCSyndicationYear}
             // IMPL-083: Eligible Basis Exclusions
+            commercialBasisPct={props.commercialBasisPct}
+            setCommercialBasisPct={props.setCommercialBasisPct}
+            projectCostForBasisPct={props.projectCost}
             commercialSpaceCosts={props.commercialSpaceCosts || 0}
             setCommercialSpaceCosts={props.setCommercialSpaceCosts || (() => {})}
             syndicationCosts={props.syndicationCosts || 0}

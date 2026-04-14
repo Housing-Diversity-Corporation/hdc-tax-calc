@@ -158,6 +158,7 @@ const HDCCalculatorMain = () => {
     // ISS-031: PAB as % of project cost
     pabPctOfProject,
     // IMPL-083: Eligible Basis Exclusions
+    commercialBasisPct, setCommercialBasisPct,
     commercialSpaceCosts, setCommercialSpaceCosts,
     syndicationCosts, setSyndicationCosts,
     marketingCosts, setMarketingCosts,
@@ -317,6 +318,7 @@ const HDCCalculatorMain = () => {
     pabAmortization,
     pabIOYears,
     // IMPL-083: Eligible Basis Exclusions
+    commercialBasisPct,
     commercialSpaceCosts,
     syndicationCosts,
     marketingCosts,
@@ -605,6 +607,8 @@ const HDCCalculatorMain = () => {
           pabIOYears={pabIOYears}
           setPabIOYears={setPabIOYears}
           // IMPL-083: Eligible Basis Exclusions
+          commercialBasisPct={commercialBasisPct}
+          setCommercialBasisPct={setCommercialBasisPct}
           commercialSpaceCosts={commercialSpaceCosts}
           setCommercialSpaceCosts={setCommercialSpaceCosts}
           syndicationCosts={syndicationCosts}

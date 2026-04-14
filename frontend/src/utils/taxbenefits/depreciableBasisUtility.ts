@@ -155,6 +155,8 @@ export interface LIHTCEligibleBasisParams {
   syndicationCosts?: number;
   /** Marketing/Org costs in millions - excluded per IRC §42 */
   marketingCosts?: number;
+  /** Commercial basis percentage (0-100) — when provided, derives commercialSpaceCosts from projectCost */
+  commercialBasisPct?: number;
   /** Commercial space costs in millions - excluded (non-residential) */
   commercialSpaceCosts?: number;
   // IMPL-083: Additional exclusions
@@ -191,7 +193,8 @@ export function calculateLIHTCEligibleBasis(params: LIHTCEligibleBasisParams): n
     interestReserve = 0,
     syndicationCosts = 0,
     marketingCosts = 0,
-    commercialSpaceCosts = 0,
+    commercialBasisPct,
+    commercialSpaceCosts: commercialSpaceCostsInput = 0,
     // IMPL-083: Additional exclusions
     financingFees = 0,
     bondIssuanceCosts = 0,
@@ -199,6 +202,11 @@ export function calculateLIHTCEligibleBasis(params: LIHTCEligibleBasisParams): n
     replacementReserve = 0,
     otherExclusions = 0
   } = params;
+
+  // Derive commercial space costs from percentage when provided
+  const commercialSpaceCosts = (commercialBasisPct != null && projectCost > 0)
+    ? projectCost * (commercialBasisPct / 100)
+    : commercialSpaceCostsInput;
 
   // Total project cost (base for eligible basis)
   const totalProjectCost = projectCost + predevelopmentCosts;
@@ -236,7 +244,8 @@ export function calculateLIHTCEligibleBasisBreakdown(params: LIHTCEligibleBasisP
     interestReserve = 0,
     syndicationCosts = 0,
     marketingCosts = 0,
-    commercialSpaceCosts = 0,
+    commercialBasisPct,
+    commercialSpaceCosts: commercialSpaceCostsInput = 0,
     // IMPL-083: Additional exclusions
     financingFees = 0,
     bondIssuanceCosts = 0,
@@ -244,6 +253,11 @@ export function calculateLIHTCEligibleBasisBreakdown(params: LIHTCEligibleBasisP
     replacementReserve = 0,
     otherExclusions = 0
   } = params;
+
+  // Derive commercial space costs from percentage when provided
+  const commercialSpaceCosts = (commercialBasisPct != null && projectCost > 0)
+    ? projectCost * (commercialBasisPct / 100)
+    : commercialSpaceCostsInput;
 
   const totalProjectCost = projectCost + predevelopmentCosts;
   const totalExclusions = landValue + interestReserve + commercialSpaceCosts +

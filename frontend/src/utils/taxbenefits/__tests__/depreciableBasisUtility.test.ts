@@ -13,7 +13,10 @@
 import {
   calculateDepreciableBasis,
   calculateDepreciableBasisBreakdown,
+  calculateLIHTCEligibleBasis,
+  calculateLIHTCEligibleBasisBreakdown,
   DepreciableBasisParams,
+  LIHTCEligibleBasisParams,
 } from '../depreciableBasisUtility';
 
 describe('Depreciable Basis Utility', () => {
@@ -877,6 +880,64 @@ describe('Depreciable Basis Utility', () => {
       // Increase = $550K
       const expectedIncrease = 550000;
       expect(enhancedBasis - baseBasis).toBeCloseTo(expectedIncrease, 0);
+    });
+  });
+
+  // ============================================================================
+  // LIHTC Eligible Basis — commercialBasisPct derivation
+  // ============================================================================
+
+  describe('commercialBasisPct derivation', () => {
+    it('should derive commercialSpaceCosts from commercialBasisPct × projectCost', () => {
+      // commercialBasisPct = 10%, projectCost = 10 ($M) → derived = 1 ($M)
+      const result = calculateLIHTCEligibleBasis({
+        projectCost: 10,
+        landValue: 2,
+        commercialBasisPct: 10,
+      });
+      // Eligible = (10) - 2 (land) - 1 (commercial = 10 * 10%) = 7
+      expect(result).toBeCloseTo(7, 4);
+    });
+
+    it('should use commercialSpaceCosts when commercialBasisPct is undefined', () => {
+      const result = calculateLIHTCEligibleBasis({
+        projectCost: 10,
+        landValue: 2,
+        commercialSpaceCosts: 1.5,
+      });
+      // Eligible = 10 - 2 - 1.5 = 6.5
+      expect(result).toBeCloseTo(6.5, 4);
+    });
+
+    it('should prefer commercialBasisPct over commercialSpaceCosts when both provided', () => {
+      const result = calculateLIHTCEligibleBasis({
+        projectCost: 10,
+        landValue: 2,
+        commercialBasisPct: 10,
+        commercialSpaceCosts: 99, // should be ignored
+      });
+      // Eligible = 10 - 2 - 1 (derived from 10%) = 7
+      expect(result).toBeCloseTo(7, 4);
+    });
+
+    it('should reflect derived value in breakdown', () => {
+      const breakdown = calculateLIHTCEligibleBasisBreakdown({
+        projectCost: 10,
+        landValue: 2,
+        commercialBasisPct: 10,
+      });
+      expect(breakdown.commercialSpaceCosts).toBeCloseTo(1, 4);
+      expect(breakdown.eligibleBasis).toBeCloseTo(7, 4);
+    });
+
+    it('should handle zero projectCost gracefully when commercialBasisPct set', () => {
+      const result = calculateLIHTCEligibleBasis({
+        projectCost: 0,
+        landValue: 0,
+        commercialBasisPct: 10,
+      });
+      // projectCost = 0 → derived commercial = 0, eligible = 0
+      expect(result).toBe(0);
     });
   });
 });
