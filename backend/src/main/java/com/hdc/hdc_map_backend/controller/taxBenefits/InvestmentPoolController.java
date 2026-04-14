@@ -7,6 +7,7 @@ import com.hdc.hdc_map_backend.service.taxBenefits.InvestmentPoolService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,12 +22,14 @@ public class InvestmentPoolController {
     private InvestmentPoolService investmentPoolService;
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('TEAM', 'ADMIN', 'INTERNAL', 'INVESTOR', 'USER')")
     public ResponseEntity<List<InvestmentPool>> getAllPools() {
         List<InvestmentPool> pools = investmentPoolService.getAllPools();
         return ResponseEntity.ok(pools);
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('TEAM', 'ADMIN', 'INTERNAL', 'INVESTOR', 'USER')")
     public ResponseEntity<InvestmentPool> getPoolById(@PathVariable Long id) {
         Optional<InvestmentPool> pool = investmentPoolService.getPoolById(id);
         return pool.map(ResponseEntity::ok)
@@ -34,6 +37,7 @@ public class InvestmentPoolController {
     }
 
     @GetMapping("/{id}/deals")
+    @PreAuthorize("hasAnyRole('TEAM', 'ADMIN', 'INTERNAL', 'INVESTOR', 'USER')")
     public ResponseEntity<PoolWithDealsResponse> getPoolWithDeals(@PathVariable Long id) {
         try {
             PoolWithDealsResponse response = investmentPoolService.getPoolWithDeals(id);
@@ -44,12 +48,14 @@ public class InvestmentPoolController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('TEAM', 'ADMIN', 'INTERNAL')")
     public ResponseEntity<InvestmentPool> createPool(@RequestBody InvestmentPool pool) {
         InvestmentPool saved = investmentPoolService.createPool(pool);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('TEAM', 'ADMIN', 'INTERNAL')")
     public ResponseEntity<InvestmentPool> updatePool(@PathVariable Long id, @RequestBody InvestmentPool incoming) {
         try {
             InvestmentPool updated = investmentPoolService.updatePool(id, incoming);
@@ -60,12 +66,14 @@ public class InvestmentPoolController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('TEAM', 'ADMIN', 'INTERNAL')")
     public ResponseEntity<Void> deletePool(@PathVariable Long id) {
         investmentPoolService.deletePool(id);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{poolId}/deals/{dbpId}")
+    @PreAuthorize("hasAnyRole('TEAM', 'ADMIN', 'INTERNAL')")
     public ResponseEntity<PoolMembership> addDealToPool(@PathVariable Long poolId, @PathVariable Long dbpId) {
         try {
             PoolMembership membership = investmentPoolService.addDealToPool(poolId, dbpId);
@@ -79,6 +87,7 @@ public class InvestmentPoolController {
     }
 
     @DeleteMapping("/{poolId}/deals/{dbpId}")
+    @PreAuthorize("hasAnyRole('TEAM', 'ADMIN', 'INTERNAL')")
     public ResponseEntity<Void> removeDealFromPool(@PathVariable Long poolId, @PathVariable Long dbpId) {
         try {
             investmentPoolService.removeDealFromPool(poolId, dbpId);
