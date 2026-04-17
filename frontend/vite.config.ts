@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
     server: {
       // These settings are for your EC2 instance to work behind Nginx
       host: '0.0.0.0',
-      allowedHosts: ['hdc.angelfhr.com'],
+      allowedHosts: ['calc.americanhousing.fund'],
       hmr: true,
       warmup: {
         clientFiles: ['./src/main.tsx', './src/App.tsx'],

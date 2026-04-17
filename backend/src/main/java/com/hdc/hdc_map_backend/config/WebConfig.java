@@ -17,8 +17,7 @@ public class WebConfig implements WebMvcConfigurer {
                         "http://127.0.0.1:3000", // Alternative localhost
                         "http://localhost:8080", // Backend server
                         "http://127.0.0.1:8080", // Alternative backend server
-                        "https://hdc.angelfhr.com", // Production domain
-                        "https://calc.angelfhr.com" // Calculator production domain
+                        "https://calc.americanhousing.fund" // Production domain
                 )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")

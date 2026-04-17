@@ -12,7 +12,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/account")
-@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:5173", "https://hdc.angelfhr.com", "https://calc.angelfhr.com" })
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:5173", "https://calc.americanhousing.fund" })
 public class AccountController {
 
     @Autowired
