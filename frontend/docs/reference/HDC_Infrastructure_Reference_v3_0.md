@@ -1,7 +1,7 @@
 # HDC Infrastructure Reference
 ## Server Access, Architecture, and Connection Guide
 
-**Version:** 3.0
+**Version:** 3.2
 **Date:** April 2026
 **Author:** Brad Padden / HDC
 **Source:** Angel Hernandez handoff package + live EC2 verification April 15-16, 2026
@@ -653,7 +653,20 @@ dev.sh handles all tunnels automatically. Claude Code runs in VS Code only.
 ```bash
 cd ~/Projects/hdc-tax-calc/backend && ./dev.sh
 ```
-`dev.sh` handles the SSH tunnel automatically.
+`dev.sh` opens the SSH tunnel automatically:
+```bash
+ssh -f -N -i ~/Projects/pem_keys/hdc-calc.pem \
+  -L 5432:172.31.48.30:5432 \
+  -o ServerAliveInterval=60 \
+  ubuntu@18.223.182.167
+```
+Note: uses RDS private IP not hostname — more reliable.
+
+> **CRITICAL:** Local `backend/.env` must have `DB_HOST=localhost`.
+> This makes Spring Boot connect through the tunnel.
+> If `DB_HOST` points to the RDS hostname, Spring Boot bypasses the tunnel and fails.
+> Production EC2 `.env` keeps the real RDS endpoint. Never sync these two files.
+
 Wait for `Started Application` on port 8080.
 
 **Step 2 — VS Code Calc — Frontend**
@@ -848,6 +861,9 @@ The Tax Benefits Platform (`hdc-tax-calc`) was forked from the Map app (`map`) a
 *needed for server work, not local dev. dev.sh handles all tunnels.*
 *pgAdmin Map connection confirmed direct (no tunnel). Confirmed with Angel.*
 *Claude Code runs in VS Code only.*
+*Version 3.2 — April 18, 2026 — Root cause fix: DB_HOST=localhost required in local .env.*
+*Spring Boot was bypassing the SSH tunnel by connecting directly to RDS hostname.*
+*Tunnel command updated to use RDS private IP (more reliable). Critical note added.*
 *Version 3.0 — April 18, 2026 — Major update. Calc startup corrected:*
 *dev.sh tunnel broken — manual RDS tunnel required for local Calc dev.*
 *Correct startup: open tunnel in Mac terminal first, then mvnw spring-boot:run.*
