@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
-SSH_KEY="$HOME/Projects/hdc-tax-calc/hdc-calc.pem"
-RDS_HOST="hdc-tax-calc-db2.cf0cquesqtzv.us-east-2.rds.amazonaws.com"
-BASTION="ubuntu@calc.angelfhr.com"
+SSH_KEY="$HOME/Projects/pem_keys/hdc-calc.pem"
+RDS_HOST="database-1.ctgywqwmeje9.us-east-2.rds.amazonaws.com"
+BASTION="ubuntu@18.223.182.167"
 LOCAL_PORT=5432
 
 # Stop local PostgreSQL if running — it blocks the SSH tunnel to RDS
@@ -36,6 +36,15 @@ for i in $(seq 1 10); do
   nc -z localhost $LOCAL_PORT 2>/dev/null && break
   sleep 1
 done
+
+# Verify RDS is reachable through the tunnel
+echo "Testing tunnel connectivity..."
+nc -zv localhost $LOCAL_PORT 2>&1
+if ! nc -z localhost $LOCAL_PORT 2>/dev/null; then
+  echo "❌ Cannot reach RDS through tunnel on localhost:$LOCAL_PORT"
+  exit 1
+fi
+echo "✅ Tunnel connectivity OK"
 
 # Start Spring Boot (skip compile — already done above)
 ./mvnw spring-boot:run
