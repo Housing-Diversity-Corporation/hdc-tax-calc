@@ -37,6 +37,19 @@ Brad and Chat — not by CC. Do not modify these files.
 - `HDC_Project_Knowledge_Catalog_v1_3.md` — description of every document in the ecosystem
 - `SESSION_END_CHECKLIST.md` — seven-question checklist run at end of every session
 
+## Reference Documents
+`frontend/docs/reference/` contains operational reference documents. Read before making any infrastructure, deployment, or environment decisions.
+
+| Document | Read When |
+|---|---|
+| HDC_Infrastructure_Reference_v3_0.md | Any infrastructure question, AWS change, or server issue |
+| Brad_Ops_Runbook_v2_0.md | Any deployment, startup, or local dev question |
+
+CRITICAL RULES (from Brad_Ops_Runbook_v2_0.md §16):
+- If production is working, do not change infrastructure to fix a local dev problem
+- Never modify OAuth config, S3 bucket, nginx, or SSL without reading the fragile configs section first
+- Describe what you want to accomplish — not how to do it
+
 4. On completion, run `bd close <id> "<summary>"` and update
    SPEC_IMPLEMENTATION_REGISTRY
 5. Do not request commit approval with any DoD item incomplete
