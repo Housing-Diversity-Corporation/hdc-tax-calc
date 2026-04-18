@@ -1,6 +1,6 @@
 Use 'bd' for task tracking. Before starting any work:
 1. Run `bd ready` to see available tasks
-2. Run `bd update <id> --claim` to atomically claim your task
+2. Run `bd q "<description>"` to create and capture the task (returns an ID)
 3. Read VALIDATION_PROTOCOL.md, UI_NAVIGATION_MAP.md, and
    RUNTIME_UI_VERIFICATION.md before any implementation or
    runtime verification
@@ -50,7 +50,7 @@ CRITICAL RULES (from Brad_Ops_Runbook_v2_0.md §16):
 - Never modify OAuth config, S3 bucket, nginx, or SSL without reading the fragile configs section first
 - Describe what you want to accomplish — not how to do it
 
-4. On completion, run `bd close <id> "<summary>"` and update
+4. On completion, run `bd close <id>` and update
    SPEC_IMPLEMENTATION_REGISTRY
 5. Do not request commit approval with any DoD item incomplete
 6. Runtime verification is mandatory for all UI-touching IMPLs —
