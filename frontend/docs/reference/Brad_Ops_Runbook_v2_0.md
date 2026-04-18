@@ -1,7 +1,7 @@
 # Brad's Ops Runbook
 ## Local Dev Environment + Server Access
 
-**Version:** 2.0
+**Version:** 2.6
 **Date:** April 2026
 **For:** Brad Padden — personal reference
 
@@ -534,10 +534,17 @@ These took significant effort to get working and must never be changed without e
 **Step 1 — Mac terminal — open RDS tunnel:**
 ```bash
 ssh -f -N -i ~/Projects/pem_keys/hdc-calc.pem \
-  -L 5432:database-1.ctgywqwmeje9.us-east-2.rds.amazonaws.com:5432 \
+  -L 5432:172.31.48.30:5432 \
+  -o ServerAliveInterval=60 \
   ubuntu@18.223.182.167
 ```
+Uses RDS private IP 172.31.48.30 — more reliable than hostname.
 Leave this terminal open for the whole session.
+
+> **CRITICAL:** Local `backend/.env` must have `DB_HOST=localhost`.
+> This makes Spring Boot connect through the tunnel.
+> If `DB_HOST` points to the RDS hostname, Spring Boot bypasses the tunnel and fails.
+> Production EC2 `.env` keeps the real RDS endpoint. Never sync these two files.
 
 **Step 2 — VS Code Calc — Backend:**
 ```bash
@@ -614,10 +621,17 @@ lsof -ti :5433 | xargs kill -9 2>/dev/null
 ### 2. Open RDS tunnel (same Mac terminal)
 ```bash
 ssh -f -N -i ~/Projects/pem_keys/hdc-calc.pem \
-  -L 5432:database-1.ctgywqwmeje9.us-east-2.rds.amazonaws.com:5432 \
+  -L 5432:172.31.48.30:5432 \
+  -o ServerAliveInterval=60 \
   ubuntu@18.223.182.167
 ```
+Uses RDS private IP 172.31.48.30 — more reliable than hostname.
 Terminal will return to prompt — that is correct. Leave it open.
+
+> **CRITICAL:** Local `backend/.env` must have `DB_HOST=localhost`.
+> This makes Spring Boot connect through the tunnel.
+> If `DB_HOST` points to the RDS hostname, Spring Boot bypasses the tunnel and fails.
+> Production EC2 `.env` keeps the real RDS endpoint. Never sync these two files.
 
 ---
 
@@ -703,3 +717,5 @@ All five should return results. If any is missing — restart that step.
 *v2.4 — April 18, 2026 — Added Section 17: Quick Start checklist.*
 *v2.5 — April 18, 2026 — Added full fragile configs list: RDS, nginx,*
 *SSL, port 5174 CORS, dev.sh scripts.*
+*v2.6 — April 18, 2026 — Updated tunnel to RDS private IP 172.31.48.30.*
+*Added CRITICAL note: local .env must have DB_HOST=localhost.*
