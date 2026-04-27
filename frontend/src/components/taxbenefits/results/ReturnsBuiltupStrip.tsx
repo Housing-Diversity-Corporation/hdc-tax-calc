@@ -70,6 +70,8 @@ interface SubComponent {
   multiple: number;
   /** When true, render a thin separator line above this sub-row */
   dividerBefore?: boolean;
+  /** IMPL-162: When true, render with muted/italic style (non-additive informational row) */
+  informational?: boolean;
 }
 
 interface ReturnComponent {
@@ -443,11 +445,14 @@ function deriveReturnComponents(
         multiple: ozDeferralNPV / totalInvestment,
       });
     }
+    // IMPL-162: Recapture Avoided is non-additive — already embedded in Exit Proceeds (net).
+    // OZ exclusion eliminates recapture tax; this line is informational context only.
     if (ozRecaptureAvoided > 0) {
       ozSubComponents.push({
-        label: 'Recapture Avoided',
+        label: 'Recapture Avoided (in exit proceeds)',
         value: ozRecaptureAvoided,
         multiple: ozRecaptureAvoided / totalInvestment,
+        informational: true,
       });
     }
 
@@ -574,6 +579,8 @@ const SubRow: React.FC<{
   const percentOfTotal = totalValue > 0
     ? (subComponent.value / totalValue) * 100
     : 0;
+  // IMPL-162: Muted/italic style for informational (non-additive) rows
+  const isInfo = subComponent.informational;
 
   return (
     <>
@@ -600,7 +607,7 @@ const SubRow: React.FC<{
         backgroundColor: parentColor,
         borderRadius: '2px',
         flexShrink: 0,
-        opacity: 0.6,
+        opacity: isInfo ? 0.3 : 0.6,
       }} />
 
       {/* Label */}
@@ -610,7 +617,8 @@ const SubRow: React.FC<{
           flex: 1,
           fontSize: '0.8rem',
           minWidth: '140px',
-          opacity: 0.9,
+          opacity: isInfo ? 0.55 : 0.9,
+          fontStyle: isInfo ? 'italic' : 'normal',
         }}
       >
         {subComponent.label}
@@ -624,6 +632,8 @@ const SubRow: React.FC<{
           fontWeight: 500,
           textAlign: 'right',
           minWidth: '80px',
+          opacity: isInfo ? 0.55 : 1,
+          fontStyle: isInfo ? 'italic' : 'normal',
         }}
       >
         {formatMillionsAsCurrency(subComponent.value)}
@@ -636,7 +646,8 @@ const SubRow: React.FC<{
         color: parentColor,
         textAlign: 'right',
         minWidth: '50px',
-        opacity: 0.9,
+        opacity: isInfo ? 0.4 : 0.9,
+        fontStyle: isInfo ? 'italic' : 'normal',
       }}>
         {subComponent.multiple.toFixed(2)}x
       </div>
@@ -648,7 +659,8 @@ const SubRow: React.FC<{
         color: parentColor,
         textAlign: 'right',
         minWidth: '50px',
-        opacity: 0.9,
+        opacity: isInfo ? 0.4 : 0.9,
+        fontStyle: isInfo ? 'italic' : 'normal',
       }}>
         {percentOfTotal.toFixed(1)}%
       </div>

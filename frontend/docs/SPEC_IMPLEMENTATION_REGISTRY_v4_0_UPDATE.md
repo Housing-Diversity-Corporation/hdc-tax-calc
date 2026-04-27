@@ -297,3 +297,20 @@ Collapsible read-only panel on Screen 2 showing the full `computeTimeline()` tra
 **Test count:** 1,892 (99 suites, 0 failures). IRR sanity threshold updated for character-split increase (250 → 300).
 
 **Files modified:** calculations.ts, exitSheet.ts, lihtcSheet.ts, depreciationSheet.ts, auditExport/index.ts, auditExport.test.ts
+
+### IMPL-162: Recapture Avoided Sub-Line Display Fix
+
+**Status:** ✅ Complete (2026-04-27)
+
+**Problem:** Returns Buildup strip showed OZ Recapture Avoided as an additive sub-line identical to Deferral NPV. Recapture Avoided is not additive — it is already embedded in Exit Proceeds (net), which is computed assuming zero recapture tax due to OZ exclusion. Displaying it identically to additive components was misleading.
+
+**Changes:**
+1. **Label** — Renamed from "Recapture Avoided" to "Recapture Avoided (in exit proceeds)"
+2. **Visual treatment** — Added `informational` flag to `SubComponent` interface. SubRow renders informational rows with muted opacity (0.55 label/value, 0.4 multiple/pct) and italic text. Color indicator bar opacity reduced to 0.3.
+3. **Tooltip** — Skipped. No tooltip infrastructure exists on sub-lines. Not building new infrastructure for a display-only fix.
+
+**Verification:** Total Returns $51.75M / 3.22x unchanged. OZ Benefits $10.16M unchanged. Display-only change — no calculation impact.
+
+**Test count:** 1,892 (99 suites, 0 failures). No label text asserted in existing tests.
+
+**Files modified:** ReturnsBuiltupStrip.tsx
