@@ -864,9 +864,9 @@ The Tax Benefits Platform (`hdc-tax-calc`) was forked from the Map app (`map`) a
 *Version 3.2 — April 18, 2026 — Root cause fix: DB_HOST=localhost required in local .env.*
 *Spring Boot was bypassing the SSH tunnel by connecting directly to RDS hostname.*
 *Tunnel command updated to use RDS private IP (more reliable). Critical note added.*
-*Version 3.0 — April 18, 2026 — Major update. Calc startup corrected:*
-*dev.sh tunnel broken — manual RDS tunnel required for local Calc dev.*
-*Correct startup: open tunnel in Mac terminal first, then mvnw spring-boot:run.*
+*Version 3.0 — April 18, 2026 — Major update. (MISDIAGNOSIS: claimed dev.sh*
+*tunnel was broken and manual tunnel required. Actual root cause was*
+*DB_HOST in local .env pointing to RDS hostname — fixed in v3.2.)*
 *Map DB direct connection confirmed (no tunnel needed). AWS guard rails added.*
 *Quick Start checklist added. Full fragile configs list documented:*
 *OAuth, S3/CORS, SMTP/port 587, RDS, nginx, SSL, port 5174, dev.sh scripts.*
