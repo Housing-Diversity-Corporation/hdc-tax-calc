@@ -6,12 +6,14 @@
 
 import * as XLSX from 'xlsx';
 import { CalculationParams } from '../../../../types/taxbenefits';
+import { ComputedTimeline } from '../../computeTimeline';
 import { SheetResult, NamedRangeDefinition, FormulaCell } from '../types';
 
 /**
  * Build the Depreciation sheet with bonus + MACRS schedule
+ * IMPL-161: Added rawTimeline param per LIVE_EXCEL_SYNC_PROTOCOL Rule 4
  */
-export function buildDepreciationSheet(params: CalculationParams): SheetResult {
+export function buildDepreciationSheet(params: CalculationParams, rawTimeline?: ComputedTimeline | null): SheetResult {
   const namedRanges: NamedRangeDefinition[] = [];
   const ws: XLSX.WorkSheet = {};
 
@@ -20,7 +22,8 @@ export function buildDepreciationSheet(params: CalculationParams): SheetResult {
   const landValue = params.landValue;
   const costSegPct = params.yearOneDepreciationPct || 20;
   const bonusPct = 100; // Full bonus depreciation
-  const pisMonth = params.placedInServiceMonth || 7;
+  // IMPL-161: Read from rawTimeline per LIVE_EXCEL_SYNC_PROTOCOL Rule 4 (Rule 2: ?? not ||)
+  const pisMonth = rawTimeline?.pisCalendarMonth ?? params.placedInServiceMonth ?? 1;
 
   // Calculate values
   const depreciableBasis = projectCost - landValue;

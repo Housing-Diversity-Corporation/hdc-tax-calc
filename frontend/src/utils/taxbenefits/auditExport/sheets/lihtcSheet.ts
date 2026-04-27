@@ -9,18 +9,21 @@
 
 import * as XLSX from 'xlsx';
 import { CalculationParams } from '../../../../types/taxbenefits';
+import { ComputedTimeline } from '../../computeTimeline';
 import { SheetResult, NamedRangeDefinition, FormulaCell } from '../types';
 
 /**
  * Build the LIHTC sheet with 11-year schedule
+ * IMPL-161: Added rawTimeline param per LIVE_EXCEL_SYNC_PROTOCOL Rule 4
  */
-export function buildLIHTCSheet(params: CalculationParams): SheetResult {
+export function buildLIHTCSheet(params: CalculationParams, rawTimeline?: ComputedTimeline | null): SheetResult {
   const namedRanges: NamedRangeDefinition[] = [];
   const ws: XLSX.WorkSheet = {};
 
   const projectCost = params.projectCost;
   const landValue = params.landValue;
-  const pisMonth = params.placedInServiceMonth || 7;
+  // IMPL-161: Read from rawTimeline per LIVE_EXCEL_SYNC_PROTOCOL Rule 4 (Rule 2: ?? not ||)
+  const pisMonth = rawTimeline?.pisCalendarMonth ?? params.placedInServiceMonth ?? 1;
   const lihtcEnabled = params.lihtcEnabled ?? false;
   const applicableFraction = (params.applicableFraction || 100) / 100;
   const creditRate = (params.creditRate || 4) / 100;

@@ -278,3 +278,22 @@ Collapsible read-only panel on Screen 2 showing the full `computeTimeline()` tra
 **Test count:** 1,874 (97 suites, 0 failures). Added 8 new tests in 1 new suite. All existing tests pass unchanged (backward compat).
 
 **Files modified:** investorTaxUtilization.ts, investorTaxInfo.ts, types/taxbenefits/index.ts, poolAggregation.ts, investorSizing.ts, calculations.ts, useTaxEfficiencyMap.ts, exportParamsSync.test.ts
+
+### IMPL-161: Returns Buildup and Live Excel Sync — Five Reconciliation Fixes
+
+**Status:** ✅ Complete (2026-04-27)
+
+**Problem:** Reconciliation session between platform UI, calculation engine, and Live Excel export identified five discrepancies. The calculation engine is the single source of truth; the Excel export must mirror it exactly.
+
+**Changes:**
+1. **LIHTC double-count fix (calculations.ts)** — Replaced index-based `holdFromPIS` boundary for remaining credits with consumption tracking: `remaining = scheduleTotal - consumed`. Guarantees `consumed + remaining = scheduleTotal` with no overlap. Federal LIHTC buildup now matches credit schedule sum exactly ($23,458,610 for Trace 260327 scenario).
+2. **OZ recapture avoided — character-split (calculations.ts)** — Replaced flat 25% rate with IRC-correct character split per Spec v6.0 §17.1: §1245 (cost-seg/bonus) × federalOrdinaryRate (37%), §1250 (straight-line MACRS) × 25%. Now consistent with `calculateExitTax()`.
+3. **Excel Exit sheet AUM netting (exitSheet.ts)** — Equity waterfall input changed from `grossAfterAllDebt` to `netAfterFees` so investor exit proceeds match engine's `exitProceeds` (which already nets deferred AUM).
+4. **Excel LIHTC sheet PIS month (lihtcSheet.ts)** — Fixed Rule 2 (`||` → `??`) and Rule 4 (reads `rawTimeline?.pisCalendarMonth` instead of normalized `params`). Added `rawTimeline` parameter threading from index.ts.
+5. **Excel Depreciation sheet PIS month (depreciationSheet.ts)** — Same Rule 2/4 fix as LIHTC sheet. Both sheets now use identical PIS month source.
+
+**Runtime verification:** Trace 260327 / 65M / 2.3 / 1300 — Federal LIHTC: $23.46M (matches expected $23,458,610). OZ Benefits: $10.16M (character-split applied).
+
+**Test count:** 1,892 (99 suites, 0 failures). IRR sanity threshold updated for character-split increase (250 → 300).
+
+**Files modified:** calculations.ts, exitSheet.ts, lihtcSheet.ts, depreciationSheet.ts, auditExport/index.ts, auditExport.test.ts

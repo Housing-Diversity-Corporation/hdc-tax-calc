@@ -210,7 +210,8 @@ export function generateLiveExcelModel(data: LiveExcelParams): XLSX.WorkBook {
   allNamedRanges.push(...debtScheduleResult.namedRanges);
 
   // 4. Depreciation (depends on: Inputs, Capital_Stack)
-  const depreciationResult = buildDepreciationSheet(params);
+  // IMPL-161: Pass rawTimeline per LIVE_EXCEL_SYNC_PROTOCOL Rule 4
+  const depreciationResult = buildDepreciationSheet(params, rawTimeline);
   XLSX.utils.book_append_sheet(wb, depreciationResult.sheet, 'Depreciation');
   allNamedRanges.push(...depreciationResult.namedRanges);
 
@@ -220,7 +221,8 @@ export function generateLiveExcelModel(data: LiveExcelParams): XLSX.WorkBook {
   allNamedRanges.push(...taxBenefitsResult.namedRanges);
 
   // 6. LIHTC (depends on: Inputs, Capital_Stack, Depreciation)
-  const lihtcResult = buildLIHTCSheet(params);
+  // IMPL-161: Pass rawTimeline per LIVE_EXCEL_SYNC_PROTOCOL Rule 4
+  const lihtcResult = buildLIHTCSheet(params, rawTimeline);
   XLSX.utils.book_append_sheet(wb, lihtcResult.sheet, 'LIHTC');
   allNamedRanges.push(...lihtcResult.namedRanges);
 

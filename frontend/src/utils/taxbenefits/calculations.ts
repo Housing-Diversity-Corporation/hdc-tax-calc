@@ -629,6 +629,10 @@ export const calculateFullInvestorAnalysis = (
   const pendingFedLIHTC = new Array(totalInvestmentYears + 2).fill(0);
   const pendingStateLIHTC = new Array(totalInvestmentYears + 2).fill(0);
 
+  // IMPL-161: Track consumed LIHTC credits to prevent double-count with remainingLIHTCCredits
+  let consumedFederalLIHTC = 0;
+  let consumedStateLIHTC = 0;
+
   // Track interest reserve balance for lease-up period
   let interestReserveBalance = interestReserveAmount;
   const interestReservePeriodYears = Math.ceil(interestReserveMonths / 12);
@@ -831,6 +835,7 @@ export const calculateFullInvestorAnalysis = (
     let grossDepreciationTaxBenefit = 0; // Benefit before any adjustments
     let depreciationTaxBenefit = 0; // Net benefit to investor
     let yearlyDepreciationAmount = 0; // IMPL-048: Track raw depreciation for OZ recapture avoided
+    let yearly1245Amount = 0; // IMPL-161: §1245 portion (bonus/cost-seg) for character-split recapture
     // IMPL-061: Track bonus vs MACRS breakdown for Returns Buildup Strip
     let bonusTaxBenefit = 0; // Year 1 bonus depreciation tax benefit
     let year1MacrsTaxBenefit = 0; // Year 1 MACRS (partial year) tax benefit
@@ -919,6 +924,8 @@ export const calculateFullInvestorAnalysis = (
 
         // IMPL-048: Track raw depreciation amount for OZ recapture avoided calculation
         yearlyDepreciationAmount = bonusDepreciation + year1MACRS;
+        // IMPL-161: §1245 = bonus (cost-seg), §1250 = year1MACRS (straight-line)
+        yearly1245Amount = bonusDepreciation;
 
       } else if (depreciationYear <= 27.5) {
         // Subsequent years: Annual straight-line depreciation tax benefit
@@ -1718,6 +1725,8 @@ export const calculateFullInvestorAnalysis = (
         earnedStateLIHTCCredit = paramStateLIHTCIntegration.yearlyCredits[creditYear] || 0;
       }
     }
+    // IMPL-161: Track consumed state credits
+    consumedStateLIHTC += earnedStateLIHTCCredit;
 
     // Schedule state LIHTC into pending array with delay shift
     let stateLIHTCCredit: number;
@@ -1745,6 +1754,8 @@ export const calculateFullInvestorAnalysis = (
         earnedFedLIHTCCredit = paramFederalLIHTCCredits[creditYear] || 0;
       }
     }
+    // IMPL-161: Track consumed credits for accurate remaining calculation
+    consumedFederalLIHTC += earnedFedLIHTCCredit;
 
     // Schedule federal LIHTC into pending array with delay shift
     let federalLIHTCCredit: number;
@@ -1761,13 +1772,17 @@ export const calculateFullInvestorAnalysis = (
       federalLIHTCCredit = earnedFedLIHTCCredit;
     }
 
-    // IMPL-048: Calculate OZ recapture avoided for this year
-    // For OZ investors with 10+ year holds, they avoid 25% federal recapture tax on depreciation
-    // This benefit accrues each year as depreciation is taken (not as a lump sum at exit)
+    // IMPL-048 / IMPL-161: Calculate OZ recapture avoided for this year
+    // For OZ investors with 10+ year holds, they avoid federal recapture tax on depreciation.
+    // IMPL-161 FIX: Use character-split per Spec v6.0 §17.1 (was flat 25%):
+    //   §1245 (cost-seg/bonus) × federalOrdinaryRate (37%)
+    //   §1250 (straight-line MACRS) × 25%
     let ozRecaptureAvoided = 0;
     if (params.ozEnabled && totalInvestmentYears >= 10 && yearlyDepreciationAmount > 0) {
-      // 25% federal recapture rate applies to the depreciation amount
-      ozRecaptureAvoided = yearlyDepreciationAmount * 0.25;
+      const federalOrdinaryRate = (params.federalTaxRate || 37) / 100;
+      const sec1250Rate = 0.25;
+      const yearly1250Amount = yearlyDepreciationAmount - yearly1245Amount;
+      ozRecaptureAvoided = (yearly1245Amount * federalOrdinaryRate) + (yearly1250Amount * sec1250Rate);
     }
 
     // IMPL-073/076: State LIHTC syndication proceeds (capital return)
@@ -2039,26 +2054,20 @@ export const calculateFullInvestorAnalysis = (
     });
   }
 
-  // IMPL-030C: Calculate remaining LIHTC credits not captured during hold period
-  // LIHTC is an 11-year schedule (Year 1 prorated, Years 2-10 full, Year 11 catch-up)
-  // For 10-year hold, we need to add Year 11 credit to exit proceeds
-  let remainingFederalLIHTC = 0;
-  let remainingStateLIHTC = 0;
+  // IMPL-030C / IMPL-161: Calculate remaining LIHTC credits not captured during hold period
+  // IMPL-161 FIX: Use consumed tracking instead of index-based slicing to prevent double-count.
+  // Previous approach used holdFromPIS as boundary, which could overlap with credits already
+  // consumed in the annual loop. New approach: remaining = scheduleTotal - consumed.
+  const scheduleTotalFederal = paramFederalLIHTCCredits
+    ? paramFederalLIHTCCredits.reduce((s: number, c: number) => s + (c || 0), 0)
+    : 0;
+  const remainingFederalLIHTC = Math.max(0, scheduleTotalFederal - consumedFederalLIHTC);
 
-  if (paramFederalLIHTCCredits && paramFederalLIHTCCredits.length > holdFromPIS) {
-    // Sum any credits from Year holdFromPIS+1 through end of array
-    for (let i = holdFromPIS; i < paramFederalLIHTCCredits.length; i++) {
-      remainingFederalLIHTC += paramFederalLIHTCCredits[i] || 0;
-    }
-  }
-
-  if (paramStateLIHTCIntegration?.creditPath === 'direct_use' &&
-      paramStateLIHTCIntegration.yearlyCredits &&
-      paramStateLIHTCIntegration.yearlyCredits.length > holdFromPIS) {
-    for (let i = holdFromPIS; i < paramStateLIHTCIntegration.yearlyCredits.length; i++) {
-      remainingStateLIHTC += paramStateLIHTCIntegration.yearlyCredits[i] || 0;
-    }
-  }
+  const scheduleTotalState = (paramStateLIHTCIntegration?.creditPath === 'direct_use' &&
+      paramStateLIHTCIntegration.yearlyCredits)
+    ? paramStateLIHTCIntegration.yearlyCredits.reduce((s: number, c: number) => s + (c || 0), 0)
+    : 0;
+  const remainingStateLIHTC = Math.max(0, scheduleTotalState - consumedStateLIHTC);
 
   const remainingLIHTCCredits = remainingFederalLIHTC + remainingStateLIHTC;
 

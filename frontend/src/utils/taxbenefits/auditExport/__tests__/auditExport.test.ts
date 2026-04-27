@@ -393,10 +393,10 @@ describe('IMPL-023: Audit Export', () => {
       const platformIRR = results.irr;
       // IRR should be positive for a well-structured deal
       expect(platformIRR).toBeGreaterThan(0);
-      // IRR should be reasonable (5-250%) - IMPL-048 fixes increased IRR by correcting
+      // IRR should be reasonable (5-300%) - IMPL-048 fixes increased IRR by correcting
       // exit timing, including OZ benefits, and annual recapture recognition.
-      // Computed hold period (11 years for mid-year PIS) captures more value.
-      expect(platformIRR).toBeLessThan(250);
+      // IMPL-161: Character-split recapture (§1245 @ 37% vs flat 25%) further increases IRR.
+      expect(platformIRR).toBeLessThan(300);
     });
 
     it('should match platform MOIC within 0.01x', () => {

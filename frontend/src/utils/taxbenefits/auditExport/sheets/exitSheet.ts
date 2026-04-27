@@ -155,8 +155,9 @@ export function buildExitSheet(
   ws[`A${currentRow}`] = { t: 's', v: '=== EQUITY WATERFALL ===' };
   currentRow++;
 
-  ws[`A${currentRow}`] = { t: 's', v: 'Gross Exit Proceeds' };
-  ws[`B${currentRow}`] = { t: 'n', v: grossExitProceeds, f: `B${grossAfterAllDebtRow}` } as FormulaCell;
+  // IMPL-161: Equity waterfall starts from net-of-AUM proceeds, matching engine's exitProceeds
+  ws[`A${currentRow}`] = { t: 's', v: 'Gross Exit Proceeds (Net of Deferred AUM)' };
+  ws[`B${currentRow}`] = { t: 'n', v: grossExitProceeds, f: `B${netAfterFeesRow}` } as FormulaCell;
   namedRanges.push({ name: 'GrossExitProceeds', ref: `Exit!$B$${currentRow}` });
   const grossExitRow = currentRow;
   currentRow += 2;
