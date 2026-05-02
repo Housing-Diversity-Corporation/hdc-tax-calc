@@ -1,7 +1,11 @@
 /**
  * OZ Calculations Validation Tests
- * v1.6 - Tests for Opportunity Zone tax calculations and basis step-up
+ * v1.7 - Tests for Opportunity Zone tax calculations and basis step-up
+ * IMPL-163: Added OZ 1.0 vs 2.0 deferral NPV inclusion date tests
  */
+
+import { calculateFullInvestorAnalysis } from '../../calculations';
+import { getDefaultTestParams } from '../test-helpers';
 
 // Inline validation functions (previously in finance-validation-agent)
 interface OZYear5ValidationResult {
@@ -261,5 +265,60 @@ describe('Integration with Calculator', () => {
     const netYear5Impact = ozTaxResult.expectedTax - netDepreciationBenefit;
 
     expect(netYear5Impact).toBeGreaterThan(2); // Investor still owes after depreciation offset
+  });
+});
+
+// IMPL-163: OZ 1.0 vs 2.0 Deferral NPV — inclusion date truncation
+describe('IMPL-163: OZ 1.0 Deferral NPV Inclusion Date', () => {
+  const ozDeferralParams = (overrides: Record<string, unknown>) => getDefaultTestParams({
+    ozEnabled: true,
+    ozType: 'standard' as const,
+    deferredCapitalGains: 10, // $10M
+    capitalGainsTaxRate: 38.2, // 20% LTCG + 3.8% NIIT + ~14.4% state
+    holdPeriod: 10,
+    ...overrides,
+  });
+
+  it('OZ 2.0 regression: deferralYears=5, ozDeferralNPV ≈ $1.220M', () => {
+    const params = ozDeferralParams({
+      ozVersion: '2.0',
+      investmentDate: '2026-09-13',
+    });
+    const result = calculateFullInvestorAnalysis(params);
+    // npvFactor = 1 - 1/(1.08^5) = 0.31942
+    // ozDeferralNPV = 10 × 0.382 × 0.31942 = 1.2202M
+    expect(result.ozDeferralNPV).toBeGreaterThan(1.219);
+    expect(result.ozDeferralNPV).toBeLessThan(1.221);
+  });
+
+  it('OZ 1.0 fix: investmentDate 9/13/26, ozDeferralNPV ≈ $87K', () => {
+    const params = ozDeferralParams({
+      ozVersion: '1.0',
+      investmentDate: '2026-09-13',
+    });
+    const result = calculateFullInvestorAnalysis(params);
+    // deferralYears = 109/365.25 ≈ 0.2984
+    // npvFactor = 1 - 1/(1.08^0.2984) ≈ 0.02283
+    // ozDeferralNPV = 10 × 0.382 × 0.02283 ≈ 0.0872M
+    expect(result.ozDeferralNPV).toBeGreaterThan(0.080);
+    expect(result.ozDeferralNPV).toBeLessThan(0.095);
+  });
+
+  it('OZ 1.0 post-inclusion: investmentDate 1/1/2027 → ozDeferralNPV = $0', () => {
+    const params = ozDeferralParams({
+      ozVersion: '1.0',
+      investmentDate: '2027-01-01',
+    });
+    const result = calculateFullInvestorAnalysis(params);
+    expect(result.ozDeferralNPV).toBe(0);
+  });
+
+  it('OZ 1.0 same-day: investmentDate 12/31/2026 → ozDeferralNPV = $0', () => {
+    const params = ozDeferralParams({
+      ozVersion: '1.0',
+      investmentDate: '2026-12-31',
+    });
+    const result = calculateFullInvestorAnalysis(params);
+    expect(result.ozDeferralNPV).toBe(0);
   });
 });

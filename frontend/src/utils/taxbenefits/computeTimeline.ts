@@ -41,6 +41,7 @@ export function monthsBetween(start: Date, end: Date): number {
  * @param ozEnabled - Whether Opportunity Zone is active
  * @param exitExtensionMonths - Months beyond optimal exit (0+)
  * @param electDeferCreditPeriod - §42(f)(1) election
+ * @param ozVersion - OZ legislation version ('1.0' or '2.0'); IMPL-163
  */
 export function computeTimeline(
   investmentDateStr: string,
@@ -48,7 +49,8 @@ export function computeTimeline(
   pisDateOverride: string | null,
   ozEnabled: boolean,
   exitExtensionMonths: number,
-  electDeferCreditPeriod: boolean
+  electDeferCreditPeriod: boolean,
+  ozVersion: '1.0' | '2.0' = '2.0'
 ): ComputedTimeline {
 
   // 1. PARSE INVESTMENT DATE
@@ -102,7 +104,13 @@ export function computeTimeline(
   const firstLihtcK1Date = new Date(creditStartYear + 1, 3, 15);
 
   // 7. OZ TIMING
-  const ozDeferralEndDate = ozEnabled ? addMonths(investmentDate, 60) : null;
+  // IMPL-163: OZ 1.0 deferral ends Dec 31 2026 per §1400Z-2(b)(1); OZ 2.0 defers 60 months
+  const OZ_1_0_INCLUSION_DATE = new Date('2026-12-31T00:00:00');
+  const ozDeferralEndDate = ozEnabled
+    ? (ozVersion === '1.0'
+      ? (investmentDate < OZ_1_0_INCLUSION_DATE ? OZ_1_0_INCLUSION_DATE : null)
+      : addMonths(investmentDate, 60))
+    : null;
   const ozRecognitionDate = ozDeferralEndDate; // Same date
 
   // 8. ARRAY SIZING (backward compat with annual loop in calculations.ts)

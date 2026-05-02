@@ -99,7 +99,8 @@ export function generateLiveExcelModel(data: LiveExcelParams): XLSX.WorkBook {
         rawParams.pisDateOverride || null,
         rawParams.ozEnabled !== false,
         rawParams.exitExtensionMonths || 0,
-        rawParams.electDeferCreditPeriod || false
+        rawParams.electDeferCreditPeriod || false,
+        rawParams.ozVersion || '2.0'
       )
     : null;
 

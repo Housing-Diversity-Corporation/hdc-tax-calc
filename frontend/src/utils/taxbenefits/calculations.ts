@@ -581,7 +581,8 @@ export const calculateFullInvestorAnalysis = (
       params.pisDateOverride || null,
       params.ozEnabled !== false,  // default true
       params.exitExtensionMonths || 0,
-      params.electDeferCreditPeriod || false
+      params.electDeferCreditPeriod || false,
+      params.ozVersion || '2.0'
     );
   }
 
@@ -2100,7 +2101,11 @@ export const calculateFullInvestorAnalysis = (
     const calculatedCapGainsRate = ltCapitalGainsRate + niitRate + effectiveExitStateCGRate;
     const capitalGainsTaxRateDecimal = (params.capitalGainsTaxRate || calculatedCapGainsRate) / 100;
     const discountRate = 0.08;
-    const deferralYears = 5;
+    // IMPL-163: OZ 1.0 deferral ends Dec 31 2026 per §1400Z-2(b)(1); OZ 2.0 defers 5 years
+    const OZ_1_0_INCLUSION_DATE = new Date('2026-12-31');
+    const deferralYears = (params.ozVersion === '1.0' && params.investmentDate)
+      ? Math.max(0, (OZ_1_0_INCLUSION_DATE.getTime() - new Date(params.investmentDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+      : 5;
     const npvFactor = 1 - (1 / Math.pow(1 + discountRate, deferralYears)); // ~0.32
     ozDeferralNPV = ozDeferredGains * capitalGainsTaxRateDecimal * npvFactor;
 

@@ -150,10 +150,11 @@ export const useHDCState = () => {
       pisDateOverride,
       ozEnabled,
       exitExtensionMonths,
-      electDeferCreditPeriod
+      electDeferCreditPeriod,
+      ozVersion
     );
   }, [investmentDate, constructionDelayMonths, pisDateOverride,
-      ozEnabled, exitExtensionMonths, electDeferCreditPeriod]);
+      ozEnabled, exitExtensionMonths, electDeferCreditPeriod, ozVersion]);
 
   // Prefer computedTimeline when available, fall back to legacy
   const { holdFromPIS, totalInvestmentYears, exitYear, delaySpilloverYears } = useMemo(() => {
