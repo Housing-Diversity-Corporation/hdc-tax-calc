@@ -294,3 +294,37 @@ currentProfile.annualIncome !== undefined
 unset columns. JavaScript `null !== undefined` evaluates to `true`, so a
 `!== undefined` guard passes null through to the formatting call, causing
 `TypeError: Cannot read properties of null (reading 'toLocaleString')`.
+
+---
+
+## OZ 1.0 Deferral NPV — Inclusion Date Truncation
+*Added: May 2026 | Implemented: IMPL-163*
+
+**Incorrect implementation (prior to IMPL-163):** Both OZ 1.0 and OZ 2.0
+computed deferral NPV using a hardcoded 5-year deferral period at 8% discount
+rate. No distinction was made between versions.
+
+**Correction:** Under §1400Z-2(b)(1), OZ 1.0 deferred gains must be recognized
+on the earlier of December 31, 2026 or disposition date. The deferral period
+for OZ 1.0 is therefore the number of days from investmentDate to
+December 31, 2026 — not 5 years. For investment dates on or after
+December 31, 2026, deferralYears = 0 and ozDeferralNPV = 0.
+
+**OZ 2.0 is unaffected:** OBBBA made OZ permanent; the 5-year deferral
+period remains correct for OZ 2.0.
+
+**Magnitude of error:** For a 9/13/26 investment date at 38.2% combined cap
+gains rate on $10M deferred gain:
+- Prior (incorrect): ~$1.22M
+- Corrected: ~$87K
+- Error factor: ~14x
+
+**Files changed (IMPL-163):**
+- calculations.ts:2103-2107 — deferralYears now version-aware
+- computeTimeline.ts:105-112 — ozDeferralEndDate version-aware
+- computeTimeline.ts:52 — ozVersion parameter added
+- useHDCState.ts:153, calculations.ts:584, auditExport/index.ts:102 —
+  ozVersion passed to computeTimeline()
+
+**Authority:** §1400Z-2(b)(1); confirmed against DOCUMENTED_ASSUMPTIONS.md
+§752/OZ Inclusion Basis section (April 2026 Brendan/NSCO confirmation).
