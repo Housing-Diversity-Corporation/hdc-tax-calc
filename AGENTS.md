@@ -70,6 +70,15 @@ When NOT to use: chore work (server restarts, env setup, config tweaks,
 doc edits, debugging conversations). Overkill for non-implementation
 work.
 
+All referenced docs live in `frontend/docs/`:
+- `VALIDATION_PROTOCOL.md`, `VALIDATION_SCENARIOS.md`,
+  `LIVE_EXCEL_SYNC_PROTOCOL.md`, `RUNTIME_UI_VERIFICATION.md`,
+  `debugging-patterns.md`
+- Constitution docs at `frontend/docs/constitution/`:
+  `CALCULATION_ARCHITECTURE.md`, `BACKEND_ENTITY_REGISTRY.md`,
+  `CAPITAL_STACK_STANDARDS.md`, `DEV_ENVIRONMENT_STARTUP.md`,
+  `GIT_WORKFLOW.md`
+
 ```
 BEAD TRACKING
 bd q "<brief description of task>"
@@ -79,14 +88,38 @@ Claim this bead before starting. Close after commit.
 
 CONTEXT
 
-Required reading:
+Required reading (always include):
+- VALIDATION_PROTOCOL.md — mandatory for every IMPL
+- VALIDATION_SCENARIOS.md — update after any IMPL that adds or changes scenarios
 - <file:line range>
 - <file:line range>
 - <relevant spec or doc>
 
+Conditional required reading (include when applicable):
+- LIVE_EXCEL_SYNC_PROTOCOL.md — any IMPL touching audit export or
+  CalculationParams fields
+- RUNTIME_UI_VERIFICATION.md — any IMPL touching UI components, hooks,
+  or display logic
+- debugging-patterns.md — any IMPL investigating unexpected behavior
+
 <2-3 sentence description of what this IMPL does and why. Include the
 problem being solved and the expected outcome. Reference any prior IMPLs
 this depends on or relates to.>
+
+Spec writing doctrine: tight on outcomes, loose on implementation.
+REQUIRED CHANGES below defines what must be true after the change —
+not which files to edit or how to implement it.
+
+---
+
+COORDINATION NOTES
+
+- Branch: main
+- Dependency: <prior IMPL number and commit, or "none">
+- Parallel work: <any other active beads or IMPLs that touch
+  overlapping files, or "none">
+- <Any other coordination flags — e.g., "Angel no longer available
+  for backend work — Brad owns Java/Spring Boot">
 
 ---
 
@@ -118,7 +151,8 @@ Before writing any code:
 grep -n "<term>" <file> | head -20
 
 2. <grep command to confirm no conflicting implementation exists>
-grep -rn "<term>" frontend/src/ --include="*.ts" --include="*.tsx" | head -20
+grep -rn "<term>" frontend/src/ --include="*.ts" --include="*.tsx" \
+  | head -20
 
 3. <grep command to locate insertion point or call site>
 grep -n "<term>" <file> | head -20
@@ -140,44 +174,63 @@ Scenario A — <label>:
 Scenario B — <label>:
 - Input: <value>, <value>, <value>
 - Expected output: <value>
+- Show arithmetic step by step
 
 Scenario C — Zero/default regression:
 - All new params at zero or default
-- All outputs identical to pre-IMPL baseline
+- All outputs must be identical to pre-IMPL baseline
 
 ---
 
 REQUIRED CHANGES
 
+Outcome-focused only. Define what must be true after the change.
+Do not prescribe which files to edit or how to implement unless the
+fix is surgical and the exact lines are known. In that case, paste
+the corrected block.
+
 FILE 1: <filename>
 
-<Outcome-focused description. What must be true after the change, not
-how to implement it. Paste corrected code blocks only where the fix is
-surgical and unambiguous.>
+<What must be true after this change. Expected behavior, not
+implementation path.>
 
 FILE 2: <filename>
 
-<Same pattern — outcome first, code only where necessary.>
+<Same pattern.>
 
 FILE 3: <filename — UI if applicable>
 
-Locate correct component before modifying:
-grep -rn "<relevant term>" frontend/src/components/ --include="*.tsx" | head -20
+Locate correct render path before modifying — never assume which
+component renders a UI section from types alone:
+grep -rn "<relevant term>" frontend/src/components/ \
+  --include="*.tsx" | head -20
 
-<UI outcome description. Input labels, binding, conditional display logic.>
+<UI outcome: what the user must see, what inputs must exist, what
+display conditions apply.>
 
-PROP CHAIN — if new params added, wire through all layers:
-grep -rn "<new param name>" frontend/src/ --include="*.ts" --include="*.tsx" | head -20
+PROP CHAIN — if new params added, wire through all layers in this
+order and no other:
+- types/taxbenefits/index.ts (field declaration)
+- calculations.ts (destructure + logic)
+- useHDCState.ts (state var + return)
+- useHDCCalculations.ts (props interface + engine pass-through)
+- HDCCalculatorMain.tsx (state destructure + props)
+- HDCInputsComponent.tsx (props interface + pass-through)
+- Target UI component (input binding)
 
-Mirror the pattern used for <reference param from prior IMPL>.
+Mirror the exact pattern used for <reference param from prior IMPL>.
+
+grep -rn "<new param name>" frontend/src/ \
+  --include="*.ts" --include="*.tsx" | head -20
 
 ---
 
 TESTS REQUIRED
 
-Add <N> tests to <existing test file or new file>:
+Add <N> tests to <existing test file — grep to locate> or new file:
 
-1. <Test name>: <inputs> — verify <expected output> (±<tolerance> tolerance)
+1. <Test name>: <inputs> — verify <expected output>
+   (±<tolerance> tolerance)
 2. <Test name>: <inputs> — verify <expected output>
 3. <Test name>: <edge case> — verify <expected behavior>
 4. Zero/default regression: all new params at 0 or default — verify
@@ -190,22 +243,54 @@ Baseline: <N> suites, <N> tests, 0 failures.
 
 DEFINITION OF DONE
 
+Standard items (every IMPL):
 - [ ] Audit findings reported before any code written
-- [ ] Audit confirms no material discrepancy with CONTEXT — if it does,
-      CC stopped and reported before proceeding
+- [ ] Audit confirms no material discrepancy with CONTEXT — if it
+      does, CC stopped and reported before proceeding
 - [ ] All grep blockers executed and results reported
 - [ ] Scenarios A, B, C math verified and reported before coding
-- [ ] <File 1> changes surgical — only lines <range>
-- [ ] <File 2> updated
-- [ ] <File 3> UI inputs added — <specific display condition if any>
-- [ ] Full prop chain wired if new params added
+- [ ] Required changes are outcome-verified — not just coded
 - [ ] <N> new tests added and passing
 - [ ] Full test suite: 0 failures
-- [ ] End-to-end: run dev server — set <param> to <value> — report
-      actual screen value for <output> (must be ~<expected>)
-- [ ] End-to-end: set all new params to 0/default — confirm outputs
+- [ ] Item 11: git status + git diff --stat reviewed before commit —
+      diff must show only the expected files
+- [ ] Item 12: SPEC_IMPLEMENTATION_REGISTRY updated with IMPL-<N>
+      entry in same commit
+- [ ] VALIDATION_SCENARIOS.md updated if any scenarios added
+      or changed
+
+UI items (include when IMPL touches UI, hooks, or display logic):
+- [ ] Item 13: Dev server started — full end-to-end user workflow
+      completed — actual screen values reported for all affected
+      outputs before committing. Tests passing is not sufficient.
+      A feature that exists in the engine but is invisible to the
+      user is not done.
+- [ ] RUNTIME_UI_VERIFICATION.md procedure followed
+
+Spec update items (include when IMPL changes documented behavior):
+- [ ] Item 14: Any spec in frontend/docs/specs/ whose described
+      behavior this IMPL changes has been updated in the same commit
+- [ ] Item 15: Updated spec filename(s) listed in completion report
+      alongside modified code files
+
+Export items (include when IMPL touches CalculationParams or export):
+- [ ] LIVE_EXCEL_SYNC_PROTOCOL.md four rules verified:
+      Rule 1 — new CalculationParams field appears in export params
+               object (exportParamsSync.test.ts enforces)
+      Rule 2 — no || for numeric fallbacks — use ?? only
+      Rule 3 — no hardcoded input values in sheet builders
+      Rule 4 — timeline-derived fields read from rawTimeline,
+               not params
+
+End-to-end verification:
+- [ ] Run dev server — set <param> to <value> — report actual
+      screen value for <output> (must be ~<expected>)
+- [ ] Set all new params to 0/default — confirm all outputs
       identical to pre-IMPL baseline
-- [ ] git status + git diff --stat reviewed before commit
-- [ ] SPEC_IMPLEMENTATION_REGISTRY updated with IMPL-<N>
-- [ ] Bead closed after commit
+
+Final:
+- [ ] Constitution checked — if new files created or architecture
+      changed, CALCULATION_ARCHITECTURE.md (frontend/docs/constitution/)
+      updated
+- [ ] Bead closed after commit — not before
 ```
