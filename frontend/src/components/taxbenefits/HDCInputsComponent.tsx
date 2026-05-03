@@ -86,6 +86,10 @@ interface HDCInputsComponentProps {
   setPhilSweepPct?: (value: number) => void;
   hdcDebtFundSweepPct?: number;
   setHdcDebtFundSweepPct?: (value: number) => void;
+  devFeeTotal?: number;
+  setDevFeeTotal?: (value: number) => void;
+  devFeeClosingAmount?: number;
+  setDevFeeClosingAmount?: (value: number) => void;
   interestReserveEnabled: boolean;
   setInterestReserveEnabled: (value: boolean) => void;
   interestReserveMonths: number;
@@ -1076,6 +1080,10 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           setPhilSweepPct={props.setPhilSweepPct}
           hdcDebtFundSweepPct={props.hdcDebtFundSweepPct}
           setHdcDebtFundSweepPct={props.setHdcDebtFundSweepPct}
+          devFeeTotal={props.devFeeTotal}
+          setDevFeeTotal={props.setDevFeeTotal}
+          devFeeClosingAmount={props.devFeeClosingAmount}
+          setDevFeeClosingAmount={props.setDevFeeClosingAmount}
           hdcSubDebtPct={props.hdcSubDebtPct}
           setHdcSubDebtPct={props.setHdcSubDebtPct}
           hdcSubDebtPikRate={props.hdcSubDebtPikRate}

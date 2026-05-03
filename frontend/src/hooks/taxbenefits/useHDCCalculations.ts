@@ -79,6 +79,8 @@ interface UseHDCCalculationsProps {
   philCurrentPayPct: number;
   philSweepPct?: number;
   hdcDebtFundSweepPct?: number;
+  devFeeTotal?: number;
+  devFeeClosingAmount?: number;
   interestReserveEnabled: boolean;
   interestReserveMonths: number;
 
@@ -657,6 +659,8 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       philCurrentPayPct: props.philCurrentPayPct,
       philSweepPct: props.philSweepPct,
       hdcDebtFundSweepPct: props.hdcDebtFundSweepPct,
+      devFeeTotal: props.devFeeTotal,
+      devFeeClosingAmount: props.devFeeClosingAmount,
       interestReserveEnabled: props.interestReserveEnabled,
       interestReserveMonths: props.interestReserveMonths,
       holdPeriod: props.totalInvestmentYears,

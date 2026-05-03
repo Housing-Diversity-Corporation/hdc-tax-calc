@@ -132,6 +132,9 @@ export const useHDCState = () => {
   // IMPL-165: Cash sweep percentages
   const [philSweepPct, setPhilSweepPct] = useState(0);
   const [hdcDebtFundSweepPct, setHdcDebtFundSweepPct] = useState(0);
+  // IMPL-166: Developer Deferred Fee (C Note)
+  const [devFeeTotal, setDevFeeTotal] = useState(0);
+  const [devFeeClosingAmount, setDevFeeClosingAmount] = useState(0);
   
   // Interest Reserve for Year 1 lease-up
   const [interestReserveEnabled, setInterestReserveEnabled] = useState(false);
@@ -575,6 +578,9 @@ export const useHDCState = () => {
     // IMPL-165: Cash sweep percentages
     philSweepPct, setPhilSweepPct,
     hdcDebtFundSweepPct, setHdcDebtFundSweepPct,
+    // IMPL-166: Developer Deferred Fee
+    devFeeTotal, setDevFeeTotal,
+    devFeeClosingAmount, setDevFeeClosingAmount,
 
     // Interest Reserve
     interestReserveEnabled, setInterestReserveEnabled,

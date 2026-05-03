@@ -38,6 +38,8 @@ const HDCCalculatorMain = () => {
     philCurrentPayPct, setPhilCurrentPayPct,
     philSweepPct, setPhilSweepPct,
     hdcDebtFundSweepPct, setHdcDebtFundSweepPct,
+    devFeeTotal, setDevFeeTotal,
+    devFeeClosingAmount, setDevFeeClosingAmount,
     interestReserveEnabled, setInterestReserveEnabled,
     interestReserveMonths, setInterestReserveMonths,
     hdcSubDebtPct, setHdcSubDebtPct,
@@ -276,6 +278,8 @@ const HDCCalculatorMain = () => {
     philCurrentPayPct,
     philSweepPct,
     hdcDebtFundSweepPct,
+    devFeeTotal,
+    devFeeClosingAmount,
 
     // Interest Reserve
     interestReserveEnabled,
@@ -462,6 +466,10 @@ const HDCCalculatorMain = () => {
           setPhilSweepPct={setPhilSweepPct}
           hdcDebtFundSweepPct={hdcDebtFundSweepPct}
           setHdcDebtFundSweepPct={setHdcDebtFundSweepPct}
+          devFeeTotal={devFeeTotal}
+          setDevFeeTotal={setDevFeeTotal}
+          devFeeClosingAmount={devFeeClosingAmount}
+          setDevFeeClosingAmount={setDevFeeClosingAmount}
           interestReserveEnabled={interestReserveEnabled}
           setInterestReserveEnabled={setInterestReserveEnabled}
           interestReserveMonths={interestReserveMonths}

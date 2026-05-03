@@ -64,6 +64,9 @@ const ENGINE_INTERNAL_EXCLUSIONS: Record<string, string> = {
   // IMPL-165: Cash sweep — engine-internal waterfall parameters
   philSweepPct: 'Engine-internal waterfall parameter (IMPL-165)',
   hdcDebtFundSweepPct: 'Engine-internal waterfall parameter (IMPL-165)',
+  // IMPL-166: Developer Deferred Fee — engine-internal
+  devFeeTotal: 'Engine-internal waterfall parameter (IMPL-166)',
+  devFeeClosingAmount: 'Engine-internal waterfall parameter (IMPL-166)',
 
   // DSCR Cash Management — engine-internal
   hdcDeferralInterestRate: 'Engine-internal DSCR parameter',

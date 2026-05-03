@@ -39,6 +39,11 @@ interface CapitalStructureSectionProps {
   setPhilSweepPct?: (value: number) => void;
   hdcDebtFundSweepPct?: number;
   setHdcDebtFundSweepPct?: (value: number) => void;
+  // IMPL-166: Developer Deferred Fee
+  devFeeTotal?: number;
+  setDevFeeTotal?: (value: number) => void;
+  devFeeClosingAmount?: number;
+  setDevFeeClosingAmount?: (value: number) => void;
   hdcSubDebtPct: number;
   setHdcSubDebtPct: (value: number) => void;
   hdcSubDebtPikRate: number;
@@ -149,6 +154,10 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
   setPhilSweepPct,
   hdcDebtFundSweepPct = 0,
   setHdcDebtFundSweepPct,
+  devFeeTotal = 0,
+  setDevFeeTotal,
+  devFeeClosingAmount = 0,
+  setDevFeeClosingAmount,
   hdcSubDebtPct,
   setHdcSubDebtPct,
   hdcSubDebtPikRate,
@@ -1004,6 +1013,47 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
                       </div>
                     </div>
                   )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* IMPL-166: Developer Deferred Fee (C Note) */}
+          {setDevFeeTotal && (
+            <div className="hdc-input-group">
+              <label className="hdc-input-label">
+                Developer Fee — Total ($M)
+              </label>
+              <Input
+                type="number"
+                disabled={isReadOnly}
+                step="0.1"
+                value={devFeeTotal}
+                onChange={(e) => {
+                  const val = e.target.valueAsNumber;
+                  if (!isNaN(val)) setDevFeeTotal(Math.max(0, val));
+                }}
+                className="hdc-input"
+              />
+              {devFeeTotal > 0 && setDevFeeClosingAmount && (
+                <div className="mt-2 p-2 rounded" style={{border: '1px solid var(--hdc-mercury)'}}>
+                  <div className="hdc-input-group">
+                    <label className="hdc-input-label" style={{color: 'var(--hdc-faded-jade)'}}>Closing Piece ($M)</label>
+                    <Input
+                      type="number"
+                      disabled={isReadOnly}
+                      step="0.1"
+                      value={devFeeClosingAmount}
+                      onChange={(e) => {
+                        const val = e.target.valueAsNumber;
+                        if (!isNaN(val)) setDevFeeClosingAmount(Math.max(0, Math.min(val, devFeeTotal)));
+                      }}
+                      className="hdc-input"
+                    />
+                    <div className="hdc-result-label" style={{fontSize: '0.7rem', color: 'var(--hdc-faded-jade)', marginTop: '0.25rem'}}>
+                      Deferred balance: {formatCurrency(devFeeTotal - Math.min(devFeeClosingAmount, devFeeTotal))} (no interest, paid from surplus)
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

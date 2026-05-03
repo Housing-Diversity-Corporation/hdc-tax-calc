@@ -123,6 +123,9 @@ export interface CashFlowItem {
   // IMPL-165: Cash sweep payments
   philSweepPayment?: number;           // Phil debt principal reduction from CADS surplus
   ddfSweepPayment?: number;            // DDF principal reduction from CADS surplus
+  // IMPL-166: Developer Deferred Fee
+  devFeePayment?: number;              // Annual payment from surplus cash
+  devFeeBalance?: number;              // Running deferred balance (face value)
 
   // IMPL-087: Pre-proration annualized NOI (used for trailing 12-month exit valuation)
   annualizedNOI?: number;
@@ -362,6 +365,10 @@ export interface CalculationParams {
   // IMPL-165: Cash sweep percentages — surplus after DSCR swept to reduce PIK balances
   philSweepPct?: number;             // % of CADS surplus swept to phil debt principal reduction (0-100, default 0)
   hdcDebtFundSweepPct?: number;      // % of CADS surplus swept to DDF principal reduction (0-100, default 0)
+
+  // IMPL-166: Developer Deferred Fee (C Note)
+  devFeeTotal?: number;              // Total developer fee (dollar amount, $M)
+  devFeeClosingAmount?: number;      // Portion paid at closing (reduces net equity Year 0)
 
   subDebtPriority?: {
     outsideInvestor: number;

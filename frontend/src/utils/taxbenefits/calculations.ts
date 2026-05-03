@@ -300,6 +300,9 @@ export const calculateFullInvestorAnalysis = (
     // IMPL-165: Cash sweep percentages
     philSweepPct: paramPhilSweepPct = 0,
     hdcDebtFundSweepPct: paramHdcDebtFundSweepPct = 0,
+    // IMPL-166: Developer Deferred Fee (C Note)
+    devFeeTotal: paramDevFeeTotal = 0,
+    devFeeClosingAmount: paramDevFeeClosingAmount = 0,
     // Private Activity Bonds (IMPL-080)
     pabEnabled: paramPabEnabled = false,
     pabPctOfEligibleBasis: paramPabPctOfEligibleBasis = 30,
@@ -490,7 +493,9 @@ export const calculateFullInvestorAnalysis = (
   }
   // IMPL-074: Syndication offset reduces net equity for MOIC/IRR calculation
   const syndicatedEquityOffset = stateLIHTCSyndicationProceeds;
-  const investorEquityAfterOffset = investorEquity - syndicatedEquityOffset;
+  // IMPL-166: Developer closing fee also reduces net equity (paid from investor capital at close)
+  const devFeeClosingOffset = Math.min(paramDevFeeClosingAmount, paramDevFeeTotal);
+  const investorEquityAfterOffset = investorEquity - syndicatedEquityOffset - devFeeClosingOffset;
 
   // Calculate P&I payment for use after IO period ends
   const monthlySeniorDebtPIPayment = calculateMonthlyPayment(seniorDebtAmount, seniorDebtRate, seniorDebtAmortYears);
@@ -550,6 +555,8 @@ export const calculateFullInvestorAnalysis = (
   const hdcDebtFundPrincipal = effectiveProjectCost * (paramHdcDebtFundPct / 100);
   let hdcDebtFundPikBalance = hdcDebtFundPrincipal;
   let philPikBalance = 0; // Track only the PIK portion of philanthropic debt, NOT the principal
+  // IMPL-166: Developer Deferred Fee — face value, no interest
+  let devFeeDeferred = Math.max(0, paramDevFeeTotal - devFeeClosingOffset);
 
   // Track total cost of outside investor debt
   let totalOutsideInvestorCashPaid = 0;
@@ -1442,6 +1449,15 @@ export const calculateFullInvestorAnalysis = (
       ddfSweepPayment = ddfSweepAmount;
     }
 
+    // IMPL-166: Priority 5 — Developer Deferred Fee payment from surplus
+    // Face value, no interest, carry forward unpaid balance
+    let devFeePayment = 0;
+    if (devFeeDeferred > 0 && remainingCash > 0) {
+      devFeePayment = Math.min(remainingCash, devFeeDeferred);
+      devFeeDeferred -= devFeePayment;
+      remainingCash -= devFeePayment;
+    }
+
     // Verify final DSCR is maintained at exactly 1.05x
     const cashPreservedForDSCR = effectiveNOI - totalSoftPaymentsMade - remainingCash
     const finalDSCR = hardDebtService > 0 ?
@@ -1893,6 +1909,9 @@ export const calculateFullInvestorAnalysis = (
       // IMPL-165: Cash sweep payments
       philSweepPayment,
       ddfSweepPayment,
+      // IMPL-166: Developer Deferred Fee
+      devFeePayment,
+      devFeeBalance: devFeeDeferred,
       hdcSubDebtPIKAccrued,
       ozYear5TaxPayment, // Track for display but excluded from totalCashFlow
       stepUpTaxSavings, // IMPL-054: Tax savings from step-up, included in totalCashFlow
@@ -1980,6 +1999,9 @@ export const calculateFullInvestorAnalysis = (
   // IMPL-164: HDC Debt Fund (DDF) at exit is the compounded PIK balance
   const hdcDebtFundAtExit = hdcDebtFundPikBalance;
 
+  // IMPL-166: Developer Deferred Fee remaining balance at exit
+  const devFeeAtExit = devFeeDeferred;
+
   // TIER 3: Preferred Equity (IMPL-7.0-009)
   let preferredEquityAtExit = 0;
   let preferredEquityResult: PreferredEquityResult | undefined;
@@ -2003,10 +2025,12 @@ export const calculateFullInvestorAnalysis = (
 
   // Calculate exit proceeds after debt but before AUM fees
   // IMPL-164: Include hdcDebtFundAtExit in exit debt deduction
-  const grossExitProceedsBeforePrefEquity = Math.max(0, exitValue - remainingDebt - subDebtAtExit - investorSubDebtAtExit - outsideInvestorSubDebtAtExit - hdcDebtFundAtExit);
+  // IMPL-166: Include devFeeAtExit in exit debt deduction
+  const grossExitProceedsBeforePrefEquity = Math.max(0, exitValue - remainingDebt - subDebtAtExit - investorSubDebtAtExit - outsideInvestorSubDebtAtExit - hdcDebtFundAtExit - devFeeAtExit);
 
   // Validate all debt is paid off before equity distribution
   // IMPL-164: Include PAB and DDF in exit validation
+  // IMPL-166: Include devFeeAtExit in exit validation
   validateExitDebtPayoff(
     exitValue,
     remainingSeniorDebt,
@@ -2015,6 +2039,7 @@ export const calculateFullInvestorAnalysis = (
     subDebtAtExit,
     investorSubDebtAtExit + outsideInvestorSubDebtAtExit,
     hdcDebtFundAtExit,
+    devFeeAtExit,
     grossExitProceedsBeforePrefEquity
   );
 
