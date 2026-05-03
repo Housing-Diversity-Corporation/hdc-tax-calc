@@ -128,18 +128,21 @@ export const validatePIKInterestCalculation = (
 /**
  * Validates exit proceeds debt payoff order
  * Ensures all debt types are included
+ * IMPL-164: Added pabDebt and hdcDebtFund parameters
  */
 export const validateExitDebtPayoff = (
   exitValue: number,
   seniorDebt: number,
   philDebt: number,
+  pabDebt: number,
   hdcSubDebt: number,
   investorSubDebt: number,
+  hdcDebtFund: number,
   netProceeds: number
 ): void => {
-  const totalDebt = seniorDebt + philDebt + hdcSubDebt + investorSubDebt;
+  const totalDebt = seniorDebt + philDebt + pabDebt + hdcSubDebt + investorSubDebt + hdcDebtFund;
   const expectedNetProceeds = Math.max(0, exitValue - totalDebt);
-  
+
   if (Math.abs(netProceeds - expectedNetProceeds) > 0.01) {
     throw new Error(
       'CRITICAL ERROR: Exit proceeds must pay off ALL debt before distribution. ' +
@@ -147,8 +150,10 @@ export const validateExitDebtPayoff = (
       `Total debt: $${totalDebt.toLocaleString()} ` +
       `(Senior: $${seniorDebt.toLocaleString()}, ` +
       `Phil: $${philDebt.toLocaleString()}, ` +
+      `PAB: $${pabDebt.toLocaleString()}, ` +
       `HDC Sub: $${hdcSubDebt.toLocaleString()}, ` +
-      `Investor Sub: $${investorSubDebt.toLocaleString()}). ` +
+      `Investor Sub: $${investorSubDebt.toLocaleString()}, ` +
+      `DDF: $${hdcDebtFund.toLocaleString()}). ` +
       'See HDC_CALCULATION_LOGIC.md Step 6.'
     );
   }

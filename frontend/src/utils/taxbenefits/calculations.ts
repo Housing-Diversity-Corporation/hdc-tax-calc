@@ -1921,11 +1921,22 @@ export const calculateFullInvestorAnalysis = (
   const remainingSeniorDebt = monthsOfPIPayments > 0
     ? calculateRemainingBalance(seniorDebtAmount, seniorDebtRate, seniorDebtAmortYears, monthsOfPIPayments)
     : seniorDebtAmount; // Still in IO period or no P&I payments made yet
-  
+
   // Philanthropic debt is always interest-only, so remaining balance is always principal + accumulated PIK
   const remainingPhilDebt = philDebtAmount + philPikBalance;
-  
-  const remainingDebt = remainingSeniorDebt + remainingPhilDebt;
+
+  // IMPL-164: PAB exit balance (pari passu with senior, amortizing)
+  const pabIoEndYear = placedInServiceYear + paramPabIOYears;
+  const pabFullPIYears = Math.max(0, (exitYear - 1) - (pabIoEndYear - 1));
+  const pabPartialPIMonths = (exitYear > pabIoEndYear - 1) ? effectiveExitMonth : 0;
+  const pabMonthsOfPIPayments = pabFullPIYears * 12 + pabPartialPIMonths;
+  const remainingPabDebt = paramPabEnabled && pabAmount > 0
+    ? (pabMonthsOfPIPayments > 0
+      ? calculateRemainingBalance(pabAmount, pabRate, paramPabAmortization, pabMonthsOfPIPayments)
+      : pabAmount)
+    : 0;
+
+  const remainingDebt = remainingSeniorDebt + remainingPhilDebt + remainingPabDebt;
 
   // HDC sub-debt at exit is the compounded balance
   const subDebtAtExit = hdcPikBalance;
@@ -1935,6 +1946,9 @@ export const calculateFullInvestorAnalysis = (
 
   // Outside Investor sub-debt at exit is the compounded balance
   const outsideInvestorSubDebtAtExit = outsideInvestorPikBalance;
+
+  // IMPL-164: HDC Debt Fund (DDF) at exit is the compounded PIK balance
+  const hdcDebtFundAtExit = hdcDebtFundPikBalance;
 
   // TIER 3: Preferred Equity (IMPL-7.0-009)
   let preferredEquityAtExit = 0;
@@ -1958,16 +1972,19 @@ export const calculateFullInvestorAnalysis = (
   }
 
   // Calculate exit proceeds after debt but before AUM fees
-  const grossExitProceedsBeforePrefEquity = Math.max(0, exitValue - remainingDebt - subDebtAtExit - investorSubDebtAtExit - outsideInvestorSubDebtAtExit);
+  // IMPL-164: Include hdcDebtFundAtExit in exit debt deduction
+  const grossExitProceedsBeforePrefEquity = Math.max(0, exitValue - remainingDebt - subDebtAtExit - investorSubDebtAtExit - outsideInvestorSubDebtAtExit - hdcDebtFundAtExit);
 
   // Validate all debt is paid off before equity distribution
-  // Note: Combining investor + outside investor sub-debt for validation (guard expects 5 debt types)
+  // IMPL-164: Include PAB and DDF in exit validation
   validateExitDebtPayoff(
     exitValue,
     remainingSeniorDebt,
     remainingPhilDebt,
+    remainingPabDebt,
     subDebtAtExit,
     investorSubDebtAtExit + outsideInvestorSubDebtAtExit,
+    hdcDebtFundAtExit,
     grossExitProceedsBeforePrefEquity
   );
 

@@ -106,7 +106,8 @@
 | IMPL-161 | Returns buildup and Live Excel sync — five reconciliation fixes | Deployed (2026-04-27) |
 | IMPL-162 | Recapture Avoided sub-line display fix — informational label and muted style in Returns Buildup strip | Deployed (2026-04-27) |
 | IMPL-163 | Fix OZ 1.0 deferral NPV — replace hardcoded 5-year deferral with §1400Z-2(b)(1) inclusion-date-aware calculation. OZ 1.0 deferralYears now computed as days between investmentDate and Dec 31 2026 (÷365.25). OZ 2.0 unchanged (5 years). computeTimeline.ts ozDeferralEndDate also version-aware. 4 new tests, 3 production call sites updated. | Deployed | 2026-05-02 | calculations.ts, computeTimeline.ts, useHDCState.ts, auditExport/index.ts, oz-calculations-validation.test.ts | 1,896 tests (99 suites, 0 failures). |
-| IMPL-164+ | *Unassigned -- available for future work* | -- |
+| IMPL-164 | Fix exit debt payoff — add PAB remaining balance and DDF compounded PIK balance to exit debt sum. PAB amortized balance now computed at exit (mirrors senior debt calc). DDF (hdcDebtFundPikBalance) deducted from gross exit proceeds. validateExitDebtPayoff guard updated with 2 new params (pabDebt, hdcDebtFund). Fixes defects #6, #10, #11 from Phase 2 Trace 4001 reconciliation audit. | Deployed | 2026-05-02 | calculations.ts, calculationGuards.ts, impl-164-exit-debt-completeness.test.ts | 1,900 tests (100 suites, 0 failures). |
+| IMPL-165+ | *Unassigned -- available for future work* | -- |
 
 ---
 
