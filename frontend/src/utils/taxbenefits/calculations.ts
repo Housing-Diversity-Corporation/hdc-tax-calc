@@ -297,6 +297,9 @@ export const calculateFullInvestorAnalysis = (
     hdcDebtFundPikRate: paramHdcDebtFundPikRate = 8,
     hdcDebtFundCurrentPayEnabled: paramHdcDebtFundCurrentPayEnabled = false,
     hdcDebtFundCurrentPayPct: paramHdcDebtFundCurrentPayPct = 50,
+    // IMPL-165: Cash sweep percentages
+    philSweepPct: paramPhilSweepPct = 0,
+    hdcDebtFundSweepPct: paramHdcDebtFundSweepPct = 0,
     // Private Activity Bonds (IMPL-080)
     pabEnabled: paramPabEnabled = false,
     pabPctOfEligibleBasis: paramPabPctOfEligibleBasis = 30,
@@ -1415,6 +1418,30 @@ export const calculateFullInvestorAnalysis = (
       }
     }
 
+    // IMPL-165: Priority 4 — Percentage cash sweeps (phil first, then DDF)
+    // Sweeps reduce PIK balances from CADS surplus after all current-pay and AUM catch-up
+    let philSweepPayment = 0;
+    if (paramPhilSweepPct > 0 && philPikBalance > 0 && remainingCash > 0) {
+      const philSweepAmount = Math.min(
+        remainingCash * (paramPhilSweepPct / 100),
+        philPikBalance
+      );
+      philPikBalance -= philSweepAmount;
+      remainingCash -= philSweepAmount;
+      philSweepPayment = philSweepAmount;
+    }
+
+    let ddfSweepPayment = 0;
+    if (paramHdcDebtFundSweepPct > 0 && hdcDebtFundPikBalance > 0 && remainingCash > 0) {
+      const ddfSweepAmount = Math.min(
+        remainingCash * (paramHdcDebtFundSweepPct / 100),
+        hdcDebtFundPikBalance
+      );
+      hdcDebtFundPikBalance -= ddfSweepAmount;
+      remainingCash -= ddfSweepAmount;
+      ddfSweepPayment = ddfSweepAmount;
+    }
+
     // Verify final DSCR is maintained at exactly 1.05x
     const cashPreservedForDSCR = effectiveNOI - totalSoftPaymentsMade - remainingCash
     const finalDSCR = hardDebtService > 0 ?
@@ -1863,6 +1890,9 @@ export const calculateFullInvestorAnalysis = (
       // HDC Debt Fund (IMPL-082)
       hdcDebtFundCurrentPay: hdcDebtFundCurrentPayDue,
       hdcDebtFundPIKAccrued,
+      // IMPL-165: Cash sweep payments
+      philSweepPayment,
+      ddfSweepPayment,
       hdcSubDebtPIKAccrued,
       ozYear5TaxPayment, // Track for display but excluded from totalCashFlow
       stepUpTaxSavings, // IMPL-054: Tax savings from step-up, included in totalCashFlow

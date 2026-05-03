@@ -129,6 +129,9 @@ export const useHDCState = () => {
   const [philDebtRate, setPhilDebtRate] = useState(DEFAULT_VALUES.PHIL_DEBT_RATE);
   const [philCurrentPayEnabled, setPhilCurrentPayEnabled] = useState(false);
   const [philCurrentPayPct, setPhilCurrentPayPct] = useState(DEFAULT_VALUES.PHIL_CURRENT_PAY_PCT);
+  // IMPL-165: Cash sweep percentages
+  const [philSweepPct, setPhilSweepPct] = useState(0);
+  const [hdcDebtFundSweepPct, setHdcDebtFundSweepPct] = useState(0);
   
   // Interest Reserve for Year 1 lease-up
   const [interestReserveEnabled, setInterestReserveEnabled] = useState(false);
@@ -569,7 +572,10 @@ export const useHDCState = () => {
     philDebtRate, setPhilDebtRate,
     philCurrentPayEnabled, setPhilCurrentPayEnabled,
     philCurrentPayPct, setPhilCurrentPayPct,
-    
+    // IMPL-165: Cash sweep percentages
+    philSweepPct, setPhilSweepPct,
+    hdcDebtFundSweepPct, setHdcDebtFundSweepPct,
+
     // Interest Reserve
     interestReserveEnabled, setInterestReserveEnabled,
     interestReserveMonths, setInterestReserveMonths,

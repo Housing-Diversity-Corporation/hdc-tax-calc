@@ -77,6 +77,8 @@ interface UseHDCCalculationsProps {
   outsideInvestorPikCurrentPayPct: number;
   philCurrentPayEnabled: boolean;
   philCurrentPayPct: number;
+  philSweepPct?: number;
+  hdcDebtFundSweepPct?: number;
   interestReserveEnabled: boolean;
   interestReserveMonths: number;
 
@@ -653,6 +655,8 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       lihtcEligibleBasis: lihtcEligibleBasis,
       philCurrentPayEnabled: props.philCurrentPayEnabled,
       philCurrentPayPct: props.philCurrentPayPct,
+      philSweepPct: props.philSweepPct,
+      hdcDebtFundSweepPct: props.hdcDebtFundSweepPct,
       interestReserveEnabled: props.interestReserveEnabled,
       interestReserveMonths: props.interestReserveMonths,
       holdPeriod: props.totalInvestmentYears,
@@ -848,6 +852,8 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       effectiveTaxRate: taxCalculations.effectiveTaxRateForDepreciation,
       philCurrentPayEnabled: props.philCurrentPayEnabled,
       philCurrentPayPct: props.philCurrentPayPct,
+      philSweepPct: props.philSweepPct,
+      hdcDebtFundSweepPct: props.hdcDebtFundSweepPct,
       holdPeriod: mainAnalysisResults?.holdPeriod || props.totalInvestmentYears,
       // exitMonth removed (IMPL-117) — engine auto-derives from timeline
       constructionDelayMonths: props.constructionDelayMonths || 0,

@@ -82,6 +82,10 @@ interface HDCInputsComponentProps {
   setPhilCurrentPayEnabled: (value: boolean) => void;
   philCurrentPayPct: number;
   setPhilCurrentPayPct: (value: number) => void;
+  philSweepPct?: number;
+  setPhilSweepPct?: (value: number) => void;
+  hdcDebtFundSweepPct?: number;
+  setHdcDebtFundSweepPct?: (value: number) => void;
   interestReserveEnabled: boolean;
   setInterestReserveEnabled: (value: boolean) => void;
   interestReserveMonths: number;
@@ -1068,6 +1072,10 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           setPhilCurrentPayEnabled={props.setPhilCurrentPayEnabled}
           philCurrentPayPct={props.philCurrentPayPct}
           setPhilCurrentPayPct={props.setPhilCurrentPayPct}
+          philSweepPct={props.philSweepPct}
+          setPhilSweepPct={props.setPhilSweepPct}
+          hdcDebtFundSweepPct={props.hdcDebtFundSweepPct}
+          setHdcDebtFundSweepPct={props.setHdcDebtFundSweepPct}
           hdcSubDebtPct={props.hdcSubDebtPct}
           setHdcSubDebtPct={props.setHdcSubDebtPct}
           hdcSubDebtPikRate={props.hdcSubDebtPikRate}

@@ -120,6 +120,9 @@ export interface CashFlowItem {
   // HDC Debt Fund (IMPL-082)
   hdcDebtFundCurrentPay?: number;      // HDC Debt Fund current pay
   hdcDebtFundPIKAccrued?: number;      // HDC Debt Fund PIK accrued
+  // IMPL-165: Cash sweep payments
+  philSweepPayment?: number;           // Phil debt principal reduction from CADS surplus
+  ddfSweepPayment?: number;            // DDF principal reduction from CADS surplus
 
   // IMPL-087: Pre-proration annualized NOI (used for trailing 12-month exit valuation)
   annualizedNOI?: number;
@@ -355,6 +358,10 @@ export interface CalculationParams {
   hdcDebtFundPikRate?: number;         // HDC Debt Fund PIK rate
   hdcDebtFundCurrentPayEnabled?: boolean;
   hdcDebtFundCurrentPayPct?: number;
+
+  // IMPL-165: Cash sweep percentages — surplus after DSCR swept to reduce PIK balances
+  philSweepPct?: number;             // % of CADS surplus swept to phil debt principal reduction (0-100, default 0)
+  hdcDebtFundSweepPct?: number;      // % of CADS surplus swept to DDF principal reduction (0-100, default 0)
 
   subDebtPriority?: {
     outsideInvestor: number;

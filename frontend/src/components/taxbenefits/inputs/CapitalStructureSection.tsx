@@ -34,6 +34,11 @@ interface CapitalStructureSectionProps {
   setPhilCurrentPayEnabled: (value: boolean) => void;
   philCurrentPayPct: number;
   setPhilCurrentPayPct: (value: number) => void;
+  // IMPL-165: Cash sweep percentages
+  philSweepPct?: number;
+  setPhilSweepPct?: (value: number) => void;
+  hdcDebtFundSweepPct?: number;
+  setHdcDebtFundSweepPct?: (value: number) => void;
   hdcSubDebtPct: number;
   setHdcSubDebtPct: (value: number) => void;
   hdcSubDebtPikRate: number;
@@ -140,6 +145,10 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
   setPhilCurrentPayEnabled,
   philCurrentPayPct,
   setPhilCurrentPayPct,
+  philSweepPct = 0,
+  setPhilSweepPct,
+  hdcDebtFundSweepPct = 0,
+  setHdcDebtFundSweepPct,
   hdcSubDebtPct,
   setHdcSubDebtPct,
   hdcSubDebtPikRate,
@@ -643,6 +652,26 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
                 </div>
               </div>
             )}
+
+            {/* IMPL-165: Phil Debt Cash Sweep */}
+            {philDebtPct > 0 && setPhilSweepPct && (
+              <div style={{marginTop: '0.5rem'}}>
+                <div className="flex items-center justify-between">
+                  <label className="hdc-input-label" style={{color: 'var(--hdc-faded-jade)'}}>Cash Sweep (%)</label>
+                </div>
+                <Slider
+                  disabled={isReadOnly}
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={[philSweepPct]}
+                  onValueChange={(vals) => setPhilSweepPct(vals[0])}
+                />
+                <div className="hdc-result-label" style={{fontSize: '0.7rem', color: 'var(--hdc-faded-jade)', marginTop: '0.25rem'}}>
+                  {philSweepPct}% of CADS surplus swept to phil debt principal
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Sub-Debt Payment Priority Configuration */}
@@ -957,6 +986,24 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
                       </div>
                     )}
                   </div>
+
+                  {/* IMPL-165: DDF Cash Sweep */}
+                  {setHdcDebtFundSweepPct && (
+                    <div className="mt-2 p-2 rounded" style={{border: '1px solid var(--hdc-mercury)'}}>
+                      <label className="hdc-input-label" style={{color: 'var(--hdc-cabbage-pont)'}}>Cash Sweep (%)</label>
+                      <Slider
+                        disabled={isReadOnly}
+                        min={0}
+                        max={100}
+                        step={5}
+                        value={[hdcDebtFundSweepPct]}
+                        onValueChange={(vals) => setHdcDebtFundSweepPct(vals[0])}
+                      />
+                      <div className="hdc-result-label" style={{fontSize: '0.7rem', color: 'var(--hdc-cabbage-pont)', marginTop: '0.25rem'}}>
+                        {hdcDebtFundSweepPct}% of CADS surplus swept to DDF principal
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

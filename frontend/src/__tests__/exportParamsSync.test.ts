@@ -61,6 +61,10 @@ const ENGINE_INTERNAL_EXCLUSIONS: Record<string, string> = {
   dealName: 'Metadata, not a calculation input',
   hdcPlatformMode: 'UI mode toggle, not a calculation input',
 
+  // IMPL-165: Cash sweep — engine-internal waterfall parameters
+  philSweepPct: 'Engine-internal waterfall parameter (IMPL-165)',
+  hdcDebtFundSweepPct: 'Engine-internal waterfall parameter (IMPL-165)',
+
   // DSCR Cash Management — engine-internal
   hdcDeferralInterestRate: 'Engine-internal DSCR parameter',
   subDebtDefaultPremium: 'Engine-internal DSCR parameter',
