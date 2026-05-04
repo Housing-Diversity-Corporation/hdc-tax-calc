@@ -114,7 +114,7 @@ and blocked items. Replaces manual Registry update document uploads.
 | HDC Spec Ecosystem Index | v1.0 | frontend/docs/registry/ |
 | HDC Project Knowledge Catalog | v1.4 | frontend/docs/registry/ |
 | Session End Checklist | v1.0 | frontend/docs/registry/ |
-| Map App Integration Reference | v1.0 | frontend/docs/reference/ |
+| Map App Integration Reference | v1.1 | frontend/docs/reference/ |
 | Cross-App Sync Protocol | v1.0 | frontend/docs/registry/ |
 | Implementation Tracker | v10.8 | frontend/docs/IMPLEMENTATION_TRACKER.md |
 | Backend Entity Registry | v1.0 | frontend/docs/constitution/BACKEND_ENTITY_REGISTRY.md |

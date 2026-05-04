@@ -162,7 +162,7 @@ Typed contract between the proforma engine and the Tax Benefits Platform. Define
 
 ---
 
-### Map App Integration Reference v1.0
+### Map App Integration Reference v1.1
 `[Repo — frontend/docs/reference/MAP_APP_INTEGRATION_REFERENCE.md]`
 
 Cross-app reference describing the HDC Map app's capabilities, integration surface, and Slate memo coverage status from the Tax Benefits side. Contains the Angel-confirmed architectural premise (separate apps, separate databases, API-only contract), the Map app capability summary (33 spatial layers, parcel intelligence, LLM/RAG layer, user/personalization, admin/ops), Slate memo coverage verification (5 of 9 capabilities built, 4 reframed as "in development pipeline"), and the five-phase Track 8 cross-app integration surface. Also documents Track 9 continuous validation via the proforma-to-tax-benefits CIE skill loop. Companion document `TAX_BENEFITS_APP_INTEGRATION_REFERENCE.md` lives in the Map repo at `docs/`.
@@ -436,8 +436,8 @@ Three audit documents from January 2026: `CALCULATION-ARCHITECTURE-AUDIT-2026-01
 | Documented assumption question | DOCUMENTED_ASSUMPTIONS.md | Tax Counsel Verification rev2 |
 | Snapshot / publish event question | Deal Snapshot Spec v1.0 | Canonical Schema Spec v1.0 §11 |
 | Investor subscription / DocuSign | Investor Onboarding Spec v1.0 | Platform Roadmap v2.0 Track 4 |
-| Cross-app integration question (Map ↔ Tax Benefits) | Map App Integration Reference v1.0 | Cross-App Sync Protocol v1.0 |
-| Cross-app reference doc out of sync | Cross-App Sync Protocol v1.0 | Map App Integration Reference v1.0 |
+| Cross-app integration question (Map ↔ Tax Benefits) | Map App Integration Reference v1.1 | Cross-App Sync Protocol v1.0 |
+| Cross-app reference doc out of sync | Cross-App Sync Protocol v1.0 | Map App Integration Reference v1.1 |
 
 ---
 

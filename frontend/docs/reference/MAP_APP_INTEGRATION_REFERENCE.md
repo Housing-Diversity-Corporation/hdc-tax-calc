@@ -1,4 +1,4 @@
-# Map App Integration Reference v1.0
+# Map App Integration Reference v1.1
 
 **Date:** 2026-05-04
 **Purpose:** Reference document for the HDC Tax Benefits app project knowledge. Provides Chat and CC working in the Tax Benefits repo with sufficient context about the HDC Map app to plan and execute cross-app integration work without re-auditing. Updated per the Cross-App Sync Protocol when either app changes.
@@ -28,7 +28,9 @@ The two databases serve fundamentally different workloads (geospatial CPU-intens
 
 ## 2. Map App Capability Summary
 
-Source: `specs/HDC_Map_App_Audit_Report.md` (2026-04-09) plus Slate Memo Verification (2026-05-04). Updated as Map app capabilities change.
+Source: `specs/HDC_Map_App_Audit_Report.md` (2026-04-09) plus Slate Memo Verification (2026-05-04) plus CC cross-check from commit 7220029. Updated as Map app capabilities change.
+
+**Verified against Map repo as of 2026-05-04** via CC cross-check during commit 10f8295 (Map side) and 7220029 (Tax Benefits side). Refresh per sync protocol when capability changes.
 
 ### 2.1 Spatial Data Layers (33 surfaced)
 
@@ -49,6 +51,7 @@ Source: `specs/HDC_Map_App_Audit_Report.md` (2026-04-09) plus Slate Memo Verific
 | Point-in-polygon intersection | `IntersectionController` | One-shot |
 | Saved intersections | `SavedIntersectionsController` | Per user |
 | Neighborhood search | `SavedNeighborhoodSearchController` | Per user |
+| Geodata serving (spatial layer queries) | `GeodataController` | Stateless |
 | Choropleth rendering by data column | (frontend) | Session |
 
 ### 2.3 Parcel Intelligence
@@ -71,7 +74,7 @@ Source: `specs/HDC_Map_App_Audit_Report.md` (2026-04-09) plus Slate Memo Verific
 
 ### 2.5 User & Personalization
 
-JWT auth, Google OAuth, favorites (`FavoritesController`), favorite locations (`FavoriteLocationController`), property presets (`PropertyPresetController`), profile/banner images, investor tax info (`InvestorTaxInfoController`).
+JWT auth, Google OAuth, favorites (`FavoritesController`), favorite locations (`FavoriteLocationController`), property presets (`PropertyPresetController`), map markers (`MarkerController`), profile/banner images, investor tax info (`InvestorTaxInfoController`).
 
 ### 2.6 Admin & Ops
 
@@ -122,6 +125,17 @@ The integration target between the two apps. Currently the apps deploy independe
 **Status:** Both apps have `InvestorTaxInfoController`; relationship undefined
 **Decision:** Tax Benefits app owns investor records as source of truth. Map app reads via API, does not maintain its own investor schema. Map-side `InvestorTaxInfoController` becomes a client of Tax Benefits, not a source.
 
+**Cross-app object-level authorization gap (CONFIRMED 2026-05-04):** Both apps currently expose endpoints that return resources without user-scoping:
+
+| App | Controller | Endpoints | Issue |
+|---|---|---|---|
+| Map | `CalculatorConfigurationController` | `GET /all`, `GET /{id}` | Comment notes "for collaboration"; any authenticated user can read any other user's calculator configurations |
+| Tax Benefits | `DealConduitController` | `GET /configurations/all`, `GET /{id}` | No `Principal`, no `@PreAuthorize`; any authenticated user can read any deal conduit by ID |
+
+`InvestmentPoolController` is the only Tax Benefits controller using `@PreAuthorize`, and even that is role-based (`hasAnyRole('TEAM', 'ADMIN', ...)`), not object-level user-scoped.
+
+**Implication for Phase 8.3:** When Phase 8.3 work begins, the object-level authorization spec must be **cross-app scoped, not Tax-Benefits-only**. Both repos have the same gap and the same investor/user identity model. One unified spec covers both. The current Tax Benefits Open Issue ("Object-level authorization | Pre-launch blocker" in `SPEC_REGISTRY_NOTES.md`) is filed as Tax-Benefits-only and should be re-scoped when the spec is written.
+
 ### Phase 8.4 — Map → Tax Benefits Deal Sourcing Trigger
 
 **Spec:** Not yet specced
@@ -155,11 +169,11 @@ Track 9 items live in Tax Benefits repo because the defects surface there. Map r
 | Document | Location | Notes |
 |---|---|---|
 | Map app capability audit | `~/Projects/map/specs/HDC_Map_App_Audit_Report.md` | Dated 2026-04-09; Section 8 superseded by Slate Memo Verification |
-| Slate Memo Verification | `~/Projects/map/specs/Slate_Memo_Verification_2026-05-04.md` (or equivalent) | CC-produced, definitive on the three open Slate memo terms |
-| Map app README | `~/Projects/map/README.md` | Stale on Flyway claim and `hdc.angelfhr.com` URL; cleanup IMPL queued |
+| Slate Memo Verification | `~/Projects/map/specs/SLATE_MEMO_CAPABILITY_VERIFICATION.md` | Committed 2026-05-04 (a1e5118); definitive on the three open Slate memo terms |
+| Map app README | `~/Projects/map/README.md` | Four stale items fixed in 10f8295; five additional accuracy issues queued (regional framing, Zustand, Census API, DB IP, schema discrepancy) |
 | Cross-app reference (Tax Benefits side) | `frontend/docs/reference/MAP_APP_INTEGRATION_REFERENCE.md` (this doc) | Lives in Tax Benefits repo |
-| Cross-app reference (Map side) | `~/Projects/map/docs/TAX_BENEFITS_APP_INTEGRATION_REFERENCE.md` | Lives in Map repo |
-| Cross-App Sync Protocol | Both repos | See Section 7 |
+| Cross-app reference (Map side) | `~/Projects/map/docs/TAX_BENEFITS_APP_INTEGRATION_REFERENCE.md` | Lives in Map repo; committed 10f8295 |
+| Cross-App Sync Protocol | Both repos | `frontend/docs/registry/CROSS_APP_SYNC_PROTOCOL.md` (Tax Benefits) and `~/Projects/map/docs/CROSS_APP_SYNC_PROTOCOL.md` (Map) |
 
 ---
 
@@ -180,7 +194,7 @@ Full protocol in `CROSS_APP_SYNC_PROTOCOL.md` (both repos).
 
 ## 8. Storage and Access
 
-This document lives in the Tax Benefits repo at `frontend/docs/reference/MAP_APP_INTEGRATION_REFERENCE.md` once committed. Currently uploaded to Tax Benefits project knowledge for Chat access.
+This document lives in the Tax Benefits repo at `frontend/docs/reference/MAP_APP_INTEGRATION_REFERENCE.md`. Currently uploaded to Tax Benefits project knowledge for Chat access.
 
 Chat reads this doc to understand Map app capabilities when planning Track 8 integration work without re-auditing.
 
@@ -193,7 +207,8 @@ CC reads this doc when working on integration items (any Track 8 phase, any chan
 | Version | Date | Changes |
 |---|---|---|
 | 1.0 | 2026-05-04 | Initial document. Captures Map app capability state per April-9 audit + Slate Memo Verification + Brad's capability summary. Establishes Track 8 integration surface and Track 9 skill loop relationship. |
+| 1.1 | 2026-05-04 | Added "Verified against Map repo as of 2026-05-04" timestamp to Section 2. Added `GeodataController` to §2.2 Spatial Operations and `MarkerController` to §2.5 User & Personalization (CC cross-check finding). Added cross-app object-level authorization gap to Phase 8.3 with concrete confirmation that `DealConduitController` (Tax Benefits) and `CalculatorConfigurationController` (Map) share the same pattern; flagged that the auth spec must be cross-app scoped, not Tax-Benefits-only. Updated §6 with current commit hashes (a1e5118 Slate verification, 10f8295 Map cross-app docs, 7220029 Tax Benefits cross-app docs) and removed stale `~/Projects/hdc-tax-calc/` local-machine path reference. |
 
 ---
 
-*End of Map App Integration Reference v1.0*
+*End of Map App Integration Reference v1.1*
