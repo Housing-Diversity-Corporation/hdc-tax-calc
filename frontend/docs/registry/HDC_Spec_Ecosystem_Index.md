@@ -86,7 +86,7 @@
 | OZ Benefits strip state tax / NIIT components | Do not surface state tax and NIIT savings explicitly — pre-existing gap | CC | Low |
 | K-1 linkage to investor_snapshot_history | Table design needed | Angel | Low |
 | KYC/AML beneficial ownership table structure | Structure needed | Brad / Sidley | Low |
-| Roadmap v2.0 → v2.1 update | Add Track 8 (Cross-App Integration) and Track 9 (Continuous Validation via CIE Skills); correct stale Phase 1.3 / Track 1 / Track 2 baseline language | Brad / Chat | High |
+| Roadmap v2.0 → v2.1 update | Add Track 8 (5 phases — see MAP_APP_INTEGRATION_REFERENCE.md §4); add Track 9 (Continuous Validation via CIE Skills — see MAP REF §5); correct Phase 1.3 baseline (currently marked "not built", actually substantially built per April-9 Map audit); reconcile Track 1 and Track 2 current-state language with deployed reality | Brad / Chat | High |
 
 ---
 
