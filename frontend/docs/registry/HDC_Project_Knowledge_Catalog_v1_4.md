@@ -1,10 +1,10 @@
 # HDC Project Knowledge Catalog
-## Complete Suite Reference — April 2026
+## Complete Suite Reference — May 2026
 
-**Version:** 1.3
+**Version:** 1.4
 **Purpose:** Substantive description of every document in the HDC project knowledge ecosystem — what it contains, what decisions it records, and why it is load-bearing for the project. Covers both Claude Chat project knowledge files and the synced GitHub repo (`frontend/docs/` and subdirectories).
 
-**State:** Post-April 12, 2026 consolidation. 22 project knowledge documents + 17 repo engineering process documents = 39 total.
+**State:** Post-May 4, 2026 cross-app reference addition. 23 project knowledge documents + 18 repo engineering process documents = 41 total.
 
 ---
 
@@ -159,6 +159,15 @@ Three-layer engine spec to replace deal-specific Excel waterfall models. Seven-p
 Typed contract between the proforma engine and the Tax Benefits Platform. Defines `publishToTaxBenefitsPlatform()` pure mapping function. Thin stateless mapper — if either system's schema changes, only the mapper updates.
 
 **Why it matters:** Without this contract, changes to either engine silently break the integration.
+
+---
+
+### Map App Integration Reference v1.0
+`[Repo — frontend/docs/reference/MAP_APP_INTEGRATION_REFERENCE.md]`
+
+Cross-app reference describing the HDC Map app's capabilities, integration surface, and Slate memo coverage status from the Tax Benefits side. Contains the Angel-confirmed architectural premise (separate apps, separate databases, API-only contract), the Map app capability summary (33 spatial layers, parcel intelligence, LLM/RAG layer, user/personalization, admin/ops), Slate memo coverage verification (5 of 9 capabilities built, 4 reframed as "in development pipeline"), and the five-phase Track 8 cross-app integration surface. Also documents Track 9 continuous validation via the proforma-to-tax-benefits CIE skill loop. Companion document `TAX_BENEFITS_APP_INTEGRATION_REFERENCE.md` lives in the Map repo at `docs/`.
+
+**Why it matters:** Lets Chat and CC plan and execute Track 8 integration work without re-auditing the Map app each session. The April-9 audit showed how a stale reference can anchor an entire planning session to the wrong baseline. Updated per Cross-App Sync Protocol when either app changes.
 
 ---
 
@@ -381,6 +390,15 @@ Pre-commit audit protocol. Before any `git commit`: run `git status`, `git diff 
 
 ---
 
+### Cross-App Sync Protocol v1.0
+`[Repo — frontend/docs/registry/CROSS_APP_SYNC_PROTOCOL.md]`
+
+Process protocol governing how the two cross-app reference docs (`MAP_APP_INTEGRATION_REFERENCE.md` here, `TAX_BENEFITS_APP_INTEGRATION_REFERENCE.md` in the Map repo) stay in sync as either app evolves. Defines trigger conditions (cross-app contracts, capability surface changes, architectural decisions, new track or phase work), update workflow (originating repo queues a CC prompt for the receiving repo), versioning convention (decimal for refinements, whole number for major shifts), cross-repo coordination mechanisms, sync verification at session start, and conflict resolution rules. Lives in both repos because it governs both. Manual workflow is the v1.0 baseline; skill automation deferred until pattern stabilizes.
+
+**Why it matters:** Without this protocol, cross-app reference docs drift the moment one repo updates without the other. The protocol is the durable convention that keeps the two reference docs consistent across sessions.
+
+---
+
 ### frontend/docs/audits/ (three audit reports)
 `[Repo — frontend/docs/audits/]`
 
@@ -418,7 +436,18 @@ Three audit documents from January 2026: `CALCULATION-ARCHITECTURE-AUDIT-2026-01
 | Documented assumption question | DOCUMENTED_ASSUMPTIONS.md | Tax Counsel Verification rev2 |
 | Snapshot / publish event question | Deal Snapshot Spec v1.0 | Canonical Schema Spec v1.0 §11 |
 | Investor subscription / DocuSign | Investor Onboarding Spec v1.0 | Platform Roadmap v2.0 Track 4 |
+| Cross-app integration question (Map ↔ Tax Benefits) | Map App Integration Reference v1.0 | Cross-App Sync Protocol v1.0 |
+| Cross-app reference doc out of sync | Cross-App Sync Protocol v1.0 | Map App Integration Reference v1.0 |
 
 ---
 
-*End of HDC Project Knowledge Catalog v1.3 — April 2026*
+## Version History
+
+| Version | Date | Changes |
+|---|---|---|
+| 1.4 | 2026-05-04 | Added Map App Integration Reference v1.0 (Group 2) and Cross-App Sync Protocol v1.0 (Group 7). Added two cross-app rows to Quick Reference table. Updated total document count 39 → 41. |
+| 1.3 | 2026-04 | Post-April 12 consolidation baseline. 22 project knowledge documents + 17 repo engineering process documents = 39 total. |
+
+---
+
+*End of HDC Project Knowledge Catalog v1.4 — May 2026*

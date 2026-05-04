@@ -32,6 +32,8 @@
 | HDC Tax Provisions Reference | v1.0 | Claude Chat project knowledge | Current. |
 | Tax Counsel Verification | rev2 | Claude Chat project knowledge | Current. Sidley Austin / Daniel Altman. |
 | HDC National Screening Map Engineering Spec | v1.0 | Claude Chat project knowledge | Current. 13-layer geospatial visualization spec. |
+| Map App Integration Reference | v1.0 | frontend/docs/reference/ | New May 2026. Cross-app reference describing Map app capabilities, integration surface (Track 8), and Slate memo coverage status. Updated per Cross-App Sync Protocol. |
+| Cross-App Sync Protocol | v1.0 | frontend/docs/registry/ | New May 2026. Governs sync between the two cross-app reference docs. Lives in both Tax Benefits and Map repos. |
 
 **Archived / Superseded:**
 
@@ -84,6 +86,7 @@
 | OZ Benefits strip state tax / NIIT components | Do not surface state tax and NIIT savings explicitly — pre-existing gap | CC | Low |
 | K-1 linkage to investor_snapshot_history | Table design needed | Angel | Low |
 | KYC/AML beneficial ownership table structure | Structure needed | Brad / Sidley | Low |
+| Roadmap v2.0 → v2.1 update | Add Track 8 (Cross-App Integration) and Track 9 (Continuous Validation via CIE Skills); correct stale Phase 1.3 / Track 1 / Track 2 baseline language | Brad / Chat | High |
 
 ---
 
