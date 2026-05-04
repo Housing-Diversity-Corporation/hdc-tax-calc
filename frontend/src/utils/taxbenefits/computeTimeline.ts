@@ -14,6 +14,7 @@
  */
 
 import { ComputedTimeline } from '../../types/taxbenefits';
+export type { ComputedTimeline };
 
 // ── Date Utilities ──────────────────────────────────────────────
 

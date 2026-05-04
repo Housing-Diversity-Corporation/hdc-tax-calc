@@ -670,6 +670,12 @@ export interface HDCCalculationParams {
   exitMonth?: number;                    // Engine-internal; auto-derived from timeline or defaults to 7
   philCurrentPayEnabled?: boolean;
   philCurrentPayPct?: number;
+  // IMPL-165: Cash sweep percentages — surplus after DSCR swept to reduce PIK balances
+  philSweepPct?: number;             // % of CADS surplus swept to phil debt principal reduction (0-100, default 0)
+  hdcDebtFundSweepPct?: number;      // % of CADS surplus swept to DDF principal reduction (0-100, default 0)
+  // IMPL-166: Developer Deferred Fee (C Note)
+  devFeeTotal?: number;              // Total developer fee (dollar amount, $M)
+  devFeeClosingAmount?: number;      // Portion paid at closing (reduces net equity Year 0)
   interestReserveEnabled?: boolean;
   interestReserveMonths?: number;
   investorCashFlows?: CashFlowItem[]; // Pass investor cash flows to access deferred fee data
