@@ -50,6 +50,79 @@ CRITICAL RULES (from Brad_Ops_Runbook_v2_0.md §16):
 - Never modify OAuth config, S3 bucket, nginx, or SSL without reading the fragile configs section first
 - Describe what you want to accomplish — not how to do it
 
+## Skills
+
+### math-reference-update
+**Location:** `/mnt/skills/user/math-reference-update/SKILL.md`
+
+**Trigger:** MANDATORY at DoD time for any IMPL whose diff includes one or
+more of these files:
+
+```
+calculations.ts
+investorTaxUtilization.ts
+depreciationSchedule.ts
+lihtcCreditCalculations.ts
+stateLIHTCCalculations.ts
+preferredEquityCalculations.ts
+poolAggregation.ts
+investorSizing.ts
+fundSizingOptimizer.ts
+xirrCalculation.ts
+sCurveUtility.ts
+investorFit.ts
+territorialTaxCalculations.ts
+iraConversion.ts
+taxCapacity.ts
+```
+
+**How to trigger:**
+
+At DoD Step 11 (git status + git diff --stat), run:
+
+```bash
+git diff --name-only HEAD
+```
+
+If any trigger file appears in the output, load and run the
+math-reference-update skill before proceeding to commit.
+
+**What it does:**
+
+Audits `frontend/docs/reference/AHF_Mathematical_Reference_v[current].md`
+against the changed code. Runs a 4-point check per affected section:
+1. Line references current?
+2. Formula logic unchanged?
+3. Constants unchanged?
+4. Status flags current?
+
+Reports findings. Makes targeted updates if needed. Commits the updated
+reference in the same push as the IMPL.
+
+**DoD addition (add to every IMPL DoD as Item 16):**
+
+```
+Item 16: Math reference audit
+  - Run: git diff --name-only HEAD
+  - If trigger file present: load math-reference-update skill, run audit
+  - Report: sections audited, changes made, version, commit status
+  - No commit approved if trigger file changed and audit not run
+```
+
+**When no audit is needed:**
+
+Report "No calculation engine files in diff — math reference audit not
+required" and proceed. This confirmation must appear in the DoD report.
+
+**Reference files:**
+
+| File | Path |
+|---|---|
+| Mathematical Reference | frontend/docs/reference/AHF_Mathematical_Reference_v[current].md |
+| Gap Analysis | frontend/docs/reference/AHF_Math_Reference_Gap_Analysis_v[current].md |
+| Outline | frontend/docs/reference/AHF_MathRef_Outline_v[current].md |
+| IMPL Registry | frontend/docs/SPEC_IMPLEMENTATION_REGISTRY_v4_0_UPDATE.md |
+
 4. On completion, run `bd close <id>` and update
    SPEC_IMPLEMENTATION_REGISTRY
 5. Do not request commit approval with any DoD item incomplete
