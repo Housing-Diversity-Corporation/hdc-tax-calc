@@ -120,6 +120,87 @@ should include this note:
 
 ---
 
+## §461(l) Threshold Indexing — Annual Update Protocol
+*Added: May 2026 | Current values: 2025-indexed*
+
+**Statutory basis:** §461(l)(3)(B) requires the excess business
+loss threshold to be adjusted annually for inflation using the
+cost-of-living adjustment formula in §1(f)(3), with the year 2017
+as the base year. Indexed using chained CPI-U (C-CPI-U).
+
+**Current platform values (2025-indexed, per Rev. Proc. 2024-40):**
+
+```
+L^EBL_MFJ    = $626,000   (Married Filing Jointly)
+L^EBL_Single = $313,000   (Single)
+L^EBL_HoH    = $313,000   (Head of Household)
+```
+
+**Codebase location:** Hardcoded in
+investorTaxUtilization.ts:217-221 as SECTION_461L_LIMITS constant
+block.
+
+**Indexing formula** (§1(f)(3) chained CPI-U):
+
+```
+L^EBL(year) = $250K × (C-CPI-U(year-1) / C-CPI-U(2017))
+```
+
+For year 2025: base $250K × cumulative C-CPI-U from 2017 → $313K
+Single, then 2× for MFJ → $626K. Values are rounded down to the
+nearest multiple of $1,000 per the statutory rounding convention
+in §1(f)(7).
+
+**Annual update protocol:**
+
+1. **November of each year:** IRS publishes the following year's
+   inflation-adjusted figures in a Revenue Procedure (typically
+   Rev. Proc. YYYY-NN, released mid-November).
+
+2. **Update the constants block** in
+   investorTaxUtilization.ts:
+   ```
+   SECTION_461L_LIMITS = {
+     MFJ:    NEW_MFJ_VALUE,
+     Single: NEW_SINGLE_VALUE,
+     HoH:    NEW_HOH_VALUE,
+   }
+   ```
+
+3. **Update the comment header** to reflect the new tax year
+   and Rev. Proc. citation:
+   ```
+   /**
+    * 20XX Section 461(l) Excess Business Loss limits
+    * Source: Rev. Proc. YYYY-NN
+    */
+   ```
+
+4. **Update the constants appendix** in the Mathematical
+   Reference if the values change materially.
+
+5. **Re-run validation test:** scripts/validateTaxEngine.test.ts
+   includes thresholds in fixtures; ensure tests still pass.
+
+**Authority:**
+- §461(l)(3)(B): annual inflation adjustment requirement
+- §1(f)(3): chained CPI-U methodology
+- §1(f)(7): rounding to nearest $1,000
+- Rev. Proc. 2024-40: current 2025 values
+
+**Cross-reference:** §461(l) EBL Threshold — W-2 Wages Excluded
+(April 2026 section above).
+
+**Related tax-bracket update note:** The 2025 federal tax brackets
+(TAX_BRACKETS_MFJ, TAX_BRACKETS_SINGLE, TAX_BRACKETS_HOH at
+investorTaxUtilization.ts:236-270) come from the same
+Rev. Proc. 2024-40 release. When updating §461(l) thresholds, also
+confirm whether the brackets need updating in the same release.
+The STANDARD_DEDUCTION constants block (line 226-230) is similarly
+indexed.
+
+---
+
 ## 2025 MFJ Marginal Rate at $500K Gross Income
 *Added: April 2026 validation session | Validated: Scenario C*
 
@@ -187,6 +268,87 @@ event section — add correction note:
 > debt at the inclusion date. This was confirmed via review by external tax
 > counsel (April 2026). Any prior references to §752 "basis protection" for
 > the inclusion event are incorrect.
+
+---
+
+## OZ Inclusion Event — Net Exposure Calculation
+*Added: May 2026 | Active deals: 500 Broadway, 6766*
+
+**Statutory trigger:** Under §1400Z-2(b)(1), all OZ 1.0 deferred
+capital gains are recognized on the earlier of December 31, 2026
+(the inclusion date) or disposition of the QOF interest. The
+platform's engine handles the deferral period correctly (IMPL-163
+truncation) but does NOT model the inclusion-event exposure itself
+— that is, the amount of net tax due at inclusion after
+valuation-based protection.
+
+**Gross inclusion event tax:**
+
+```
+T^inclusion,gross = G^deferred × r^cg,combined
+```
+
+where G^deferred = original deferred capital gain rolled into the
+QOF and r^cg,combined is the investor's combined federal + state +
+NIIT capital gains rate at the inclusion date.
+
+**Basis step-up at inclusion** (per §1400Z-2(b)(2)(B)):
+
+```
+basis^post-inclusion = basis^pre-inclusion + amount recognized
+```
+
+The investor's basis in the QOF interest steps up by the inclusion
+amount, so subsequent gain on full disposition is computed off the
+stepped-up basis.
+
+**Valuation protection — the FMV-below-debt framework:**
+
+Per 26 CFR §1.1400Z2(b)-1(e)(3), the basis used in the inclusion
+computation is determined taking into account only
+§1400Z-2(b)(2)(B). §752 debt allocations do NOT protect the
+inclusion basis. Protection comes entirely from valuation: when
+fair market value (FMV) of the investor's QOF interest is below
+total outstanding debt at the inclusion date, the lesser-of rule
+(§1400Z-2(b)(1)) caps recognition.
+
+**Net inclusion event tax:**
+
+```
+G^recognized = min(G^deferred, max(0, FMV^QOF - debt^outstanding))
+
+T^inclusion,net = G^recognized × r^cg,combined
+```
+
+When FMV ≤ debt^outstanding at inclusion, G^recognized = 0 and the
+investor recognizes nothing at the inclusion date (full deferral
+preserved through the original 10-year hold).
+
+**Active deal exposure** (Spring 2026 review):
+
+- 500 Broadway: estimated net exposure $610K–$859K per
+  Brendan/NSCO valuation analysis
+- 6766: $3M OZ deferred with material real exposure based on
+  current FMV and debt levels
+
+**Platform implementation status:** The engine computes the
+deferral NPV component (E-18 component b) correctly — i.e., the
+time value of deferring T^inclusion,gross. It does NOT compute the
+net exposure itself because the valuation-based protection requires
+per-deal FMV analysis that lives outside the engine. Per-deal
+inclusion-event exposure is tracked operationally by the deal team
+and disclosed in investor materials.
+
+**Authority:**
+- §1400Z-2(b)(1): inclusion event timing
+- §1400Z-2(b)(2)(B): basis step-up at inclusion
+- 26 CFR §1.1400Z2(b)-1(e)(3): basis-for-inclusion computation
+- Brendan/NSCO confirmation (April 2026): §752 debt does NOT
+  protect basis; FMV-below-debt valuation is the correct
+  protection framework
+
+**Cross-reference:** §752/OZ Inclusion Basis section above
+(April 2026).
 
 ---
 
