@@ -179,6 +179,51 @@ explicitly. This is sequenced by dependency, not by calendar.
 
 ---
 
+## Block 12 — Map App Geospatial Enrichment Pipeline
+
+**Status:** Not yet built
+**Depends on:** Canonical schema (IMPL-186), Map App geospatial intersections (built)
+
+**Description:**
+After a deal's location is set in the canonical schema, the Map App validates and enriches the deal record with geospatial data not available in the proforma:
+
+- FMR (Fair Market Rent) by unit type (studio/1BR/2BR/3BR) for the project's market area
+- OZ tract designation — confirmed vs. assumed
+- AMI income limits for the project's county/MSA
+
+These enriched attributes are written back to the canonical schema (deal_project and deal_oz tables) and become inputs to the calculation engine and stack ranking.
+
+**Why it matters:**
+Low FMRs relative to proforma rent assumptions can materially affect NOI and undermine deal viability. OZ tract confirmation affects investor tax benefit calculations. Both are hidden attributes not visible in the proforma alone.
+
+**Intersection status:** Map App ↔ Tax Benefits Platform intersections are built. The enrichment write-back pipeline is not yet implemented.
+
+---
+
+## Block 13 — Deal Stack Ranking / Portfolio View
+
+**Status:** Not yet built
+**Depends on:** Canonical schema (IMPL-186), Map App enrichment pipeline (Block 12)
+
+**Description:**
+A portfolio-level view across all canonical deals, sortable and filterable by any canonical schema attribute:
+
+- State / geography
+- Deal size (units, total project cost)
+- Deal lane (1–4)
+- FMR adequacy (enriched by Map App)
+- OZ status (confirmed/assumed/not applicable)
+- Capital stack complexity (number of debt tranches, equity sources)
+- Pipeline status (draft / internal review / published)
+
+**Why it matters:**
+Affordable equity has been scarce. Deal flow will accelerate after platform launch. Stack ranking allows HDC to quickly prioritize and compare deals across the pipeline without opening each deal individually. This becomes a critical operational tool as deal volume increases.
+
+**Relationship to Claude in Excel:**
+Claude in Excel extracts ~60 fields from each sponsor proforma into the canonical schema. Once populated, the stack ranking view surfaces the full pipeline and identifies where enrichment or additional diligence is needed before a deal enters the calculation engine.
+
+---
+
 ## Parallel Workstreams (Not on Critical Path)
 
 These run independently and don't block the main sequence.
