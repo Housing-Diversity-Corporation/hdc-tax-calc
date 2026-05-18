@@ -108,6 +108,8 @@ interface HDCResultsComponentProps {
   hdcDeferredInterestRate: number;
   philCurrentPayEnabled: boolean;
   philCurrentPayPct: number;
+  // IMPL-185: Soft debt forgivable at exit
+  philDebtForgivenessEnabled?: boolean;
   projectName?: string;
   projectLocation?: string;
   predevelopmentCosts?: number;
@@ -126,6 +128,8 @@ interface HDCResultsComponentProps {
   investorTrack?: 'rep' | 'non-rep';
   stateTaxRate: number;
   deferredCapitalGains: number;
+  // IMPL-185: Investor's Qualified Capital Gain rolled into the QOF ($M)
+  qualifiedCapitalGain?: number;
   hdcFeeRate: number;
 
   // Expandable sections state
@@ -406,6 +410,8 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
                 philDebtAmortization: props.philDebtAmortization || 60,
                 philCurrentPayEnabled: props.philCurrentPayEnabled,
                 philCurrentPayPct: props.philCurrentPayPct,
+                // IMPL-185: Soft debt forgiveness toggle for exit waterfall
+                philDebtForgivenessEnabled: props.philDebtForgivenessEnabled,
 
                 // Capital Structure - HDC Sub-Debt
                 hdcSubDebtPct: props.hdcSubDebtPct,
@@ -448,6 +454,8 @@ const HDCResultsComponent: React.FC<HDCResultsComponentProps> = (props) => {
                 ozVersion: props.ozVersion || '2.0',
                 ozType: props.ozType,
                 deferredCapitalGains: props.deferredCapitalGains,
+                // IMPL-185: Investor's QCG rolled into QOF
+                qualifiedCapitalGain: props.qualifiedCapitalGain,
                 capitalGainsTaxRate: props.ozCapitalGainsTaxRate,
 
                 // IMPL-064: Add missing LIHTC params (metadata uses decimals, params expect percentages)

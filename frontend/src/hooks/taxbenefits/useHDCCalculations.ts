@@ -77,6 +77,8 @@ interface UseHDCCalculationsProps {
   outsideInvestorPikCurrentPayPct: number;
   philCurrentPayEnabled: boolean;
   philCurrentPayPct: number;
+  // IMPL-185: Soft debt forgivable at exit (excludes phil + HDC sub from exit waterfall)
+  philDebtForgivenessEnabled?: boolean;
   philSweepPct?: number;
   hdcDebtFundSweepPct?: number;
   devFeeTotal?: number;
@@ -92,6 +94,8 @@ interface UseHDCCalculationsProps {
   ozType?: 'standard' | 'rural';
   ozVersion?: '1.0' | '2.0';  // IMPL-017: OZ legislation version
   deferredCapitalGains?: number;
+  // IMPL-185: Qualified Capital Gain rolled into QOF (preferred over deferredCapitalGains proxy)
+  qualifiedCapitalGain?: number;
   capitalGainsTaxRate?: number;
 
   // Investor Track and Passive Gains
@@ -657,6 +661,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       lihtcEligibleBasis: lihtcEligibleBasis,
       philCurrentPayEnabled: props.philCurrentPayEnabled,
       philCurrentPayPct: props.philCurrentPayPct,
+      philDebtForgivenessEnabled: props.philDebtForgivenessEnabled,
       philSweepPct: props.philSweepPct,
       hdcDebtFundSweepPct: props.hdcDebtFundSweepPct,
       devFeeTotal: props.devFeeTotal,
@@ -684,6 +689,7 @@ export const useHDCCalculations = (props: UseHDCCalculationsProps) => {
       ozType: props.ozType,
       ozVersion: props.ozVersion,
       deferredCapitalGains: props.deferredCapitalGains,
+      qualifiedCapitalGain: props.qualifiedCapitalGain,
       capitalGainsTaxRate: props.capitalGainsTaxRate,
       // Tax Planning Analysis
       includeDepreciationSchedule: props.includeDepreciationSchedule,

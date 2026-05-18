@@ -16,6 +16,10 @@ interface OpportunityZoneSectionProps {
   setOzVersion: (value: '1.0' | '2.0') => void;
   deferredCapitalGains: number;
   setDeferredCapitalGains: (value: number) => void;
+  // IMPL-185: Investor's QCG rolled into the QOF ($M). Replaces
+  // deferredCapitalGains proxy in OZ deferral/step-up/Year-5 math.
+  qualifiedCapitalGain?: number;
+  setQualifiedCapitalGain?: (value: number) => void;
   capitalGainsTaxRate: number;
   setCapitalGainsTaxRate: (value: number) => void;
   investorEquityAmount?: number; // Pass in the actual investor equity amount for auto-population
@@ -38,6 +42,8 @@ const OpportunityZoneSection: React.FC<OpportunityZoneSectionProps> = ({
   setOzVersion,
   deferredCapitalGains,
   setDeferredCapitalGains,
+  qualifiedCapitalGain = 0,
+  setQualifiedCapitalGain,
   capitalGainsTaxRate,
   setCapitalGainsTaxRate,
   investorEquityAmount = 0,
@@ -212,6 +218,27 @@ const OpportunityZoneSection: React.FC<OpportunityZoneSectionProps> = ({
                 disabled={isReadOnly || !ozEnabled}
               />
             </div>
+
+            {/* IMPL-185: Qualified Capital Gain ($M) */}
+            {setQualifiedCapitalGain && (
+              <div className="hdc-input-group" style={{ marginTop: '1rem', opacity: ozEnabled ? 1 : 0.5 }}>
+                <label className="hdc-input-label">
+                  Qualified Capital Gain amount ($M)
+                  <span style={{ fontSize: '0.7rem', color: '#666', display: 'block', fontWeight: 'normal' }}>
+                    The investor's specific QCG being deferred into the QOF. Leave 0 to fall back to Deferred Capital Gains.
+                  </span>
+                </label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={qualifiedCapitalGain}
+                  onChange={(e) => setQualifiedCapitalGain(Number(e.target.value) || 0)}
+                  className="hdc-input"
+                  disabled={isReadOnly || !ozEnabled}
+                />
+              </div>
+            )}
 
             {/* Capital Gains Tax Rate Display */}
             <div className="hdc-input-group" style={{ marginTop: '1rem' }}>

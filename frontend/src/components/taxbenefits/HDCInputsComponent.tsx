@@ -82,6 +82,9 @@ interface HDCInputsComponentProps {
   setPhilCurrentPayEnabled: (value: boolean) => void;
   philCurrentPayPct: number;
   setPhilCurrentPayPct: (value: number) => void;
+  // IMPL-185: Soft debt forgivable at exit
+  philDebtForgivenessEnabled?: boolean;
+  setPhilDebtForgivenessEnabled?: (value: boolean) => void;
   philSweepPct?: number;
   setPhilSweepPct?: (value: number) => void;
   hdcDebtFundSweepPct?: number;
@@ -204,6 +207,9 @@ interface HDCInputsComponentProps {
   setOzVersion: (value: '1.0' | '2.0') => void;
   deferredCapitalGains: number;
   setDeferredCapitalGains: (value: number) => void;
+  // IMPL-185: Investor's Qualified Capital Gain rolled into the QOF, $M.
+  qualifiedCapitalGain?: number;
+  setQualifiedCapitalGain?: (value: number) => void;
   capitalGainsTaxRate: number;
   setCapitalGainsTaxRate: (value: number) => void;
   // IMPL-071: Depreciation info for recapture display
@@ -472,6 +478,7 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
       props.setPhilDebtAmortization(config.philDebtAmortization ?? 30);
       props.setPhilCurrentPayEnabled?.(config.philCurrentPayEnabled ?? false);
       props.setPhilCurrentPayPct?.(config.philCurrentPayPct ?? 0);
+      props.setPhilDebtForgivenessEnabled?.(config.philDebtForgivenessEnabled ?? false);
       props.setHdcSubDebtPct(config.hdcSubDebtPct ?? 0);
       props.setHdcSubDebtPikRate(config.hdcSubDebtPikRate ?? 8);
       props.setPikCurrentPayEnabled?.(config.pikCurrentPayEnabled ?? false);
@@ -537,6 +544,7 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
         props.setOzType?.(config.ozType ?? 'standard');
         props.setOzVersion?.(config.ozVersion ?? '2.0');
         props.setDeferredCapitalGains?.(config.deferredCapitalGains ?? 0);
+        props.setQualifiedCapitalGain?.(config.qualifiedCapitalGain ?? 0);
         props.setCapitalGainsTaxRate?.(config.capitalGainsTaxRate ?? 23.8);
       }
 
@@ -714,6 +722,7 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
         philDebtAmortization: props.philDebtAmortization,
         philCurrentPayEnabled: props.philCurrentPayEnabled,
         philCurrentPayPct: props.philCurrentPayPct,
+        philDebtForgivenessEnabled: props.philDebtForgivenessEnabled ?? false,
         hdcSubDebtPct: props.hdcSubDebtPct,
         hdcSubDebtPikRate: props.hdcSubDebtPikRate,
         pikCurrentPayEnabled: props.pikCurrentPayEnabled,
@@ -760,6 +769,7 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
         ozVersion: props.ozVersion,  // ISS-043
         ozEnabled: props.ozEnabled,  // ISS-043
         deferredCapitalGains: props.deferredCapitalGains,
+        qualifiedCapitalGain: props.qualifiedCapitalGain ?? 0,
         capitalGainsTaxRate: props.capitalGainsTaxRate,
         stateTaxRate: props.stateTaxRate,
         hdcAdvanceFinancing: props.hdcAdvanceFinancing,
@@ -1076,6 +1086,8 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           setPhilCurrentPayEnabled={props.setPhilCurrentPayEnabled}
           philCurrentPayPct={props.philCurrentPayPct}
           setPhilCurrentPayPct={props.setPhilCurrentPayPct}
+          philDebtForgivenessEnabled={props.philDebtForgivenessEnabled}
+          setPhilDebtForgivenessEnabled={props.setPhilDebtForgivenessEnabled}
           philSweepPct={props.philSweepPct}
           setPhilSweepPct={props.setPhilSweepPct}
           hdcDebtFundSweepPct={props.hdcDebtFundSweepPct}
@@ -1247,6 +1259,8 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
           setOzVersion={props.setOzVersion}
           deferredCapitalGains={props.deferredCapitalGains}
           setDeferredCapitalGains={props.setDeferredCapitalGains}
+          qualifiedCapitalGain={props.qualifiedCapitalGain}
+          setQualifiedCapitalGain={props.setQualifiedCapitalGain}
           capitalGainsTaxRate={props.capitalGainsTaxRate}
           setCapitalGainsTaxRate={props.setCapitalGainsTaxRate}
           investorEquityAmount={investorEquityAmount}

@@ -182,6 +182,9 @@ export interface InvestorAnalysisResults {
   // ISS-050 v3: Separate senior and phil debt for exit sheet accuracy
   remainingSeniorDebtAtExit?: number;
   remainingPhilDebtAtExit?: number;
+  // IMPL-185: Forgivable soft debt (phil + HDC sub) excluded from exit
+  // waterfall when philDebtForgivenessEnabled = true; 0 otherwise.
+  forgivenDebtAtExit?: number;
   subDebtAtExit: number;
   investorSubDebtAtExit: number;
   outsideInvestorSubDebtAtExit: number;
@@ -389,6 +392,9 @@ export interface CalculationParams {
   seniorLoanAmount?: number;
   philCurrentPayEnabled?: boolean;
   philCurrentPayPct?: number;
+  // IMPL-185: When true, phil debt + HDC sub debt PIK balances are
+  // excluded from the exit waterfall (treated as forgiven by the lender).
+  philDebtForgivenessEnabled?: boolean;
   interestReserveEnabled?: boolean;
   interestReserveMonths?: number;
   interestReserveAmount?: number;      // Calculated interest reserve amount
@@ -462,6 +468,11 @@ export interface CalculationParams {
   ozVersion?: '1.0' | '2.0';  // IMPL-017: OZ legislation version
   /** Deferred capital gains in millions (e.g., 5 = $5M deferred gain) */
   deferredCapitalGains?: number;
+  // IMPL-185: Investor's Qualified Capital Gain rolled into the QOF, in $M.
+  // When provided, used in place of deferredCapitalGains for OZ deferral,
+  // step-up, and Year-5 inclusion math. Falls back to deferredCapitalGains
+  // when null/undefined for backward compatibility.
+  qualifiedCapitalGain?: number;
   capitalGainsTaxRate?: number;
 
   // NEW: Tax planning parameters

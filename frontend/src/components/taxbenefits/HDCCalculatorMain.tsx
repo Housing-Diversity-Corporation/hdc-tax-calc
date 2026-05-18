@@ -36,6 +36,7 @@ const HDCCalculatorMain = () => {
     philDebtAmortization, setPhilDebtAmortization,
     philCurrentPayEnabled, setPhilCurrentPayEnabled,
     philCurrentPayPct, setPhilCurrentPayPct,
+    philDebtForgivenessEnabled, setPhilDebtForgivenessEnabled,
     philSweepPct, setPhilSweepPct,
     hdcDebtFundSweepPct, setHdcDebtFundSweepPct,
     devFeeTotal, setDevFeeTotal,
@@ -99,6 +100,7 @@ const HDCCalculatorMain = () => {
     ozType, setOzType,
     ozVersion, setOzVersion,
     deferredCapitalGains, setDeferredCapitalGains,
+    qualifiedCapitalGain, setQualifiedCapitalGain,
     ozCapitalGainsTaxRate, setOzCapitalGainsTaxRate,
 
     // Investor Track and Passive Gains
@@ -276,6 +278,7 @@ const HDCCalculatorMain = () => {
     outsideInvestorPikCurrentPayPct,
     philCurrentPayEnabled,
     philCurrentPayPct,
+    philDebtForgivenessEnabled,
     philSweepPct,
     hdcDebtFundSweepPct,
     devFeeTotal,
@@ -293,6 +296,7 @@ const HDCCalculatorMain = () => {
     ozType,
     ozVersion,
     deferredCapitalGains: deferredCapitalGains,
+    qualifiedCapitalGain,
     capitalGainsTaxRate: ozCapitalGainsTaxRate,
 
     // Investor Track and Passive Gains
@@ -462,6 +466,8 @@ const HDCCalculatorMain = () => {
           setPhilCurrentPayEnabled={setPhilCurrentPayEnabled}
           philCurrentPayPct={philCurrentPayPct}
           setPhilCurrentPayPct={setPhilCurrentPayPct}
+          philDebtForgivenessEnabled={philDebtForgivenessEnabled}
+          setPhilDebtForgivenessEnabled={setPhilDebtForgivenessEnabled}
           philSweepPct={philSweepPct}
           setPhilSweepPct={setPhilSweepPct}
           hdcDebtFundSweepPct={hdcDebtFundSweepPct}
@@ -560,6 +566,8 @@ const HDCCalculatorMain = () => {
           setOzVersion={setOzVersion}
           deferredCapitalGains={deferredCapitalGains}
           setDeferredCapitalGains={setDeferredCapitalGains}
+          qualifiedCapitalGain={qualifiedCapitalGain}
+          setQualifiedCapitalGain={setQualifiedCapitalGain}
           capitalGainsTaxRate={ozCapitalGainsTaxRate}
           setCapitalGainsTaxRate={setOzCapitalGainsTaxRate}
           totalDepreciation={calculations.totalDepreciation}
@@ -772,6 +780,7 @@ const HDCCalculatorMain = () => {
           philDebtAmortization={philDebtAmortization}
           philCurrentPayEnabled={philCurrentPayEnabled}
           philCurrentPayPct={philCurrentPayPct}
+          philDebtForgivenessEnabled={philDebtForgivenessEnabled}
           hdcDeferredInterestRate={hdcDeferredInterestRate}
           interestReserveEnabled={interestReserveEnabled}
           interestReserveMonths={interestReserveMonths}
@@ -793,6 +802,7 @@ const HDCCalculatorMain = () => {
           investorTrack={investorTrack}
           stateTaxRate={stateTaxRate}
           deferredCapitalGains={deferredCapitalGains}
+          qualifiedCapitalGain={qualifiedCapitalGain}
           hdcFeeRate={hdcFeeRate}
           taxCalculationExpanded={taxCalculationExpanded}
           setTaxCalculationExpanded={setTaxCalculationExpanded}

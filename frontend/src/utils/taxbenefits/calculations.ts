@@ -1714,7 +1714,9 @@ export const calculateFullInvestorAnalysis = (
     let ozYear5TaxPayment = 0;
     let stepUpTaxSavings = 0; // IMPL-054: Tax savings from OZ step-up basis
     if (params.ozEnabled && year === 5) {
-      const ozDeferredGains = params.deferredCapitalGains || 0;
+      // IMPL-185: qualifiedCapitalGain is the investor's specific QCG rolled into
+      // the QOF. Falls back to deferredCapitalGains when null for backward compat.
+      const ozDeferredGains = params.qualifiedCapitalGain ?? params.deferredCapitalGains ?? 0;
 
       // Calculate effective capital gains tax rate
       // IMPL-098: Use conformity-aware state rate for OZ Year 5 tax
@@ -1990,6 +1992,17 @@ export const calculateFullInvestorAnalysis = (
   // HDC sub-debt at exit is the compounded balance
   const subDebtAtExit = hdcPikBalance;
 
+  // IMPL-185: Forgivable soft debt at exit. When philDebtForgivenessEnabled is
+  // true, phil debt + HDC sub debt PIK balance are excluded from the exit
+  // waterfall (the lender forgives the balance). Hard debt, investor sub debt,
+  // outside investor sub debt, DDF, and deferred dev fee are still deducted.
+  const forgivenDebtAtExit = params.philDebtForgivenessEnabled
+    ? remainingPhilDebt + subDebtAtExit
+    : 0;
+  const effectiveRemainingPhilDebt = params.philDebtForgivenessEnabled ? 0 : remainingPhilDebt;
+  const effectiveSubDebtAtExit = params.philDebtForgivenessEnabled ? 0 : subDebtAtExit;
+  const effectiveRemainingDebt = remainingSeniorDebt + effectiveRemainingPhilDebt + remainingPabDebt;
+
   // Investor sub-debt at exit is the compounded balance
   const investorSubDebtAtExit = investorPikBalance;
 
@@ -2007,7 +2020,8 @@ export const calculateFullInvestorAnalysis = (
   let preferredEquityResult: PreferredEquityResult | undefined;
 
   if (params.prefEquityEnabled && params.prefEquityPct && params.prefEquityPct > 0) {
-    const proceedsAfterHardDebt = Math.max(0, exitValue - remainingDebt);
+    // IMPL-185: Use effectiveRemainingDebt so forgiven phil debt isn't deducted
+    const proceedsAfterHardDebt = Math.max(0, exitValue - effectiveRemainingDebt);
 
     preferredEquityResult = calculatePreferredEquity({
       prefEquityEnabled: params.prefEquityEnabled,
@@ -2026,17 +2040,21 @@ export const calculateFullInvestorAnalysis = (
   // Calculate exit proceeds after debt but before AUM fees
   // IMPL-164: Include hdcDebtFundAtExit in exit debt deduction
   // IMPL-166: Include devFeeAtExit in exit debt deduction
-  const grossExitProceedsBeforePrefEquity = Math.max(0, exitValue - remainingDebt - subDebtAtExit - investorSubDebtAtExit - outsideInvestorSubDebtAtExit - hdcDebtFundAtExit - devFeeAtExit);
+  // IMPL-185: Use effective* values so forgiven phil + HDC sub debt
+  // are excluded when philDebtForgivenessEnabled is true.
+  const grossExitProceedsBeforePrefEquity = Math.max(0, exitValue - effectiveRemainingDebt - effectiveSubDebtAtExit - investorSubDebtAtExit - outsideInvestorSubDebtAtExit - hdcDebtFundAtExit - devFeeAtExit);
 
   // Validate all debt is paid off before equity distribution
   // IMPL-164: Include PAB and DDF in exit validation
   // IMPL-166: Include devFeeAtExit in exit validation
+  // IMPL-185: Validator receives effective (post-forgiveness) balances so the
+  // reconciliation assertion holds when soft debt is forgiven.
   validateExitDebtPayoff(
     exitValue,
     remainingSeniorDebt,
-    remainingPhilDebt,
+    effectiveRemainingPhilDebt,
     remainingPabDebt,
-    subDebtAtExit,
+    effectiveSubDebtAtExit,
     investorSubDebtAtExit + outsideInvestorSubDebtAtExit,
     hdcDebtFundAtExit,
     devFeeAtExit,
@@ -2162,7 +2180,8 @@ export const calculateFullInvestorAnalysis = (
   if (params.ozEnabled && totalInvestmentYears >= 10) {
     // B) Deferral NPV: Time value of deferring capital gains tax for 5 years (8% discount rate)
     // IMPL-098: Use conformity-aware state rate for exit appreciation
-    const ozDeferredGains = params.deferredCapitalGains || 0;
+    // IMPL-185: Prefer qualifiedCapitalGain over deferredCapitalGains proxy
+    const ozDeferredGains = params.qualifiedCapitalGain ?? params.deferredCapitalGains ?? 0;
     const ltCapitalGainsRate = params.ltCapitalGainsRate || 20;
     const niitRate = params.niitRate || 3.8;
     const effectiveExitStateCGRate = getEffectiveStateCapGainsRate(
@@ -2381,6 +2400,8 @@ export const calculateFullInvestorAnalysis = (
     // ISS-050 v3: Export separate senior and phil debt for exit sheet accuracy
     remainingSeniorDebtAtExit: remainingSeniorDebt,
     remainingPhilDebtAtExit: remainingPhilDebt,
+    // IMPL-185: Soft debt (phil + HDC sub) forgiven at exit when toggle on; 0 otherwise.
+    forgivenDebtAtExit,
     subDebtAtExit: subDebtAtExit,
     investorSubDebtAtExit: investorSubDebtAtExit,
     outsideInvestorSubDebtAtExit: outsideInvestorSubDebtAtExit,

@@ -129,6 +129,8 @@ export const useHDCState = () => {
   const [philDebtRate, setPhilDebtRate] = useState(DEFAULT_VALUES.PHIL_DEBT_RATE);
   const [philCurrentPayEnabled, setPhilCurrentPayEnabled] = useState(false);
   const [philCurrentPayPct, setPhilCurrentPayPct] = useState(DEFAULT_VALUES.PHIL_CURRENT_PAY_PCT);
+  // IMPL-185: Soft debt forgivable at exit (phil + HDC sub excluded from waterfall)
+  const [philDebtForgivenessEnabled, setPhilDebtForgivenessEnabled] = useState(false);
   // IMPL-165: Cash sweep percentages
   const [philSweepPct, setPhilSweepPct] = useState(0);
   const [hdcDebtFundSweepPct, setHdcDebtFundSweepPct] = useState(0);
@@ -145,6 +147,9 @@ export const useHDCState = () => {
   const [ozType, setOzType] = useState<'standard' | 'rural'>('standard');
   const [ozVersion, setOzVersion] = useState<'1.0' | '2.0'>('2.0'); // IMPL-017: OZ legislation version
   const [deferredCapitalGains, setDeferredCapitalGains] = useState(0);
+  // IMPL-185: Investor's Qualified Capital Gain rolled into the QOF ($M).
+  // Preferred over deferredCapitalGains for OZ deferral/step-up/Year-5 math.
+  const [qualifiedCapitalGain, setQualifiedCapitalGain] = useState(0);
   const [ozCapitalGainsTaxRate, setOzCapitalGainsTaxRate] = useState(23.8); // Default to federal LTCG + NIIT
 
   // === NEW: Date-driven timeline (IMPL-112) ===
@@ -575,6 +580,7 @@ export const useHDCState = () => {
     philDebtRate, setPhilDebtRate,
     philCurrentPayEnabled, setPhilCurrentPayEnabled,
     philCurrentPayPct, setPhilCurrentPayPct,
+    philDebtForgivenessEnabled, setPhilDebtForgivenessEnabled,
     // IMPL-165: Cash sweep percentages
     philSweepPct, setPhilSweepPct,
     hdcDebtFundSweepPct, setHdcDebtFundSweepPct,
@@ -591,6 +597,7 @@ export const useHDCState = () => {
     ozType, setOzType,
     ozVersion, setOzVersion,
     deferredCapitalGains, setDeferredCapitalGains,
+    qualifiedCapitalGain, setQualifiedCapitalGain,
     ozCapitalGainsTaxRate, setOzCapitalGainsTaxRate,
 
     // Investor Type

@@ -56,6 +56,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
     philDebtAmortization, setPhilDebtAmortization,
     philCurrentPayEnabled, setPhilCurrentPayEnabled,
     philCurrentPayPct, setPhilCurrentPayPct,
+    philDebtForgivenessEnabled, setPhilDebtForgivenessEnabled,
     interestReserveEnabled, setInterestReserveEnabled,
     interestReserveMonths, setInterestReserveMonths,
     hdcSubDebtPct, setHdcSubDebtPct,
@@ -110,6 +111,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
     ozType, setOzType,
     ozVersion, setOzVersion,
     deferredCapitalGains, setDeferredCapitalGains,
+    qualifiedCapitalGain, setQualifiedCapitalGain,
     ozCapitalGainsTaxRate, setOzCapitalGainsTaxRate,
 
     // Investor Track and Passive Gains
@@ -322,6 +324,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
             // Current pay settings
             setPhilCurrentPayEnabled(config.philCurrentPayEnabled || false);
             setPhilCurrentPayPct(config.philCurrentPayPct || 0);
+            setPhilDebtForgivenessEnabled(config.philDebtForgivenessEnabled || false);
             setPikCurrentPayEnabled(config.pikCurrentPayEnabled || false);
             setPikCurrentPayPct(config.pikCurrentPayPct || 0);
             setInvestorPikCurrentPayEnabled(config.investorPikCurrentPayEnabled || false);
@@ -462,6 +465,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
     ozEnabled,
     ozType,
     deferredCapitalGains: deferredCapitalGains,
+    qualifiedCapitalGain,
     capitalGainsTaxRate: ozCapitalGainsTaxRate,
 
     // Investor Track and Passive Gains
@@ -513,6 +517,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
     philDebtAmortization,
     philCurrentPayEnabled,
     philCurrentPayPct,
+    philDebtForgivenessEnabled,
 
     // Sub-debt
     hdcSubDebtPct,
@@ -561,6 +566,7 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
     ozEnabled,
     ozType,
     deferredCapitalGains: deferredCapitalGains,
+    qualifiedCapitalGain,
     capitalGainsTaxRate: ozCapitalGainsTaxRate,
 
     // Tax planning
@@ -810,6 +816,8 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
           setPhilCurrentPayEnabled={setPhilCurrentPayEnabled}
           philCurrentPayPct={philCurrentPayPct}
           setPhilCurrentPayPct={setPhilCurrentPayPct}
+          philDebtForgivenessEnabled={philDebtForgivenessEnabled}
+          setPhilDebtForgivenessEnabled={setPhilDebtForgivenessEnabled}
           interestReserveEnabled={interestReserveEnabled}
           setInterestReserveEnabled={setInterestReserveEnabled}
           interestReserveMonths={interestReserveMonths}
@@ -896,6 +904,8 @@ const InvestorAnalysisCalculator: React.FC<InvestorAnalysisCalculatorProps> = ({
           setOzVersion={setOzVersion}
           deferredCapitalGains={deferredCapitalGains}
           setDeferredCapitalGains={setDeferredCapitalGains}
+          qualifiedCapitalGain={qualifiedCapitalGain}
+          setQualifiedCapitalGain={setQualifiedCapitalGain}
           capitalGainsTaxRate={ozCapitalGainsTaxRate}
           setCapitalGainsTaxRate={setOzCapitalGainsTaxRate}
           investorTrack={investorTrack}

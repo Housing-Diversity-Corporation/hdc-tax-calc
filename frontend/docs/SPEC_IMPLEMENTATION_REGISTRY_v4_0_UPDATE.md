@@ -320,3 +320,26 @@ Collapsible read-only panel on Screen 2 showing the full `computeTimeline()` tra
 **Test count:** 1,892 (99 suites, 0 failures). No label text asserted in existing tests.
 
 **Files modified:** ReturnsBuiltupStrip.tsx
+
+### IMPL-185: Exit Model Forgiveness Toggle + OZ QCG Fix
+
+**Status:** ✅ Complete (2026-05-18)
+
+**Problem:** Two accuracy gaps in the engine.
+
+1. **Exit waterfall over-deducted forgivable soft debt.** Phil debt and HDC sub debt PIK balances are expected to be forgiven by their lenders (mission lender soft money; HDC's own platform capital), yet the engine deducted them at exit alongside hard debt. On Queenswood with ~$111.6M of forgivable balances, this produced $0 net LP proceeds.
+2. **OZ math used `deferredCapitalGains` as a proxy for the investor's full QOF investment.** For investors whose investment mixes qualified gains with non-gain capital, this overstated OZ deferral NPV, step-up savings, and Year-5 inclusion tax proportional to the non-gain share.
+
+**Changes:**
+1. **`philDebtForgivenessEnabled` toggle (InputCapitalStructure + CalculationParams).** When `true`, the exit waterfall in calculations.ts excludes `remainingPhilDebt + subDebtAtExit` (HDC PIK) from the deduction. Hard debt (senior, PAB), investor sub debt, outside investor sub debt, DDF, and deferred dev fee remain deducted normally. Default is `false` — existing sessions behave identically.
+2. **`forgivenDebtAtExit` exported on `InvestorAnalysisResults`** so the exit sheet can show the credit. `validateExitDebtPayoff` receives effective (post-forgiveness) balances so the conservation-of-capital assertion still holds.
+3. **`qualifiedCapitalGain` field (InputOpportunityZone + CalculationParams).** Engine uses `params.qualifiedCapitalGain ?? params.deferredCapitalGains ?? 0` in OZ Year-5 inclusion (calculations.ts:1717) and 10-year deferral NPV (calculations.ts:2165). Backward compatible — null/undefined falls back to legacy proxy.
+4. **UI: "Soft debt forgivable at exit" toggle** added to `CapitalStructureSection.tsx` next to phil debt current pay. **"Qualified Capital Gain amount ($M)" input** added to `OpportunityZoneSection.tsx`.
+5. **State + props wired** through `useHDCState`, `useHDCCalculations`, `HDCCalculatorMain`, `HDCInputsComponent`, `HDCResultsComponent` (Live Excel export), `InvestorAnalysisCalculator` (investor portal), and `calculatorService` (persistence).
+6. **DOCUMENTED_ASSUMPTIONS.md** — two new sections ("OZ Qualified Capital Gain Amount", "Exit Model — Forgivable Soft Debt at Exit") record the prior incorrect implementation and IMPL-185 closure.
+
+**Runtime verification:** Calculator with material phil + HDC sub balances, toggle flip moved net LP Exit Proceeds **$12.65M → $32.77M** (+$20.12M, 0.91x → 2.37x) as expected.
+
+**Test count:** 1,918 (103 suites, 0 failures). Six new IMPL-185 tests in `impl-185-forgiveness-and-qcg.test.ts`.
+
+**Files modified:** calculations.ts; InputCapitalStructure.java, InputOpportunityZone.java; types/taxbenefits/index.ts; useHDCState.ts, useHDCCalculations.ts; HDCCalculatorMain.tsx, HDCInputsComponent.tsx, HDCResultsComponent.tsx; inputs/CapitalStructureSection.tsx, inputs/OpportunityZoneSection.tsx; investor-portal/InvestorAnalysis/InvestorAnalysisCalculator.tsx; services/taxbenefits/calculatorService.ts; docs/DOCUMENTED_ASSUMPTIONS.md; new test impl-185-forgiveness-and-qcg.test.ts; new runtime script verify-impl-185.sh.

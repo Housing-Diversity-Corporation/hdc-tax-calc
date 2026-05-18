@@ -490,3 +490,96 @@ gains rate on $10M deferred gain:
 
 **Authority:** §1400Z-2(b)(1); confirmed against DOCUMENTED_ASSUMPTIONS.md
 §752/OZ Inclusion Basis section (April 2026 Brendan/NSCO confirmation).
+
+---
+
+## OZ Qualified Capital Gain Amount
+*Added: May 2026 | Closed by: IMPL-185*
+
+**Incorrect implementation (prior to IMPL-185):** When `ozEnabled = true`,
+the engine treated `deferredCapitalGains` as a proxy for the investor's
+full QOF investment. All OZ deferral, step-up, and Year-5 inclusion math
+ran off that single proxy. For an investor whose QOF investment contains
+both qualified capital gains and non-gain capital, this overstated OZ
+benefits in proportion to the non-gain share.
+
+**Correction (IMPL-185):** `qualifiedCapitalGain` added to
+`InputOpportunityZone` (and `CalculationParams`) as an explicit
+per-investor input ($M). When set, the engine uses this amount in place
+of `deferredCapitalGains` for:
+
+- Year-5 inclusion tax: `taxableGains = qualifiedCapitalGain × (1 - stepUpPercent)`
+- Step-up basis tax savings: `qualifiedCapitalGain × stepUpPercent × capitalGainsTaxRate`
+- 10-year deferral NPV: `qualifiedCapitalGain × capitalGainsTaxRate × npvFactor`
+
+**Backward compatibility:** Falls back to `deferredCapitalGains` when
+`qualifiedCapitalGain` is null/undefined, so existing saved sessions
+produce identical output until the investor's QCG is entered explicitly.
+
+**Files changed (IMPL-185):**
+- `calculations.ts:1717` — Year-5 math uses `qualifiedCapitalGain ?? deferredCapitalGains`
+- `calculations.ts:2165` — 10-yr deferral NPV uses same fallback
+- `InputOpportunityZone.java` — new column `qualified_capital_gain`
+- `CalculationParams` (types/taxbenefits) — `qualifiedCapitalGain?: number`
+- `OpportunityZoneSection.tsx` — UI input for QCG ($M)
+
+**Authority:** §1400Z-2(a)(1); cross-references the existing "OZ
+Inclusion Event — Net Exposure Calculation" section above, which uses
+`G^deferred` to denote the per-investor QCG rolled into the QOF.
+
+**Cross-reference:** Exit Model — Forgivable Soft Debt at Exit section
+below (also IMPL-185).
+
+---
+
+## Exit Model — Forgivable Soft Debt at Exit
+*Added: May 2026 | Closed by: IMPL-185*
+
+**Incorrect implementation (prior to IMPL-185):** The exit waterfall
+deducted all outstanding debt balances at exit, including philanthropic
+soft debt and HDC sub debt PIK balances that are expected to be forgiven
+by the lender (mission lender soft money on the philanthropic side; HDC's
+own platform capital on the HDC sub side). On deals like Queenswood with
+~$111.6M of forgivable soft debt, this produced $0 net LP proceeds at
+exit — an artifact of treating forgivable balances as hard debt.
+
+**Correction (IMPL-185):** `philDebtForgivenessEnabled` boolean added to
+`InputCapitalStructure` (and `CalculationParams`). When `true`, the
+engine excludes `remainingPhilDebt + subDebtAtExit` (HDC sub PIK balance)
+from the exit-waterfall deduction. Hard debt (senior, PAB), investor sub
+debt, outside investor sub debt, HDC Debt Fund, and deferred dev fee are
+still deducted normally.
+
+The forgiven amount is exported as `forgivenDebtAtExit` on
+`InvestorAnalysisResults` so the exit sheet can display the credit:
+
+```
+forgivenDebtAtExit = philDebtForgivenessEnabled
+  ? remainingPhilDebt + subDebtAtExit
+  : 0
+```
+
+`validateExitDebtPayoff` receives the effective (post-forgiveness)
+balances so the conservation-of-capital assertion still holds.
+
+**Backward compatibility:** Default is `false`; existing saved sessions
+behave exactly as before until the toggle is turned on.
+
+**Scope:** Forgiveness applies to phil debt and HDC sub debt only.
+Investor sub debt (investor's own money), outside investor sub debt, and
+the HDC Debt Fund are not in scope — they remain deducted at exit.
+
+**Queenswood reference (May 2026):**
+- Non-forgivable at exit: HDC 1st mortgage $41.2M + Deferred Dev Fee $10.4M (= $51.6M) + investor/outside sub balances + DDF
+- Forgivable at exit (toggle ON): HPD 3rd Mortgage $91.6M + HDC 2nd Mortgage $20.0M = **$111.6M**
+- Net LP proceeds with toggle ON: > 0 (was $0 with toggle implicit-OFF)
+
+**Files changed (IMPL-185):**
+- `calculations.ts:1988-2003, 2029, 2034-2044` — effective-balance filter + validator update
+- `calculationGuards.ts` — validator unchanged; receives effective values from caller
+- `InputCapitalStructure.java` — new column `phil_debt_forgiveness_enabled`
+- `CalculationParams`, `InvestorAnalysisResults` (types/taxbenefits) — toggle input + `forgivenDebtAtExit` output
+- `CapitalStructureSection.tsx` — UI toggle next to phil debt current pay
+
+**Cross-reference:** OZ Qualified Capital Gain Amount section above
+(also IMPL-185).

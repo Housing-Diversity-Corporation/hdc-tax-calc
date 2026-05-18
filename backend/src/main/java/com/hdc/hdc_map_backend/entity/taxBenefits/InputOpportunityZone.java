@@ -32,6 +32,9 @@ public class InputOpportunityZone {
     @JsonProperty("deferredCapitalGains")
     private Double ozDeferredCapitalGains;
 
+    @Column(name = "qualified_capital_gain")
+    private Double qualifiedCapitalGain;
+
     @Column(name = "oz_capital_gains_tax_rate")
     private Double ozCapitalGainsTaxRate;
 
@@ -102,6 +105,14 @@ public class InputOpportunityZone {
 
     public void setOzDeferredCapitalGains(Double ozDeferredCapitalGains) {
         this.ozDeferredCapitalGains = ozDeferredCapitalGains;
+    }
+
+    public Double getQualifiedCapitalGain() {
+        return qualifiedCapitalGain;
+    }
+
+    public void setQualifiedCapitalGain(Double qualifiedCapitalGain) {
+        this.qualifiedCapitalGain = qualifiedCapitalGain;
     }
 
     public Double getOzCapitalGainsTaxRate() {

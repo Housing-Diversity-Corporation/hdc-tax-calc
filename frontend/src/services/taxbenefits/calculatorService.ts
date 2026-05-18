@@ -26,6 +26,8 @@ export interface CalculatorConfiguration {
   philDebtAmortization: number;
   philCurrentPayEnabled?: boolean;
   philCurrentPayPct?: number;
+  // IMPL-185: Soft debt forgivable at exit
+  philDebtForgivenessEnabled?: boolean;
   hdcSubDebtPct: number;
   hdcSubDebtPikRate: number;
   pikCurrentPayEnabled?: boolean;
@@ -66,6 +68,8 @@ export interface CalculatorConfiguration {
   ozType?: 'standard' | 'rural';
   ozVersion?: '1.0' | '2.0';  // ISS-043: OZ legislation version
   deferredCapitalGains?: number;
+  // IMPL-185: Qualified Capital Gain rolled into QOF (preferred input for OZ math)
+  qualifiedCapitalGain?: number;
   ozCapitalGainsTaxRate?: number;
   capitalGainsTaxRate?: number;
   stateTaxRate?: number;

@@ -62,6 +62,9 @@ public class InputCapitalStructure {
     @Column(name = "phil_current_pay_pct")
     private Double philCurrentPayPct;
 
+    @Column(name = "phil_debt_forgiveness_enabled")
+    private Boolean philDebtForgivenessEnabled;
+
     // HDC Sub Debt
     @Column(name = "hdc_sub_debt_pct")
     private Double hdcSubDebtPct;
@@ -304,6 +307,14 @@ public class InputCapitalStructure {
 
     public void setPhilCurrentPayPct(Double philCurrentPayPct) {
         this.philCurrentPayPct = philCurrentPayPct;
+    }
+
+    public Boolean getPhilDebtForgivenessEnabled() {
+        return philDebtForgivenessEnabled;
+    }
+
+    public void setPhilDebtForgivenessEnabled(Boolean philDebtForgivenessEnabled) {
+        this.philDebtForgivenessEnabled = philDebtForgivenessEnabled;
     }
 
     public Double getHdcSubDebtPct() {

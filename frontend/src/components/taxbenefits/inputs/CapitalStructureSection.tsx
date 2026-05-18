@@ -34,6 +34,9 @@ interface CapitalStructureSectionProps {
   setPhilCurrentPayEnabled: (value: boolean) => void;
   philCurrentPayPct: number;
   setPhilCurrentPayPct: (value: number) => void;
+  // IMPL-185: Soft debt forgivable at exit (phil + HDC sub excluded from waterfall)
+  philDebtForgivenessEnabled?: boolean;
+  setPhilDebtForgivenessEnabled?: (value: boolean) => void;
   // IMPL-165: Cash sweep percentages
   philSweepPct?: number;
   setPhilSweepPct?: (value: number) => void;
@@ -150,6 +153,8 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
   setPhilCurrentPayEnabled,
   philCurrentPayPct,
   setPhilCurrentPayPct,
+  philDebtForgivenessEnabled = false,
+  setPhilDebtForgivenessEnabled,
   philSweepPct = 0,
   setPhilSweepPct,
   hdcDebtFundSweepPct = 0,
@@ -659,6 +664,24 @@ const CapitalStructureSection: React.FC<CapitalStructureSectionProps> = ({
                     </div>
                   )}
                 </div>
+                {/* IMPL-185: Soft debt forgivable at exit toggle */}
+                {setPhilDebtForgivenessEnabled && (
+                  <div className="mt-2 p-2 rounded" style={{border: '1px solid var(--hdc-mercury)'}}>
+                    <div className="flex items-center justify-between">
+                      <label className="hdc-input-label" style={{color: 'var(--hdc-faded-jade)'}}>Soft debt forgivable at exit</label>
+                      <HDCCheckbox
+                        checked={philDebtForgivenessEnabled}
+                        onCheckedChange={setPhilDebtForgivenessEnabled}
+                        disabled={isReadOnly}
+                      />
+                    </div>
+                    {philDebtForgivenessEnabled && (
+                      <div className="hdc-result-label" style={{fontSize: '0.7rem', color: 'var(--hdc-faded-jade)', marginTop: '0.25rem'}}>
+                        Phil debt + HDC sub debt PIK balance excluded from exit waterfall.
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
