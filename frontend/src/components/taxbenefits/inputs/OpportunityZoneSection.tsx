@@ -73,9 +73,17 @@ const OpportunityZoneSection: React.FC<OpportunityZoneSectionProps> = ({
 
   // Preview Year 5 tax impact (actual calculation happens in engine)
   // IMPL-017: Use centralized helper for OZ version support
+  // IMPL-187: Mirror engine resolution — qualifiedCapitalGain || deferredCapitalGains
   const stepUpPercent = getOzStepUpPercent(ozVersion, ozType);
-  const taxableGains = deferredCapitalGains * (1 - stepUpPercent);
+  const resolvedGains = qualifiedCapitalGain || deferredCapitalGains || 0;
+  const taxableGains = resolvedGains * (1 - stepUpPercent);
   const year5TaxDue = taxableGains * (capitalGainsTaxRate / 100);
+
+  // IMPL-187: Dynamic label for preview row reflecting which field is being used
+  const resolvedGainsLabel =
+    qualifiedCapitalGain > 0 ? 'Qualified Capital Gain'
+    : deferredCapitalGains > 0 ? 'Deferred Capital Gains (legacy)'
+    : 'Capital Gains';
 
   return (
     <div className="hdc-calculator">
@@ -200,32 +208,13 @@ const OpportunityZoneSection: React.FC<OpportunityZoneSectionProps> = ({
               </div>
             </div>
 
-            {/* Deferred Capital Gains */}
-            <div className="hdc-input-group" style={{ marginTop: '1rem', opacity: ozEnabled ? 1 : 0.5 }}>
-              <label className="hdc-input-label">
-                Deferred Capital Gains ($M)
-                <span style={{ fontSize: '0.7rem', color: '#666', display: 'block', fontWeight: 'normal' }}>
-                  Auto-populated from investor equity amount
-                </span>
-              </label>
-              <Input
-                type="number"
-                step="0.1"
-                min="0"
-                value={deferredCapitalGains}
-                onChange={(e) => setDeferredCapitalGains(Number(e.target.value) || 0)}
-                className="hdc-input"
-                disabled={isReadOnly || !ozEnabled}
-              />
-            </div>
-
-            {/* IMPL-185: Qualified Capital Gain ($M) */}
+            {/* IMPL-187: Qualified Capital Gain ($M) — primary OZ gain input */}
             {setQualifiedCapitalGain && (
               <div className="hdc-input-group" style={{ marginTop: '1rem', opacity: ozEnabled ? 1 : 0.5 }}>
                 <label className="hdc-input-label">
-                  Qualified Capital Gain amount ($M)
+                  Qualified Capital Gain ($M)
                   <span style={{ fontSize: '0.7rem', color: '#666', display: 'block', fontWeight: 'normal' }}>
-                    The investor's specific QCG being deferred into the QOF. Leave 0 to fall back to Deferred Capital Gains.
+                    Investor's capital gains rolled into the QOF. Enter the investor's QCG; leave at 0 to fall back to Deferred Capital Gains below.
                   </span>
                 </label>
                 <Input
@@ -239,6 +228,26 @@ const OpportunityZoneSection: React.FC<OpportunityZoneSectionProps> = ({
                 />
               </div>
             )}
+
+            {/* IMPL-187: Deferred Capital Gains — legacy fallback, de-emphasized */}
+            <div className="hdc-input-group" style={{ marginTop: '1rem', opacity: ozEnabled ? 0.55 : 0.4 }}>
+              <label className="hdc-input-label" style={{ color: '#888', fontSize: '0.8rem' }}>
+                Deferred Capital Gains ($M) <span style={{ fontSize: '0.65rem', fontStyle: 'italic' }}>(legacy)</span>
+                <span style={{ fontSize: '0.7rem', color: '#888', display: 'block', fontWeight: 'normal' }}>
+                  Legacy field — use Qualified Capital Gain above. Only applies if QCG is left at zero.
+                </span>
+              </label>
+              <Input
+                type="number"
+                step="0.1"
+                min="0"
+                value={deferredCapitalGains}
+                onChange={(e) => setDeferredCapitalGains(Number(e.target.value) || 0)}
+                className="hdc-input"
+                disabled={isReadOnly || !ozEnabled}
+                style={{ fontSize: '0.85rem' }}
+              />
+            </div>
 
             {/* Capital Gains Tax Rate Display */}
             <div className="hdc-input-group" style={{ marginTop: '1rem' }}>
@@ -260,7 +269,7 @@ const OpportunityZoneSection: React.FC<OpportunityZoneSectionProps> = ({
             </div>
 
             {/* Year 5 Tax Preview - only show when OZ is enabled */}
-            {ozEnabled && deferredCapitalGains > 0 && (
+            {ozEnabled && resolvedGains > 0 && (
               <div style={{ marginTop: '1.5rem' }}>
                 <h4 style={{
                   fontSize: '0.875rem',
@@ -280,16 +289,16 @@ const OpportunityZoneSection: React.FC<OpportunityZoneSectionProps> = ({
                   backgroundColor: 'rgba(255, 200, 100, 0.05)',
                 }}>
                   <div className="hdc-result-row" style={{ fontSize: '0.875rem' }}>
-                    <span className="hdc-result-label">Deferred Capital Gains:</span>
+                    <span className="hdc-result-label">{resolvedGainsLabel}:</span>
                     <span className="hdc-result-value">
-                      ${(deferredCapitalGains * 1000000).toLocaleString()}
+                      ${(resolvedGains * 1000000).toLocaleString()}
                     </span>
                   </div>
 
                   <div className="hdc-result-row" style={{ fontSize: '0.875rem' }}>
                     <span className="hdc-result-label">Basis Step-Up ({(stepUpPercent * 100).toFixed(0)}%):</span>
                     <span className="hdc-result-value" style={{ color: 'var(--hdc-cabbage-pont)' }}>
-                      -${((deferredCapitalGains * stepUpPercent) * 1000000).toLocaleString()}
+                      -${((resolvedGains * stepUpPercent) * 1000000).toLocaleString()}
                     </span>
                   </div>
 

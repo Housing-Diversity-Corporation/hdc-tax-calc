@@ -343,3 +343,32 @@ Collapsible read-only panel on Screen 2 showing the full `computeTimeline()` tra
 **Test count:** 1,918 (103 suites, 0 failures). Six new IMPL-185 tests in `impl-185-forgiveness-and-qcg.test.ts`.
 
 **Files modified:** calculations.ts; InputCapitalStructure.java, InputOpportunityZone.java; types/taxbenefits/index.ts; useHDCState.ts, useHDCCalculations.ts; HDCCalculatorMain.tsx, HDCInputsComponent.tsx, HDCResultsComponent.tsx; inputs/CapitalStructureSection.tsx, inputs/OpportunityZoneSection.tsx; investor-portal/InvestorAnalysis/InvestorAnalysisCalculator.tsx; services/taxbenefits/calculatorService.ts; docs/DOCUMENTED_ASSUMPTIONS.md; new test impl-185-forgiveness-and-qcg.test.ts; new runtime script verify-impl-185.sh.
+
+### IMPL-187: OZ Capital Gains Field Resolution Fix
+
+**Status:** ✅ Engine + Preview alignment shipped (2026-05-18); auto-populate source pending capital-structure audit.
+
+**Problem:** IMPL-185 introduced `qualifiedCapitalGain` (QCG) as the primary OZ gain input but three gaps remained, surfaced during the Queenswood CIE session:
+
+1. **`??` operator never falls back to `deferredCapitalGains`.** State initializes QCG to `0` (not `undefined`), so `params.qualifiedCapitalGain ?? params.deferredCapitalGains` resolves to `0` for every default session. UI help text claimed "Leave 0 to fall back" — operationally untrue.
+2. **Year-5 OZ Tax Payment Preview reads `deferredCapitalGains` directly.** The IMPL-185 patch updated the engine but missed the duplicate math in `OpportunityZoneSection.tsx`. Preview and engine produced different numbers — preview showed $1.75M from the legacy proxy, engine showed $0 from QCG=0.
+3. **Auto-populate sets the wrong field from the wrong source.** `OpportunityZoneSection.tsx` and a duplicate in `InvestorTaxAndOZSection.tsx` set `deferredCapitalGains = investorEquityAmount` (full equity residual, includes DDF + accrued interest). Should set `qualifiedCapitalGain` from LP cash equity. *(Deferred — capital-structure audit pending to identify correct source variable.)*
+
+**Changes shipped:**
+
+1. **Engine `??` → `||` at both sites.** `calculations.ts:1719` (Year-5 inclusion) and `calculations.ts:2185` (10-yr deferral NPV) now use `params.qualifiedCapitalGain || params.deferredCapitalGains || 0` so the default-0 state falls through, matching UI behavior expectation.
+2. **Preview UI aligned with engine.** `OpportunityZoneSection.tsx` preview now computes from `qualifiedCapitalGain || deferredCapitalGains || 0`. Preview label switches dynamically: "Qualified Capital Gain" when QCG > 0, "Deferred Capital Gains (legacy)" when falling back, "Capital Gains" otherwise.
+3. **Field hierarchy in UI.** QCG input reordered above DCG input in OZ section. DCG visually de-emphasized (gray label, "(legacy)" tag, lower opacity, smaller font) without being removed (preserves backward compatibility with saved deals).
+4. **DOCUMENTED_ASSUMPTIONS.md** "OZ Qualified Capital Gain Amount" section updated to record the IMPL-187 partial refinement, with explicit note that auto-populate source is pending the capital-structure audit.
+
+**Changes pending (next IMPL-187 amendment after capital-structure audit):**
+
+5. Replace the current `setDeferredCapitalGains(investorEquityAmount)` auto-populate with `setQualifiedCapitalGain(<LP cash equity>)`, source variable to be determined by audit. Auto-populate will gate on `ozEnabled = true`.
+6. Remove the duplicate auto-populate in `InvestorTaxAndOZSection.tsx`.
+7. Update QCG helper text to "Defaults to 100% of investor equity when OZ is enabled — override if the investor's QCG is less than their total equity contribution."
+
+**Runtime verification:** Calculator OZ section with project loaded (investorEquity-based DCG = $8.17M auto-populated under old logic). QCG override to $5M → preview "Qualified Capital Gain: $5,000,000 / Year 5 Tax Due: $1,071,000" matches engine cash flow Year 5 OZ Tax = $(1.071)M. QCG reset to 0 → preview "Deferred Capital Gains (legacy): $8,170,000 / Year 5 Tax Due: $1,750,014" matches engine $(1.750)M via `||` fallback.
+
+**Test count:** Four new IMPL-187 tests in `impl-187-qcg-fallback.test.ts`; 109/109 OZ-touching suite tests pass (impl-185 + impl-187 + investorTaxUtilization + investorB3Integration + fundSizingOptimizer).
+
+**Files modified:** calculations.ts (2 sites); inputs/OpportunityZoneSection.tsx; docs/DOCUMENTED_ASSUMPTIONS.md; new test impl-187-qcg-fallback.test.ts.

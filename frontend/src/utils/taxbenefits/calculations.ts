@@ -1715,8 +1715,9 @@ export const calculateFullInvestorAnalysis = (
     let stepUpTaxSavings = 0; // IMPL-054: Tax savings from OZ step-up basis
     if (params.ozEnabled && year === 5) {
       // IMPL-185: qualifiedCapitalGain is the investor's specific QCG rolled into
-      // the QOF. Falls back to deferredCapitalGains when null for backward compat.
-      const ozDeferredGains = params.qualifiedCapitalGain ?? params.deferredCapitalGains ?? 0;
+      // the QOF. IMPL-187: || (not ??) so the default-0 state initialization triggers
+      // the deferredCapitalGains fallback as the UI help text promises.
+      const ozDeferredGains = params.qualifiedCapitalGain || params.deferredCapitalGains || 0;
 
       // Calculate effective capital gains tax rate
       // IMPL-098: Use conformity-aware state rate for OZ Year 5 tax
@@ -2181,7 +2182,8 @@ export const calculateFullInvestorAnalysis = (
     // B) Deferral NPV: Time value of deferring capital gains tax for 5 years (8% discount rate)
     // IMPL-098: Use conformity-aware state rate for exit appreciation
     // IMPL-185: Prefer qualifiedCapitalGain over deferredCapitalGains proxy
-    const ozDeferredGains = params.qualifiedCapitalGain ?? params.deferredCapitalGains ?? 0;
+    // IMPL-187: || so default-0 falls back, matching engine Year-5 site and UI help text
+    const ozDeferredGains = params.qualifiedCapitalGain || params.deferredCapitalGains || 0;
     const ltCapitalGainsRate = params.ltCapitalGainsRate || 20;
     const niitRate = params.niitRate || 3.8;
     const effectiveExitStateCGRate = getEffectiveStateCapGainsRate(

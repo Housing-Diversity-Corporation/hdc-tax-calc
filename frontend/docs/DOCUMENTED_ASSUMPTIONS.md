@@ -494,7 +494,7 @@ gains rate on $10M deferred gain:
 ---
 
 ## OZ Qualified Capital Gain Amount
-*Added: May 2026 | Closed by: IMPL-185*
+*Added: May 2026 | Closed by: IMPL-185 | Refined: IMPL-187*
 
 **Incorrect implementation (prior to IMPL-185):** When `ozEnabled = true`,
 the engine treated `deferredCapitalGains` as a proxy for the investor's
@@ -512,16 +512,44 @@ of `deferredCapitalGains` for:
 - Step-up basis tax savings: `qualifiedCapitalGain × stepUpPercent × capitalGainsTaxRate`
 - 10-year deferral NPV: `qualifiedCapitalGain × capitalGainsTaxRate × npvFactor`
 
-**Backward compatibility:** Falls back to `deferredCapitalGains` when
-`qualifiedCapitalGain` is null/undefined, so existing saved sessions
-produce identical output until the investor's QCG is entered explicitly.
+**Refinement (IMPL-187 — partial; auto-populate source pending capital-structure audit):**
 
-**Files changed (IMPL-185):**
-- `calculations.ts:1717` — Year-5 math uses `qualifiedCapitalGain ?? deferredCapitalGains`
-- `calculations.ts:2165` — 10-yr deferral NPV uses same fallback
-- `InputOpportunityZone.java` — new column `qualified_capital_gain`
-- `CalculationParams` (types/taxbenefits) — `qualifiedCapitalGain?: number`
-- `OpportunityZoneSection.tsx` — UI input for QCG ($M)
+1. **Operator change — `??` → `||`:** State initializes
+   `qualifiedCapitalGain` to `0` (not `undefined`), so `??` never
+   triggered the documented fallback. Both engine sites
+   (`calculations.ts:1719`, `calculations.ts:2185`) now use `||` so
+   `0` falls through to `deferredCapitalGains`, matching the UI help
+   text and state initialization.
+
+2. **Preview UI aligned with engine:** Year-5 OZ Tax Payment Preview
+   in `OpportunityZoneSection.tsx` previously read `deferredCapitalGains`
+   directly. Now resolves via the same
+   `qualifiedCapitalGain || deferredCapitalGains` logic as the engine,
+   so the preview and engine always show the same number.
+
+3. **Field hierarchy:** `qualifiedCapitalGain` is the primary input;
+   `deferredCapitalGains` is now displayed as a legacy fallback in the
+   UI (used when QCG is left at zero).
+
+4. **Pending (IMPL-187 follow-up):** The existing auto-populate that
+   sets `deferredCapitalGains` from `investorEquityAmount` (full equity
+   residual, includes DDF + accrued interest) will be replaced with an
+   auto-populate that sets `qualifiedCapitalGain` from the LP cash
+   contribution. Final source variable is awaiting the capital-structure
+   sources audit. Duplicate auto-populate in `InvestorTaxAndOZSection.tsx`
+   will be removed in the same change.
+
+**Backward compatibility:** Saved sessions with `qualifiedCapitalGain = 0`
+(or null/undefined) and a non-zero `deferredCapitalGains` continue to
+produce identical engine output via the `||` fallback. Trace 4001 (no
+QCG, `deferredCapitalGains = 10`) preserved.
+
+**Files changed (IMPL-185 + IMPL-187 partial):**
+- `calculations.ts:1719` — Year-5 math uses `qualifiedCapitalGain || deferredCapitalGains` (IMPL-187: was `??`)
+- `calculations.ts:2185` — 10-yr deferral NPV uses same fallback (IMPL-187: was `??`)
+- `InputOpportunityZone.java` — new column `qualified_capital_gain` (IMPL-185)
+- `CalculationParams` (types/taxbenefits) — `qualifiedCapitalGain?: number` (IMPL-185)
+- `OpportunityZoneSection.tsx` — UI input for QCG ($M); preview reads resolved gain; DCG marked legacy (IMPL-187)
 
 **Authority:** §1400Z-2(a)(1); cross-references the existing "OZ
 Inclusion Event — Net Exposure Calculation" section above, which uses
