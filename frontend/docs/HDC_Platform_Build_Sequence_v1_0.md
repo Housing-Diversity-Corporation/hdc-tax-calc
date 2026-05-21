@@ -224,6 +224,96 @@ Claude in Excel extracts ~60 fields from each sponsor proforma into the canonica
 
 ---
 
+## Track 10 — Compliance Layer
+
+**Status:** Not yet built
+**Depends on:** Canonical schema (IMPL-186 sequence), Map App enrichment pipeline (Block 12), Tax Benefits Platform investor portal (RBAC complete)
+
+**Description:**
+Two tools that form the compliance operating layer for deployed deals. Both feed live compliance data back to the Tax Benefits Platform, enabling the investor portal to show actual vs. projected returns in real time.
+
+---
+
+### Block 14 — Income Averaging Manager
+
+**Status:** Not yet built
+**Priority:** High — required before any income averaging election is made on a live deal
+
+The income averaging election (§42(g)(1)(C)) allows a LIHTC project to serve households from 20% to 80% AMI as long as the average across all designated units does not exceed 60% AMI. Managing this designation across a 100–500 unit building as units turn over is a dynamic optimization problem that most property managers currently handle in spreadsheets.
+
+**Capabilities:**
+- Real-time AMI band distribution across all units
+- Re-designation modeling on unit turnover: "if this vacancy is designated at 40% AMI, here is what happens to the project average and applicable fraction"
+- Compliance drift detection — flags when the AMI blend is approaching the 60% average ceiling before a violation occurs
+- Applicable fraction feed: updates Tax Benefits Platform automatically when designation changes affect the applicable fraction
+- Optimization suggestions: given current occupancy and the available income range, surfaces the designation choices that maximize credits while maintaining compliance
+
+**Strategic note:**
+Most operators track income averaging in spreadsheets. HDC building this tool creates a differentiated partnership offer — not just capital but the compliance infrastructure that makes the deal easier to run. Evaluate licensing to third-party operators once the tool is validated on HDC's own deals.
+
+---
+
+### Block 15 — Compliance Regime Manager
+
+**Status:** Not yet built
+**Priority:** Medium — required before first deal enters its compliance monitoring period
+
+The annual compliance regime for LIHTC deals requires tenant income certification at move-in, annual recertification, HFA annual compliance reports, and audit-ready documentation. The compliance regime manager handles the full workflow from initial application intake through annual monitoring.
+
+**Capabilities:**
+- Tenant application intake and income verification
+- Initial income certification (household composition, asset calculation, AMI eligibility)
+- Annual recertification workflow
+- HFA annual compliance report generation (state-specific formats)
+- Document storage: backup files, income verifications, household certifications, audit trail
+- Audit-ready export package
+- Compliance data API: feeds applicable fraction, actual NOI, recertification status back to the Tax Benefits Platform
+
+**Integration approach:**
+Build as an HDC-operated tool first. Evaluate integration with property management platforms (Yardi, MRI, RealPage) via their APIs when specific PM partners are identified. Design the compliance data output as an open API endpoint so any upstream system — PM's own tool, third-party software, or manual CSV upload — can feed the Tax Benefits Platform using the same schema.
+
+---
+
+### Block 16 — Compliance Data Ingestion API
+
+**Status:** Not yet built
+**Depends on:** Block 14 or 15 (either tool can be the first data producer)
+
+A standardized API endpoint on the Tax Benefits Platform that accepts compliance data regardless of source. The platform doesn't care whether data comes from HDC's own compliance tools, a PM's proprietary system, or a Yardi/MRI connector.
+
+**Compliance data schema (minimum):**
+- applicableFraction (current, by unit and by AMI band)
+- actualNOI (from rent roll, annualized)
+- occupancyByAMIBand (income averaging compliance)
+- recertificationStatus (current/overdue by unit)
+- annualCompliancePeriod (year 1 through year 15+)
+
+**Effect on Tax Benefits Platform:**
+Receiving updated applicable fraction and actual NOI triggers a recalculation of projected tax benefits. The investor portal shows live actual vs. projected returns, updated as compliance data flows in annually.
+
+**Connectors to build when partners identified:**
+- Yardi API connector
+- MRI API connector
+- Property manager custom API adapter
+- Manual CSV/Excel upload (fallback for all cases)
+
+---
+
+## Backlog (Future Items)
+
+Items identified but not yet sequenced into a track. Promote into a numbered block when scheduling work.
+
+**ROFR Exit Model (future IMPL)**
+Right of First Refusal exit mechanism. EHS (or designated nonprofit) purchases the property at a negotiated price — default is outstanding debt balance (senior + philanthropic debt), but the model must support override for deals that provide additional investor upside above the debt price. Exit proceeds under ROFR = negotiated price minus non-forgivable debt repayment. Replaces or supplements the current NOI/cap rate exit model for deals with ROFR provisions in the partnership agreement. Note: loss on sale tax treatment must be modeled alongside ROFR since ROFR price may be below LP adjusted tax basis.
+
+**Loss on Sale Tax Treatment (future IMPL)**
+When exit proceeds are below the LP's adjusted tax basis (original investment minus depreciation taken), the LP realizes a tax loss on disposition. Tax treatment differs significantly from a gain: no depreciation recapture, potential ordinary loss treatment depending on partnership structure. Relevant for ROFR exits and any deal where affordability restrictions compress exit value below adjusted basis. Must be modeled alongside ROFR exit (see above).
+
+**RAD Conversions (future roadmap)**
+HUD Rental Assistance Demonstration program converts public housing or Section 8 moderate rehabilitation contracts to long-term Section 8 HAP contracts, enabling LIHTC financing on previously ineligible properties. Relevant when HDC acquires public housing stock or partners on HUD-subsidized preservation deals. HAP contract income stream affects NOI, eligible basis, and credit calculations differently from market-rate or standard LIHTC rents. Add to platform when first RAD deal enters the pipeline.
+
+---
+
 ## Parallel Workstreams (Not on Critical Path)
 
 These run independently and don't block the main sequence.
