@@ -372,3 +372,25 @@ Collapsible read-only panel on Screen 2 showing the full `computeTimeline()` tra
 **Test count:** Four new IMPL-187 tests in `impl-187-qcg-fallback.test.ts`; 109/109 OZ-touching suite tests pass (impl-185 + impl-187 + investorTaxUtilization + investorB3Integration + fundSizingOptimizer).
 
 **Files modified:** calculations.ts (2 sites); inputs/OpportunityZoneSection.tsx; docs/DOCUMENTED_ASSUMPTIONS.md; new test impl-187-qcg-fallback.test.ts.
+
+### IMPL-188: CapitalSource Type + legacyToSources Migration Function
+
+**Status:** ✅ Complete (2026-05-21). Foundation for the composable capital sources architecture (IMPL-188 through IMPL-193).
+
+**Problem:** The legacy engine consumes a fixed set of capital-structure percentage fields (`seniorDebtPct`, `philanthropicDebtPct`, `hdcSubDebtPct`, etc.). Adding new source types (named grants, HOME loans, sponsor notes, etc.) requires both a new typed field and an engine code change. The fixed-field model also conflates LP cash equity with deferred liabilities (DDF, accrued interest) — surfaced by the Queenswood IMPL-187 audit. Goal: move to a composable `CapitalSource[]` model where the engine dispatches on behavior flags, not field names, so new source types require zero engine changes.
+
+**Changes (foundation only — zero behavior change):**
+
+1. **`CapitalSource` interface** added to `types/taxbenefits/index.ts`. Each source carries identity (id, label, sourceType), amount (basis + pct + dollar), payment structure (rate, hardPayPct + softPayPct + pikPct, amort, IO), and **behavior flags** (`isEquity`, `isGrant`, `dscrIncluded`, `forgivenessEnabled`, `affectsEligibleBasis`). Engine will dispatch exclusively on flags — `sourceType` is a UI label and template key only.
+2. **`CAPITAL_SOURCE_TEMPLATES` map** added. Ten templates: `senior_debt`, `soft_debt`, `pab`, `lp_equity`, `grant`, `deferred_dev_fee`, `pik_debt`, `accrued_interest`, `home_soft`, `htf_soft`. Used by UI to pre-fill flag defaults when a user selects a source type. Engine never reads this map.
+3. **`legacyToSources()` pure function** in `utils/taxbenefits/legacyToSources.ts`. Converts existing `CalculationParams` fixed fields into `CapitalSource[]`, gated on `> 0` for each percentage source. Supports senior debt, PAB, philanthropic debt (with `philDebtForgivenessEnabled`), LP equity, philanthropic equity (grant), HDC sub-debt, investor sub-debt, outside investor sub-debt, HDC debt fund, and deferred developer fee (C Note). Used by IMPL-189 for parallel engine validation and IMPL-191 for saved-deal migration.
+
+**Field name corrections from spec:** 17 placeholder field names in the prompt were corrected to match the actual codebase. Examples: `seniorDebtAmortYears` → `seniorDebtAmortization`, `philDebtCurrentPay` → `philCurrentPayEnabled`, `outsidePikRate` → `outsideInvestorSubDebtPikRate`, `hdcDfPikRate` → `hdcDebtFundPikRate`. Full mapping recorded in IMPL-188 commit message.
+
+**Math verification:** Trace 4001 fixture (projectCost = $67M, equity = 5%, senior = 66%, phil debt = 20%, HDC sub = 2%, investor sub = 2.5%) produces 5 sources summing to $63.985M (95.5% of projectCost) — matches expected percentages. Synthetic Queenswood-style fixture (200M, 7 layers including PAB and DDF) produces 7 sources, with `dscrIncluded=true` on senior + PAB only and `forgivenessEnabled=true` on philanthropic debt via `philDebtForgivenessEnabled` flag.
+
+**Test count:** 21 new IMPL-188 tests across 5 categories (type structure, Trace 4001, Queenswood-style, empty deal, template completeness) all passing. Existing IMPL-185 + IMPL-187 suites: 10/10 still passing. Zero behavior change confirmed.
+
+**Files modified/added:** `types/taxbenefits/index.ts` (CapitalSource interface + CAPITAL_SOURCE_TEMPLATES); new `utils/taxbenefits/legacyToSources.ts`; new test `__tests__/impl-188-legacy-to-sources.test.ts`.
+
+**Unblocks:** IMPL-189 (parallel composable engine + golden-output validation against legacy).

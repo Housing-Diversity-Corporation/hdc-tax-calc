@@ -930,3 +930,145 @@ export interface HDCResultsProps {
   CONFORMING_STATES: ConformingStates;
   isConformingState: boolean;
 }
+
+// =============================================================================
+// IMPL-188: Composable Capital Sources (foundation)
+// =============================================================================
+// Type definitions only — engine still uses legacy fixed-field params.
+// IMPL-189 wires these into a parallel engine for validation.
+
+/**
+ * A single capital source in a deal's capital stack.
+ * Composable — N sources per deal.
+ *
+ * IMPORTANT: sourceType is a display label and UI default-setter only.
+ * The engine dispatches exclusively on behavior flags (hardPayPct,
+ * softPayPct, pikPct, dscrIncluded, etc.). Adding a new sourceType
+ * requires no engine changes.
+ */
+export interface CapitalSource {
+  // Identity
+  id: string;
+  label: string;
+  sourceType: string;
+
+  // Amount
+  amountBasis: 'pct_project_cost' | 'dollars' | 'pct_eligible_basis';
+  amountPct?: number;
+  amount: number;
+
+  // Payment structure
+  rate: number;
+  hardPayPct: number;
+  softPayPct: number;
+  pikPct: number;
+  amortYears?: number;
+  ioPeriodYears?: number;
+
+  // Engine behavior flags (the ONLY things the engine dispatches on)
+  isEquity: boolean;
+  isGrant: boolean;
+  dscrIncluded: boolean;
+  forgivenessEnabled: boolean;
+  forgivenessTriggerType?: 'silent_expected' | 'regulatory' | 'not_applicable';
+  affectsEligibleBasis: boolean;
+
+  // Waterfall / Priority
+  waterfallPriority: number;
+  cashSweepPriority?: number;
+
+  // Sources & Uses
+  includeIn100PctSum: boolean;
+}
+
+/**
+ * Default flag values by sourceType.
+ * Used by UI to pre-fill a new source when the user selects a type.
+ * User can override any flag. Engine never reads this map.
+ */
+export const CAPITAL_SOURCE_TEMPLATES: Record<string, Partial<CapitalSource>> = {
+  senior_debt: {
+    rate: 0, hardPayPct: 100, softPayPct: 0, pikPct: 0,
+    isEquity: false, isGrant: false,
+    dscrIncluded: true, forgivenessEnabled: false,
+    affectsEligibleBasis: false,
+    waterfallPriority: 1, includeIn100PctSum: true,
+    amountBasis: 'pct_project_cost',
+  },
+  soft_debt: {
+    rate: 0, hardPayPct: 0, softPayPct: 25, pikPct: 75,
+    isEquity: false, isGrant: false,
+    dscrIncluded: false, forgivenessEnabled: true,
+    forgivenessTriggerType: 'silent_expected',
+    affectsEligibleBasis: false,
+    waterfallPriority: 3, includeIn100PctSum: true,
+    amountBasis: 'pct_project_cost',
+  },
+  pab: {
+    rate: 0, hardPayPct: 100, softPayPct: 0, pikPct: 0,
+    isEquity: false, isGrant: false,
+    dscrIncluded: true, forgivenessEnabled: false,
+    affectsEligibleBasis: false,
+    waterfallPriority: 2, includeIn100PctSum: true,
+    amountBasis: 'pct_eligible_basis',
+  },
+  lp_equity: {
+    rate: 0, hardPayPct: 0, softPayPct: 0, pikPct: 0,
+    isEquity: true, isGrant: false,
+    dscrIncluded: false, forgivenessEnabled: false,
+    affectsEligibleBasis: false,
+    waterfallPriority: 8, includeIn100PctSum: true,
+    amountBasis: 'pct_project_cost',
+  },
+  grant: {
+    rate: 0, hardPayPct: 0, softPayPct: 0, pikPct: 0,
+    isEquity: false, isGrant: true,
+    dscrIncluded: false, forgivenessEnabled: false,
+    affectsEligibleBasis: false,
+    waterfallPriority: 9, includeIn100PctSum: true,
+    amountBasis: 'dollars',
+  },
+  deferred_dev_fee: {
+    rate: 0, hardPayPct: 0, softPayPct: 0, pikPct: 0,
+    isEquity: false, isGrant: false,
+    dscrIncluded: false, forgivenessEnabled: false,
+    affectsEligibleBasis: false,
+    cashSweepPriority: 4,
+    waterfallPriority: 4, includeIn100PctSum: true,
+    amountBasis: 'dollars',
+  },
+  pik_debt: {
+    rate: 0, hardPayPct: 0, softPayPct: 0, pikPct: 100,
+    isEquity: false, isGrant: false,
+    dscrIncluded: false, forgivenessEnabled: false,
+    affectsEligibleBasis: false,
+    waterfallPriority: 5, includeIn100PctSum: true,
+    amountBasis: 'pct_project_cost',
+  },
+  accrued_interest: {
+    rate: 0, hardPayPct: 0, softPayPct: 0, pikPct: 0,
+    isEquity: false, isGrant: true,
+    dscrIncluded: false, forgivenessEnabled: false,
+    affectsEligibleBasis: false,
+    waterfallPriority: 9, includeIn100PctSum: true,
+    amountBasis: 'dollars',
+  },
+  home_soft: {
+    rate: 0, hardPayPct: 0, softPayPct: 10, pikPct: 90,
+    isEquity: false, isGrant: false,
+    dscrIncluded: false, forgivenessEnabled: true,
+    forgivenessTriggerType: 'regulatory',
+    affectsEligibleBasis: true,
+    waterfallPriority: 3, includeIn100PctSum: true,
+    amountBasis: 'pct_project_cost',
+  },
+  htf_soft: {
+    rate: 0, hardPayPct: 0, softPayPct: 10, pikPct: 90,
+    isEquity: false, isGrant: false,
+    dscrIncluded: false, forgivenessEnabled: true,
+    forgivenessTriggerType: 'regulatory',
+    affectsEligibleBasis: true,
+    waterfallPriority: 3, includeIn100PctSum: true,
+    amountBasis: 'pct_project_cost',
+  },
+};
