@@ -344,6 +344,35 @@ Collapsible read-only panel on Screen 2 showing the full `computeTimeline()` tra
 
 **Files modified:** calculations.ts; InputCapitalStructure.java, InputOpportunityZone.java; types/taxbenefits/index.ts; useHDCState.ts, useHDCCalculations.ts; HDCCalculatorMain.tsx, HDCInputsComponent.tsx, HDCResultsComponent.tsx; inputs/CapitalStructureSection.tsx, inputs/OpportunityZoneSection.tsx; investor-portal/InvestorAnalysis/InvestorAnalysisCalculator.tsx; services/taxbenefits/calculatorService.ts; docs/DOCUMENTED_ASSUMPTIONS.md; new test impl-185-forgiveness-and-qcg.test.ts; new runtime script verify-impl-185.sh.
 
+### IMPL-186: Canonical Schema Build (18 entities)
+
+**Status:** ⊘ SUPERSEDED (2026-05-21). Not executed as scoped.
+
+**Original scope:** Build the full HDC canonical deal schema in one pass — 18 entities across two specs (v1.0 core, 13 tables + v1.2 extension, 5 tables including `deal_debt_tranches`, `deal_grants`, `deal_equity_installments`, `deal_uses_breakdown`, `deal_tax_events`). Seed Queenswood Phase II. Unblock IMPL-185 forgiveness toggle and Track 8 cross-app integration.
+
+**Reason superseded:** The approach duplicated existing `Input*` entity work and was built on incorrect assumptions:
+- Spec assumed Flyway migrations; the codebase uses Hibernate `ddl-auto=update`.
+- Spec specified UUID primary keys; all 15 existing entities use `Long` + `GenerationType.IDENTITY`.
+- Spec assumed a `deals` root table that never existed; the codebase already has `DealConduit` as the saved-deal root with 10 `Input*` child entities.
+- A full canonical schema rebuild parallel to the existing system created duplicate state with no migration path between them.
+
+**Replacement strategy:** Incremental extension of the existing `DealConduit` + `Input*` system. Each canonical-schema concept gets queued as a small, scoped IMPL that adds fields to existing entities rather than building a parallel schema.
+
+**Key outputs preserved (queued for future IMPLs):**
+- **`deal_debt_tranches`** — queued for the future IMPL that introduces composable debt (1:many extension to `DealConduit`). Trigger: first deal with more than two debt sources (Queenswood is the first candidate).
+- **`DealConduit` identity tweaks** — queued as a small IMPL: add `dealName`, `status` (draft/internal_review/published/archived), `dealLane` (1-4) to `DealConduit`. Makes existing sessions named, retrievable, and stack-rankable without a full schema rebuild.
+- **Canonical investor-profile spec (v1.3)** — 22 Category D investor-profile fields currently live in `InputInvestorProfile` with no canonical definition. `qualifiedCapitalGain` is the first named field (shipped in IMPL-185). Full inventory + table spec to be produced when investor portal work begins.
+- **`qualifiedCapitalGain`** — already addressed in IMPL-185 (added to `InputOpportunityZone` + `CalculationParams` with engine wiring).
+- **Composable capital sources architecture** — the v1.2 extension's spirit lives in IMPL-188's `CapitalSource` type + `legacyToSources()` migration function. Adding a new source type now requires zero engine changes (flag-driven dispatch), which is the architectural goal IMPL-186 was meant to achieve.
+
+**Build prompt preserved:** [`frontend/docs/prompts/IMPL_186_Final_CC_Prompt_v2_6.md`](frontend/docs/prompts/IMPL_186_Final_CC_Prompt_v2_6.md) — full entity specs, Queenswood seed data, Lombok conventions, and DoD are reusable when composable debt is built incrementally.
+
+**Downstream effect on previously-blocked IMPLs:**
+- IMPL-185 ✅ shipped (2026-05-18) via incremental `philDebtForgivenessEnabled` toggle on `InputCapitalStructure`; did not require canonical schema.
+- IMPL-187 ✅ shipped (2026-05-18) as OZ Capital Gains Field Resolution Fix — completely re-scoped from the original "CIE per-tranche ingestion" plan.
+- IMPL-188 ✅ shipped (2026-05-21) as `CapitalSource` type + `legacyToSources()` — completely re-scoped from the original "deal_grants UI" plan; now the foundation for composable capital sources.
+- IMPL-189, IMPL-190, Phase 8.x — re-point dependencies to whichever incremental schema extension actually unblocks them.
+
 ### IMPL-187: OZ Capital Gains Field Resolution Fix
 
 **Status:** ✅ Engine + Preview alignment shipped (2026-05-18); auto-populate source pending capital-structure audit.

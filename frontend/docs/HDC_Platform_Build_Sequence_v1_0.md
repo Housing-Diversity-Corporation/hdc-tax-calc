@@ -65,28 +65,28 @@ explicitly. This is sequenced by dependency, not by calendar.
 ---
 
 ## Block 4 — Canonical Schema + Forgiveness Toggle
-*Brad's most consequential block. Unblocks Track 2 and Track 8 entirely.*
+*Originally Brad's most consequential block. IMPL-186 superseded May 2026 — see Backlog and registry entry for replacement strategy.*
 
 **Prerequisite decision:** ~~devFeeClosingAmount convention~~ **RESOLVED — Option C. devFeeClosingAmount stays as direct dollar input. devFeePct computes total only. IMPL-190 unblocked.**
 
 | Item | Owner | What | Notes |
 |---|---|---|---|
-| IMPL-186 | Brad | Deploy 5 new canonical schema tables: deal_debt_tranches, deal_grants, deal_equity_installments, deal_uses_breakdown, deal_tax_events. Deprecate deal_senior_debt and deal_phil_debt. Seed Queenswood rows. | Highest-impact single backend item on the roadmap. Unblocks everything below. |
-| IMPL-185 | CC | Exit model forgiveness toggle. Filter forgivable tranches from outstanding debt at exit. | Depends IMPL-186. Queenswood blocker — platform currently shows $0 net exit proceeds for Queenswood. This fixes it. |
+| ~~IMPL-186~~ | ~~Brad~~ | ~~Deploy 5 new canonical schema tables…~~ | **⊘ SUPERSEDED (May 2026).** Approach duplicated existing Input* entity work. Replaced by incremental extension. See registry entry + Backlog → "Surfaced by IMPL-186 Architecture Review". Build prompt preserved at `frontend/docs/prompts/IMPL_186_Final_CC_Prompt_v2_6.md`. |
+| IMPL-185 | CC | Exit model forgiveness toggle. Filter forgivable tranches from outstanding debt at exit. | **✅ Shipped 2026-05-18** via incremental `philDebtForgivenessEnabled` toggle on `InputCapitalStructure` — did not require canonical schema. |
 
-**Exit criteria:** 5 new tables live. Queenswood seeded. Exit model produces correct proceeds on forgiveness deals. IMPL-185 tested with Queenswood scenario.
+**Block status:** Closed. IMPL-185 shipped via a non-canonical-schema path. IMPL-186 superseded; downstream IMPLs re-pointed.
 
 ---
 
 ## Block 5 — Downstream Schema Work
-*All depend on Block 4 completing.*
+*Originally blocked on IMPL-186. After IMPL-186 superseded (May 2026), IMPLs in this block were re-scoped and re-pointed to incremental schema extensions.*
 
 | IMPL | Owner | What | Notes |
 |---|---|---|---|
-| IMPL-187 | CC | CIE ingestion prompt update: extract per-tranche fields from developer proforma into deal_debt_tranches. | Depends IMPL-186. |
-| IMPL-188 | CC | deal_grants UI panel: Category F input, basis inclusion flag, counsel-required warning. | Depends IMPL-186. |
-| IMPL-189 | CC | deal_equity_installments UI: replace single equity % with multi-installment table. | Depends IMPL-186. |
-| IMPL-190 | CC | Two-scenario fee architecture, Scenario A: devFeePct (1–20%) computes devFeeTotal. AUM fee dormant with reactivation note. | Depends IMPL-186 for schema field. Prompt ready. |
+| ~~IMPL-187~~ (original) | ~~CC~~ | ~~CIE ingestion prompt update: extract per-tranche fields into deal_debt_tranches.~~ | **Re-scoped.** IMPL-187 shipped 2026-05-18 as OZ Capital Gains Field Resolution Fix. Original CIE-ingestion scope re-queued — see Backlog → Composable Debt. |
+| ~~IMPL-188~~ (original) | ~~CC~~ | ~~deal_grants UI panel: Category F input, basis inclusion flag, counsel-required warning.~~ | **Re-scoped.** IMPL-188 shipped 2026-05-21 as `CapitalSource` type + `legacyToSources()` migration. Grant UI now planned via composable capital sources (see `HDC_Composable_Capital_Sources_Spec_v1_2.md`). |
+| IMPL-189 | CC | deal_equity_installments UI: replace single equity % with multi-installment table. | ~~Depends IMPL-186.~~ Re-evaluate against composable sources architecture — equity installments may fold into `CapitalSource[]` via per-source funding triggers. |
+| IMPL-190 | CC | Two-scenario fee architecture, Scenario A: devFeePct (1–20%) computes devFeeTotal. AUM fee dormant with reactivation note. | ~~Depends IMPL-186 for schema field.~~ Now depends on incremental `DealConduit` field addition (small IMPL). Prompt still ready. |
 
 **[Parallel with above]**
 
@@ -113,13 +113,13 @@ explicitly. This is sequenced by dependency, not by calendar.
 ---
 
 ## Block 7 — Track 8 Cross-App Integration
-*Fully blocked on Block 4 (canonical schema). All 5 phases depend on it.*
+*Originally fully blocked on Block 4 (canonical schema). With IMPL-186 superseded (May 2026), dependencies re-point to incremental DealConduit identity extension + composable capital sources.*
 
 | Phase | Owner | What | Depends On |
 |---|---|---|---|
-| Phase 8.1 | Brad + CC | Map → Tax Benefits Gate 1 Handoff. Address in Map returns OZ, DDA, QCT, SAFMR, transit, environmental payload. Tax Benefits frontend consumes to pre-populate Category C fields. | IMPL-186 |
-| Phase 8.3 | Brad | Shared investor identity. Tax Benefits is source of truth. Map reads via API. | IMPL-186 + RBAC |
-| Phase 8.4 | Brad + CC | Map → Tax Benefits deal sourcing trigger. Parcel identified in Map → deal created in Tax Benefits pre-populated. | IMPL-186 + Phase 8.1 |
+| Phase 8.1 | Brad + CC | Map → Tax Benefits Gate 1 Handoff. Address in Map returns OZ, DDA, QCT, SAFMR, transit, environmental payload. Tax Benefits frontend consumes to pre-populate Category C fields. | DealConduit identity extension (Backlog) |
+| Phase 8.3 | Brad | Shared investor identity. Tax Benefits is source of truth. Map reads via API. | Canonical investor-profile spec v1.3 (Backlog) + RBAC |
+| Phase 8.4 | Brad + CC | Map → Tax Benefits deal sourcing trigger. Parcel identified in Map → deal created in Tax Benefits pre-populated. | DealConduit identity extension + Phase 8.1 |
 | Phase 8.2 | CC | Tax Benefits → Map pipeline visualization. Modeled deals pinned on map with projected returns. | Phase 8.1 |
 | Phase 8.5 | Brad + CC | Cross-app stack rank dashboard. Physical eligibility + financial returns in one view. | All above |
 
@@ -312,6 +312,25 @@ When exit proceeds are below the LP's adjusted tax basis (original investment mi
 **RAD Conversions (future roadmap)**
 HUD Rental Assistance Demonstration program converts public housing or Section 8 moderate rehabilitation contracts to long-term Section 8 HAP contracts, enabling LIHTC financing on previously ineligible properties. Relevant when HDC acquires public housing stock or partners on HUD-subsidized preservation deals. HAP contract income stream affects NOI, eligible basis, and credit calculations differently from market-rate or standard LIHTC rents. Add to platform when first RAD deal enters the pipeline.
 
+### Surfaced by IMPL-186 Architecture Review (May 2026)
+
+The following items were identified during IMPL-186 scoping and are queued for future IMPLs. None are blocking current work. IMPL-186 itself was superseded — see registry entry and Block 4 for context.
+
+**Composable Debt (future IMPL)**
+Add `deal_debt_tranches` as a 1:many extension to `DealConduit` when a deal requires more than two debt sources. Queenswood is the first candidate. Build prompt preserved at `frontend/docs/prompts/IMPL_186_Final_CC_Prompt_v2_6.md` — the `deal_debt_tranches` entity spec is reusable. Architectural alignment: composable capital sources spec (`HDC_Composable_Capital_Sources_Spec_v1_2.md`) describes the engine-side model; this IMPL would persist that model in the database.
+
+**DealConduit Identity (small IMPL)**
+Add `dealName`, `status` (draft / internal_review / published / archived), and `dealLane` (1-4) to `DealConduit`. Makes existing sessions named, retrievable, and stack-rankable without a full schema rebuild. Unblocks Track 8 Phase 8.1 / 8.4.
+
+**Canonical Investor-Profile Spec (v1.3)**
+22 Category D investor-profile fields currently live in `InputInvestorProfile` with no canonical definition. `qualifiedCapitalGain` (Category D, per-investor QCG amount) is the first named field — shipped in IMPL-185. Full inventory and table spec to be produced when investor portal work begins. Unblocks Track 8 Phase 8.3 (shared investor identity).
+
+**Track 8 OZ Mapping (2-source JOIN)**
+When Track 8 cross-app integration is built, the OZ input mapping requires: `deal_oz` (`ozEnabled`, `ozVersion`, `ozType`) + investor-profile (`qualifiedCapitalGain`, `capitalGainsTaxRate`) → `InputOpportunityZone` (5 fields). Not a 1:1 mapping from `deal_oz` alone — flagged here so Phase 8.1 design accounts for the 2-source join from the start.
+
+**Beads Server Mode + Dolt Upgrade (pre-Gas Town)**
+Switch from embedded to server mode (`bd dolt start`) and upgrade dolt 1.85.0 → 2.0.3 before parallel agent work begins. Parallel readiness audit complete — tool is PARTIALLY READY pending this config change.
+
 ---
 
 ## Parallel Workstreams (Not on Critical Path)
@@ -325,13 +344,13 @@ These run independently and don't block the main sequence.
 | Lincoln Ave / Joe Manning follow-up | Brad | Part 8 math reference is the leave-behind. Clarify deal flow vs. capital markets role before next meeting. |
 | Caprock / Fortis distribution channel | Brad | Greg Brown, Mike Boroughs. Activate once investor portal is live. |
 | Broker-dealer assessment | External counsel | Required before Scenario B (HDC as equity placement agent) is marketed. Daniel Altman to advise. |
-| Math reference v3.3 | Brad + Chat | IMPL-185/186 formulas, forgivable debt, territorial tax, PARTIAL items. After Block 4 ships. |
+| Math reference v3.3 | Brad + Chat | IMPL-185 + IMPL-187 + IMPL-188 formulas, forgivable debt, QCG resolution, composable capital sources, territorial tax, PARTIAL items. IMPL-186 superseded — math ref no longer waits on canonical schema. |
 
 ---
 
 ## The Critical Path in One Line
 
-**Block 1 → Block 4 (canonical schema) → Block 7 (Track 8) → Block 10 (pre-launch) → Block 11 (external users)**
+**Block 1 → Block 4 (closed — IMPL-185 shipped; IMPL-186 superseded, incremental extensions queued in Backlog) → Block 7 (Track 8) → Block 10 (pre-launch) → Block 11 (external users)**
 
 Everything else runs in parallel around this spine.
 
