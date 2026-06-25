@@ -9,6 +9,22 @@ Use 'bd' for task tracking. Before starting any work:
    adds backend fields or touches API integration. Update when Angel adds
    fields to any entity class.
 
+## Runtime UI validation
+
+To confirm a frontend change works in the live browser, use the
+AppleScript→Chrome harness (shared by manual copy from the Map repo) rather
+than ad-hoc browser poking:
+
+- Engine: `frontend/scripts/ui-verify-engine.sh` (byte-identical copy of the
+  Map repo's `scripts/ui-verify.sh`; named distinctly to coexist with the
+  legacy `ui-verify.sh`). Scenarios: `frontend/scripts/scenarios/*.sh`.
+- Run a saved scenario as ONE call: `bash frontend/scripts/scenarios/<name>.sh`
+  → prints a single `PASS/FAIL` line (e.g. `smoke.sh`).
+- Full runbook: Map repo `hdc-map-frontend/scripts/README.md`.
+- Write a scenario only for flows worth re-checking; keep one-off checks
+  ad-hoc via the engine primitives (`ui_eval`/`ui_expect`). Complements the
+  existing RUNTIME_UI_VERIFICATION.md guidance.
+
 ## Specification Documents
 
 All platform specifications live in `frontend/docs/specs/`. Read the
