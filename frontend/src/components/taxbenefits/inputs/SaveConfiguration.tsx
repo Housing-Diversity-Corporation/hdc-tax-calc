@@ -48,6 +48,12 @@ interface SaveConfigurationProps {
   stateCode?: string;
   /** When set, the config name is locked (read-only) — used for shared configs owned by others */
   lockedName?: string;
+  /**
+   * Name of the currently-loaded config (only when a saved config — not a preset — is loaded).
+   * When the entered name matches this, saving would overwrite the existing record, so we
+   * interrupt with a confirmation dialog. Entering any other name creates a new config.
+   */
+  loadedConfigName?: string;
 }
 
 const SaveConfiguration: React.FC<SaveConfigurationProps> = ({
@@ -59,8 +65,10 @@ const SaveConfiguration: React.FC<SaveConfigurationProps> = ({
   autoTags = [],
   stateCode,
   lockedName,
+  loadedConfigName,
 }) => {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [showOverwriteConfirm, setShowOverwriteConfirm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [configName, setConfigName] = useState('');
   const [isShared, setIsShared] = useState(true);
@@ -116,7 +124,13 @@ const SaveConfiguration: React.FC<SaveConfigurationProps> = ({
     }
   };
 
-  const handleSaveConfiguration = async (e?: React.FormEvent) => {
+  // Saving overwrites an existing record only when the entered name matches the loaded
+  // config's name. Any other name creates a new config. Keep this rule identical to the
+  // PUT/POST decision in HDCInputsComponent.handleSaveConfiguration.
+  const wouldOverwrite =
+    !!loadedConfigName && configName.trim() === loadedConfigName.trim();
+
+  const handleSaveConfiguration = (e?: React.FormEvent) => {
     e?.preventDefault();
 
     if (!configName.trim()) {
@@ -126,6 +140,17 @@ const SaveConfiguration: React.FC<SaveConfigurationProps> = ({
       return;
     }
 
+    // Interrupt the overwrite path with an explicit confirmation to prevent silent data loss.
+    if (wouldOverwrite) {
+      setShowOverwriteConfirm(true);
+      return;
+    }
+
+    void doSave();
+  };
+
+  const doSave = async () => {
+    setShowOverwriteConfirm(false);
     setIsSaving(true);
 
     try {
@@ -217,12 +242,50 @@ const SaveConfiguration: React.FC<SaveConfigurationProps> = ({
 
   return (
     <>
-      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+      <Dialog
+        open={showSaveDialog}
+        onOpenChange={(open) => { setShowSaveDialog(open); if (!open) setShowOverwriteConfirm(false); }}
+      >
         <DialogContent className="sm:max-w-[425px]">
+          {showOverwriteConfirm ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>Overwrite existing configuration?</DialogTitle>
+                <DialogDescription>
+                  This will overwrite the existing configuration{loadedConfigName ? ` "${loadedConfigName}"` : ''} and
+                  replace its saved values. This cannot be undone. To keep the original, cancel and enter a different
+                  name to save a new configuration instead.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="mt-2">
+                <Button type="button" variant="outline" onClick={() => setShowOverwriteConfirm(false)} disabled={isSaving}>
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => void doSave()}
+                  disabled={isSaving}
+                  className="!bg-destructive !text-white"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Overwrite'
+                  )}
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+          <>
           <DialogHeader>
             <DialogTitle>Save Calculator Configuration</DialogTitle>
             <DialogDescription>
-              Enter a name for this configuration. You can load it later from your saved presets.
+              {loadedConfigName
+                ? `Enter a new name to save a copy as a new configuration, or keep "${loadedConfigName}" to update the existing one.`
+                : 'Enter a name for this configuration. You can load it later from your saved presets.'}
             </DialogDescription>
           </DialogHeader>
           <div>
@@ -411,12 +474,14 @@ const SaveConfiguration: React.FC<SaveConfigurationProps> = ({
                 ) : (
                   <>
                     <Save className="mr-2 h-4 w-4" />
-                    Save
+                    {wouldOverwrite ? 'Update' : loadedConfigName ? 'Save as New' : 'Save'}
                   </>
                 )}
               </Button>
             </DialogFooter>
           </div>
+          </>
+          )}
         </DialogContent>
       </Dialog>
 

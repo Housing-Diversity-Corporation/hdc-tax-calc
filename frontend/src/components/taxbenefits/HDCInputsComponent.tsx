@@ -861,9 +861,18 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
       // Calculated results are no longer stored — the engine is deterministic
       // and recreates them from inputs on every load
 
-      // Update existing config (PUT) if we have a loaded config; otherwise create new (POST)
+      // Save-as semantics: a config is overwritten (PUT) ONLY when the entered name
+      // matches the currently-loaded config's name. Entering a NEW name always creates
+      // a new record (POST). This prevents the silent-overwrite data loss where saving a
+      // loaded config under a new name renamed/clobbered the original instead of branching.
+      // The overwrite path is additionally gated by a confirmation dialog in SaveConfiguration.
+      const isOverwrite =
+        !!loadedPresetId &&
+        loadedPresetId.startsWith('config-') &&
+        configName.trim() === loadedPresetName.trim();
+
       let savedConfig;
-      if (loadedPresetId && loadedPresetId.startsWith('config-')) {
+      if (isOverwrite) {
         const configId = parseInt(loadedPresetId.replace('config-', ''));
         savedConfig = await calculatorService.updateConfiguration(configId, currentConfig);
       } else {
@@ -1000,6 +1009,7 @@ const HDCInputsComponent: React.FC<HDCInputsComponentProps> = (props) => {
                         autoTags={autoTags}
                         stateCode={props.selectedState}
                         lockedName={!isOwnConfig ? loadedPresetName : undefined}
+                        loadedConfigName={loadedPresetId?.startsWith('config-') ? loadedPresetName : undefined}
                       />
                     </div>
                   )}
