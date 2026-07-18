@@ -23,13 +23,18 @@ echo "Compilation successful."
 # Kill any existing tunnel on this port
 lsof -ti :$LOCAL_PORT | xargs kill -9 2>/dev/null || true
 
-# Start SSH tunnel in background
-ssh -f -N -i "$SSH_KEY" -L $LOCAL_PORT:$RDS_HOST:5432 "$BASTION"
-TUNNEL_PID=$(lsof -ti :$LOCAL_PORT)
-echo "SSH tunnel started (PID $TUNNEL_PID) — localhost:$LOCAL_PORT → RDS"
+# Start SSH tunnel (autossh auto-reconnects on laptop wake / network drop)
+autossh -M 0 -f -N \
+  -o ServerAliveInterval=30 \
+  -o ServerAliveCountMax=3 \
+  -o ExitOnForwardFailure=yes \
+  -i "$SSH_KEY" -L $LOCAL_PORT:$RDS_HOST:5432 "$BASTION"
+sleep 2
+TUNNEL_PID=$(lsof -ti :$LOCAL_PORT | head -1)
+echo "SSH tunnel started (PID $TUNNEL_PID, autossh-supervised) — localhost:$LOCAL_PORT → RDS"
 
-# Cleanup tunnel on script exit
-trap "kill $TUNNEL_PID 2>/dev/null; echo 'Tunnel closed.'" EXIT
+# Cleanup autossh supervisor + tunnel on script exit
+trap "pkill -f 'autossh.*$LOCAL_PORT:$RDS_HOST' 2>/dev/null; kill $TUNNEL_PID 2>/dev/null; echo 'Tunnel closed.'" EXIT
 
 # Wait for port to be ready
 for i in $(seq 1 10); do
