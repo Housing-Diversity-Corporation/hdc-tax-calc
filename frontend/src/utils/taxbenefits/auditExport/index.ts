@@ -58,6 +58,7 @@ import { buildHDCReturnsSheet } from './sheets/hdcReturnsSheet';
 import { buildSummarySheet } from './sheets/summarySheet';
 import { buildValidationSheet } from './sheets/validationSheet';
 import { buildTaxUtilizationSheet } from './sheets/taxUtilizationSheet';
+import { DEFAULT_461L_TAX_YEAR } from '../investorTaxUtilization';
 import { buildTimingGanttSheet } from './sheets/timingGanttSheet';
 
 // ============================================================================
@@ -274,7 +275,14 @@ export function generateLiveExcelModel(data: LiveExcelParams): XLSX.WorkBook {
     const investorSubDebt = params.projectCost * (params.investorSubDebtPct || 0) / 100;
     const totalInvestmentForUtil = (syndicationYear === 0 ? investorEquityNet : investorEquityGross) + investorSubDebt;
 
-    const taxUtilizationResult = buildTaxUtilizationSheet(investorResults, totalInvestmentForUtil, params);
+    // IMPL-202: pass the deal investment (placed-in-service) year so the §461(l)
+    // cap resolves from the canonical table for the correct tax year.
+    const taxUtilizationResult = buildTaxUtilizationSheet(
+      investorResults,
+      totalInvestmentForUtil,
+      params,
+      rawTimeline?.placedInServiceYear ?? DEFAULT_461L_TAX_YEAR
+    );
     XLSX.utils.book_append_sheet(wb, taxUtilizationResult.sheet, 'Tax_Utilization');
     allNamedRanges.push(...taxUtilizationResult.namedRanges);
   }

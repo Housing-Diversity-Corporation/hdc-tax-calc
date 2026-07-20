@@ -83,6 +83,11 @@ export interface InvestorProfile {
 
   // IMPL-160: Advisor-overrideable NOL discount rate (default 7%)
   nolDiscountRate?: number;
+
+  // IMPL-202: Calendar tax year of Year 1 (the deal's investment / placed-in-service
+  // year). Resolves the year-parameterized §461(l) EBL threshold via getSec461lLimit().
+  // Defaults to DEFAULT_461L_TAX_YEAR (2025) when omitted for backward compatibility.
+  firstTaxYear?: number;
 }
 
 /**
@@ -211,14 +216,83 @@ export interface TaxUtilizationResult {
 // Constants
 // =============================================================================
 
+// =============================================================================
+// §461(l) Excess Business Loss threshold — year-parameterized canonical source
+// (IMPL-202, the §461(l) piece of Wave 1 shipped standalone ahead of the rest)
+// =============================================================================
+
+export type FilingStatus461l = 'MFJ' | 'Single' | 'HoH';
+
 /**
- * 2025 Section 461(l) Excess Business Loss limits (indexed for inflation)
+ * Canonical §461(l)(3)(B) excess-business-loss threshold amounts, keyed by tax
+ * year and filing status. This is the SINGLE SOURCE OF TRUTH for the EBL cap —
+ * every consumer (engine NOL conversion, IMPL-145 sizing, audit export) must
+ * resolve through {@link getSec461lLimit}, never a literal.
+ *
+ * Statutory note (§461(l)(3)(A)): the base ("single") threshold is indexed for
+ * inflation under §1(f)(3); the MFJ amount is 200% of the single amount by
+ * statute (§461(l)(3)(A)(ii)); head-of-household uses the single amount.
+ *
+ * Published figures:
+ * - 2025: $313,000 single / $626,000 MFJ — Rev. Proc. 2024-40 (2025 inflation adjustments).
+ * - 2026: $256,000 single / $512,000 MFJ — Rev. Proc. 2025-32 §4.31 (OBBBA clawback of the
+ *   2026 threshold below the ordinary inflation path).
  */
-export const SECTION_461L_LIMITS = {
-  MFJ: 626_000,
-  Single: 313_000,
-  HoH: 313_000
-} as const;
+const SECTION_461L_LIMITS_BY_YEAR: Record<number, Record<FilingStatus461l, number>> = {
+  2025: { Single: 313_000, HoH: 313_000, MFJ: 626_000 }, // Rev. Proc. 2024-40
+  2026: { Single: 256_000, HoH: 256_000, MFJ: 512_000 }, // Rev. Proc. 2025-32 §4.31 (OBBBA)
+};
+
+/** Latest tax year with published (non-stubbed) §461(l) figures. */
+export const SECTION_461L_LATEST_PUBLISHED_YEAR = 2026;
+
+/**
+ * Default tax year used when a caller has no deal/investment year to supply.
+ * Chosen as 2025 for backward compatibility: pre-IMPL-202 code assumed the 2025
+ * figures ($313K / $626K), so an unparameterized call resolves unchanged.
+ */
+export const DEFAULT_461L_TAX_YEAR = 2025;
+
+/**
+ * TODO(IMPL-202): placeholder forward-index rate for tax years beyond the latest
+ * published figure. Replace each year with the published Rev. Proc. amounts (the
+ * IRS releases §461(l) thresholds annually alongside the inflation adjustments).
+ * ~2.6% approximates recent C-CPI-U; it is NOT an authoritative figure.
+ */
+const SECTION_461L_ASSUMED_INFLATION = 0.026;
+
+/**
+ * Resolve the §461(l) excess-business-loss threshold for a given tax year and
+ * filing status. Published years return the exact statutory figure; years beyond
+ * the latest published year return an inflation-indexed STUB (see the TODO above)
+ * rounded to the nearest $1,000, with MFJ = 200% of single per §461(l)(3)(A)(ii);
+ * years before the table fall back to the earliest published figure.
+ */
+export function getSec461lLimit(year: number, filingStatus: FilingStatus461l): number {
+  const published = SECTION_461L_LIMITS_BY_YEAR[year];
+  if (published) return published[filingStatus];
+
+  if (year < 2025) {
+    // Pre-table years (out of scope for HDC deals) — use earliest published figure.
+    return SECTION_461L_LIMITS_BY_YEAR[2025][filingStatus];
+  }
+
+  // year > SECTION_461L_LATEST_PUBLISHED_YEAR → indexed-forward stub (TODO above).
+  const base = SECTION_461L_LIMITS_BY_YEAR[SECTION_461L_LATEST_PUBLISHED_YEAR];
+  const yearsForward = year - SECTION_461L_LATEST_PUBLISHED_YEAR;
+  const factor = Math.pow(1 + SECTION_461L_ASSUMED_INFLATION, yearsForward);
+  const single = Math.round((base.Single * factor) / 1000) * 1000;
+  // §461(l)(3)(A)(ii): MFJ threshold is 200% of the single amount.
+  return filingStatus === 'MFJ' ? single * 2 : single;
+}
+
+/**
+ * Backward-compatible §461(l) limits at the {@link DEFAULT_461L_TAX_YEAR}.
+ * DERIVED from the canonical table (not an independent literal) so it cannot
+ * drift. Prefer {@link getSec461lLimit} at any site that knows the deal year.
+ */
+export const SECTION_461L_LIMITS: Record<FilingStatus461l, number> =
+  SECTION_461L_LIMITS_BY_YEAR[DEFAULT_461L_TAX_YEAR];
 
 /**
  * 2025 Standard Deduction (OBBBA)
@@ -438,7 +512,8 @@ function computeDepreciationNonpassive(
   marginalRate: number,
   previousNolPool: number,
   taxableIncome: number,
-  federalTaxLiability: number
+  federalTaxLiability: number,
+  taxYear: number
 ): {
   depreciationAllowed: number;
   depreciationSuspended: number;
@@ -447,10 +522,12 @@ function computeDepreciationNonpassive(
   nolUsed: number;
   nolPool: number;
 } {
-  // Convert EBL threshold from dollars to millions to match depreciation units
+  // Convert EBL threshold from dollars to millions to match depreciation units.
+  // IMPL-202: threshold resolves by the deal's tax year (getSec461lLimit), so a
+  // 2026 investment year caps at $512K MFJ / $256K single, not the 2025 $626K/$313K.
   // W-2 wages excluded from §461(l)(3)(A)(i) business income per CARES Act
   // technical correction and JCT Blue Book (JCS-1-18). Flat statutory cap applies.
-  const eblThresholdInMillions = SECTION_461L_LIMITS[filingStatus] / 1_000_000;
+  const eblThresholdInMillions = getSec461lLimit(taxYear, filingStatus) / 1_000_000;
 
   // §461(l): Cap deduction at EBL threshold
   const depreciationAllowed = Math.min(depreciation, eblThresholdInMillions);
@@ -799,6 +876,11 @@ export function calculateTaxUtilization(
   const annualUtilization: AnnualUtilization[] = [];
   const holdPeriod = benefitStream.annualDepreciation.length;
 
+  // IMPL-202: resolve the §461(l) EBL threshold by the deal's investment year.
+  // The threshold is dominated by the Year-1 bonus-depreciation event, so we key
+  // it to the investment (Year-1 tax) year rather than escalating per hold year.
+  const sec461lTaxYear = investorProfile.firstTaxYear ?? DEFAULT_461L_TAX_YEAR;
+
   // Running totals
   let cumulativeSuspendedLoss = 0;
   let cumulativeCarriedCredits = 0;
@@ -844,7 +926,8 @@ export function calculateTaxUtilization(
         yearMarginalRate,
         nolPool,
         yearTax.taxableIncome,
-        yearTax.federalTaxLiability
+        yearTax.federalTaxLiability,
+        sec461lTaxYear
       );
       depResult = depNonpassive;
       nolGenerated = depNonpassive.nolGenerated;

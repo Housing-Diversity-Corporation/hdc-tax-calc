@@ -1,6 +1,7 @@
 import React from 'react';
 import jsPDF from 'jspdf';
 import { InvestorAnalysisResults } from '../../../types/taxbenefits';
+import { SECTION_461L_LIMITS } from '../../../utils/taxbenefits/investorTaxUtilization';
 
 // Props interface
 interface HDCProfessionalReportProps {
@@ -265,8 +266,8 @@ export const HDCProfessionalReportButton: React.FC<HDCProfessionalReportProps> =
       doc.setFontSize(10);
       doc.setTextColor(...darkText);
       const taxStrategyText = investorTrack === 'rep'
-        ? `As a Real Estate Professional, you can offset up to $626,000 of W-2 income annually under §461(l) limitations.
-Your current W-2 income of ${formatFullMoney(w2Income)} ${w2Income > 626000 ? 'exceeds' : 'is within'} this limit.
+        ? `As a Real Estate Professional, you can offset up to ${formatFullMoney(SECTION_461L_LIMITS.MFJ)} of W-2 income annually under §461(l) limitations.
+Your current W-2 income of ${formatFullMoney(w2Income)} ${w2Income > SECTION_461L_LIMITS.MFJ ? 'exceeds' : 'is within'} this limit.
 ${businessIncome > 0 ? `Additionally, your business income of ${formatFullMoney(businessIncome)} can be fully offset without limitation.` : ''}
 ${iraBalance > 0 ? `Consider strategic Roth IRA conversions using your ${formatFullMoney(iraBalance)} traditional IRA balance to maximize tax capacity utilization.` : ''}`
         : `As a Passive Investor, you have unlimited capacity to offset passive income and capital gains.
@@ -500,9 +501,9 @@ This strategy provides maximum flexibility for timing gain recognition events.`;
           {
             title: '§461(l) Limitation Management',
             points: [
-              `Your W-2 offset capacity is limited to $626,000 annually`,
+              `Your W-2 offset capacity is limited to ${formatFullMoney(SECTION_461L_LIMITS.MFJ)} annually`,
               `Current W-2 income: ${formatFullMoney(w2Income)}`,
-              `${w2Income > 626000 ? 'Consider deferring excess losses as NOL carryforward' : 'You have additional capacity for W-2 offset'}`,
+              `${w2Income > SECTION_461L_LIMITS.MFJ ? 'Consider deferring excess losses as NOL carryforward' : 'You have additional capacity for W-2 offset'}`,
             ]
           },
           {

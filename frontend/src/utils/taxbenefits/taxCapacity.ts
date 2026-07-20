@@ -168,7 +168,7 @@ export function generateTaxCapacityRecommendations(
 
     if (params.w2Income && params.w2Income > 2_000_000) {
       recommendations.push(
-        `High W-2 income limits your annual benefit to $626K - ` +
+        `High W-2 income limits your annual benefit to $${(SECTION_461L_LIMITS.MFJ / 1000).toFixed(0)}K - ` +
         `excess losses become NOLs for future use`
       );
     }
@@ -237,7 +237,7 @@ export function calculateOptimalStrategy(
 
     return {
       strategy: 'Maximize annual utilization within §461(l) limits',
-      keyBenefit: 'Offset W-2 and business income up to $626K/year',
+      keyBenefit: `Offset W-2 and business income up to $${(SECTION_461L_LIMITS.MFJ / 1000).toFixed(0)}K/year`,
       annualCapacity: capacity.totalCapacity.currentYear,
       totalCapacity: capacity.totalCapacity.currentYear + capacity.totalCapacity.nolBank,
       recommendations: generateTaxCapacityRecommendations(true, capacity, params)

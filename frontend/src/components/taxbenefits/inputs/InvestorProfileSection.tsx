@@ -3,6 +3,7 @@ import '../../../styles/taxbenefits/hdcCalculator.css';
 import { CONFORMING_STATES, FEDERAL_TAX_BRACKETS_2024, FEDERAL_CAPITAL_GAINS_BRACKETS_2024 } from '../../../utils/taxbenefits/constants';
 import { doesNIITApply } from '../../../utils/taxbenefits/stateData';
 import { HDC_OZ_STRATEGY } from '../../../utils/taxbenefits/hdcOzStrategy';
+import { SECTION_461L_LIMITS } from '../../../utils/taxbenefits/investorTaxUtilization';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import StrategicOzSelector from './StrategicOzSelector';
 
@@ -59,7 +60,9 @@ interface InvestorProfileSectionProps {
 
 // Constants
 const NIIT_RATE = 3.8; // Net Investment Income Tax for high earners
-const SECTION_461L_LIMIT = 626000; // Annual limitation for REPs against W-2 income
+// IMPL-202: display the MFJ §461(l) limit from the canonical table (default tax year).
+// Deal-year-specific caps resolve via getSec461lLimit(); this generic input label uses the default.
+const SECTION_461L_LIMIT = SECTION_461L_LIMITS.MFJ; // Annual limitation for REPs against W-2 income
 
 const InvestorProfileSection: React.FC<InvestorProfileSectionProps> = ({
   investorState,

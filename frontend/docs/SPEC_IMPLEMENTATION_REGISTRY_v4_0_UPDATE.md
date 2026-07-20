@@ -201,7 +201,7 @@
 
 **Current codebase baseline (2026-03-06):**
 - Branch: main
-- Latest IMPL: IMPL-120
+- Latest IMPL: IMPL-202 (§461(l) piece of Wave 1, shipped standalone ahead of the rest; latest sequential IMPL is IMPL-188)
 - Latest commit: TBD (this commit)
 - Test suites: 91 passing
 - Tests: 1,824 passing, 0 failing
@@ -423,3 +423,24 @@ Collapsible read-only panel on Screen 2 showing the full `computeTimeline()` tra
 **Files modified/added:** `types/taxbenefits/index.ts` (CapitalSource interface + CAPITAL_SOURCE_TEMPLATES); new `utils/taxbenefits/legacyToSources.ts`; new test `__tests__/impl-188-legacy-to-sources.test.ts`.
 
 **Unblocks:** IMPL-189 (parallel composable engine + golden-output validation against legacy).
+
+### IMPL-202: Year-Parameterized §461(l) EBL Threshold (Wave 1 piece, shipped standalone)
+
+**Status:** ✅ Complete (2026-07-20). Shipped **standalone, ahead of the rest of Wave 1** (IMPL-200/201/203/212/etc. remain unshipped, held on open decisions). A later Wave 1 run must **inherit this table and not reintroduce a §461(l) threshold** — the §704(d)/§465/§469/§461(l)/§172 cascade (IMPL-200) consumes `getSec461lLimit()` as its single source.
+
+**Problem (from the Tax Benefit Optimizer Gap Audit v1.0):** the §461(l) excess-business-loss threshold was hardcoded to the 2025 figures ($313K single / $626K MFJ) at `SECTION_461L_LIMITS`, with a second duplicated `626_000` literal in `auditExport/formulaMap.ts`. Every site resolved 2025 even for a 2026 investment year, so the 2026 OBBBA clawback ($256K / $512K, Rev. Proc. 2025-32 §4.31) was absent from the app.
+
+**Changes:**
+1. **Canonical table + resolver** in `investorTaxUtilization.ts`: `SECTION_461L_LIMITS_BY_YEAR` (2025 = 313K/626K per Rev. Proc. 2024-40; 2026 = 256K/512K per Rev. Proc. 2025-32 §4.31) and `getSec461lLimit(year, filingStatus)`. Years > 2026 return an inflation-indexed **stub** (nearest $1,000, MFJ = 2× single per §461(l)(3)(A)(ii)) with an explicit `TODO(IMPL-202)` to replace with published figures. `SECTION_461L_LIMITS` is retained as a backward-compat alias **derived from the 2025 row** (single source, cannot drift).
+2. **`InvestorProfile.firstTaxYear`** (deal investment / placed-in-service year) added. The NOL-conversion engine path (`computeDepreciationNonpassive`) and the IMPL-145 REP sizing target (`investorSizing.ts`) resolve the cap by that year; defaults to 2025 when omitted (backward compatible).
+3. **Consumption sites wired by year:** `FundDetail.tsx` sets `firstTaxYear` from the pool investment year (`poolStartYear` / min `fundYear`); IRA-conversion `eblLimit` resolves via `getSec461lLimit`.
+4. **Both audit-export hardcodes removed:** `taxUtilizationSheet.ts` §461(l) cap cell and `formulaMap.ts` documentation entry now resolve from the same `getSec461lLimit()` — the audit-export site references the table, not its own literal. `auditExport/index.ts` passes the placed-in-service year.
+5. **Display literals single-sourced:** `InvestorProfileSection`, `InvestorTaxAndOZSection`, `HDCProfessionalReport`, `HDCTaxReportJsPDF`, and `taxCapacity.ts` advisory strings now reference the table (default-year for generic labels not tied to a specific deal).
+
+**Naming note (coordination):** the gap audit sketched this as `getSec461lCap`; the authoritative Wave 1 build prompt specifies `getSec461lLimit(year, filingStatus)` — implemented under the latter. Values agree (2025 + 2026), so no logic fork.
+
+**Independent math (verified in code + runtime):** 2026 MFJ, $1.5M excess business loss → **$512,000 allowed, $988,000 → NOL**; 2026 single → $256,000; 2025 MFJ → $626,000 (unchanged); 2025 single → $313,000. Runtime (live Vite dev server, real engine module): `getSec461lLimit(2026,'MFJ')=512000`; `calculateTaxUtilization` for a 2026 MFJ deal returns allowed=512000 / nol=988000 (2025 → 626000 / 874000).
+
+**Test count:** 1,956 passing (106 suites, 0 failures); 13 new in `impl-202-sec461l-year-parameterized.test.ts` (published-year lookups × filing status, 2027+ stub, backward-compat alias, engine-by-year resolution incl. the $1.5M scenario, and an audit-export ↔ engine single-source parity guard). No pre-existing test assumed 2025 for a 2026 scenario (the year was not previously parameterized), so no regression expectations changed.
+
+**Files modified:** `utils/taxbenefits/investorTaxUtilization.ts`, `investorSizing.ts`, `taxCapacity.ts`, `auditExport/formulaMap.ts`, `auditExport/sheets/taxUtilizationSheet.ts`, `auditExport/index.ts`, `components/investor-portal/FundDetail/FundDetail.tsx`, `components/taxbenefits/inputs/InvestorProfileSection.tsx`, `components/taxbenefits/inputs/InvestorTaxAndOZSection.tsx`, `components/taxbenefits/reports/HDCProfessionalReport.tsx`, `components/taxbenefits/reports/HDCTaxReportJsPDF.tsx`; new `utils/taxbenefits/__tests__/impl-202-sec461l-year-parameterized.test.ts`.

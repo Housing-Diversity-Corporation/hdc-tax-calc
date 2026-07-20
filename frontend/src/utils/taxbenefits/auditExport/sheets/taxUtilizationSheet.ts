@@ -20,6 +20,7 @@ import * as XLSX from 'xlsx';
 import { CalculationParams, InvestorAnalysisResults } from '../../../../types/taxbenefits';
 import { SheetResult, NamedRangeDefinition, FormulaCell } from '../types';
 import type { TaxUtilizationResult } from '../../investorTaxUtilization';
+import { getSec461lLimit, DEFAULT_461L_TAX_YEAR } from '../../investorTaxUtilization';
 
 // Excel number format codes
 const FMT_CURRENCY_M = '$#,##0.000000';  // $M with 6 decimal places for precision
@@ -40,7 +41,9 @@ const SN = 'Tax_Utilization';
 export function buildTaxUtilizationSheet(
   investorResults: InvestorAnalysisResults,
   totalInvestment: number,
-  params: CalculationParams
+  params: CalculationParams,
+  // IMPL-202: deal investment year for the year-parameterized §461(l) threshold.
+  taxYear: number = DEFAULT_461L_TAX_YEAR
 ): SheetResult {
   const namedRanges: NamedRangeDefinition[] = [];
   const ws: XLSX.WorkSheet = {};
@@ -125,10 +128,14 @@ export function buildTaxUtilizationSheet(
   currentRow++;
 
   // §461(l) Annual Cap ($)
+  // IMPL-202: caps resolve from the canonical year-parameterized table (single source
+  // of truth \u2014 the same getSec461lLimit() the engine uses), keyed to the deal investment year.
+  const mfjCap461l = getSec461lLimit(taxYear, 'MFJ');
+  const singleCap461l = getSec461lLimit(taxYear, 'Single');
   ws[`A${currentRow}`] = { t: 's', v: '\u00A7461(l) Annual Cap ($)' };
-  ws[`B${currentRow}`] = { t: 'n', v: 1e15, f: 'IF(AND(TU_IsREP=1,TU_GroupingElection=0),IF(TU_FilingStatus="MFJ",626000,313000),1E+15)', z: FMT_CURRENCY } as FormulaCell;
+  ws[`B${currentRow}`] = { t: 'n', v: 1e15, f: `IF(AND(TU_IsREP=1,TU_GroupingElection=0),IF(TU_FilingStatus="MFJ",${mfjCap461l},${singleCap461l}),1E+15)`, z: FMT_CURRENCY } as FormulaCell;
   namedRanges.push({ name: 'TU_461L_Cap', ref: `${SN}!$B$${currentRow}` });
-  ws[`C${currentRow}`] = { t: 's', v: 'MFJ=$626K cap. Single/HoH=$313K cap. Grouped or non-REP = effectively unlimited.' };
+  ws[`C${currentRow}`] = { t: 's', v: `MFJ=$${(mfjCap461l / 1000).toFixed(0)}K cap. Single/HoH=$${(singleCap461l / 1000).toFixed(0)}K cap (tax year ${taxYear}). Grouped or non-REP = effectively unlimited.` };
   currentRow++;
 
   currentRow++;

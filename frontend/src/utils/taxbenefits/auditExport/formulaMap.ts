@@ -33,6 +33,12 @@
  * - Added operationalDSCR distinction from managed DSCR
  */
 
+// IMPL-202: reference the canonical year-parameterized §461(l) table so this
+// documentation cannot drift from the engine. Use getSec461lLimit() for a specific year.
+import { getSec461lLimit, DEFAULT_461L_TAX_YEAR } from '../investorTaxUtilization';
+
+const SEC461L_DOC_MFJ = getSec461lLimit(DEFAULT_461L_TAX_YEAR, 'MFJ');
+
 // ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
@@ -1128,11 +1134,12 @@ const supportingFormulas: FormulaEntry[] = [
   {
     id: 'util-rep-001',
     name: 'REP Tax Capacity (§461(l))',
-    description: 'Real Estate Professional capacity with $626K annual limit (MFJ).',
+    description: `Real Estate Professional capacity with $${(SEC461L_DOC_MFJ / 1000).toFixed(0)}K annual limit (MFJ, ${DEFAULT_461L_TAX_YEAR}).`,
     tsFile: 'taxCapacity.ts',
     tsLine: 28,
+    // IMPL-202: threshold resolves via getSec461lLimit(year, filingStatus) — year-parameterized.
     tsLogic: `
-      const section461lLimit = 626_000;  // MFJ limit
+      const section461lLimit = getSec461lLimit(taxYear, filingStatus);  // e.g. ${SEC461L_DOC_MFJ} MFJ (${DEFAULT_461L_TAX_YEAR})
       const businessOffset = Math.min(businessIncome, totalLosses);
       const remainingLosses = totalLosses - businessOffset;
       const w2Offset = Math.min(remainingLosses, section461lLimit);
@@ -1141,13 +1148,13 @@ const supportingFormulas: FormulaEntry[] = [
     `,
     excelFormula: `
       BusinessOffset = MIN(BusinessIncome, TotalLosses)
-      W2Offset = MIN(TotalLosses - BusinessOffset, 626000)
-      ExcessLoss = MAX(0, TotalLosses - BusinessOffset - 626000)
+      W2Offset = MIN(TotalLosses - BusinessOffset, ${SEC461L_DOC_MFJ})
+      ExcessLoss = MAX(0, TotalLosses - BusinessOffset - ${SEC461L_DOC_MFJ})
     `,
     dependencies: ['w2Income', 'businessIncome', 'totalLosses'],
     output: 'allowedLoss',
     category: 'supporting',
-    notes: '§461(l) limits REP losses against W-2 to $626K (MFJ). Excess becomes NOL carryforward.'
+    notes: `§461(l) limits REP losses against W-2 to $${(SEC461L_DOC_MFJ / 1000).toFixed(0)}K (MFJ, ${DEFAULT_461L_TAX_YEAR}); 2026 = $${(getSec461lLimit(2026, 'MFJ') / 1000).toFixed(0)}K per OBBBA. Excess becomes NOL carryforward. Cap is year-parameterized via getSec461lLimit().`
   },
 
   // Non-REP Passive Capacity
@@ -1166,7 +1173,7 @@ const supportingFormulas: FormulaEntry[] = [
     dependencies: ['totalPassiveLosses', 'ltCapitalGainsRate', 'niitRate', 'stateCapitalGainsRate'],
     output: 'taxSavings',
     category: 'supporting',
-    notes: 'KEY: No annual limit for Non-REPs offsetting passive gains (vs $626K for REPs).'
+    notes: `KEY: No annual limit for Non-REPs offsetting passive gains (vs $${(SEC461L_DOC_MFJ / 1000).toFixed(0)}K for REPs).`
   },
 
   // IRA Conversion Optimization

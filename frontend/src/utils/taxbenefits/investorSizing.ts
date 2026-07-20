@@ -11,7 +11,7 @@
  */
 
 import type { BenefitStream, InvestorProfile, TaxUtilizationResult } from './investorTaxUtilization';
-import { calculateTaxUtilization, SECTION_461L_LIMITS, computeFederalTax, computeNOLDrawdown } from './investorTaxUtilization';
+import { calculateTaxUtilization, getSec461lLimit, DEFAULT_461L_TAX_YEAR, computeFederalTax, computeNOLDrawdown } from './investorTaxUtilization';
 import { scaleStreamByProRata } from './fundSizingOptimizer';
 import { scaleBenefitStreamToMillions } from './poolAggregation';
 import { classifyInvestorFit } from './investorFit';
@@ -225,7 +225,10 @@ export function computeOptimalSizing(
   let sec461lUtilizationPct: number | undefined;
 
   if (isNonpassive) {
-    const threshold = SECTION_461L_LIMITS[profile.filingStatus] / 1_000_000; // in millions
+    // IMPL-202: resolve the §461(l) target by the deal's investment year so a
+    // 2026 deal sizes to $512K MFJ / $256K single, not the 2025 $626K/$313K.
+    const sec461lTaxYear = profile.firstTaxYear ?? DEFAULT_461L_TAX_YEAR;
+    const threshold = getSec461lLimit(sec461lTaxYear, profile.filingStatus) / 1_000_000; // in millions
     sec461lOptimalCommitment = findSec461lTargetCommitment(
       poolBenefitStream, profile, dealTotalEquity, threshold, effectiveMin, maxCommitment
     );

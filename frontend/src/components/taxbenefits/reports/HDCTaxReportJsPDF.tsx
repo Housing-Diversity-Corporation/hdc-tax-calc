@@ -12,6 +12,7 @@ import React from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { InvestorAnalysisResults, HDCAnalysisResults, CalculationParams } from '../../../types/taxbenefits';
+import { SECTION_461L_LIMITS } from '../../../utils/taxbenefits/investorTaxUtilization';
 import { Button } from '../../ui/button';
 import { FileBarChart } from 'lucide-react';
 
@@ -884,7 +885,7 @@ export const HDCTaxReportJsPDFButton: React.FC<HDCTaxReportJsPDFProps> = ({
 
       const recommendations = investorTrack === 'rep'
         ? [
-            '• Your §461(l) limitation caps W-2 offset at $626,000 annually',
+            `• Your §461(l) limitation caps W-2 offset at ${formatMoney(SECTION_461L_LIMITS.MFJ)} annually`,
             '• Excess losses will create NOL carryforward for future years',
             iraBalance > 0 ? '• Consider Roth IRA conversions to maximize tax capacity utilization' : null,
           ]

@@ -25,7 +25,7 @@ import {
   calculateRothConversionValue,
   generateIRAConversionRecommendations
 } from '../../../utils/taxbenefits/iraConversion';
-import { SECTION_461L_LIMITS, calculateTaxUtilization } from '../../../utils/taxbenefits/investorTaxUtilization';
+import { getSec461lLimit, DEFAULT_461L_TAX_YEAR, calculateTaxUtilization } from '../../../utils/taxbenefits/investorTaxUtilization';
 import { scaleStreamByProRata } from '../../../utils/taxbenefits/fundSizingOptimizer';
 import { findLifetimeCoverageCommitment } from '../../../utils/taxbenefits/investorSizing';
 import type { LifetimeCoverageResult } from '../../../utils/taxbenefits/investorSizing';
@@ -108,7 +108,8 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
     }
 
     const { benefitStream, meta } = aggregatePoolToBenefitStream(deals);
-    const investorProfile = buildInvestorProfileFromTaxInfo(taxProfile);
+    // IMPL-202: key the §461(l) threshold to the pool's investment year.
+    const investorProfile = { ...buildInvestorProfileFromTaxInfo(taxProfile), firstTaxYear: meta.poolStartYear };
     const result = optimizeFundCommitment(
       benefitStream,
       meta.totalGrossEquity,
@@ -118,11 +119,17 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
     return { sizingResult: result, aggregationMeta: meta };
   }, [deals, taxProfile]);
 
+  // IMPL-202: pool investment year (earliest deal fundYear) — keys the §461(l) threshold.
+  const poolStartYear = useMemo(
+    () => (deals.length > 0 ? Math.min(...deals.map(d => d.fundYear)) : undefined),
+    [deals]
+  );
+
   // B3: Investor Fit + Sizing (IMPL-102 through IMPL-106)
   const investorProfile = useMemo(() => {
     if (!taxProfile) return null;
-    return buildInvestorProfileFromTaxInfo(taxProfile);
-  }, [taxProfile]);
+    return { ...buildInvestorProfileFromTaxInfo(taxProfile), firstTaxYear: poolStartYear };
+  }, [taxProfile, poolStartYear]);
 
   const averageAnnualBenefits = useMemo(() => {
     if (!sizingResult) return 0;
@@ -216,7 +223,8 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
     const annuals = sizingResult.fullUtilizationResult.annualUtilization;
     const filingStatus = taxProfile.filingStatus === 'married' ? 'MFJ'
       : taxProfile.filingStatus === 'single' ? 'Single' : 'HoH';
-    const eblLimit = SECTION_461L_LIMITS[filingStatus as keyof typeof SECTION_461L_LIMITS];
+    // IMPL-202: resolve the §461(l) cap by the pool's investment year.
+    const eblLimit = getSec461lLimit(poolStartYear ?? DEFAULT_461L_TAX_YEAR, filingStatus);
 
     const repCapacity: REPTaxCapacityModel = {
       annualLimitations: annuals.map((yr) => ({
@@ -272,7 +280,7 @@ const FundDetail: React.FC<FundDetailProps> = ({ poolId, onBack, onNavigateToTax
       lifetimeValue,
       recommendations
     };
-  }, [taxProfile, sizingResult, holdPeriod]);
+  }, [taxProfile, sizingResult, holdPeriod, poolStartYear]);
 
   // Sync slider to optimal when sizing result changes
   const effectiveSliderCommitment = sliderCommitment ?? sizingResult?.optimalCommitment ?? 0;
