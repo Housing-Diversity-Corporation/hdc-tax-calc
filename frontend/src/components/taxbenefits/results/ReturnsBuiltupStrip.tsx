@@ -72,6 +72,8 @@ interface SubComponent {
   dividerBefore?: boolean;
   /** IMPL-162: When true, render with muted/italic style (non-additive informational row) */
   informational?: boolean;
+  /** IMPL-195: Counterfactual framing shown as a small muted second line under the label */
+  note?: string;
 }
 
 interface ReturnComponent {
@@ -421,21 +423,23 @@ function deriveReturnComponents(
   // IMPL-031: OZ Benefits (tax-related)
   // IMPL-060: Add sub-components for dropdown breakdown
   // IMPL-099: Update recapture avoidance to use character-split values from exitTaxAnalysis
+  // IMPL-195: The OZ Benefits parent shows ONLY its additive contribution — Deferral NPV +
+  // Step-Up Basis Savings — summed from the engine's own child values (no display-side
+  // subtraction, so it cannot drift). Recapture Avoided and Capital Gains Avoided are
+  // avoided-tax COUNTERFACTUALS: they are already reflected once in returns via the tax-free
+  // exit line (netExitTax = 0 for OZ 10-year holds), and the engine excludes both from
+  // totalReturns/IRR (calculations.ts:2532-2544). They are shown below the line as
+  // non-additive memos so the five additive components still sum to totalReturns / 100%.
   if (totalOzBenefits > 0) {
+    const ozAdditiveBenefits = ozDeferralNPV + ozStepUpSavings; // additive OZ contribution only
     const ozSubComponents: SubComponent[] = [];
 
+    // ── Additive children (roll up to the OZ Benefits parent value) ──
     if (ozStepUpSavings > 0) {
       ozSubComponents.push({
         label: 'Step-Up Basis Savings',
         value: ozStepUpSavings,
         multiple: ozStepUpSavings / totalInvestment,
-      });
-    }
-    if (ozExitAppreciation > 0) {
-      ozSubComponents.push({
-        label: 'Exclusion of Appreciation',
-        value: ozExitAppreciation,
-        multiple: ozExitAppreciation / totalInvestment,
       });
     }
     if (ozDeferralNPV > 0) {
@@ -445,21 +449,31 @@ function deriveReturnComponents(
         multiple: ozDeferralNPV / totalInvestment,
       });
     }
-    // IMPL-162: Recapture Avoided is non-additive — already embedded in Exit Proceeds (net).
-    // OZ exclusion eliminates recapture tax; this line is informational context only.
-    if (ozRecaptureAvoided > 0) {
-      ozSubComponents.push({
-        label: 'Recapture Avoided (in exit proceeds)',
-        value: ozRecaptureAvoided,
-        multiple: ozRecaptureAvoided / totalInvestment,
-        informational: true,
-      });
-    }
+
+    // ── Non-additive avoided-tax memos (always render, including when ~$0) ──
+    // Symmetric counterfactual framing: the tax a non-OZ investor would owe on this
+    // position, which the 10-year step-up to FMV eliminates. Avoided amount == would-owe
+    // amount (one figure). Reflected once via the tax-free exit line, not added again.
+    ozSubComponents.push({
+      label: 'Recapture Avoided',
+      value: ozRecaptureAvoided,
+      multiple: ozRecaptureAvoided / totalInvestment,
+      informational: true,
+      dividerBefore: true,
+      note: 'Depreciation-recapture tax a non-OZ investor would owe on this position — eliminated by the 10-year step-up. Reflected in Exit Proceeds (net), which is shown free of this tax; not added again.',
+    });
+    ozSubComponents.push({
+      label: 'Capital Gains Avoided',
+      value: ozExitAppreciation,
+      multiple: ozExitAppreciation / totalInvestment,
+      informational: true,
+      note: 'Capital-gains tax a non-OZ investor would owe on this position’s appreciation — eliminated by the 10-year step-up. ~$0 on deals with little appreciation beyond recapture; populates when appreciation is present. Reflected in Exit Proceeds (net); not added again.',
+    });
 
     components.push({
       label: 'OZ Benefits',
-      value: totalOzBenefits,
-      multiple: totalOzBenefits / totalInvestment,
+      value: ozAdditiveBenefits,
+      multiple: ozAdditiveBenefits / totalInvestment,
       color: COMPONENT_COLORS.ozBenefits,
       category: 'tax',
       subComponents: ozSubComponents.length > 0 ? ozSubComponents : undefined,
@@ -610,18 +624,39 @@ const SubRow: React.FC<{
         opacity: isInfo ? 0.3 : 0.6,
       }} />
 
-      {/* Label */}
+      {/* Label (+ IMPL-195 counterfactual note for memo rows) */}
       <div
-        className="returns-value"
         style={{
           flex: 1,
-          fontSize: '0.8rem',
           minWidth: '140px',
-          opacity: isInfo ? 0.55 : 0.9,
-          fontStyle: isInfo ? 'italic' : 'normal',
         }}
       >
-        {subComponent.label}
+        <div
+          className="returns-value"
+          style={{
+            fontSize: '0.8rem',
+            opacity: isInfo ? 0.55 : 0.9,
+            fontStyle: isInfo ? 'italic' : 'normal',
+          }}
+        >
+          {subComponent.label}
+          {isInfo && (
+            <span style={{ fontStyle: 'normal', opacity: 0.75, marginLeft: '0.4rem', fontSize: '0.7rem' }}>
+              (memo · non-additive)
+            </span>
+          )}
+        </div>
+        {subComponent.note && (
+          <div style={{
+            fontSize: '0.68rem',
+            opacity: 0.5,
+            fontStyle: 'italic',
+            marginTop: '0.15rem',
+            lineHeight: 1.3,
+          }}>
+            {subComponent.note}
+          </div>
+        )}
       </div>
 
       {/* Value */}
@@ -636,10 +671,13 @@ const SubRow: React.FC<{
           fontStyle: isInfo ? 'italic' : 'normal',
         }}
       >
-        {formatMillionsAsCurrency(subComponent.value)}
+        {/* IMPL-195: near-zero memo (e.g. Capital Gains Avoided with no appreciation) reads "~$0" */}
+        {isInfo && Math.abs(subComponent.value) < 0.005
+          ? '~$0'
+          : formatMillionsAsCurrency(subComponent.value)}
       </div>
 
-      {/* Multiple contribution */}
+      {/* Multiple contribution — blanked for non-additive memo rows */}
       <div style={{
         fontSize: '0.8rem',
         fontWeight: 500,
@@ -649,10 +687,10 @@ const SubRow: React.FC<{
         opacity: isInfo ? 0.4 : 0.9,
         fontStyle: isInfo ? 'italic' : 'normal',
       }}>
-        {subComponent.multiple.toFixed(2)}x
+        {isInfo ? '—' : `${subComponent.multiple.toFixed(2)}x`}
       </div>
 
-      {/* Percentage of total */}
+      {/* Percentage of total — excluded (blanked) for non-additive memo rows (IMPL-195) */}
       <div style={{
         fontSize: '0.8rem',
         fontWeight: 500,
@@ -662,7 +700,7 @@ const SubRow: React.FC<{
         opacity: isInfo ? 0.4 : 0.9,
         fontStyle: isInfo ? 'italic' : 'normal',
       }}>
-        {percentOfTotal.toFixed(1)}%
+        {isInfo ? '—' : `${percentOfTotal.toFixed(1)}%`}
       </div>
     </div>
     </>
