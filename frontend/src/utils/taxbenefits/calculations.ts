@@ -1746,19 +1746,19 @@ export const calculateFullInvestorAnalysis = (
       // The net impact may be positive if depreciation > OZ tax payment
     }
 
-    // Check if we're at the end of the interest reserve period with excess reserve
+    // IMPL-197 (F4 / ISS-077): Distribute only a GENUINELY UNUSED remainder, and only
+    // AFTER the lease-up draw window closes — never before it opens.
+    // Prior behavior distributed the whole balance at `year === interestReservePeriodYears`
+    // (Year 2 on the 701 preset), which is BEFORE the draw window opens at placed-in-service
+    // (Year 3, DSCR 0.43x). That returned the full, undrawn, mostly debt-funded reserve as an
+    // early Year-2 inflow — inflating MOIC/IRR — and left nothing to cover the Year-3 shortfall.
+    // The draw window (year >= placedInServiceYear && year <= leaseUpEndYear) above debits
+    // actual shortfall draws against the balance; whatever survives is distributed the year
+    // AFTER the window closes.
     let excessReserveDistribution = 0;
-    if (interestReserveEnabled && year === interestReservePeriodYears && interestReserveBalance > 0) {
-      // Distribute any remaining interest reserve at the end of the period
+    if (interestReserveEnabled && year === leaseUpEndYear + 1 && interestReserveBalance > 0) {
       excessReserveDistribution = interestReserveBalance;
       interestReserveBalance = 0;
-
-      if (year <= 3) {
-        console.log(`Excess Reserve Distribution - Year ${year}:`, {
-          amount: excessReserveDistribution,
-          note: 'Distributing unused interest reserve'
-        });
-      }
     }
 
     // State LIHTC Credit for direct use path (IMPL-018)

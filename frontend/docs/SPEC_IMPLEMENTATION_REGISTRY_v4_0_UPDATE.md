@@ -479,3 +479,19 @@ Collapsible read-only panel on Screen 2 showing the full `computeTimeline()` tra
 **Tests:** `impl-196-holdperiod-depreciation-schedule.test.ts` — schedule length equals the hold (< 27); §1250 bounded (< $20M, was $43.9M); the two recapture paths converge within $0.5M; OZ netExitTax = 0. Full suite 1,960 pass (0 failures).
 
 **Files:** `utils/taxbenefits/calculations.ts` (1 line site + comment); new test. No other engine files.
+
+### IMPL-197 (F4 / ISS-077): Excess Reserve — stop distributing the undrawn reserve
+
+**Status:** ✅ Complete (2026-07-20). Engine fix, separate commit from IMPL-196.
+
+**Problem (ISS-077):** the interest reserve's remaining balance was distributed at `year === interestReservePeriodYears` (Year 2 on the 701 preset) — **before** the lease-up draw window opens at placed-in-service (Year 3, DSCR 0.43x). That returned the full, undrawn, mostly debt-funded $1.20M reserve as an early Year-2 investor inflow (overstating MOIC ~0.08x and inflating IRR via early timing) and left nothing to cover the Year-3 debt-service shortfall.
+
+**Change (`calculations.ts:1751`):** distribute only a genuinely unused remainder, and only the year AFTER the draw window closes — `year === leaseUpEndYear + 1` (Year 5 on 701). The existing draw window (`year >= placedInServiceYear && year <= leaseUpEndYear`, [:1131](../src/utils/taxbenefits/calculations.ts)) now debits actual shortfall draws against the balance during the window before any remainder is returned.
+
+**Independent math / runtime (701):** Year-3 shortfall = `max(0, hardDebtService $2.102M − effectiveNOI $0.911M)` = **$1.191M** (DSCR 0.433) → draw $1.1914M, balance $1.2001M → **$0.0087M**; Year 4 no shortfall (NOI $2.407M > DS $2.102M); remainder **$0.0087M** distributed Year 5. **No Year-2 distribution.** Result: MOIC 3.54x → **3.46x** (3.4558), IRR 14.12% → **13.26%**, Total Returns $50.40M → **$49.21M**, on-screen Excess Reserve $1.20M → **$8.66K** (runtime screen-verified).
+
+**No cross-contamination:** IMPL-196 (F5) was returns-neutral (3.54x); IMPL-197 (F4) moved only the reserve component (3.54x → 3.46x). The depreciation-schedule fix and the reserve fix are independent.
+
+**Tests:** `impl-197-excess-reserve-draw-window.test.ts` — no distribution before the window; shortfall draw depletes the balance in the DSCR<1 year; only the unused remainder returns, at/after the window (year ≥ 5); MOIC below the pre-fix 3.54x. Full suite 1,964 pass.
+
+**Files:** `utils/taxbenefits/calculations.ts` (distribution condition); new test.
