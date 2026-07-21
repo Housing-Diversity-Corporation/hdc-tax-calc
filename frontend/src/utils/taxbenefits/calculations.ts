@@ -2467,7 +2467,18 @@ export const calculateFullInvestorAnalysis = (
 
   // NEW: Add tax planning calculations if requested
   if (params.includeDepreciationSchedule) {
-    const depreciationSchedule = buildDepreciationSchedule(params);
+    // IMPL-196 (F5): buildDepreciationSchedule caps its §1250 straight-line loop at
+    // min(holdPeriod, 27.5). params.holdPeriod arrives as a large sentinel (e.g. 150),
+    // so the schedule ran the full 27.5-year statutory life (years 2–27) instead of the
+    // deal's actual hold, inflating cumulative1250 (and the exit-tax recapture it feeds)
+    // far beyond the depreciation actually taken over the hold. Pass the real hold — the
+    // number of depreciation years from placed-in-service through exit (sourced from the
+    // timeline/exitYear, not hardcoded) — so §1250 accrues only over the hold.
+    const holdDepreciationYears = Math.max(1, exitYear - placedInServiceYear + 1);
+    const depreciationSchedule = buildDepreciationSchedule({
+      ...params,
+      holdPeriod: holdDepreciationYears,
+    });
 
     // Phase A1: Compute adjustedBasis = investorEquity - cumulativeDepreciation
     const adjustedBasis = investorEquity - (depreciationSchedule?.totalDepreciation || 0);

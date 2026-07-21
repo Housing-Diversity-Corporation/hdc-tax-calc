@@ -463,3 +463,19 @@ Collapsible read-only panel on Screen 2 showing the full `computeTimeline()` tra
 **Runtime verification (dev server, 701 preset, after change):** MOIC **3.54x**, IRR **14.12%** — unchanged; OZ Benefits **$1.42M / 0.10x**; Step-Up $338.92K + Deferral NPV $1.08M (additive children); Recapture Avoided **$8.30M** and Capital Gains Avoided **~$0** as non-additive memos.
 
 **Files:** `frontend/src/components/taxbenefits/results/ReturnsBuiltupStrip.tsx` (display only). Engine untouched.
+
+### IMPL-196 (F5): holdPeriod depreciation-schedule fix
+
+**Status:** ✅ Complete (2026-07-20). Engine fix, value-neutral on OZ presets. Contained fix that Wave 1 (IMPL-203 §751/1245-1250 restructure) inherits; no other Wave 1 item built here.
+
+**Problem:** `calculations.ts` called `buildDepreciationSchedule(params)` with `params.holdPeriod` arriving as a large sentinel (e.g. 150), so the §1250 straight-line loop's `min(holdPeriod, 27.5)` bound capped at 27.5 and ran years 2–27 (26 straight-line years). On the 701 preset this produced `cumulative1250 = $43.869M` (vs ~$16M actually taken over the ~13-year hold), feeding an exit-tax recapture of $15.259M that diverged from the hold-based Recapture-Avoided line ($8.299M) by ~$7M.
+
+**Change (`calculations.ts:2470`):** pass the real hold — `holdPeriod = max(1, exitYear − placedInServiceYear + 1)` (sourced from the timeline/exitYear, not hardcoded) — into `buildDepreciationSchedule`, so §1250 accrues only over the deal's hold.
+
+**Value-neutral check (key):** on 701 (OZ, `netExitTax = 0`) MOIC and IRR are **unchanged at 3.54x / 14.12%** (runtime screen-verified). F5 only corrects the OZ-zeroed exit-tax recapture and brings the two recapture paths into line. A clean 701 result proves F5 did no harm; it does not prove a value change (that needs a non-OZ preset, not yet available).
+
+**Independent math / runtime (701):** schedule length 27 → **11** (= hold); `cumulative1245` $11.600M (unchanged); `cumulative1250` $43.869M → **$16.873M**; exit-tax recapture $15.259M → **$8.510M**, converging with Recapture-Avoided **$8.299M** (residual ~$0.21M = mid-month convention applied in the investor loop but not in `buildDepreciationSchedule`; exact tie is deferred to the Wave 1 §1245/1250 restructure). MOIC 3.54x / IRR 14.12% unchanged.
+
+**Tests:** `impl-196-holdperiod-depreciation-schedule.test.ts` — schedule length equals the hold (< 27); §1250 bounded (< $20M, was $43.9M); the two recapture paths converge within $0.5M; OZ netExitTax = 0. Full suite 1,960 pass (0 failures).
+
+**Files:** `utils/taxbenefits/calculations.ts` (1 line site + comment); new test. No other engine files.
